@@ -11,12 +11,27 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+const SITE_TITLE = '풀림 플래너 — 시험까지의 시간을 설계하는 AI';
+const SITE_DESCRIPTION =
+  '시험 일정을 입력하면 AI가 분 단위로 학습 계획을 짭니다. 풀림 플래너는 고등학생을 위한 AI 학습 플래너입니다.';
+
 export const metadata: Metadata = {
-  title: '풀림 스터디 — AI 학습 파트너',
-  description:
-    '내 실력에 딱 맞는 문제, 사고를 이끌어주는 AI 튜터, 시간 단위 맞춤 학습 계획. 풀림 스터디는 고등학생을 위한 AI 학습 플랫폼입니다.',
-  applicationName: '풀림 스터디',
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  applicationName: '풀림 플래너',
   formatDetection: { telephone: false },
+  openGraph: {
+    type: 'website',
+    locale: 'ko_KR',
+    siteName: '풀림 플래너',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export const viewport: Viewport = {

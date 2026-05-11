@@ -1,6 +1,6 @@
 /**
- * 풀림 스터디 14개 기능 메타데이터.
- * SKILL.md 3장(라우트 매핑) + 03_풀림_스터디_마스터.md 기준.
+ * 풀림(원본) 기능 메타 — 플래너에서는 `linkedFeatureSlug` 라우팅용으로만 사용.
+ * SKILL.md 3장(라우트 매핑) 기준.
  */
 
 import type { LucideIcon } from 'lucide-react';
@@ -104,12 +104,6 @@ export const stageLabel: Record<FeatureStage, string> = {
   core:   'Core',
   growth: 'Growth',
   future: 'Future',
-};
-
-export const stageDescription: Record<FeatureStage, string> = {
-  core:   '출시 필수 — 풀림 스터디의 핵심 5개 기능',
-  growth: '성장 견인 — 데이터가 쌓이며 강화되는 6개 기능',
-  future: '비전 — 기술 성숙도가 도달하면 출시되는 3개 기능',
 };
 
 export function findFeature(slug: string): Feature | undefined {

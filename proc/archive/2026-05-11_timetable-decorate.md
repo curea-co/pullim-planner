@@ -163,33 +163,35 @@ export function updatePlannerCustomization(
 ## 작업 항목
 
 ### 데이터·토큰
-- [ ] [src/lib/tokens/palettes.ts](src/lib/tokens/palettes.ts) — 팔레트 7종 hex + 타입 + `getBlockColor`
-- [ ] [src/lib/tokens/layout-templates.ts](src/lib/tokens/layout-templates.ts) — 4종 메타 (label/description/thumbnail)
-- [ ] [src/lib/mock/planner.ts](src/lib/mock/planner.ts) — `Planner.customization` 타입 + 시드 3건 디폴트 + `updatePlannerCustomization` helper
-- [ ] [src/lib/mock/index.ts](src/lib/mock/index.ts) — 신규 심볼 재export
-- [ ] [src/lib/hooks/use-planner-customization.ts](src/lib/hooks/use-planner-customization.ts) 신설
+- [x] [src/lib/tokens/palettes.ts](src/lib/tokens/palettes.ts) — 팔레트 7종 hex + 타입 + `getBlockColor`
+- [x] [src/lib/tokens/layout-templates.ts](src/lib/tokens/layout-templates.ts) — 4종 메타 (label/description/glyph)
+- [x] [src/lib/mock/planner.ts](src/lib/mock/planner.ts) — `Planner.customization` 타입 + 시드 3건 디폴트 + `updatePlannerCustomization` helper
+- [x] [src/lib/mock/index.ts](src/lib/mock/index.ts) — 신규 심볼 재export
+- [x] [src/lib/hooks/use-planner-customization.ts](src/lib/hooks/use-planner-customization.ts) 신설 (`getActiveCustomization`, `getCustomizationFor`)
 
 ### 색상 source 일반화
-- [ ] `grep -r "blockTypeMeta\[.*\]\.colorVar" src/` 결과를 전부 `getBlockColor()`로 교체
+- [x] `blockTypeMeta[*].colorVar` 직접 참조 전부 `getBlockColor()`로 교체 (4개 사이트: side-timeline-24, today-timeline, week-grid, day-view)
 
 ### 레이아웃 컴포넌트
-- [ ] [src/components/planner/layouts/vertical-timeline.tsx](src/components/planner/layouts/vertical-timeline.tsx) — 기존 `SideTimeline24` 래핑 (paletteId/compact prop)
-- [ ] [src/components/planner/layouts/checklist.tsx](src/components/planner/layouts/checklist.tsx) 신설
-- [ ] [src/components/planner/layouts/block-cards.tsx](src/components/planner/layouts/block-cards.tsx) 신설
-- [ ] [src/components/planner/layouts/pie-list.tsx](src/components/planner/layouts/pie-list.tsx) 신설
-- [ ] 4개 컴포넌트 공통 인터페이스 정의 + 4개 thumbnail (SVG/CSS)
+- [x] [src/components/planner/layouts/vertical-timeline.tsx](src/components/planner/layouts/vertical-timeline.tsx) — 기존 `SideTimeline24` 래핑 (paletteId/compact prop)
+- [x] [src/components/planner/layouts/checklist.tsx](src/components/planner/layouts/checklist.tsx) 신설
+- [x] [src/components/planner/layouts/block-cards.tsx](src/components/planner/layouts/block-cards.tsx) 신설
+- [x] [src/components/planner/layouts/pie-list.tsx](src/components/planner/layouts/pie-list.tsx) 신설
+- [x] 4개 컴포넌트 공통 인터페이스 정의 + `ActiveDayLayout` 스위처 추가 (썸네일은 glyph 문자로 대체)
 
 ### 꾸미기 섹션
-- [ ] [src/components/planner-manage/decorate-section.tsx](src/components/planner-manage/decorate-section.tsx) 신설 (PlannerPicker + PreviewPane + LayoutControl + PaletteControl)
-- [ ] [src/app/(student)/planner/manage/page.tsx](src/app/(student)/planner/manage/page.tsx) — PageHeader 아래 `<DecorateSection ref={ref} />` 삽입, 외부에서 `selectedPlannerId` 제어용 핸들
-- [ ] [src/components/planner-manage/planner-card.tsx](src/components/planner-manage/planner-card.tsx) — 케밥 메뉴에 "꾸미기" 액션 추가 → 섹션으로 scrollIntoView + plannerId 전환
+- [x] [src/components/planner-manage/decorate-section.tsx](src/components/planner-manage/decorate-section.tsx) 신설 (PlannerPicker + PreviewPane + LayoutControl + PaletteControl)
+- [x] [src/app/(student)/planner/manage/page.tsx](src/app/(student)/planner/manage/page.tsx) — PageHeader 아래 `<DecorateSection ref={ref} />` 삽입, `DecorateSectionHandle.focusPlanner` 외부 제어
+- [x] [src/components/planner-manage/planner-card.tsx](src/components/planner-manage/planner-card.tsx) — 케밥 메뉴에 "꾸미기" 액션 추가 → 섹션으로 scrollIntoView + plannerId 전환
 
 ### 적용
-- [ ] [src/app/(student)/planner/page.tsx](src/app/(student)/planner/page.tsx) — day view 진입 시 활성 플래너 `layoutId`로 분기 (week/month는 그대로)
+- [x] [src/components/planner/views/day-view.tsx](src/components/planner/views/day-view.tsx) — `ActiveDayLayout`로 분기 (week/month는 그대로) ※ 실구현은 day-view 컴포넌트 안에서 분기
 
 ### 검증
-- [ ] `bunx tsc --noEmit && bun run lint`
-- [ ] `bun dev` (3030) — manage에서 plannerId 4개 전환 × 레이아웃 4개 × 팔레트 7개 토글, 저장 후 `/planner` 진입 시 활성 플래너 설정대로 표시되는지 확인
+- [x] `bunx tsc --noEmit && bun run lint` 통과
+- [x] `bun dev` (3030) — manage 페이지·preview·`/planner` 진입까지 수동 검증 (PR #1, merged into `dev`)
+
+> **상태**: PR #1 (feat/timetable-decorate → dev) 머지 완료, PR #2 (dev → main) 진행 중.
 
 ## 범위 외 (Future)
 
