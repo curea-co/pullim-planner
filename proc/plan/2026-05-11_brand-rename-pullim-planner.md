@@ -78,7 +78,8 @@ OG 이미지 파일은 별도 PR (현재 없음).
 - [x] [src/lib/mock/features.ts](src/lib/mock/features.ts) L110: stageDescription **전체 제거** (D3 결정)
 - [x] `bunx tsc --noEmit && bun run lint` 통과
 - [x] `bun run build` → 빌드된 HTML 메타 확인: title/description/applicationName/og:*/twitter:* 모두 "풀림 플래너"로 정확히 출력
-- [ ] PR 후 Vercel preview URL로 카카오톡·메시지 미리보기 실제 테스트 (PR 머지 후 검증)
+- [x] Vercel preview 배포 확인 — PR #3 (`feat/brand-rename-pullim-planner`) preview 배포 성공 (Vercel 자동, 401 응답 = build 성공·auth gate). 동일 build 산출물이 preview·production 양쪽에 동일 적용됨
+- [ ] (user action) 카카오톡·메시지 링크 미리보기 실제 캡처 검증 — Vercel preview는 auth-gated라 외부 미리보기 봇 검증 불가. **PR 머지 후 production URL(`pullim-planner.vercel.app`)에서 사용자 측 테스트 필요**
 
 ## 의사결정 (확정)
 
