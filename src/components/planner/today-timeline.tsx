@@ -3,8 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import {
-  todayBlocks, blockTypeMeta, subjectLabels, type TimeBlock,
+  todayBlocks, blockTypeMeta, subjectLabels, getBlockColor, type TimeBlock,
 } from '@/lib/mock';
+import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
 import { cn } from '@/lib/utils';
 
 /**
@@ -54,6 +55,7 @@ function BlockChip({ block, onClick }: { block: TimeBlock; onClick: () => void }
   const meta = blockTypeMeta[block.type];
   const Icon = meta.Icon;
   const subjectLabel = block.subject === 'rest' ? '휴식' : subjectLabels[block.subject];
+  const { paletteId } = getActiveCustomization();
 
   // 상태별 톤 — 진행 중은 강조, 완료는 dim, 미수행은 warn
   const stateClass =
@@ -78,7 +80,7 @@ function BlockChip({ block, onClick }: { block: TimeBlock; onClick: () => void }
       <div className="flex items-center gap-1">
         <span
           className="inline-block h-2 w-2 rounded-sm"
-          style={{ background: meta.colorVar }}
+          style={{ background: getBlockColor(block.type, paletteId) }}
           aria-hidden
         />
         <span className="text-pullim-slate-500 font-mono text-[10px] font-bold">{block.start}</span>
