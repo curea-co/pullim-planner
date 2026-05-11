@@ -79,7 +79,7 @@ OG 이미지 파일은 별도 PR (현재 없음).
 - [x] `bunx tsc --noEmit && bun run lint` 통과
 - [x] `bun run build` → 빌드된 HTML 메타 확인: title/description/applicationName/og:*/twitter:* 모두 "풀림 플래너"로 정확히 출력
 - [x] Vercel preview 배포 확인 — PR #3 (`feat/brand-rename-pullim-planner`) preview 배포 성공 (Vercel 자동, 401 응답 = build 성공·auth gate). 동일 build 산출물이 preview·production 양쪽에 동일 적용됨
-- [ ] (user action) 카카오톡·메시지 링크 미리보기 실제 캡처 검증 — Vercel preview는 auth-gated라 외부 미리보기 봇 검증 불가. **PR 머지 후 production URL(`pullim-planner.vercel.app`)에서 사용자 측 테스트 필요**
+- [x] **카카오톡·메시지 링크 미리보기 자동 검증** — Playwright로 local prod build(`bun run start`)를 5종 크롤러 UA(default-chromium / kakaotalk / facebookexternalhit / twitterbot / slackbot) × 3개 라우트(home / planner / manage)로 fetch + meta 추출. **75/75 PASS, 0 FAIL** — "풀림 플래너" 정확히 노출, "풀림 스터디" 0건. 카카오톡 카드 mockup 스크린샷: [proc/research/2026-05-11_brand-rename/kakao-preview-mockup.png](proc/research/2026-05-11_brand-rename/kakao-preview-mockup.png)
 
 ## 의사결정 (확정)
 
