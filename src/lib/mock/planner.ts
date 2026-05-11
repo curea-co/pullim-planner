@@ -8,6 +8,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { SubjectKey } from './persona';
+import type { PaletteId } from '@/lib/tokens/palettes';
+import type { LayoutTemplateId } from '@/lib/tokens/layout-templates';
 
 export type BlockType =
   | 'concept'      // 개념 학습 (풀림 비주얼)
@@ -588,6 +590,14 @@ export type Planner = {
   archived: boolean;
   createdAt: string;
   updatedAt: string;
+  /**
+   * 시간표 꾸미기 — 일간 레이아웃 템플릿 + 색상 팔레트.
+   * 미지정 시 {vertical_timeline, pullim_blue}로 폴백 (기존 동작 무변경).
+   */
+  customization?: {
+    layoutId: LayoutTemplateId;
+    paletteId: PaletteId;
+  };
 };
 
 /** 시드 3건 — active 1, inactive 1, archived 1 */
@@ -615,6 +625,7 @@ export const planners: Planner[] = [
     archived: false,
     createdAt: '2026-04-15T09:00:00',
     updatedAt: '2026-04-23T20:00:00',
+    customization: { layoutId: 'vertical_timeline', paletteId: 'pullim_blue' },
   },
   {
     id: 'pl_002',
@@ -640,6 +651,7 @@ export const planners: Planner[] = [
     archived: false,
     createdAt: '2026-04-20T10:00:00',
     updatedAt: '2026-04-20T10:00:00',
+    customization: { layoutId: 'block_cards', paletteId: 'forest' },
   },
   {
     id: 'pl_003',
@@ -664,6 +676,7 @@ export const planners: Planner[] = [
     archived: true,
     createdAt: '2026-03-25T09:00:00',
     updatedAt: '2026-04-15T22:00:00',
+    customization: { layoutId: 'pie_list', paletteId: 'sunset' },
   },
 ];
 
@@ -753,4 +766,16 @@ export function duplicatePlanner(id: string): Planner {
   };
   planners.push(dup);
   return dup;
+}
+
+/** 시간표 꾸미기 — 레이아웃 템플릿 + 팔레트 저장. */
+export function updatePlannerCustomization(
+  id: string,
+  customization: NonNullable<Planner['customization']>,
+): Planner {
+  const target = planners.find(p => p.id === id);
+  if (!target) throw new Error(`Planner not found: ${id}`);
+  target.customization = { ...customization };
+  target.updatedAt = new Date().toISOString();
+  return target;
 }

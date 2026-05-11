@@ -7,11 +7,12 @@ import { toast } from 'sonner';
 import {
   todayBlocks, currentPersona, getDday, nextActiveBlock,
   blockTypeMeta, subjectLabels, getFeatureRoute, conditionMeta,
-  hasQAccess,
+  hasQAccess, getBlockColor,
   type ConditionLevel, type BlockType, type TimeBlock,
 } from '@/lib/mock';
+import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
 import { SectionHeading } from '@/components/shell/section-heading';
-import { SideTimeline24 } from '@/components/planner/side-timeline-24';
+import { ActiveDayLayout } from '@/components/planner/layouts/active-day-layout';
 import { ConditionBurnoutPanel } from '@/components/planner/condition-burnout-panel';
 import { BlockCard } from '@/components/planner/block-card';
 import { BlockCompleteDialog } from '@/components/planner/block-complete-dialog';
@@ -41,6 +42,7 @@ export function DayView() {
   const next = nextActiveBlock();
   const NextIcon = next ? blockTypeMeta[next.type].Icon : null;
   const qAccess = hasQAccess();
+  const { layoutId, paletteId } = getActiveCustomization();
 
   function notifyQNoAccess() {
     toast.info('🔒 풀림 Q 구독이 필요해요', {
@@ -85,7 +87,7 @@ export function DayView() {
               </button>
             </header>
 
-            <SideTimeline24 blocks={todayBlocks} ddayLabel={ddayLabel} />
+            <ActiveDayLayout blocks={todayBlocks} ddayLabel={ddayLabel} layoutId={layoutId} paletteId={paletteId} />
 
             {next && NextIcon && (
               <div className="bg-pullim-blue-50 border-pullim-blue-100 mt-4 flex items-center gap-3 rounded-xl border p-3">
@@ -132,7 +134,7 @@ export function DayView() {
               >
                 {legendTypes.map(t => (
                   <span key={t} className="inline-flex items-center gap-1 text-[10px] text-pullim-slate-500">
-                    <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: blockTypeMeta[t].colorVar }} />
+                    <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: getBlockColor(t, paletteId) }} />
                     {blockTypeMeta[t].label}
                   </span>
                 ))}
