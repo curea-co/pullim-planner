@@ -44,10 +44,12 @@ type Props = {
   initialPlannerId: string;
   /** 저장 완료 후 콜백 (manage 페이지 refresh 트리거 등) */
   onSaved?: (plannerId: string) => void;
+  /** 섹션 내부 헤더 숨김 — 빌더 페이지처럼 외부 PageHeader가 이미 설명을 제공할 때 사용 */
+  hideHeader?: boolean;
 };
 
 export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
-  function DecorateSection({ planners, initialPlannerId, onSaved }, ref) {
+  function DecorateSection({ planners, initialPlannerId, onSaved, hideHeader }, ref) {
     const sectionRef = useRef<HTMLElement>(null);
     const [selectedId, setSelectedId] = useState(initialPlannerId);
 
@@ -118,6 +120,7 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
         aria-label="시간표 꾸미기"
         className="bg-card rounded-2xl border p-4 space-y-4"
       >
+        {!hideHeader && (
         <header className="flex items-start justify-between gap-2">
           <div>
             <p className="text-pullim-blue-600 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
@@ -132,6 +135,7 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
             </p>
           </div>
         </header>
+        )}
 
         {/* 플래너 picker */}
         {planners.length > 1 && (

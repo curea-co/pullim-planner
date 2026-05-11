@@ -63,9 +63,11 @@ customization?: {
 ### 적용
 - [x] [src/components/planner/views/week-view.tsx](src/components/planner/views/week-view.tsx) — `getActiveCustomization().weekLayoutId` 분기 → `ActiveWeekLayout` 렌더. `bar_week` 선택 시 하단 WeeklyChart 중복 숨김
 
-### (선택) 빌더 통합 — D4 결정: 보류
-- [ ] `/planner/manage/[id]/edit` 안 "레이아웃" 탭 신설 (skip)
-- [ ] `PlannerCard` 메뉴 "꾸미기" 액션 이동 (skip — 현 매니지 섹션 유지)
+### 빌더 통합 — D4 진행 (빌더로 일원화)
+- [x] [src/app/(student)/planner/manage/[id]/edit/page.tsx](src/app/(student)/planner/manage/[id]/edit/page.tsx) — "설정 (8단계)"/"꾸미기" 탭 토글 신설 + `?tab=layout` 쿼리 파라미터 지원
+- [x] [src/components/planner-manage/decorate-section.tsx](src/components/planner-manage/decorate-section.tsx) — `hideHeader` prop 추가 (빌더에서 PageHeader 중복 회피)
+- [x] [src/app/(student)/planner/manage/page.tsx](src/app/(student)/planner/manage/page.tsx) — 상단 DecorateSection 제거. 매니지 페이지는 카드 그리드 + CRUD 단일 책임으로 환원
+- [x] [src/components/planner-manage/planner-card.tsx](src/components/planner-manage/planner-card.tsx) — 메뉴 "꾸미기" 클릭 → `router.push('/planner/manage/{id}/edit?tab=layout')` (PlannerCard 자체는 변경 없음, 매니지 page의 `onDecorate` 핸들러만 router.push로 교체)
 
 ### 검증
 - [x] `bunx tsc --noEmit && bun run lint` 통과
@@ -76,7 +78,7 @@ customization?: {
 - **D1** 데이터 모델: **`customization.weekLayoutId` 옵셔널 필드 추가** (옵션 A, plan-aligned, backward compatible)
 - **D2** school_grid 1~9교시 · heatmap 2h 슬롯 (06~24시 9슬롯)
 - **D3** 매니지 페이지 UI: **일간/주간 탭** + 컨트롤 패널에 `WeekLayoutControl` 별도 섹션
-- **D4** 빌더 통합: **보류** (선택 작업, 추후 별도 plan)
+- **D4** 빌더 통합: **진행 — 빌더로 일원화**. 매니지 페이지에서 꾸미기 섹션 제거, 빌더 편집 페이지(`/manage/[id]/edit`)에 "설정/꾸미기" 탭 토글 추가. 카드 메뉴 "꾸미기" 클릭 시 빌더 layout 탭으로 직행
 
 ## 참고
 
