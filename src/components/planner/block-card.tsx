@@ -1,0 +1,451 @@
+'use client';
+
+import Link from 'next/link';
+import {
+  Play, Check, Pause, ArrowRight, Clock, Lock,
+  MoreVertical, CheckCircle2, SkipForward, Clock4, Sparkles,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  blockTypeMeta,
+  emotionEmojis,
+  subjectLabels,
+  findFeature,
+  getFeatureRoute,
+  hasQAccess,
+  type TimeBlock,
+} from '@/lib/mock';
+import { Progress } from '@/components/ui/progress';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { PedagogyTag } from './pedagogy-tag';
+import { cn } from '@/lib/utils';
+
+const statusMeta = {
+  done:    { label: '완료',  Icon: Check,  className: 'text-pullim-success bg-pullim-success-bg' },
+  doing:   { label: '진행',  Icon: Pause,  className: 'text-pullim-blue-700 bg-pullim-blue-100' },
+  todo:    { label: '대기',  Icon: Play,   className: 'text-pullim-slate-600 bg-pullim-slate-100' },
+  skipped: { label: '미수행', Icon: Clock,  className: 'text-pullim-warn bg-pullim-warn-bg' },
+} as const;
+
+/**
+ * 연결된 기능이 출시 전(future stage)이면 진입을 막는다.
+ * `findFeature`가 known feature를 찾았을 때만 잠금 판정 — alias slug
+ * (`memory/conqueror/exam` 등)는 features에 없지만 `getFeatureRoute`가
+ * 안전한 라우트로 매핑하므로 잠금 아님.
+ */
+function isLockedSlug(slug: string | undefined): boolean {
+  if (!slug) return false;
+  const f = findFeature(slug);
+  return f?.stage === 'future';
+}
+
+/** "HH:MM"에 분 단위 더하기 — 모달/토스트 카피용 데모 헬퍼 */
+function shiftTime(hhmm: string, addMinutes: number): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = h * 60 + m + addMinutes;
+  const nh = Math.floor((total / 60) % 24);
+  const nm = total % 60;
+  return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+}
+
+/* ─── 공유 헬퍼 — full / compact 양쪽에서 동일 동작 ──────────────── */
+
+function notifyLockedAction(e: React.MouseEvent) {
+  e.preventDefault();
+  toast.info('🔒 출시 준비 중', {
+    description: '이 학습 자원은 곧 열려요. 다른 블록부터 진행하세요.',
+  });
+}
+
+function notifyQNoAccess() {
+  toast.info('🔒 풀림 Q 구독이 필요해요', {
+    description: 'Q를 구독하면 학습 블록을 바로 풀이로 진행할 수 있어요.',
+    duration: 3500,
+  });
+}
+
+function notifySkip(block: TimeBlock) {
+  toast(`🚫 ${block.title}`, {
+    id: `block-skip-${block.id}`,
+    description: '오늘 진행하지 않아요. 내일 플랜 우선순위에 자동 반영.',
+    duration: 3000,
+  });
+}
+
+function notifyPostpone(block: TimeBlock) {
+  const newStart = shiftTime(block.start, 30);
+  const newEnd = shiftTime(block.end, 30);
+  toast(`⏰ ${block.title}`, {
+    id: `block-postpone-${block.id}`,
+    description: `30분 뒤로 미뤘어요 — ${newStart}–${newEnd}`,
+    duration: 3000,
+  });
+}
+
+type Props = {
+  block: TimeBlock;
+  /** 학생이 케밥 → "완료 처리"를 누르면 호출. day-view가 받아 모달을 연다. */
+  onComplete?: (block: TimeBlock) => void;
+  /**
+   * 'card' (기본) — 풀 카드: 헤더 + 본문 + reasoning + 엔진 태그 + CTA
+   * 'compact' — 한 줄 행: 시간 · 아이콘 · 제목 · 상태 · CTA. 좌측 시간표와 높이 정합용.
+   */
+  variant?: 'card' | 'compact';
+};
+
+/**
+ * 단일 블록 카드 — 오늘의 학습 블록 리스트.
+ * 시작/이어서/완료 상태별로 다른 톤·CTA + 케밥 액션(완료/스킵/미루기) + 비통상 reasoning 라벨.
+ *
+ * variant='compact' — day-view 우측에서 좌측 시간표와 높이 정합 위해 행 형태로 압축.
+ */
+export function BlockCard({ block, onComplete, variant = 'card' }: Props) {
+  if (variant === 'compact') {
+    return <BlockCardCompact block={block} onComplete={onComplete} />;
+  }
+  return <BlockCardFull block={block} onComplete={onComplete} />;
+}
+
+function BlockCardFull({ block, onComplete }: Props) {
+  const subjectLabel = block.subject === 'rest' ? '휴식' : subjectLabels[block.subject];
+  const meta = blockTypeMeta[block.type];
+  const TypeIcon = meta.Icon;
+  const status = statusMeta[block.status];
+  const StatusIcon = status.Icon;
+  const emotionEmoji = block.emotion ? emotionEmojis[block.emotion] : null;
+  const isActive = block.status === 'doing';
+  const isDone = block.status === 'done';
+  const isBreak = block.type === 'break';
+
+  const locked = isLockedSlug(block.linkedFeatureSlug);
+  const target = block.linkedFeatureSlug && !locked ? getFeatureRoute(block.linkedFeatureSlug) : '#';
+  const qAccess = hasQAccess();
+
+  const onCompleteAction = () => { if (onComplete) onComplete(block); };
+  const onSkip = () => notifySkip(block);
+  const onPostpone = () => notifyPostpone(block);
+
+  return (
+    <article
+      className={cn(
+        'rounded-xl border p-3.5 transition-all',
+        isActive
+          ? 'border-pullim-blue-300 bg-pullim-blue-50/40 shadow-pullim-md ring-1 ring-pullim-blue-200'
+          : isDone
+          ? 'border-pullim-slate-200 bg-pullim-slate-50/50'
+          : 'bg-card hover:border-pullim-blue-200',
+      )}
+    >
+      {/* 헤더: 시간·과목·상태·케밥 */}
+      <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold">
+        <span className="font-mono text-pullim-slate-700">
+          {block.start}–{block.end}
+        </span>
+        <span className="text-pullim-slate-300">·</span>
+        <span className="text-pullim-slate-500">{block.expectedMinutes}분</span>
+        <span className="text-pullim-slate-300">·</span>
+        <span className="text-pullim-slate-700">{subjectLabel}</span>
+        <span className={cn('ml-auto inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px]', status.className)}>
+          <StatusIcon className="h-2.5 w-2.5" />
+          {status.label}
+        </span>
+        {!isBreak && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label={`${block.title} 액션 메뉴`}
+              className="text-pullim-slate-400 hover:bg-pullim-slate-100 hover:text-pullim-slate-700 inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+            >
+              <MoreVertical className="h-3.5 w-3.5" aria-hidden />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={4}>
+              <DropdownMenuItem onClick={onCompleteAction} disabled={isDone}>
+                <CheckCircle2 className="text-pullim-success" />
+                완료 처리
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onPostpone} disabled={isDone}>
+                <Clock4 className="text-pullim-blue-600" />
+                30분 미루기
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onSkip} disabled={isDone}>
+                <SkipForward className="text-pullim-warn" />
+                스킵
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      {/* 본문 */}
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden
+          className="text-pullim-slate-700 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pullim-slate-100"
+          style={{ opacity: isDone ? 0.6 : 1 }}
+        >
+          <TypeIcon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-pullim-slate-500 text-[10px] font-semibold tracking-wider uppercase">
+            {meta.label}
+          </div>
+          <h3 className={cn(
+            'truncate text-sm font-bold',
+            isDone ? 'text-pullim-slate-500 line-through decoration-pullim-slate-300' : 'text-pullim-slate-900',
+          )}>
+            {block.title}
+          </h3>
+        </div>
+        {/* 완료 시 정확도/감정 */}
+        {isDone && block.accuracy !== undefined && (
+          <div className="text-right">
+            <div className="text-pullim-slate-900 font-mono text-sm font-bold">{block.accuracy}%</div>
+            {emotionEmoji && <span aria-hidden className="ml-auto block text-base leading-none">{emotionEmoji}</span>}
+          </div>
+        )}
+      </div>
+
+      {/* 진행 바 (active일 때만) */}
+      {isActive && (
+        <div className="mt-2.5">
+          <Progress value={block.progress * 100} className="h-1.5" />
+        </div>
+      )}
+
+      {/* 엔진 태그 + reasoning + CTA */}
+      {!isBreak && (
+        <div className="mt-2.5 flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1">
+            {block.reasoning && (
+              <span
+                className="bg-pullim-blue-50 text-pullim-blue-700 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                title="이 블록이 여기 있는 이유"
+              >
+                <Sparkles className="h-2.5 w-2.5" aria-hidden />
+                {block.reasoning}
+              </span>
+            )}
+            {block.engines.slice(0, 2).map(e => (
+              <PedagogyTag key={e} engineId={e} />
+            ))}
+            {block.engines.length > 2 && (
+              <span className="text-pullim-slate-400 text-[10px]">+{block.engines.length - 2}</span>
+            )}
+          </div>
+          {!isDone && (
+            locked ? (
+              <button
+                type="button"
+                onClick={notifyLockedAction}
+                className="bg-pullim-slate-50 text-pullim-slate-400 inline-flex cursor-not-allowed items-center gap-1 rounded-lg px-4 py-2.5 text-sm font-semibold"
+                aria-label="출시 준비 중인 자원 — 진입 불가"
+              >
+                <Lock className="h-3.5 w-3.5" />
+                준비 중
+              </button>
+            ) : qAccess ? (
+              <Link
+                href={target}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors',
+                  isActive
+                    ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
+                    : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',
+                )}
+              >
+                {isActive ? '이어서' : '시작'}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={notifyQNoAccess}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors',
+                  isActive
+                    ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
+                    : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',
+                )}
+                aria-label="풀림 Q 미구독 — 클릭하면 구독 안내가 떠요"
+              >
+                {isActive ? '이어서' : '시작'}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+/* ─── compact 행 — day-view 우측에서 좌측 시간표와 높이 정합 ──────── */
+
+function BlockCardCompact({ block, onComplete }: Props) {
+  const meta = blockTypeMeta[block.type];
+  const TypeIcon = meta.Icon;
+  const status = statusMeta[block.status];
+  const StatusIcon = status.Icon;
+  const emotionEmoji = block.emotion ? emotionEmojis[block.emotion] : null;
+  const isActive = block.status === 'doing';
+  const isDone = block.status === 'done';
+  const isBreak = block.type === 'break';
+
+  const locked = isLockedSlug(block.linkedFeatureSlug);
+  const target = block.linkedFeatureSlug && !locked ? getFeatureRoute(block.linkedFeatureSlug) : '#';
+  const qAccess = hasQAccess();
+
+  const onCompleteAction = () => { if (onComplete) onComplete(block); };
+  const onSkip = () => notifySkip(block);
+  const onPostpone = () => notifyPostpone(block);
+
+  return (
+    <article
+      className={cn(
+        'group relative flex flex-col rounded-lg border px-2.5 py-2 transition-all',
+        isActive
+          ? 'border-pullim-blue-300 bg-pullim-blue-50/40 ring-1 ring-pullim-blue-200'
+          : isDone
+          ? 'border-pullim-slate-200 bg-pullim-slate-50/50'
+          : 'bg-card hover:border-pullim-blue-200',
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {/* 시간 */}
+        <span className="text-pullim-slate-700 shrink-0 font-mono text-[10px] font-bold tabular-nums">
+          {block.start}
+        </span>
+
+        {/* 타입 아이콘 */}
+        <span
+          className="bg-pullim-slate-100 text-pullim-slate-700 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+          aria-hidden
+          title={meta.label}
+        >
+          <TypeIcon className={cn('h-3.5 w-3.5', isDone && 'opacity-60')} />
+        </span>
+
+        {/* 제목 + reasoning chip */}
+        <div className="min-w-0 flex-1">
+          <h3
+            className={cn(
+              'truncate text-[12.5px] font-semibold leading-tight',
+              isDone ? 'text-pullim-slate-500 line-through decoration-pullim-slate-300' : 'text-pullim-slate-900',
+            )}
+            title={block.title}
+          >
+            {block.title}
+          </h3>
+          {block.reasoning && (
+            <span
+              className="text-pullim-blue-700 mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-semibold"
+              title="이 블록이 여기 있는 이유"
+            >
+              <Sparkles className="h-2.5 w-2.5" aria-hidden />
+              {block.reasoning}
+            </span>
+          )}
+        </div>
+
+        {/* 완료 시 정확도/감정 */}
+        {isDone && block.accuracy !== undefined && (
+          <span className="text-pullim-slate-700 shrink-0 font-mono text-[11px] font-bold">
+            {block.accuracy}%
+            {emotionEmoji && <span aria-hidden className="ml-1 text-sm">{emotionEmoji}</span>}
+          </span>
+        )}
+
+        {/* 상태 칩 — 항상 노출, 매우 작게 */}
+        <span
+          className={cn(
+            'inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold',
+            status.className,
+          )}
+        >
+          <StatusIcon className="h-2.5 w-2.5" />
+          {status.label}
+        </span>
+
+        {/* CTA — 진행 중·대기일 때만 */}
+        {!isDone && !isBreak && (
+          locked ? (
+            <button
+              type="button"
+              onClick={notifyLockedAction}
+              className="bg-pullim-slate-50 text-pullim-slate-400 inline-flex cursor-not-allowed shrink-0 items-center gap-0.5 rounded-md px-2 py-1 text-[11px] font-bold"
+              aria-label="출시 준비 중"
+            >
+              <Lock className="h-3 w-3" />
+              준비 중
+            </button>
+          ) : qAccess ? (
+            <Link
+              href={target}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors',
+                isActive
+                  ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
+                  : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',
+              )}
+            >
+              {isActive ? '이어서' : '시작'}
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={notifyQNoAccess}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors',
+                isActive
+                  ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
+                  : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',
+              )}
+              aria-label="풀림 Q 미구독 — 클릭하면 구독 안내가 떠요"
+            >
+              {isActive ? '이어서' : '시작'}
+              <ArrowRight className="h-3 w-3" />
+            </button>
+          )
+        )}
+
+        {/* 케밥 — break 외 + hover 시에만 노출 (mobile no-hover는 항상 약하게 노출) */}
+        {!isBreak && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label={`${block.title} 액션 메뉴`}
+              className="text-pullim-slate-400 hover:bg-pullim-slate-100 hover:text-pullim-slate-700 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all opacity-50 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+            >
+              <MoreVertical className="h-3.5 w-3.5" aria-hidden />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={4}>
+              <DropdownMenuItem onClick={onCompleteAction} disabled={isDone}>
+                <CheckCircle2 className="text-pullim-success" />
+                완료 처리
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onPostpone} disabled={isDone}>
+                <Clock4 className="text-pullim-blue-600" />
+                30분 미루기
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onSkip} disabled={isDone}>
+                <SkipForward className="text-pullim-warn" />
+                스킵
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      {/* progress bar (active일 때만, 행 하단 1px 라인) */}
+      {isActive && (
+        <div className="bg-pullim-slate-100 mt-1.5 h-0.5 overflow-hidden rounded-full">
+          <div
+            className="bg-pullim-blue-500 h-full"
+            style={{ width: `${Math.round(block.progress * 100)}%` }}
+          />
+        </div>
+      )}
+    </article>
+  );
+}
