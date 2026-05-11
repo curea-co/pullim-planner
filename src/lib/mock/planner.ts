@@ -10,6 +10,7 @@ import {
 import type { SubjectKey } from './persona';
 import type { PaletteId } from '@/lib/tokens/palettes';
 import type { LayoutTemplateId } from '@/lib/tokens/layout-templates';
+import type { WeekLayoutId } from '@/lib/tokens/week-layouts';
 
 export type BlockType =
   | 'concept'      // 개념 학습 (풀림 비주얼)
@@ -591,11 +592,12 @@ export type Planner = {
   createdAt: string;
   updatedAt: string;
   /**
-   * 시간표 꾸미기 — 일간 레이아웃 템플릿 + 색상 팔레트.
-   * 미지정 시 {vertical_timeline, pullim_blue}로 폴백 (기존 동작 무변경).
+   * 시간표 꾸미기 — 일간/주간 레이아웃 + 색상 팔레트.
+   * 미지정 시 {vertical_timeline, matrix_by_type, pullim_blue}로 폴백 (기존 동작 무변경).
    */
   customization?: {
-    layoutId: LayoutTemplateId;
+    layoutId: LayoutTemplateId;        // 일간
+    weekLayoutId?: WeekLayoutId;       // 주간 (옵셔널 — 미지정 시 matrix_by_type)
     paletteId: PaletteId;
   };
 };
@@ -625,7 +627,7 @@ export const planners: Planner[] = [
     archived: false,
     createdAt: '2026-04-15T09:00:00',
     updatedAt: '2026-04-23T20:00:00',
-    customization: { layoutId: 'vertical_timeline', paletteId: 'pullim_blue' },
+    customization: { layoutId: 'vertical_timeline', weekLayoutId: 'matrix_by_type', paletteId: 'pullim_blue' },
   },
   {
     id: 'pl_002',
@@ -651,7 +653,7 @@ export const planners: Planner[] = [
     archived: false,
     createdAt: '2026-04-20T10:00:00',
     updatedAt: '2026-04-20T10:00:00',
-    customization: { layoutId: 'block_cards', paletteId: 'forest' },
+    customization: { layoutId: 'block_cards', weekLayoutId: 'school_grid', paletteId: 'forest' },
   },
   {
     id: 'pl_003',
@@ -676,7 +678,7 @@ export const planners: Planner[] = [
     archived: true,
     createdAt: '2026-03-25T09:00:00',
     updatedAt: '2026-04-15T22:00:00',
-    customization: { layoutId: 'pie_list', paletteId: 'sunset' },
+    customization: { layoutId: 'pie_list', weekLayoutId: 'heatmap', paletteId: 'sunset' },
   },
 ];
 

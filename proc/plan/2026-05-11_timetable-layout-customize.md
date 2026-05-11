@@ -43,40 +43,40 @@ customization?: {
 ## 작업 항목
 
 ### 데이터 모델
-- [ ] `src/lib/tokens/week-layouts.ts` — 4종 메타 (id/label/description/glyph)
-- [ ] `src/lib/mock/planner.ts` — `customization.weekLayoutId` 필드 추가 + 시드 3건 디폴트
-- [ ] `src/lib/mock/planner.ts` — `updatePlannerCustomization` 시그니처에 `weekLayoutId` 포함
-- [ ] `src/lib/mock/index.ts` — 신규 심볼 재export
-- [ ] `src/lib/hooks/use-planner-customization.ts` — return 타입에 `weekLayoutId` 추가
+- [x] [src/lib/tokens/week-layouts.ts](src/lib/tokens/week-layouts.ts) — 4종 메타 (id/label/description/glyph)
+- [x] [src/lib/mock/planner.ts](src/lib/mock/planner.ts) — `customization.weekLayoutId` 옵셔널 필드 추가 + 시드 3건 디폴트(matrix_by_type/school_grid/heatmap)
+- [x] `updatePlannerCustomization` 시그니처 — 기존 `NonNullable<Planner['customization']>` generic이라 타입 확장만으로 자동 흡수 (별도 변경 불필요)
+- [x] [src/lib/mock/index.ts](src/lib/mock/index.ts) — `weekLayouts`/`defaultWeekLayoutId`/`weekLayoutOrder`/`WeekLayoutMeta`/`WeekLayoutId` 재export
+- [x] [src/lib/hooks/use-planner-customization.ts](src/lib/hooks/use-planner-customization.ts) — `Customization` 타입에 `weekLayoutId` 추가
 
 ### 주간 레이아웃 컴포넌트
-- [ ] `src/components/planner/layouts/week/matrix-by-type.tsx` — 기존 `WeekGrid` 래핑 (paletteId/compact)
-- [ ] `src/components/planner/layouts/week/school-grid.tsx` 신설 (교시×요일 격자)
-- [ ] `src/components/planner/layouts/week/bar-week.tsx` 신설 (`WeeklyChart` 재사용)
-- [ ] `src/components/planner/layouts/week/heatmap.tsx` 신설 (`MonthHeatmap` 응용)
-- [ ] `src/components/planner/layouts/active-week-layout.tsx` — weekLayoutId 분기 스위처
+- [x] [src/components/planner/layouts/week/matrix-by-type.tsx](src/components/planner/layouts/week/matrix-by-type.tsx) — 기존 `WeekGrid` 래핑 (paletteId/compact)
+- [x] [src/components/planner/layouts/week/school-grid.tsx](src/components/planner/layouts/week/school-grid.tsx) 신설 (1~9교시 × 7요일, 블록 타입 비례 배분)
+- [x] [src/components/planner/layouts/week/bar-week.tsx](src/components/planner/layouts/week/bar-week.tsx) 신설 (`weeklyStudyHours` + 목표선)
+- [x] [src/components/planner/layouts/week/heatmap.tsx](src/components/planner/layouts/week/heatmap.tsx) 신설 (06~24시 2h 슬롯 × 7요일, 평일 저녁/주말 오후 가중치)
+- [x] [src/components/planner/layouts/active-week-layout.tsx](src/components/planner/layouts/active-week-layout.tsx) — weekLayoutId 분기 스위처
 
 ### 매니지 페이지 통합
-- [ ] `decorate-section.tsx` — 미리보기에 *주간* 토글 추가 (일간/주간 탭 또는 좌우 듀얼)
-- [ ] `decorate-section.tsx` — `LayoutControl`을 일간/주간 듀얼로 확장 (또는 별도 `WeekLayoutControl`)
+- [x] `decorate-section.tsx` — 미리보기에 *일간/주간 탭* 추가
+- [x] `decorate-section.tsx` — 컨트롤 패널에 `WeekLayoutControl` 추가 (별도 컴포넌트로 분리 — D3 채택안)
 
 ### 적용
-- [ ] `src/components/planner/views/week-view.tsx` — `getActiveCustomization().weekLayoutId` 분기 → `ActiveWeekLayout` 렌더
+- [x] [src/components/planner/views/week-view.tsx](src/components/planner/views/week-view.tsx) — `getActiveCustomization().weekLayoutId` 분기 → `ActiveWeekLayout` 렌더. `bar_week` 선택 시 하단 WeeklyChart 중복 숨김
 
-### (선택) 빌더 통합 — 별도 의사결정 필요
-- [ ] `/planner/manage/[id]/edit` 안 "레이아웃" 탭 신설
-- [ ] `PlannerCard` 메뉴 "꾸미기" 액션을 빌더 탭으로 이동 vs 현 매니지 섹션 유지
+### (선택) 빌더 통합 — D4 결정: 보류
+- [ ] `/planner/manage/[id]/edit` 안 "레이아웃" 탭 신설 (skip)
+- [ ] `PlannerCard` 메뉴 "꾸미기" 액션 이동 (skip — 현 매니지 섹션 유지)
 
 ### 검증
-- [ ] `bunx tsc --noEmit && bun run lint`
-- [ ] `bun dev` (3030) — 매니지 페이지에서 주간 레이아웃 4종 토글 × 팔레트 7종 → `/planner?view=week` 진입 시 활성 플래너 설정 반영
+- [x] `bunx tsc --noEmit && bun run lint` 통과
+- [x] `bun dev` (3030) — `/planner/manage` HTML에서 "일간 레이아웃"/"주간 레이아웃"/"타입×요일"/"학교형"/"요일별 막대"/"히트맵" 텍스트 노출 확인. `/planner?view=week` 200 응답
 
-## 의사결정 필요 (착수 전)
+## 의사결정 (확정)
 
-- **D1** 데이터 모델: `weekLayoutId` 필드 추가 / `layoutId`를 `{ day, week }` 객체로 변경?
-- **D2** `school_grid`·`heatmap` 디자인 디테일: 교시 정의(N교시까지?), 히트맵 시간 단위(2h? 1h?)
-- **D3** 매니지 페이지 UI: 일간/주간 탭 / 좌우 듀얼 / 별도 카드?
-- **D4** 빌더 통합 (선택) — 진행 / 보류?
+- **D1** 데이터 모델: **`customization.weekLayoutId` 옵셔널 필드 추가** (옵션 A, plan-aligned, backward compatible)
+- **D2** school_grid 1~9교시 · heatmap 2h 슬롯 (06~24시 9슬롯)
+- **D3** 매니지 페이지 UI: **일간/주간 탭** + 컨트롤 패널에 `WeekLayoutControl` 별도 섹션
+- **D4** 빌더 통합: **보류** (선택 작업, 추후 별도 plan)
 
 ## 참고
 
