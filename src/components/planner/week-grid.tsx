@@ -2,17 +2,26 @@
 
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { weekView, blockTypeMeta, type BlockType } from '@/lib/mock';
+import { weekView, blockTypeMeta, getBlockColor, type BlockType, type PaletteId } from '@/lib/mock';
+import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
 import { cn } from '@/lib/utils';
 
 const visibleTypes: BlockType[] = ['concept', 'practice', 'review', 'memorize', 'mock', 'tutor', 'self_explain'];
+
+type WeekGridProps = {
+  /** 색상 팔레트 override (미리보기용). 미지정 시 활성 플래너 팔레트. */
+  paletteId?: PaletteId;
+  /** 컴팩트 모드 — 미리보기 영역에서 헤더/범례 축소 */
+  compact?: boolean;
+};
 
 /**
  * 주간 그리드 — 7열 × 블록 타입 행. 각 셀: 블록 수 + 색상 강도(분 단위).
  * 핸드오프 4.4 (주간 뷰 단순화 버전).
  */
-export function WeekGrid() {
+export function WeekGrid({ paletteId, compact }: WeekGridProps = {}) {
   const router = useRouter();
+  const activePalette = paletteId ?? getActiveCustomization().paletteId;
   // 셀 색상 강도 산출용
   const maxMinutes = Math.max(...weekView.flatMap(d => d.blocks.map(b => b.minutes)));
 
@@ -28,34 +37,36 @@ export function WeekGrid() {
 
   return (
     <section className="bg-card overflow-hidden rounded-2xl border">
-      <header className="border-b p-4">
-        <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
-          주간 그리드
-        </p>
-        <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
-          이번 주 학습 분포
-        </h2>
-        <p className="text-pullim-slate-500 mt-0.5 text-[11px]">
-          행 = 블록 타입 · 열 = 요일 · 막대 길이 = 학습 시간
-        </p>
+      {!compact && (
+        <header className="border-b p-4">
+          <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+            주간 그리드
+          </p>
+          <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
+            이번 주 학습 분포
+          </h2>
+          <p className="text-pullim-slate-500 mt-0.5 text-[11px]">
+            행 = 블록 타입 · 열 = 요일 · 막대 길이 = 학습 시간
+          </p>
 
-        {/* 색상 범례 — week 컨텍스트에서 시간 분포 해석에 필요 */}
-        <ul className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-          {visibleTypes.map(t => {
-            const m = blockTypeMeta[t];
-            return (
-              <li key={t} className="text-pullim-slate-600 inline-flex items-center gap-1 text-[10px]">
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-sm"
-                  style={{ background: m.colorVar }}
-                  aria-hidden
-                />
-                {m.label}
-              </li>
-            );
-          })}
-        </ul>
-      </header>
+          {/* 색상 범례 — week 컨텍스트에서 시간 분포 해석에 필요 */}
+          <ul className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {visibleTypes.map(t => {
+              const m = blockTypeMeta[t];
+              return (
+                <li key={t} className="text-pullim-slate-600 inline-flex items-center gap-1 text-[10px]">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-sm"
+                    style={{ background: getBlockColor(t, activePalette) }}
+                    aria-hidden
+                  />
+                  {m.label}
+                </li>
+              );
+            })}
+          </ul>
+        </header>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
@@ -107,7 +118,7 @@ export function WeekGrid() {
                     const intensity = block ? block.minutes / maxMinutes : 0;
                     return (
                       <td key={d.day} className="border-pullim-slate-100 border-l p-1">
-                        <Cell minutes={block?.minutes ?? 0} count={block?.count ?? 0} intensity={intensity} color={meta.colorVar} />
+                        <Cell minutes={block?.minutes ?? 0} count={block?.count ?? 0} intensity={intensity} color={getBlockColor(type, activePalette)} />
                       </td>
                     );
                   })}

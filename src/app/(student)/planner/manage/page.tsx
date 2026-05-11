@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Wrench, Plus, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  getPlanners, getActivePlanner, activatePlanner, deletePlanner,
+  getPlanners, activatePlanner, deletePlanner,
   archivePlanner, duplicatePlanner, findPlanner,
   type Planner,
 } from '@/lib/mock';
@@ -14,6 +14,7 @@ import { PlannerCard } from '@/components/planner-manage/planner-card';
 import { ActivateConfirmDialog } from '@/components/planner-manage/activate-confirm-dialog';
 import { DeleteConfirmDialog } from '@/components/planner-manage/delete-confirm-dialog';
 import { EmptyState } from '@/components/planner-manage/empty-state';
+import { DecorateSection, type DecorateSectionHandle } from '@/components/planner-manage/decorate-section';
 import { cn } from '@/lib/utils';
 
 /**
@@ -27,6 +28,7 @@ export default function PlannerManagePage() {
   const [activateTarget, setActivateTarget] = useState<Planner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Planner | null>(null);
   const [tick, setTick] = useState(0); // 활성 변경·CRUD 후 강제 re-render
+  const decorateRef = useRef<DecorateSectionHandle>(null);
 
   // tick 의존 — useMemo 무효화
   const allPlanners = useMemo(
@@ -114,6 +116,24 @@ export default function PlannerManagePage() {
   const totalCount = inactive.length + (active ? 1 : 0);
   const isEmpty = totalCount === 0;
 
+  // 꾸미기 후보 — 활성 + 비활성 + 아카이브 모두 편집 가능
+  const decorateCandidates = useMemo(() => {
+    return [
+      ...(active ? [active] : []),
+      ...inactive,
+      ...archivedList,
+    ];
+  }, [active, inactive, archivedList]);
+  const decorateInitialId = active?.id ?? inactive[0]?.id ?? archivedList[0]?.id ?? '';
+
+  function onDecorate(id: string) {
+    decorateRef.current?.focusPlanner(id);
+  }
+
+  function onCustomizationSaved() {
+    refresh();
+  }
+
   return (
     <div key={tick} className="space-y-5">
       <PageHeader
@@ -135,6 +155,16 @@ export default function PlannerManagePage() {
         <EmptyState />
       ) : (
         <div className="space-y-5">
+          {/* 꾸미기 — 레이아웃 템플릿 + 색상 팔레트 */}
+          {decorateCandidates.length > 0 && (
+            <DecorateSection
+              ref={decorateRef}
+              planners={decorateCandidates}
+              initialPlannerId={decorateInitialId}
+              onSaved={onCustomizationSaved}
+            />
+          )}
+
           {/* 활성 + 비활성 카드들 */}
           <section
             className={cn(
@@ -149,6 +179,7 @@ export default function PlannerManagePage() {
                 onDuplicate={onDuplicate}
                 onArchive={onArchive}
                 onDelete={onDeleteRequest}
+                onDecorate={onDecorate}
               />
             )}
             {inactive.map(p => (
@@ -159,6 +190,7 @@ export default function PlannerManagePage() {
                 onDuplicate={onDuplicate}
                 onArchive={onArchive}
                 onDelete={onDeleteRequest}
+                onDecorate={onDecorate}
               />
             ))}
           </section>
@@ -190,6 +222,7 @@ export default function PlannerManagePage() {
                       onDuplicate={onDuplicate}
                       onArchive={onArchive}
                       onDelete={onDeleteRequest}
+                      onDecorate={onDecorate}
                     />
                   ))}
                 </div>

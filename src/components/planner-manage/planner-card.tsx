@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import {
   CalendarClock, Clock, BookOpen, MoreVertical, CheckCircle2,
-  Pencil, Copy, Archive, Trash2, Sparkles,
+  Pencil, Copy, Archive, Trash2, Sparkles, Palette,
 } from 'lucide-react';
 import { type Planner } from '@/lib/mock';
 import { examTypeMeta, blockPatternMeta } from '@/components/planner-builder/builder-types';
@@ -19,6 +19,7 @@ type Props = {
   onDuplicate: (id: string) => void;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
+  onDecorate: (id: string) => void;
 };
 
 /** 일수 차이 — 음수면 과거 */
@@ -41,7 +42,7 @@ function formatRelativeUpdate(iso: string, today = new Date('2026-04-24')): stri
   return `${Math.floor(day / 7)}주 전 갱신`;
 }
 
-export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDelete }: Props) {
+export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDelete, onDecorate }: Props) {
   const router = useRouter();
   const dday = diffDays(planner.examStartDate);
   const subjectCount = Object.keys(planner.subjectUnits).length;
@@ -115,6 +116,10 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
             <DropdownMenuItem onClick={() => router.push(`/planner/manage/${planner.id}/edit`)}>
               <Pencil className="text-pullim-slate-700" />
               수정
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDecorate(planner.id)}>
+              <Palette className="text-pullim-blue-600" />
+              꾸미기
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDuplicate(planner.id)}>
               <Copy className="text-pullim-slate-700" />

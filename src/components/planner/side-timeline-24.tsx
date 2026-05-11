@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { blockTypeMeta, plannerProgress, type TimeBlock } from '@/lib/mock';
+import { plannerProgress, getBlockColor, type TimeBlock, type PaletteId } from '@/lib/mock';
+import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
 import { cn } from '@/lib/utils';
 
 const CELL_HEIGHT = 12;
@@ -25,6 +26,10 @@ type Props = {
   now?: string;
   ddayLabel?: string;
   className?: string;
+  /** 색상 팔레트 override (미리보기용). 미지정 시 활성 플래너 팔레트. */
+  paletteId?: PaletteId;
+  /** 컴팩트 모드 — 미리보기 영역에서 헤더·스크롤·범례 축소 */
+  compact?: boolean;
 };
 
 function timeToMinutes(t: string): number {
@@ -47,7 +52,8 @@ function minutesToHHMM(min: number): string {
  * 시각: 셀 채색 = 학습 점유 시간 (형광펜 막대의 디지털 번역).
  * 30분 단위 셀, 00:00~24:00 풀. 첫 mount 시 06:00 부근으로 자동 스크롤.
  */
-export function SideTimeline24({ blocks, now, ddayLabel, className }: Props) {
+export function SideTimeline24({ blocks, now, ddayLabel, className, paletteId, compact }: Props) {
+  const activePalette = paletteId ?? getActiveCustomization().paletteId;
   // SSR/hydration mismatch 회피: 첫 페인트는 18:50 고정, 그 후 매분 갱신
   const [liveNow, setLiveNow] = useState<string>(now ?? '18:50');
   useEffect(() => {
@@ -105,7 +111,7 @@ export function SideTimeline24({ blocks, now, ddayLabel, className }: Props) {
     if (block.type === 'break') {
       return { background: 'var(--color-pullim-slate-200)', opacity: 0.5 };
     }
-    const color = blockTypeMeta[block.type].colorVar;
+    const color = getBlockColor(block.type, activePalette);
     if (block.status === 'skipped') {
       return {
         background: `repeating-linear-gradient(45deg, ${color} 0 3px, transparent 3px 6px)`,
@@ -118,28 +124,33 @@ export function SideTimeline24({ blocks, now, ddayLabel, className }: Props) {
 
   return (
     <div className={cn('relative', className)}>
-      {/* 헤더 위젯 — D-day · 누적 시간 · 완료 블록 */}
-      <div className="mb-2 flex items-center gap-2">
-        {ddayLabel && (
-          <span className="text-pullim-blue-700 bg-pullim-blue-50 inline-flex rounded-full px-2 py-0.5 font-mono text-[10px] font-bold">
-            {ddayLabel}
+      {/* 헤더 위젯 — D-day · 누적 시간 · 완료 블록 (compact 모드 시 숨김) */}
+      {!compact && (
+        <div className="mb-2 flex items-center gap-2">
+          {ddayLabel && (
+            <span className="text-pullim-blue-700 bg-pullim-blue-50 inline-flex rounded-full px-2 py-0.5 font-mono text-[10px] font-bold">
+              {ddayLabel}
+            </span>
+          )}
+          <span className="text-pullim-slate-700 font-mono text-[11px] font-semibold">
+            {(doneMinutes / 60).toFixed(1)}h
+            <span className="text-pullim-slate-400"> / {(expectedMinutes / 60).toFixed(1)}h</span>
           </span>
-        )}
-        <span className="text-pullim-slate-700 font-mono text-[11px] font-semibold">
-          {(doneMinutes / 60).toFixed(1)}h
-          <span className="text-pullim-slate-400"> / {(expectedMinutes / 60).toFixed(1)}h</span>
-        </span>
-        <span className="text-pullim-slate-300 text-[11px]">·</span>
-        <span className="text-pullim-slate-700 font-mono text-[11px] font-semibold">
-          {summary.done}
-          <span className="text-pullim-slate-400">/{summary.total} 블록</span>
-        </span>
-      </div>
+          <span className="text-pullim-slate-300 text-[11px]">·</span>
+          <span className="text-pullim-slate-700 font-mono text-[11px] font-semibold">
+            {summary.done}
+            <span className="text-pullim-slate-400">/{summary.total} 블록</span>
+          </span>
+        </div>
+      )}
 
       {/* 그리드 wrapper — 24h 풀 표시, 6시 부근부터 보이게 자동 scroll */}
       <div
         ref={scrollRef}
-        className="border-pullim-slate-100 max-h-[480px] overflow-y-auto rounded-lg border"
+        className={cn(
+          'border-pullim-slate-100 overflow-y-auto rounded-lg border',
+          compact ? 'max-h-[220px]' : 'max-h-[480px]',
+        )}
         aria-label="24시간 학습 사이드 트래커"
       >
         <div className="relative flex" style={{ height: TOTAL_CELLS * CELL_HEIGHT }}>
