@@ -18,13 +18,19 @@ import {
   paletteOrder,
   layoutTemplates,
   layoutOrder,
+  weekLayouts,
+  weekLayoutOrder,
   type Planner,
   type PaletteId,
   type LayoutTemplateId,
+  type WeekLayoutId,
 } from '@/lib/mock';
 import { getCustomization } from '@/lib/hooks/use-planner-customization';
 import { ActiveDayLayout } from '@/components/planner/layouts/active-day-layout';
+import { ActiveWeekLayout } from '@/components/planner/layouts/active-week-layout';
 import { cn } from '@/lib/utils';
+
+type PreviewTab = 'day' | 'week';
 
 export type DecorateSectionHandle = {
   /** 특정 플래너로 컨텍스트 전환 + 섹션으로 스크롤 */
@@ -38,10 +44,12 @@ type Props = {
   initialPlannerId: string;
   /** 저장 완료 후 콜백 (manage 페이지 refresh 트리거 등) */
   onSaved?: (plannerId: string) => void;
+  /** 섹션 내부 헤더 숨김 — 빌더 페이지처럼 외부 PageHeader가 이미 설명을 제공할 때 사용 */
+  hideHeader?: boolean;
 };
 
 export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
-  function DecorateSection({ planners, initialPlannerId, onSaved }, ref) {
+  function DecorateSection({ planners, initialPlannerId, onSaved, hideHeader }, ref) {
     const sectionRef = useRef<HTMLElement>(null);
     const [selectedId, setSelectedId] = useState(initialPlannerId);
 
@@ -64,20 +72,27 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
 
     // 드래프트 — 저장값을 초기값으로
     const [draftLayout, setDraftLayout] = useState<LayoutTemplateId>(saved.layoutId);
+    const [draftWeekLayout, setDraftWeekLayout] = useState<WeekLayoutId>(saved.weekLayoutId);
     const [draftPalette, setDraftPalette] = useState<PaletteId>(saved.paletteId);
+    const [previewTab, setPreviewTab] = useState<PreviewTab>('day');
 
     // 플래너 전환 시 draft를 새 플래너의 저장값으로 리셋 (Adjusting state on prop changes 패턴)
     const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
     if (selectedId !== prevSelectedId) {
       setPrevSelectedId(selectedId);
       setDraftLayout(saved.layoutId);
+      setDraftWeekLayout(saved.weekLayoutId);
       setDraftPalette(saved.paletteId);
     }
 
-    const isDirty = draftLayout !== saved.layoutId || draftPalette !== saved.paletteId;
+    const isDirty =
+      draftLayout !== saved.layoutId
+      || draftWeekLayout !== saved.weekLayoutId
+      || draftPalette !== saved.paletteId;
 
     function reset() {
       setDraftLayout(saved.layoutId);
+      setDraftWeekLayout(saved.weekLayoutId);
       setDraftPalette(saved.paletteId);
     }
 
@@ -85,10 +100,11 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
       if (!selectedPlanner) return;
       updatePlannerCustomization(selectedPlanner.id, {
         layoutId: draftLayout,
+        weekLayoutId: draftWeekLayout,
         paletteId: draftPalette,
       });
       toast.success('🎨 시간표 꾸미기 저장됨', {
-        description: `${selectedPlanner.name} — ${layoutTemplates[draftLayout].label} · ${palettes[draftPalette].label}`,
+        description: `${selectedPlanner.name} — 일간 ${layoutTemplates[draftLayout].label} · 주간 ${weekLayouts[draftWeekLayout].label} · ${palettes[draftPalette].label}`,
         duration: 2500,
       });
       onSaved?.(selectedPlanner.id);
@@ -104,6 +120,7 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
         aria-label="시간표 꾸미기"
         className="bg-card rounded-2xl border p-4 space-y-4"
       >
+        {!hideHeader && (
         <header className="flex items-start justify-between gap-2">
           <div>
             <p className="text-pullim-blue-600 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
@@ -114,10 +131,11 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
               레이아웃과 색상 고르기
             </h2>
             <p className="text-pullim-slate-500 mt-0.5 text-[11px]">
-              템플릿과 팔레트를 골라 시간표를 내 스타일로 — 저장 시 일간 뷰에 즉시 반영
+              템플릿과 팔레트를 골라 시간표를 내 스타일로 — 저장 시 일간/주간 뷰에 즉시 반영
             </p>
           </div>
         </header>
+        )}
 
         {/* 플래너 picker */}
         {planners.length > 1 && (
@@ -133,19 +151,53 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           {/* 미리보기 */}
           <div>
-            <p className="text-pullim-slate-500 mb-1.5 text-[10px] font-bold tracking-wider uppercase">
-              미리보기
-            </p>
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <p className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
+                미리보기
+              </p>
+              {/* 일간/주간 탭 */}
+              <div role="tablist" aria-label="미리보기 뷰 선택" className="inline-flex rounded-lg border border-pullim-slate-200 bg-pullim-slate-50 p-0.5">
+                {(['day', 'week'] as const).map(tab => {
+                  const selected = previewTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      onClick={() => setPreviewTab(tab)}
+                      className={cn(
+                        'rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500',
+                        selected
+                          ? 'bg-card text-pullim-blue-700 shadow-sm'
+                          : 'text-pullim-slate-500 hover:text-pullim-slate-700',
+                      )}
+                    >
+                      {tab === 'day' ? '일간' : '주간'}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className="bg-pullim-slate-25 border-pullim-slate-100 rounded-xl border p-3">
-              <ActiveDayLayout
-                blocks={todayBlocks}
-                layoutId={draftLayout}
-                paletteId={draftPalette}
-                compact
-                ddayLabel={undefined}
-              />
+              {previewTab === 'day' ? (
+                <ActiveDayLayout
+                  blocks={todayBlocks}
+                  layoutId={draftLayout}
+                  paletteId={draftPalette}
+                  compact
+                  ddayLabel={undefined}
+                />
+              ) : (
+                <ActiveWeekLayout
+                  weekLayoutId={draftWeekLayout}
+                  paletteId={draftPalette}
+                  compact
+                />
+              )}
               <p className="text-pullim-slate-400 mt-2 text-[10px]">
-                * 미리보기에는 오늘 데모 블록이 사용됩니다.
+                * 미리보기에는 오늘·이번 주 데모 데이터가 사용됩니다.
               </p>
             </div>
           </div>
@@ -153,6 +205,7 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
           {/* 컨트롤 */}
           <div className="space-y-3">
             <LayoutControl value={draftLayout} onChange={setDraftLayout} />
+            <WeekLayoutControl value={draftWeekLayout} onChange={setDraftWeekLayout} />
             <PaletteControl value={draftPalette} onChange={setDraftPalette} />
 
             {/* 저장 / 되돌리기 */}
@@ -260,7 +313,7 @@ function LayoutControl({
   return (
     <fieldset>
       <legend className="text-pullim-slate-500 mb-1.5 text-[10px] font-bold tracking-wider uppercase">
-        레이아웃 템플릿
+        일간 레이아웃
       </legend>
       <div className="grid grid-cols-2 gap-1.5">
         {layoutOrder.map(id => {
@@ -280,6 +333,69 @@ function LayoutControl({
               <input
                 type="radio"
                 name="layout"
+                value={id}
+                checked={selected}
+                onChange={() => onChange(id)}
+                className="sr-only"
+              />
+              <span
+                aria-hidden
+                className={cn(
+                  'mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md font-mono text-sm',
+                  selected ? 'bg-pullim-blue-600 text-white' : 'bg-pullim-slate-100 text-pullim-slate-700',
+                )}
+              >
+                {meta.glyph}
+              </span>
+              <span className="min-w-0">
+                <span className={cn(
+                  'block text-xs font-bold',
+                  selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900',
+                )}>
+                  {meta.label}
+                </span>
+                <span className="text-pullim-slate-500 mt-0.5 block text-[10px] leading-tight">
+                  {meta.description}
+                </span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
+function WeekLayoutControl({
+  value,
+  onChange,
+}: {
+  value: WeekLayoutId;
+  onChange: (id: WeekLayoutId) => void;
+}) {
+  return (
+    <fieldset>
+      <legend className="text-pullim-slate-500 mb-1.5 text-[10px] font-bold tracking-wider uppercase">
+        주간 레이아웃
+      </legend>
+      <div className="grid grid-cols-2 gap-1.5">
+        {weekLayoutOrder.map(id => {
+          const meta = weekLayouts[id];
+          const selected = id === value;
+          return (
+            <label
+              key={id}
+              className={cn(
+                'group relative flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 transition-colors',
+                'focus-within:ring-2 focus-within:ring-pullim-blue-500',
+                selected
+                  ? 'border-pullim-blue-500 bg-pullim-blue-50/50 ring-1 ring-pullim-blue-300'
+                  : 'border-pullim-slate-200 bg-card hover:border-pullim-blue-200',
+              )}
+            >
+              <input
+                type="radio"
+                name="week-layout"
                 value={id}
                 checked={selected}
                 onChange={() => onChange(id)}

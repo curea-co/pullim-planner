@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Wrench, Plus, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -14,7 +15,6 @@ import { PlannerCard } from '@/components/planner-manage/planner-card';
 import { ActivateConfirmDialog } from '@/components/planner-manage/activate-confirm-dialog';
 import { DeleteConfirmDialog } from '@/components/planner-manage/delete-confirm-dialog';
 import { EmptyState } from '@/components/planner-manage/empty-state';
-import { DecorateSection, type DecorateSectionHandle } from '@/components/planner-manage/decorate-section';
 import { cn } from '@/lib/utils';
 
 /**
@@ -24,11 +24,11 @@ import { cn } from '@/lib/utils';
  * 빌더는 하위 라우트(/manage/new, /manage/[id]/edit)로 종속.
  */
 export default function PlannerManagePage() {
+  const router = useRouter();
   const [showArchived, setShowArchived] = useState(false);
   const [activateTarget, setActivateTarget] = useState<Planner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Planner | null>(null);
   const [tick, setTick] = useState(0); // 활성 변경·CRUD 후 강제 re-render
-  const decorateRef = useRef<DecorateSectionHandle>(null);
 
   // tick 의존 — useMemo 무효화
   const allPlanners = useMemo(
@@ -116,22 +116,9 @@ export default function PlannerManagePage() {
   const totalCount = inactive.length + (active ? 1 : 0);
   const isEmpty = totalCount === 0;
 
-  // 꾸미기 후보 — 활성 + 비활성 + 아카이브 모두 편집 가능
-  const decorateCandidates = useMemo(() => {
-    return [
-      ...(active ? [active] : []),
-      ...inactive,
-      ...archivedList,
-    ];
-  }, [active, inactive, archivedList]);
-  const decorateInitialId = active?.id ?? inactive[0]?.id ?? archivedList[0]?.id ?? '';
-
+  /** 꾸미기 — 빌더 편집 페이지 layout 탭으로 점프 */
   function onDecorate(id: string) {
-    decorateRef.current?.focusPlanner(id);
-  }
-
-  function onCustomizationSaved() {
-    refresh();
+    router.push(`/planner/manage/${id}/edit?tab=layout`);
   }
 
   return (
@@ -155,16 +142,6 @@ export default function PlannerManagePage() {
         <EmptyState />
       ) : (
         <div className="space-y-5">
-          {/* 꾸미기 — 레이아웃 템플릿 + 색상 팔레트 */}
-          {decorateCandidates.length > 0 && (
-            <DecorateSection
-              ref={decorateRef}
-              planners={decorateCandidates}
-              initialPlannerId={decorateInitialId}
-              onSaved={onCustomizationSaved}
-            />
-          )}
-
           {/* 활성 + 비활성 카드들 */}
           <section
             className={cn(
