@@ -49,14 +49,6 @@ export const plannerSection: NavSubItem[] = [
   { href: '/planner/onboarding', label: '소개하기',    icon: BookOpen, description: '5분 사용법 가이드' },
 ];
 
-/** 사이드바 최상단 별도 항목 */
-export const studentHomeItem: NavItem = {
-  href: '/',
-  label: '홈',
-  icon: Home,
-  description: '플래너 진입점',
-};
-
 /** 도메인 — 플래너 단일 */
 export const studentDomains: NavItem[] = [
   {
@@ -68,7 +60,7 @@ export const studentDomains: NavItem[] = [
 
 /** 호환용 — 단일 그룹 구조 */
 export const studentNav: NavGroup[] = [
-  { label: '', items: [studentHomeItem, ...studentDomains] },
+  { label: '', items: [...studentDomains] },
 ];
 
 export function navForRole(_role: Role): NavGroup[] {
@@ -137,7 +129,10 @@ export function buildBreadcrumb(pathname: string, role: Role): { label: string; 
     }
   }
   if (!domainItem) return trail;
-  trail.push({ label: domainItem.label, href: domainItem.href });
+  // root와 domain 라벨이 같으면 중복 push 회피 (단일 도메인 앱)
+  if (domainItem.label !== trail[0].label) {
+    trail.push({ label: domainItem.label, href: domainItem.href });
+  }
   if (pathname === domainItem.href) return trail;
 
   // 2. 도메인 children prefix 매칭 → 깊이 순 정렬
