@@ -148,7 +148,7 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
         )}
 
         {/* 본문 — 미리보기 + 컨트롤 */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
           {/* 미리보기 */}
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -442,7 +442,7 @@ function PaletteControl({
         <PaletteIcon className="h-3 w-3" />
         색상 팔레트
       </legend>
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-1.5">
         {paletteOrder.map(id => {
           const palette = palettes[id];
           const selected = id === value;
