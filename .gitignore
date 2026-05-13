@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+
+# daily outcome reports (PM 개인 일일 보고)
+daily_outcome/
