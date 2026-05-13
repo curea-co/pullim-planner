@@ -11,26 +11,45 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-const SITE_TITLE = '풀림 플래너 — 시험까지의 시간을 설계하는 AI';
-const SITE_DESCRIPTION =
+const BRAND = '풀림 플래너';
+const TAGLINE = '시험까지의 시간을 설계하는 AI';
+const DESCRIPTION =
   '시험 일정을 입력하면 AI가 분 단위로 학습 계획을 짭니다. 풀림 플래너는 고등학생을 위한 AI 학습 플래너입니다.';
 
 export const metadata: Metadata = {
-  title: SITE_TITLE,
-  description: SITE_DESCRIPTION,
-  applicationName: '풀림 플래너',
+  metadataBase: new URL('https://pullim-planner.vercel.app'),
+  title: {
+    default: `${BRAND} — ${TAGLINE}`,
+    template: `%s | ${BRAND}`,
+  },
+  description: DESCRIPTION,
+  applicationName: BRAND,
+  keywords: [
+    '풀림 플래너',
+    'AI 학습 플래너',
+    '시험 계획',
+    '시간표',
+    '고등학생 학습',
+    '학습 블록',
+    '컨디션 관리',
+    '번아웃 케어',
+    'Pullim',
+    'Planner',
+  ],
+  authors: [{ name: 'curea' }],
+  creator: 'curea',
   formatDetection: { telephone: false },
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
-    siteName: '풀림 플래너',
-    title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
+    siteName: BRAND,
+    title: `${BRAND} — ${TAGLINE}`,
+    description: DESCRIPTION,
   },
   twitter: {
-    card: 'summary',
-    title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
+    card: 'summary_large_image',
+    title: `${BRAND} — ${TAGLINE}`,
+    description: DESCRIPTION,
   },
 };
 
