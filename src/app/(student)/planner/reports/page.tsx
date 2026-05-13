@@ -57,7 +57,7 @@ function PlannerReports() {
           </button>
         }
       >
-        {view === 'day' && <TodayReflection />}
+        {view === 'day' && <TodayReflection defaultOpen />}
         {view === 'week' && <WeeklySummary />}
         {view === 'month' && <MonthlySummary />}
       </ReportsShell>

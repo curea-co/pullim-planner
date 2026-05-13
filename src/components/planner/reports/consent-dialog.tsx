@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ParentReportCard } from './parent-report-card';
 import { cn } from '@/lib/utils';
 
 type ScopeOption = '이번 주만' | '이번 달만' | '계속';
@@ -89,6 +90,9 @@ export function ConsentDialog({ open, onOpenChange }: Props) {
             동의한 항목·기간 동안만 부모님 앱에서 볼 수 있어요. 언제든 철회 가능.
           </DialogDescription>
         </DialogHeader>
+
+        {/* 부모가 받는 카드 — 미리보기 */}
+        <ParentReportCard />
 
         {/* 수신자 */}
         <section className="bg-pullim-slate-50 flex items-center gap-3 rounded-lg p-3">
