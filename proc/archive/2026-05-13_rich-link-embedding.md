@@ -31,14 +31,12 @@
 - [x] 비주얼 점검 — 풀림 블루 그라디언트 + 레몬 액센트 + 한글 정상 렌더
 
 ### E. 배포 (PR 워크플로)
-- [ ] 브랜치 `feat/rich-link-embedding` 생성, commit, push
-- [ ] PR 생성 — title: "Rich link embedding — OG image + metadata 풍부화"
-- [ ] 사용자가 PR 머지
-- [ ] Vercel 자동 배포 트리거 확인 (Git integration 복구 여부에 따라):
-  - 자동 트리거 됨 → production 자동 반영
-  - 안 됨 → Vercel Deployments에서 해당 commit Preview를 **Promote to Production** *(사용자)*
+- [x] 브랜치 `feat/rich-link-embedding` 생성, commit, push
+- [x] PR 생성 — title: "Rich link embedding — OG image + metadata 풍부화"
+- [x] 사용자가 PR 머지 (PR #8, main commit `1b549c2`)
+- [ ] Vercel 자동 배포 트리거 확인 — **자동 트리거 실패**. Vercel Git integration 끊긴 상태로 PR #8 commit이 Deployments에 안 잡힘. Promote to Production 사용자 액션 필요 (PR #7과 함께 처리)
 
-### F. production 검증
+### F. production 검증 (Promote 후 진행)
 - [ ] `https://pullim-planner.vercel.app/opengraph-image` → 1200×630 PNG 응답
 - [ ] `https://pullim-planner.vercel.app/planner` HTML에 `og:image`, `twitter:image`, `summary_large_image` 메타 포함
 - [ ] 카카오톡 임베드 디버거 또는 실제 톡방 테스트로 카드 갱신 확인
