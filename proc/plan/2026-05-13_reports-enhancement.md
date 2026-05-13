@@ -16,11 +16,62 @@
 
 ## 작업 항목
 
-### 1단계 — 갭 분석 (1h)
-- [ ] `today-reflection.tsx` · `weekly-summary.tsx` · `monthly-summary.tsx` spot check — 각 컴포넌트가 어느 mock 데이터를 활용하는지 매핑
-- [ ] mock 데이터 vs UI 노출 비교표 — 어느 데이터가 미노출인지 식별
-- [ ] 페르소나 시나리오 검토 — "학생이 오늘 reports 보고 뭘 얻어야 하는가?" / "부모는 어느 정보를 받아야 의미 있는가?"
-- [ ] viewport 캡처(desktop + mobile) — 어제 audit 방식 재활용
+### 1단계 — 갭 분석 (완료)
+- [x] `today-reflection.tsx` · `weekly-summary.tsx` · `monthly-summary.tsx` spot check
+- [x] mock 데이터 vs UI 노출 비교표 작성
+- [x] 페르소나 시나리오 검토 — 학생/부모 가치
+- [x] viewport 캡처 (3 view × 2 vp = 6장, `/tmp/audit-reports/`)
+
+#### 1.1 컴포넌트별 mock 활용도
+
+| 컴포넌트 | 활용 mock | 평가 |
+|---|---|---|
+| TodayReflection | `dailyReflection`, `tomorrowDifferences`, `todayBlocks`, `blockTypeMeta`, `subjectLabels`, `emotionEmojis` | 컴포넌트 자체는 충실. 그러나 **default closed**라 reports day view 진입 시 텅 빈 페이지처럼 보임 |
+| WeeklySummary | `weeklyStudyHours`, `weekView`, **`dailyReflection`(차용)**, `getWeakNodes` + `WeeklyChart` + `AccuracyTrendChart` | 4 메트릭 중 "평균 정답률" · "감정 평균"이 *오늘 데이터*. **진짜 주간 평균 아님**. 인사이트 3건은 **하드코딩** |
+| MonthlySummary | `monthView`, `currentPersona.streakDays`, `getDday`, `getNextMilestone`, `getWeakNodes`, `weeklyStudyHours` + `MonthHeatmap` | KPI "100% 완료한 날 = 0일" — mock에 completionPct=100 케이스 없음. UI 자체는 풍부 |
+
+#### 1.2 미노출·약하게 노출 mock
+
+| Mock | 상태 | 갭 |
+|---|---|---|
+| `todayBurnout` (5개 지표) | **reports에서 미노출** | 시그니처 데이터인데 회고에서 보이지 않음 |
+| `todayCondition` | **미노출** | 컨디션 trend 회고 없음 |
+| `pedagogyEngineMeta` (7 학습 엔진) | **미노출** | "이번 주 가장 적용된 엔진" view 없음 |
+| 진짜 주간 메트릭 함수 | **없음** | `weeklyReflection()` 신규 필요 (현재는 일간 차용) |
+| `weeklyInsights` 동적 함수 | **없음** | `thisWeekInsights()` 같이 동적 생성 필요 |
+| Reflection history (지난 주 비교) | **없음** | mock 보강 필요. retention 핵심 |
+
+#### 1.3 시각·UX 갭
+
+| 이슈 | 위치 | 영향 |
+|---|---|---|
+| Day view 진입 시 default closed → 텅 빈 화면 | `TodayReflection` `useState(allFinished)` | 🔥 High — reports day 진입 의미 약화 |
+| Mobile에서도 동일 — 1줄만 보이고 나머지 viewport 빈공간 | day mobile | 🔥 High |
+| Weekly metrics가 *오늘 데이터* 차용 → 부정확 | `WeeklySummary` L32 `dailyReflection()` | 🟡 Med |
+| Weekly insights 3건 하드코딩 | `WeeklySummary` L22~26 | 🟡 Med |
+| Month "100% 완료한 날" 0일 (mock 임계) | `monthView` mock + `MonthlySummary` 임계 | 🟡 Med |
+| Burnout/Condition 데이터 reports에 없음 | 전반 | 🟡 Med — 시그니처 데이터 안 살림 |
+| "부모님께 보내기" 후 *실제 전송 콘텐츠*가 미정의 | `ConsentDialog` 후속 | 🟡 Med |
+
+### 2단계 — 우선 fix 도출 (사용자 확정 대기)
+
+#### 후보 (impact × 작업량 정렬)
+
+| # | fix | 영향 | 작업량 |
+|---|---|---|---|
+| F1 | **TodayReflection reports 모드에서 default expanded** — `defaultOpen?: boolean` prop 추가 또는 reports day view 안 별도 wrapper | 🔥 High | 15분 |
+| F2 | **Weekly 메트릭을 진짜 주간 평균으로** — `weeklyReflection()` 함수 신설 (weekView 데이터 활용) | 🟡 Med | 30분 |
+| F3 | **Weekly insights 동적 생성** — `thisWeekInsights()` 함수 (`tomorrowDifferences` 패턴) | 🟡 Med | 30분 |
+| F4 | **Burnout·Condition trend 카드 추가** — Weekly 또는 Monthly에 시그니처 데이터 노출 (mock 보강 가능) | 🟡 Med | 1h |
+| F5 | **부모 전송 콘텐츠 정의** — ConsentDialog 후 전송될 *부모용 요약 카드* (학생 view와 분리) | 🟡 Med | 1~2h |
+| F6 | **Month "100% 완료한 날" mock·임계 조정** — completionPct≥95 케이스 추가 또는 임계 95로 완화 | 🟢 Low | 10분 |
+| F7 | **Reflection history (지난 주 비교)** — mock 보강 + Weekly에 "vs 지난 주" 컬럼 | 🟢 Low | 2h |
+
+- [ ] 사용자 확정 → 첫 fix 1~2개 (또는 묶음) 결정
+
+### 3단계 — 첫 fix 구현 (사용자 확정 후)
+- [ ] 확정된 fix를 한 PR로 묶어서 진행
+- [ ] 나머지는 후속 plan으로 분리
 
 ### 2단계 — 우선 fix 도출 (30분)
 - [ ] 갭 분석 결과로 fix 후보 3~5개 추출 (impact × 작업량)
