@@ -7,7 +7,7 @@ import {
   BookOpen, PenLine, Target, Brain, FileText, MessageCircle, Mic, Coffee,
   type LucideIcon,
 } from 'lucide-react';
-import type { SubjectKey } from './persona';
+import { currentPersona, type SubjectKey } from './persona';
 import type { PaletteId } from '@/lib/tokens/palettes';
 import type { LayoutTemplateId } from '@/lib/tokens/layout-templates';
 import type { WeekLayoutId } from '@/lib/tokens/week-layouts';
@@ -386,6 +386,171 @@ export const weeklyStudyHours: { day: string; hours: number; goal: number }[] = 
   { day: '일', hours: 3.2, goal: 5.0 },
 ];
 
+/** 지난 주 요약 — Weekly 회고의 "vs 지난 주" 비교용 */
+export type WeekSummarySnapshot = {
+  totalHours: number;
+  goalHours: number;
+  completionAvg: number;
+  avgAccuracy: number;
+  avgEmotion: number;
+  weakConquered: number;
+};
+
+export const lastWeekSummary: WeekSummarySnapshot = {
+  totalHours: 25.4,
+  goalHours: 30.0,
+  completionAvg: 78,
+  avgAccuracy: 76,
+  avgEmotion: 3.6,
+  weakConquered: 1,
+};
+
+export type WeeklyReflectionMetrics = {
+  totalHours: number;
+  goalHours: number;
+  /** 7일 평균 완료율(%) */
+  completionAvg: number;
+  /** 7일 평균 정답률(%) — done 블록 평균. 데모: 일간 평균을 기반으로 변동 */
+  avgAccuracy: number;
+  /** 7일 평균 감정(1~5) — 데모: 결정론적 mock */
+  avgEmotion: number;
+  /** 약점 정복 카운트 */
+  weakConquered: number;
+};
+
+/** 주간 회고 메트릭 — weekView·weeklyStudyHours 기반 결정론적 산출. 일간 차용 X. */
+export function weeklyReflection(): WeeklyReflectionMetrics {
+  const totalHours = Math.round(weeklyStudyHours.reduce((s, d) => s + d.hours, 0) * 10) / 10;
+  const goalHours = weeklyStudyHours.reduce((s, d) => s + d.goal, 0);
+  const completionAvg = Math.round(
+    weekView.reduce((s, d) => s + d.completionPct, 0) / weekView.length,
+  );
+  // 데모: 결정론적 평균 — 일간 평균(88%)과 살짝 다르게 주간 평균은 82%
+  const avgAccuracy = 82;
+  const avgEmotion = 3.8;
+  // 약점 정복: getWeakNodes mastery 0.7~0.85 카운트는 컴포넌트에서 산출. 여기선 baseline.
+  const weakConquered = 2;
+  return { totalHours, goalHours, completionAvg, avgAccuracy, avgEmotion, weakConquered };
+}
+
+/**
+ * 이번 주 인사이트 — weekView·weeklyStudyHours·weeklyReflection 기반 룰 생성.
+ * `tomorrowDifferences` 일간 패턴의 주간 버전.
+ */
+export function thisWeekInsights(): ReflectionInsight[] {
+  const m = weeklyReflection();
+  const out: ReflectionInsight[] = [];
+
+  // 정답률 트렌드
+  if (m.avgAccuracy >= lastWeekSummary.avgAccuracy + 5) {
+    out.push({
+      icon: 'sparkle',
+      text: `정답률 +${m.avgAccuracy - lastWeekSummary.avgAccuracy}% — 새 단원 진입 적기`,
+    });
+  }
+
+  // 약점 정복
+  if (m.weakConquered >= 1) {
+    out.push({
+      icon: 'check',
+      text: `약점 ${m.weakConquered}건 정복 — 다음 주 보강 블록 줄어들어요`,
+    });
+  }
+
+  // 시간 부족 — 평일 최저 시간 day 식별
+  const weekdays = weeklyStudyHours.slice(0, 5);
+  const worst = weekdays.reduce((a, b) => (a.hours < b.hours ? a : b));
+  if (worst.hours < worst.goal * 0.7) {
+    out.push({
+      icon: 'warn',
+      text: `${worst.day} 학습 시간 부족 (${worst.hours}h / 목표 ${worst.goal}h) — 평일 시간대 점검`,
+    });
+  }
+
+  // 감정 평균
+  if (m.avgEmotion <= 2.8) {
+    out.push({
+      icon: 'warn',
+      text: '감정 평균이 낮아요 — 다음 주 난이도 자동 조정',
+    });
+  } else if (m.avgEmotion >= 4) {
+    out.push({
+      icon: 'sparkle',
+      text: '이번 주 흐름이 좋아요 — 패턴 유지',
+    });
+  }
+
+  if (out.length === 0) {
+    out.push({
+      icon: 'sparkle',
+      text: '주간 결과가 다음 주 플랜에 자동 반영돼요',
+    });
+  }
+
+  return out.slice(0, 4);
+}
+
+/* ─── 컨디션·번아웃 trend — 7일치 (회고 노출용) ─────────────────────── */
+
+/** 7일치 컨디션 trend — 회고 미니 차트용. weeklyStudyHours와 같은 day 순서. */
+export const weeklyConditionTrend: { day: string; level: ConditionLevel }[] = [
+  { day: '월', level: 4 },
+  { day: '화', level: 3 },
+  { day: '수', level: 4 },
+  { day: '목', level: 3 },
+  { day: '금', level: 2 },
+  { day: '토', level: 4 },
+  { day: '일', level: 3 },
+];
+
+/** 7일치 번아웃 스코어 trend — 0~100, 낮을수록 위험. */
+export const weeklyBurnoutTrend: { day: string; score: number }[] = [
+  { day: '월', score: 72 },
+  { day: '화', score: 68 },
+  { day: '수', score: 70 },
+  { day: '목', score: 64 },
+  { day: '금', score: 58 },
+  { day: '토', score: 66 },
+  { day: '일', score: 71 },
+];
+
+/* ─── 부모 전송 카드 — Reports `부모님께 보내기` 후 큐레이션 ────────── */
+
+export type ParentReportCard = {
+  /** 카드 헤드라인 */
+  headline: string;
+  /** 핵심 메트릭 3 — 부모가 즉시 알고 싶은 것 */
+  metrics: { label: string; value: string; tone: 'good' | 'default' | 'warn' }[];
+  /** 한 줄 정성 평가 — AI 코치 톤 */
+  comment: string;
+  /** 다가오는 시험·마일스톤 */
+  upcomingMilestone: string | null;
+  /** 격려/응원 한 줄 */
+  encouragement: string;
+};
+
+/** 학생 view를 그대로 보내지 않고 부모용으로 큐레이션 — 정답률·시간·약점 정복 + AI 코멘트. */
+export function buildParentReport(): ParentReportCard {
+  const w = weeklyReflection();
+  const milestone = getNextMilestone();
+  const milestoneText = milestone
+    ? `4월 ${milestone.day.date}일 · ${milestone.day.examMilestone?.label} (D-${milestone.daysAway})`
+    : null;
+  return {
+    headline: `이번 주 학습 요약 · ${currentPersona.name ?? '서연'} 학생`,
+    metrics: [
+      { label: '학습 시간', value: `${w.totalHours}h / ${w.goalHours}h`, tone: w.totalHours >= w.goalHours ? 'good' : 'default' },
+      { label: '평균 정답률', value: `${w.avgAccuracy}%`, tone: w.avgAccuracy >= 80 ? 'good' : 'default' },
+      { label: '약점 정복', value: `${w.weakConquered}건`, tone: w.weakConquered > 0 ? 'good' : 'default' },
+    ],
+    comment: w.avgAccuracy >= 80
+      ? '학습 흐름이 안정적이에요. 새 단원 진입을 시도해도 좋은 시점입니다.'
+      : '꾸준한 학습이 이어지고 있어요. 다음 주는 약점 단원에 집중하는 게 좋겠습니다.',
+    upcomingMilestone: milestoneText,
+    encouragement: '오늘도 따뜻한 응원 한마디 부탁드려요 💌',
+  };
+}
+
 /** 주간 — 일별·블록 타입별 카운트 (week view 그리드용) */
 export type WeekDay = {
   day: string;          // '월'
@@ -511,7 +676,9 @@ function makeMonth(): MonthDay[] {
 
     if (!isFuture) {
       blockCount = isWeekend ? 6 + seq(d, 3) : 5 + seq(d + 1, 3);
-      completionPct = isToday ? 35 : 75 + seq(d + 2, 25);
+      // 평일 일부 + 주말 첫째 토요일은 완벽 달성한 날(100%)로 시드
+      const isPerfect = [3, 8, 15, 22].includes(d);
+      completionPct = isToday ? 35 : (isPerfect ? 100 : 75 + seq(d + 2, 24));
     } else {
       blockCount = isWeekend ? 7 : 5;
       completionPct = 0;

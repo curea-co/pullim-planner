@@ -28,15 +28,17 @@ const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: s
  * 별도 라우트 만들지 않고 day view 안에서 처리. ribbon 패턴은 ConditionBurnoutPanel과 동일.
  *
  * id="today-reflection" — BlockCompleteDialog "오늘 학습 마감" CTA의 anchor scroll target.
+ *
+ * defaultOpen — reports day view 진입 시 펼친 상태로 시작 (true). 홈 day view는 미지정(기본 false, 학습 완료 시만 자동 펼침).
  */
-export function TodayReflection() {
+export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {}) {
   const router = useRouter();
   const m = dailyReflection();
   const insights = tomorrowDifferences();
 
   // 학습 완료 시 자동 expand — 모든 학습 블록이 done/skipped일 때
   const allFinished = m.doingCount === 0 && m.todoCount === 0;
-  const [open, setOpen] = useState(allFinished);
+  const [open, setOpen] = useState(defaultOpen ?? allFinished);
 
   const avgEmotionEmoji =
     m.avgEmotion === null ? null
