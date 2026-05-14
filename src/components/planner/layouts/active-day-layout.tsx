@@ -17,9 +17,11 @@ type Props = {
   paletteId?: PaletteId;
   compact?: boolean;
   ddayLabel?: string;
+  /** vertical_timeline 한정: 첫·마지막 일정 ±1h만 표시. compact는 강제 ON, 그 외 day-view에서 토글로 제어. */
+  trimToBlocks?: boolean;
 };
 
-export function ActiveDayLayout({ blocks, layoutId, paletteId, compact, ddayLabel }: Props) {
+export function ActiveDayLayout({ blocks, layoutId, paletteId, compact, ddayLabel, trimToBlocks }: Props) {
   switch (layoutId) {
     case 'checklist':
       return <ChecklistLayout blocks={blocks} paletteId={paletteId} compact={compact} />;
@@ -35,6 +37,7 @@ export function ActiveDayLayout({ blocks, layoutId, paletteId, compact, ddayLabe
           paletteId={paletteId}
           compact={compact}
           ddayLabel={ddayLabel}
+          trimToBlocks={trimToBlocks ?? compact}
         />
       );
   }

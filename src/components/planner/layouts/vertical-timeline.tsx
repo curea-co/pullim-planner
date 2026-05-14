@@ -13,15 +13,18 @@ type Props = {
   paletteId?: PaletteId;
   compact?: boolean;
   ddayLabel?: string;
+  /** 첫 일정 1h 전 ~ 마지막 일정 1h 후로 좁힘. compact 또는 day-view 토글에서 활성. */
+  trimToBlocks?: boolean;
 };
 
-export function VerticalTimelineLayout({ blocks, paletteId, compact, ddayLabel }: Props) {
+export function VerticalTimelineLayout({ blocks, paletteId, compact, ddayLabel, trimToBlocks }: Props) {
   return (
     <SideTimeline24
       blocks={blocks}
       paletteId={paletteId}
       compact={compact}
       ddayLabel={ddayLabel}
+      trimToBlocks={trimToBlocks}
     />
   );
 }

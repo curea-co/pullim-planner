@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { ChevronRight, Clock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   todayBlocks, currentPersona, getDday, nextActiveBlock,
@@ -36,6 +36,7 @@ const legendTypes: BlockType[] = ['concept', 'practice', 'review', 'memorize', '
 export function DayView() {
   const [condition, setCondition] = useState<ConditionLevel>(3);
   const [showLegend, setShowLegend] = useState(false);
+  const [trimTimeline, setTrimTimeline] = useState(true);
   const [completingBlock, setCompletingBlock] = useState<TimeBlock | null>(null);
   const dday = getDday(currentPersona);
   const ddayLabel = dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY' : `D+${Math.abs(dday)}`;
@@ -71,23 +72,42 @@ export function DayView() {
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[420px_1fr]">
         <div className="space-y-4">
-          {/* 시계 카드 — 색상 범례는 chevron 토글로 collapse */}
+          {/* 시계 카드 — 색상 범례·트림은 헤더 토글로 collapse */}
           <section className="bg-card rounded-2xl border p-5">
-            <header className="mb-3 flex items-center justify-between">
+            <header className="mb-3 flex items-center justify-between gap-2">
               <h3 className="text-pullim-slate-900 text-sm font-bold">오늘 일과</h3>
-              <button
-                type="button"
-                onClick={() => setShowLegend(s => !s)}
-                aria-expanded={showLegend}
-                aria-controls="day-clock-legend"
-                className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
-              >
-                {showLegend ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                색상 범례
-              </button>
+              <div className="flex items-center gap-3">
+                {layoutId === 'vertical_timeline' && (
+                  <button
+                    type="button"
+                    onClick={() => setTrimTimeline(t => !t)}
+                    aria-pressed={!trimTimeline}
+                    className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
+                  >
+                    <Clock className="h-3 w-3" />
+                    {trimTimeline ? '전체 24h' : '핵심 시간만'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowLegend(s => !s)}
+                  aria-expanded={showLegend}
+                  aria-controls="day-clock-legend"
+                  className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
+                >
+                  {showLegend ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  색상 범례
+                </button>
+              </div>
             </header>
 
-            <ActiveDayLayout blocks={todayBlocks} ddayLabel={ddayLabel} layoutId={layoutId} paletteId={paletteId} />
+            <ActiveDayLayout
+              blocks={todayBlocks}
+              ddayLabel={ddayLabel}
+              layoutId={layoutId}
+              paletteId={paletteId}
+              trimToBlocks={trimTimeline}
+            />
 
             {next && NextIcon && (
               <div className="bg-pullim-blue-50 border-pullim-blue-100 mt-4 flex items-center gap-3 rounded-xl border p-3">
