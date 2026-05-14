@@ -33,7 +33,7 @@ export default function PlannerOnboardingPage() {
           screenshot: (
             <MockBrowser label="study/planner/day">
               <div className="bg-pullim-slate-50/40 rounded-lg p-3">
-                <SideTimeline24 blocks={todayBlocks} ddayLabel={ddayLabel} now="18:50" />
+                <SideTimeline24 blocks={todayBlocks} ddayLabel={ddayLabel} now="18:50" trimToBlocks />
               </div>
             </MockBrowser>
           ),
