@@ -1,8 +1,9 @@
 'use client';
 
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Send } from 'lucide-react';
+import { track } from '@vercel/analytics';
 import {
   ReportsShell, type ReportsView,
 } from '@/components/planner/reports/reports-shell';
@@ -32,11 +33,19 @@ function PlannerReports() {
 
   const onChangeView = useCallback(
     (next: ReportsView) => {
+      track('reports_view_change', { from: view, to: next });
       const qs = next === 'week' ? '' : `?view=${next}`;
       router.replace(`/planner/reports${qs}`, { scroll: false });
     },
-    [router],
+    [router, view],
   );
+
+  // day view 진입 시 1회 impression — TodayReflection이 default expanded 노출됐는지 시그널
+  useEffect(() => {
+    if (view === 'day') {
+      track('reports_day_reflection_view', { defaultOpen: true });
+    }
+  }, [view]);
 
   const dday = getDday(currentPersona);
 
@@ -49,7 +58,10 @@ function PlannerReports() {
         action={
           <button
             type="button"
-            onClick={() => setConsentOpen(true)}
+            onClick={() => {
+              track('reports_parent_card_open', { trigger: 'send_button', view });
+              setConsentOpen(true);
+            }}
             className="bg-pullim-blue-600 hover:bg-pullim-blue-700 inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold text-white shadow-pullim-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1"
           >
             <Send className="h-3.5 w-3.5" />

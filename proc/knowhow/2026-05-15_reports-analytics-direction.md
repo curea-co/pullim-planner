@@ -65,10 +65,9 @@
 
 ## 3. G1 합의 결과
 
-> **결정**: (대기 — G1 응답 후 1줄로 명시)
+> **결정 (2026-05-15, G1)**: **A (Vercel Web Analytics) P0 3건 도입**. PostHog·자체 telemetry는 시그널이 쌓여 funnel·cohort가 필요해질 때 마이그레이션 비용으로 분리.
 >
-> 권장 default: **A (Vercel Web Analytics) P0 3건만 도입**.
-> 사유: 이 단계는 *시그널 채널 자체*가 비어 있는 상태 해소가 목적. 분석 깊이는 *데이터가 쌓인 뒤* 결정. Vercel은 도입 비용·운영 부담 최저이고 무료 한도 내. PostHog/자체는 시그널이 쌓여 funnel·cohort 필요해질 때 마이그레이션 결정 비용으로 분리.
+> 사유: 이 단계는 *시그널 채널 자체*가 비어 있는 상태 해소가 목적. 분석 깊이는 *데이터가 쌓인 뒤* 결정. Vercel은 도입 비용·운영 부담 최저이고 무료 한도 내.
 
 ## 후속 (별개)
 - 합의 후 P0 3건 구현 plan 별도 (예상 30분 — package install + `<Analytics />` mount + `track()` 3곳 호출)
