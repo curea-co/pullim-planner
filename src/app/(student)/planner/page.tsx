@@ -4,7 +4,6 @@ import { Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
 import { CalendarShell, type CalendarView } from '@/components/planner/calendar-shell';
 import { DayView } from '@/components/planner/views/day-view';
 import { WeekView, getWeekMeta } from '@/components/planner/views/week-view';
@@ -46,20 +45,6 @@ function PlannerHome() {
     },
     [router],
   );
-
-  const onPrev = useCallback(() => {
-    const unit = view === 'day' ? '하루' : view === 'week' ? '주' : '월';
-    toast.info(`⬅️ 이전 ${unit}`, {
-      description: '데모 단계는 이번 주 데이터만 채워져 있어요. 빌더에서 활성화하면 실제 시간 이동이 열려요.',
-    });
-  }, [view]);
-
-  const onNext = useCallback(() => {
-    const unit = view === 'day' ? '하루' : view === 'week' ? '주' : '월';
-    toast.info(`➡️ 다음 ${unit}`, {
-      description: '데모 단계는 이번 주 데이터만 채워져 있어요.',
-    });
-  }, [view]);
 
   const dday = getDday(currentPersona);
   const ddayLabel = formatDday(dday);
@@ -136,8 +121,6 @@ function PlannerHome() {
       navLabel={headerProps.navLabel}
       prevLabel={headerProps.prevLabel}
       nextLabel={headerProps.nextLabel}
-      onPrev={onPrev}
-      onNext={onNext}
       action={switchAction}
     >
       {view === 'day' && <DayView />}

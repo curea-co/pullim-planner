@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Clock, Eye, EyeOff } from 'lucide-react';
+import { Clock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   todayBlocks, currentPersona, getDday, nextActiveBlock,
@@ -17,7 +17,6 @@ import { ConditionBurnoutPanel } from '@/components/planner/condition-burnout-pa
 import { BlockCard } from '@/components/planner/block-card';
 import { BlockCompleteDialog } from '@/components/planner/block-complete-dialog';
 import { TodayReflection } from '@/components/planner/today-reflection';
-import { cn } from '@/lib/utils';
 
 /** 완료한 블록 다음의 첫 학습 블록(휴식 제외, todo/doing) — 모달 CTA 라우팅용 */
 function findFollowing(block: TimeBlock): TimeBlock | null {
@@ -59,12 +58,6 @@ export function DayView() {
       id: `planner-condition-${level}`,
       description: `오늘 블록이 ${meta.difficultyAdj}로 자동 조정됐어요.`,
       duration: 2500,
-    });
-  }
-
-  function onReorder() {
-    toast.info('🛠️ 블록 순서 변경 — 준비 중', {
-      description: '드래그 정렬은 곧 열려요. 지금은 빌더에서 시간대를 조정하세요.',
     });
   }
 
@@ -173,16 +166,12 @@ export function DayView() {
             title="오늘의 학습 블록"
             description="7대 교육학 엔진이 자동 적용된 학습 단위"
             action={
-              <button
-                type="button"
-                onClick={onReorder}
-                className={cn(
-                  'text-pullim-blue-600 hover:text-pullim-blue-700 inline-flex items-center gap-0.5 text-xs font-semibold',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded',
-                )}
+              <span
+                className="text-pullim-slate-400 inline-flex items-center gap-0.5 text-[11px] font-semibold"
+                title="드래그 정렬은 곧 열려요. 지금은 빌더에서 시간대를 조정하세요."
               >
-                순서 변경 <ChevronRight className="h-3 w-3" />
-              </button>
+                드래그 정렬 곧 열려요
+              </span>
             }
           />
           <ol className="space-y-1.5">
