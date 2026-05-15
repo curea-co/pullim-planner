@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist_Mono } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
@@ -72,6 +73,7 @@ export default function RootLayout({
       <body className="bg-background text-foreground min-h-full font-sans">
         <TooltipProvider delay={120}>{children}</TooltipProvider>
         <Toaster position="top-center" closeButton richColors />
+        <Analytics />
       </body>
     </html>
   );
