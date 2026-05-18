@@ -35,12 +35,12 @@ export function BottomNav() {
       aria-label="학생 메인 네비게이션"
       className="bg-background/95 sticky bottom-0 z-30 border-t backdrop-blur-md md:hidden"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="flex w-full">
         {studentBottomTabs.map((item, i) => {
           const Icon = item.icon;
           const active = i === activeIdx;
           return (
-            <li key={item.href}>
+            <li key={item.href} className="flex-1 min-w-0">
               <Link
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
