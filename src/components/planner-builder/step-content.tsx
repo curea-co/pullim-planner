@@ -550,7 +550,7 @@ function SubjectCard({
   onRemove: () => void;
 }) {
   return (
-    <li className="bg-card border-pullim-slate-200 flex flex-col rounded-xl border p-4">
+    <li className="bg-card border-pullim-slate-200 flex h-full min-h-[150px] flex-col rounded-xl border p-4">
       {/* 헤더: 과목명 + 단원 카운트 + [수정] + [닫기] */}
       <header className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-baseline gap-2">
@@ -1037,7 +1037,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props
       </section>
 
       {previews.length === 0 ? (
-        <section className="bg-pullim-slate-50 rounded-lg p-4 text-center">
+        <section className="bg-pullim-slate-50 flex min-h-[120px] flex-col items-center justify-center rounded-lg p-4 text-center">
           <p className="text-pullim-slate-500 text-xs">
             3단계에서 과목·단원을 추가하면 일주일 미리보기가 자동 생성돼요.
           </p>
