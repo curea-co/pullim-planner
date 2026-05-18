@@ -39,8 +39,8 @@
 ## 완료 기준 (17:30 closing 시점)
 - [x] A: `proc/knowhow/2026-05-18_deploy-policy.md` 작성 — 머지≠배포 룰 명문화 + 4안 트레이드오프 표 + **G1 합의 결과 채움 (C. G1 명시)**
 - [x] C: `proc/plan/2026-05-18_builder-min-h.md` 1·2단계 채움 — 갭 분석 매트릭스 + fix 후보 3안 + 추천 안 명시 + **G4 합의 결과 (A. 부모 기준 통일)**
-- [ ] daily_outcome 17:30 4행(약속 → 실제 산출 → PR·배포 → 검증) 작성
-- [ ] (선택) C 풀스택 진입 시 commit·PR·머지
+- [x] daily_outcome 17:30 4행(약속 → 실제 산출 → PR·배포 → 검증) 작성 — A·C·carry·archive 4 산출물 closing 완료
+- [x] (선택) C 풀스택 진입 시 commit·PR·머지 — PR #14 머지 (commit `712acdc`) + production 반영 완료
 
 ## 산출물 요약
 - `proc/knowhow/2026-05-18_deploy-policy.md` — A 배포 정책 운영 문서 (G1 합의 대기)
