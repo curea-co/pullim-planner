@@ -108,7 +108,7 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
       </button>
 
       {open && (
-        <div id="today-reflection-body" className="space-y-4 border-t p-4">
+        <div id="today-reflection-body" className="space-y-5 border-t p-4">
           {/* 메트릭 3 */}
           <div className="grid grid-cols-3 gap-2">
             <Metric
@@ -143,7 +143,7 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
             <h4 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
               블록별 결과
             </h4>
-            <ul className="space-y-1">
+            <ul className="space-y-1.5">
               {todayBlocks
                 .filter(b => b.type !== 'break')
                 .map(b => <BlockRow key={b.id} block={b} />)}
@@ -207,14 +207,14 @@ function Metric({
   tone: 'default' | 'accent';
 }) {
   return (
-    <div className="bg-pullim-slate-50 rounded-lg p-2.5">
+    <div className="bg-pullim-slate-50 rounded-lg p-3">
       <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
         <Icon className="h-3 w-3" />
         {label}
       </div>
       <div
         className={cn(
-          'mt-1 font-mono text-base font-bold',
+          'mt-1 font-mono text-lg font-bold',
           tone === 'accent' ? 'text-pullim-blue-600' : 'text-pullim-slate-900',
         )}
       >
