@@ -71,12 +71,12 @@
   }
   .shot figcaption strong { color: var(--ink); font-size: 12px; }
   .shot img { display: block; width: 100%; height: auto; }
-  .shot.mobile img { max-width: 280px; margin: 0 auto; }
+  .shot.mobile { max-width: 320px; margin: 0 auto; }
+  .shot.mobile img { max-width: 100%; margin: 0 auto; }
 
-  .grid2 { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+  .grid2 { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
   @media (max-width: 900px) {
     .grid2, .shots { grid-template-columns: 1fr; }
-    .shot.mobile img { max-width: 100%; }
   }
 
   .panel {
@@ -599,44 +599,44 @@
   </p>
 
   <div class="grid2">
-    <div class="shot"><figure>
+    <div class="shot mobile"><figure>
       <figcaption><strong>BEFORE · planner-day mobile</strong><span>CalendarShell nav overflow · NextBlock CTA cut</span></figcaption>
       <img src="screenshots/planner-day-mobile.png" alt="before planner-day mobile" />
     </figure></div>
-    <div class="shot"><figure>
+    <div class="shot mobile"><figure>
       <figcaption><strong>AFTER · planner-day mobile</strong><span>nav 둘째 줄 wrap · CTA full-width</span></figcaption>
       <img src="screenshots/after/planner-day-mobile.png" alt="after planner-day mobile" />
     </figure></div>
   </div>
 
   <div class="grid2">
-    <div class="shot"><figure>
+    <div class="shot mobile"><figure>
       <figcaption><strong>BEFORE · manage-new mobile</strong><span>StepIndicator 4·8 cut · 헤더 action 없음</span></figcaption>
       <img src="screenshots/manage-new-mobile.png" alt="before manage-new mobile" />
     </figure></div>
-    <div class="shot"><figure>
+    <div class="shot mobile"><figure>
       <figcaption><strong>AFTER · manage-new mobile</strong><span>step horizontal scroll · "임시저장" action 아래 줄</span></figcaption>
       <img src="screenshots/after/manage-new-mobile.png" alt="after manage-new mobile" />
     </figure></div>
   </div>
 
   <div class="grid2">
-    <div class="shot"><figure>
+    <div class="shot mobile"><figure>
       <figcaption><strong>BEFORE · reports mobile</strong><span>"부모님께 보내기" 우측 cut</span></figcaption>
       <img src="screenshots/reports-mobile.png" alt="before reports mobile" />
     </figure></div>
-    <div class="shot"><figure>
+    <div class="shot mobile"><figure>
       <figcaption><strong>AFTER · reports mobile</strong><span>action 헤더 아래 줄로 가시화</span></figcaption>
       <img src="screenshots/after/reports-mobile.png" alt="after reports mobile" />
     </figure></div>
   </div>
 
   <div class="grid2">
-    <div class="shot"><figure>
+    <div class="shot mobile"><figure>
       <figcaption><strong>BEFORE · planner-week mobile</strong><span>주간 그리드 우측 일부 cut</span></figcaption>
       <img src="screenshots/planner-week-mobile.png" alt="before planner-week mobile" />
     </figure></div>
-    <div class="shot"><figure>
+    <div class="shot mobile"><figure>
       <figcaption><strong>AFTER · planner-week mobile</strong><span>nav 분리 + 헤더 라벨 가시</span></figcaption>
       <img src="screenshots/after/planner-week-mobile.png" alt="after planner-week mobile" />
     </figure></div>
