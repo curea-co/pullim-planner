@@ -67,10 +67,12 @@ export function navForRole(_role: Role): NavGroup[] {
   return studentNav;
 }
 
-/** 모바일 하단 탭 — 플래너 전용이라 홈/플래너 2탭만 */
+/** 모바일 하단 탭 — 플래너 4 섹션 (홈 / 관리 / 리포트 / 소개) */
 export const studentBottomTabs = [
-  { href: '/',         label: '홈',     icon: Home,           matchPrefix: ['/'] },
-  { href: '/planner',  label: '플래너', icon: CalendarClock,  matchPrefix: ['/planner'] },
+  { href: '/planner',            label: '홈',     icon: Home,           matchPrefix: ['/', '/planner'] },
+  { href: '/planner/manage',     label: '관리',   icon: Wrench,         matchPrefix: ['/planner/manage'] },
+  { href: '/planner/reports',    label: '리포트', icon: FileText,       matchPrefix: ['/planner/reports'] },
+  { href: '/planner/onboarding', label: '소개',   icon: BookOpen,       matchPrefix: ['/planner/onboarding'] },
 ] as const;
 
 /** 현재 pathname이 어떤 섹션 안에 있는지 — sidebar swap 판단 */

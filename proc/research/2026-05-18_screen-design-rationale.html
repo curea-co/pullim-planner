@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>풀림 플래너 화면 역분석 — 2026-05-18</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --blue-50: #eff6ff;
+    --blue-100: #dbeafe;
+    --blue-500: #3b82f6;
+    --blue-600: #2563eb;
+    --blue-700: #1d4ed8;
+    --accent: #f59e0b;
+    --good: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; font-family: ui-sans-serif, system-ui, -apple-system, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif; color: var(--ink); background: var(--bg); }
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+
+  header.topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  header.topbar .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; }
+  header.topbar .brand .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--blue-600); }
+  header.topbar nav { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+  header.topbar nav button {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    padding: 6px 10px; border-radius: 8px; font-size: 12px; cursor: pointer;
+  }
+  header.topbar nav button:hover { background: var(--blue-50); border-color: var(--blue-100); }
+  header.topbar nav .count { font-variant-numeric: tabular-nums; padding: 0 6px; color: var(--ink); font-weight: 700; }
+
+  main.deck { flex: 1; padding: 24px 20px 80px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+  section.slide { display: none; }
+  section.slide.active { display: block; }
+
+  .slide-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 12px; }
+  .slide-head .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue-600); }
+  .slide-head h2 { margin: 4px 0 0; font-size: 28px; line-height: 1.2; }
+  .slide-head .meta { font-size: 12px; color: var(--muted); }
+
+  .lede { color: var(--muted); font-size: 14px; max-width: 70ch; margin: 0 0 20px; line-height: 1.55; }
+
+  .shots {
+    display: grid; gap: 16px; margin-bottom: 20px;
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+  .shots.single { grid-template-columns: minmax(0, 1fr); }
+  .shot {
+    border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--card);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+  .shot figure { margin: 0; }
+  .shot figcaption {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 8px 12px; border-bottom: 1px solid var(--line);
+    font-size: 11px; color: var(--muted); background: #fafbfc;
+  }
+  .shot figcaption strong { color: var(--ink); font-size: 12px; }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot.mobile img { max-width: 280px; margin: 0 auto; }
+
+  .grid2 { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+  @media (max-width: 900px) {
+    .grid2, .shots { grid-template-columns: 1fr; }
+    .shot.mobile img { max-width: 100%; }
+  }
+
+  .panel {
+    border: 1px solid var(--line); border-radius: 14px; background: var(--card);
+    padding: 16px 18px;
+  }
+  .panel h3 { margin: 0 0 8px; font-size: 14px; }
+  .panel h3 .pill {
+    display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 999px;
+    background: var(--blue-50); color: var(--blue-700); margin-left: 6px; font-weight: 800; letter-spacing: 0.04em;
+  }
+  .panel ul { margin: 6px 0 0; padding-left: 18px; }
+  .panel ul li { font-size: 13px; line-height: 1.6; color: #1f2937; }
+  .panel ul li code { font-size: 12px; background: #f1f5f9; padding: 1px 5px; border-radius: 4px; }
+  .panel + .panel { margin-top: 12px; }
+
+  .twocol { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 700px) { .twocol { grid-template-columns: 1fr; } }
+
+  .kvs { font-size: 12.5px; line-height: 1.55; }
+  .kvs .row { display: grid; grid-template-columns: 120px 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px dashed #e6ebf1; }
+  .kvs .row:last-child { border-bottom: 0; }
+  .kvs .k { color: var(--muted); }
+  .kvs code { font-size: 11.5px; background: #f1f5f9; padding: 1px 5px; border-radius: 4px; }
+
+  .tagline { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .footnote { margin-top: 20px; font-size: 11.5px; color: var(--muted); line-height: 1.55; border-top: 1px dashed var(--line); padding-top: 10px; }
+
+  footer.controls {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(15, 23, 42, 0.92); color: #fff; padding: 8px 10px; border-radius: 999px;
+    font-size: 12px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+  }
+  footer.controls button {
+    appearance: none; border: 0; background: transparent; color: #fff; font: inherit; cursor: pointer;
+    width: 28px; height: 28px; border-radius: 999px;
+  }
+  footer.controls button:hover { background: rgba(255,255,255,0.15); }
+  footer.controls .count { padding: 0 8px; font-variant-numeric: tabular-nums; }
+
+  .principle-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 800px) { .principle-grid { grid-template-columns: 1fr; } }
+  .principle { border-left: 3px solid var(--blue-600); padding: 8px 12px; background: var(--blue-50); border-radius: 0 10px 10px 0; }
+  .principle b { display: block; font-size: 13px; margin-bottom: 4px; }
+  .principle p { margin: 0; font-size: 12.5px; color: #1f2937; line-height: 1.55; }
+
+  .meta-grid {
+    display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 16px;
+  }
+  @media (max-width: 800px) { .meta-grid { grid-template-columns: 1fr; } }
+  .meta-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--card); font-size: 12.5px; }
+  .meta-card b { font-size: 11px; color: var(--blue-600); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 4px; }
+
+  .toc { margin: 16px 0 0; columns: 2; gap: 24px; font-size: 13px; }
+  @media (max-width: 700px) { .toc { columns: 1; } }
+  .toc a { color: var(--ink); text-decoration: none; display: block; padding: 4px 0; border-bottom: 1px dashed #e6ebf1; }
+  .toc a:hover { color: var(--blue-700); }
+
+  kbd {
+    font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+    border: 1px solid var(--line); border-bottom-width: 2px;
+    padding: 1px 5px; border-radius: 4px; background: #f8fafc; color: #1f2937;
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="brand"><span class="dot"></span> 풀림 플래너 화면 역분석 · 2026-05-18</span>
+  <nav>
+    <button onclick="goto(0)">처음</button>
+    <button onclick="prev()">← 이전</button>
+    <span class="count"><span id="n">1</span> / <span id="t">9</span></span>
+    <button onclick="next()">다음 →</button>
+  </nav>
+</header>
+
+<main class="deck">
+
+<!-- ============================================== -->
+<!-- Slide 1: 인트로 -->
+<!-- ============================================== -->
+<section class="slide active" data-slide="1">
+  <div class="slide-head">
+    <div>
+      <div class="eyebrow">INTRO · slide 1 of 9</div>
+      <h2>왜 이렇게 배치했는가</h2>
+      <div class="tagline">컴포넌트·콘텐츠 위치는 의도된 결정이다. 그 결정의 근거를 화면별로 본다.</div>
+    </div>
+    <div class="meta">
+      production: <code>pullim-planner.vercel.app</code><br />
+      기준 commit: <code>bcec55b</code> (PR #15 · audit #8)
+    </div>
+  </div>
+
+  <p class="lede">
+    풀림 플래너는 <b>시간표 앱이 아니다</b>. 자기조절을 도구화한 학습 플라이휠로,
+    "오늘의 결정(다음 블록·컨디션·번아웃)"이 첫 시야에 들어오게 IA가 짜여 있다.
+    이 문서는 핵심 7개 화면을 desktop 1280 + mobile 375 두 viewport로 캡처해,
+    <b>어떤 컴포넌트가 어디에 왜 있는가</b>를 코드(commit <code>bcec55b</code>)·런타임 동작과 함께 역추적한다.
+  </p>
+
+  <div class="principle-grid">
+    <div class="principle"><b>1. 결정 표면 우선</b><p>"다음 학습 블록 hero"·"컨디션 슬라이더"·"번아웃 카드"가 시간표보다 먼저 또는 동일 우선순위로 노출. 사용자가 매일 내려야 할 결정을 화면 위계로 가시화.</p></div>
+    <div class="principle"><b>2. 자기조절 도구</b><p>컨디션 보고 → 블록 난이도 ±20% 자동 조정, 번아웃 임계 도달 → 휴식 제안. 시간표가 하루치 결과(정답률·감정·시간)를 받아 내일 플랜에 자동 반영.</p></div>
+    <div class="principle"><b>3. 교육적 투명성</b><p>모든 블록에 학습과학 엔진 태그(간격 복습·인지 부하·능동 회상…). 태그 클릭 → "왜 이 엔진?" 원리 모달. 결정 근거가 사용자에게 열림.</p></div>
+    <div class="principle"><b>4. IA 일관성</b><p>day/week/month/reports 모두 동일 grid (<code>xl:grid-cols-[420px_1fr]</code>). 뷰 토글 시 시각 흔들림 0 — 인지 부담 최소.</p></div>
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-card"><b>분석 범위</b>핵심 7개 화면 × 2 viewport = 14 캡처</div>
+    <div class="meta-card"><b>이번 주 변경</b>audit #5/#6/#7/#8 모두 visual dead-space trim (5/14~5/18)</div>
+    <div class="meta-card"><b>주의</b>builder는 8단계 wizard로 별도 cadence. mock data 기준 상태.</div>
+  </div>
+
+  <div class="toc">
+    <a href="#" onclick="goto(1);return false;">02 · /planner (day view) — 오늘의 학습 결정 표면</a>
+    <a href="#" onclick="goto(2);return false;">03 · /planner?view=week — 주간 그리드</a>
+    <a href="#" onclick="goto(3);return false;">04 · /planner?view=month — 월간 히트맵 + D-day</a>
+    <a href="#" onclick="goto(4);return false;">05 · /planner/manage — 다중 시간표 관리</a>
+    <a href="#" onclick="goto(5);return false;">06 · /planner/manage/new — 빌더 8단계 wizard</a>
+    <a href="#" onclick="goto(6);return false;">07 · /planner/onboarding — 정체성 5요소</a>
+    <a href="#" onclick="goto(7);return false;">08 · /planner/reports — 회고 (day/week/month)</a>
+    <a href="#" onclick="goto(8);return false;">09 · 전반 디자인 원칙 정리</a>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- Slide 2: /planner day view -->
+<!-- ============================================== -->
+<section class="slide" data-slide="2">
+  <div class="slide-head">
+    <div>
+      <div class="eyebrow">SCREEN 1 of 7 · slide 2 of 9</div>
+      <h2>/planner — 일간 캘린더 (day view)</h2>
+      <div class="tagline">홈. 활성 플래너의 오늘. 자기조절 결정 4종이 한 화면에 들어온다.</div>
+    </div>
+    <div class="meta">코드: <code>src/app/(student)/planner/page.tsx</code> + <code>views/day-view.tsx</code></div>
+  </div>
+
+  <div class="shots">
+    <div class="shot"><figure>
+      <figcaption><strong>desktop · 1280×800</strong><span>2열 grid (xl:grid-cols-[420px_1fr])</span></figcaption>
+      <img src="screenshots/planner-day-desktop.png" alt="planner day desktop" />
+    </figure></div>
+    <div class="shot mobile"><figure>
+      <figcaption><strong>mobile · 375</strong><span>1열 fold</span></figcaption>
+      <img src="screenshots/planner-day-mobile.png" alt="planner day mobile" />
+    </figure></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>레이아웃 결정 <span class="pill">2-col @ xl</span></h3>
+      <ul>
+        <li><b>좌(420px 고정)</b>: 시계 카드(24h side timeline) + 다음 블록 hero + 컨디션 슬라이더 + 번아웃 카드 — 결정 표면 4종을 좌측 컬럼에 묶음</li>
+        <li><b>우(1fr)</b>: 오늘 블록 리스트(SectionHeading + BlockCard × N) — 실행 영역</li>
+        <li><b>≤ xl 브레이크포인트(1280px)</b>: 1열 vertical — 시계 → 다음 블록 → 컨디션 → 번아웃 → 블록 리스트 순. 결정 → 실행 순서 보존</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>핵심 컴포넌트</h3>
+      <div class="kvs">
+        <div class="row"><span class="k">셸</span><span><code>CalendarShell</code> — view 토글(일/주/월) + navLabel + action(전환 link)</span></div>
+        <div class="row"><span class="k">시계</span><span><code>SideTimeline24</code> + <code>trimToBlocks</code> (audit #5)</span></div>
+        <div class="row"><span class="k">hero</span><span><code>nextActiveBlock()</code> → 그라데이션 카드 + "지금 시작"</span></div>
+        <div class="row"><span class="k">자기보고</span><span><code>ConditionBurnoutPanel</code> — slider × 5단계, ±20% 자동 조정</span></div>
+        <div class="row"><span class="k">실행</span><span><code>BlockCard</code> — 시각 / 제목 / 엔진 태그 / 상태 칩 / CTA</span></div>
+        <div class="row"><span class="k">회고</span><span><code>TodayReflection</code> ribbon — 학습 완료 시 자동 expand</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:12px;">
+    <h3>왜 시계가 좌측에 있나</h3>
+    <ul>
+      <li><b>점유 시각화 우선</b> — "오늘 몇 시간 학습이 잡혀있는가"를 1초 안에 인지하게 함. 24h 격자에 형광펜처럼 학습 셀이 채워진 형태가 메타포 핵심.</li>
+      <li><b>D-day · 학습 시간 · 완료율</b>이 시계 헤더에 작은 배지로 묶임 — 의사결정에 필요한 메트릭 3종이 시계와 동일 시야에 있게.</li>
+      <li>audit #5(2026-05-14)에서 첫·마지막 일정 ±1h trim 도입으로 빈 새벽·심야 셀이 사라짐. 토글로 24h 전체 복귀 가능 (정보 손실 0).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- Slide 3: /planner week -->
+<!-- ============================================== -->
+<section class="slide" data-slide="3">
+  <div class="slide-head">
+    <div>
+      <div class="eyebrow">SCREEN 2 of 7 · slide 3 of 9</div>
+      <h2>/planner?view=week — 주간 캘린더</h2>
+      <div class="tagline">동일 grid 구조로 view 토글 시 시각 흔들림 0.</div>
+    </div>
+    <div class="meta">코드: <code>views/week-view.tsx</code> + <code>layouts/active-week-layout.tsx</code></div>
+  </div>
+
+  <div class="shots">
+    <div class="shot"><figure>
+      <figcaption><strong>desktop · 1280×800</strong><span>2-col grid · 좌 그리드 + 차트 / 우 목표 카드</span></figcaption>
+      <img src="screenshots/planner-week-desktop.png" alt="planner week desktop" />
+    </figure></div>
+    <div class="shot mobile"><figure>
+      <figcaption><strong>mobile · 375</strong><span>1-col fold</span></figcaption>
+      <img src="screenshots/planner-week-mobile.png" alt="planner week mobile" />
+    </figure></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>왜 동일 grid를 재사용했나</h3>
+      <ul>
+        <li>day/week/month 모두 <code>xl:grid-cols-[420px_1fr]</code> 동일 비율 — 뷰 토글 시 사용자 시선이 같은 위치를 유지하게 만듦.</li>
+        <li>좌측 컬럼은 "시간 점유의 시각화"라는 한 가지 역할로 통일 (시계 / 그리드 / 히트맵 — 단위만 다름).</li>
+        <li>우측 컬럼은 "이번 단위의 목표·메트릭"이라는 한 가지 역할로 통일 (오늘 블록 리스트 / 주간 목표 / 월간 진행).</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>주간 전용 결정</h3>
+      <ul>
+        <li><b>4종 layout 선택지</b> — <code>weekLayoutId</code>에 따라 grid/bar/list/compact 변형. 사용자 커스터마이즈 룰.</li>
+        <li><b><code>bar_week</code> 선택 시 하단 <code>WeeklyChart</code> 자동 숨김</b> — 시각 중복 제거.</li>
+        <li>오늘 열(today column)은 파랑 강조로 "지금 어디"를 표시.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- Slide 4: /planner month -->
+<!-- ============================================== -->
+<section class="slide" data-slide="4">
+  <div class="slide-head">
+    <div>
+      <div class="eyebrow">SCREEN 3 of 7 · slide 4 of 9</div>
+      <h2>/planner?view=month — 월간 히트맵</h2>
+      <div class="tagline">D-day 시험 마커가 첫 시야. 큰 그림 + 마일스톤.</div>
+    </div>
+    <div class="meta">코드: <code>views/month-view.tsx</code> + <code>month-heatmap.tsx</code></div>
+  </div>
+
+  <div class="shots">
+    <div class="shot"><figure>
+      <figcaption><strong>desktop · 1280×800</strong><span>2-col grid · 좌 히트맵 / 우 월간 진행 카드</span></figcaption>
+      <img src="screenshots/planner-month-desktop.png" alt="planner month desktop" />
+    </figure></div>
+    <div class="shot mobile"><figure>
+      <figcaption><strong>mobile · 375</strong><span>1-col fold</span></figcaption>
+      <img src="screenshots/planner-month-mobile.png" alt="planner month mobile" />
+    </figure></div>
+  </div>
+
+  <div class="panel">
+    <h3>왜 히트맵인가</h3>
+    <ul>
+      <li>30일을 한 화면에 — <b>학습 집중도</b>를 색 밀도로 즉시 인지. 7×5 grid가 monthly cognition에 자연스러움.</li>
+      <li><b>D-day 깃발 마커</b>로 시험 일정을 히트맵 위에 overlay — "남은 학습 일수"가 별도 카드 없이도 한 시야.</li>
+      <li>우측 <code>MonthlyProgressCard</code>는 "이번 달 누적 블록 수 / 목표"라는 한 가지 메트릭만 — 노이즈 최소.</li>
+      <li>day/week 대비 정보 밀도가 의도적으로 낮음 — 월간은 "큰 그림" 모드이지 실행 모드가 아니라는 것이 메타포.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- Slide 5: /planner/manage -->
+<!-- ============================================== -->
+<section class="slide" data-slide="5">
+  <div class="slide-head">
+    <div>
+      <div class="eyebrow">SCREEN 4 of 7 · slide 5 of 9</div>
+      <h2>/planner/manage — 다중 시간표 관리</h2>
+      <div class="tagline">N개 플래너 카드 그리드. 한 번에 하나만 active.</div>
+    </div>
+    <div class="meta">코드: <code>app/(student)/planner/manage/page.tsx</code> + <code>planner-manage/planner-card.tsx</code></div>
+  </div>
+
+  <div class="shots">
+    <div class="shot"><figure>
+      <figcaption><strong>desktop · 1280×800</strong><span>활성 / 비활성 / 아카이브 3 그룹</span></figcaption>
+      <img src="screenshots/manage-desktop.png" alt="manage desktop" />
+    </figure></div>
+    <div class="shot mobile"><figure>
+      <figcaption><strong>mobile · 375</strong><span>카드 vertical stack</span></figcaption>
+      <img src="screenshots/manage-mobile.png" alt="manage mobile" />
+    </figure></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>왜 카드 그리드인가</h3>
+      <ul>
+        <li>"수능 D-90" / "6월 모의" 같은 <b>여러 학습 사이클</b>을 동시에 운영하는 페르소나 가정. (Plan 3 본구현)</li>
+        <li>활성 카드는 시각 강조 + "현재 사용중" 배지. <b>한 번에 하나만</b> active — 인지 혼동 0.</li>
+        <li>CRUD 5종(수정 · 복사 · 활성화 · 아카이브 · 삭제)이 카드 내 menu로 묶임. <b>활성 카드 삭제 차단</b>은 toast로 가드.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>아카이브 토글</h3>
+      <ul>
+        <li>지난 시간표는 default hidden — "Eye / EyeOff" 토글로 회고용 보존 카드 노출.</li>
+        <li>"📦 아카이브" 토스트로 "회고용으로 보존됩니다" 안내 — 삭제 ≠ 아카이브 구분 명시.</li>
+        <li>archive된 카드는 활성화 불가 + 복원 액션 필요 (의도된 friction).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- Slide 6: /planner/manage/new (builder) -->
+<!-- ============================================== -->
+<section class="slide" data-slide="6">
+  <div class="slide-head">
+    <div>
+      <div class="eyebrow">SCREEN 5 of 7 · slide 6 of 9</div>
+      <h2>/planner/manage/new — 빌더 (8단계 wizard)</h2>
+      <div class="tagline">학습과학 결정을 8개로 분할. 단계마다 사용자 결정 1~2개.</div>
+    </div>
+    <div class="meta">코드: <code>components/planner-builder/step-content.tsx</code> · <code>step-indicator.tsx</code></div>
+  </div>
+
+  <div class="shots">
+    <div class="shot"><figure>
+      <figcaption><strong>desktop · 1280×800</strong><span>step indicator 상단 + step 본문 + prev/next</span></figcaption>
+      <img src="screenshots/manage-new-desktop.png" alt="manage-new desktop" />
+    </figure></div>
+    <div class="shot mobile"><figure>
+      <figcaption><strong>mobile · 375</strong><span>step indicator horizontal scroll</span></figcaption>
+      <img src="screenshots/manage-new-mobile.png" alt="manage-new mobile" />
+    </figure></div>
+  </div>
+
+  <div class="panel">
+    <h3>왜 8단계로 쪼갰나</h3>
+    <ul>
+      <li><b>1) 목표</b> — 시험명·유형·D-day. "왜 학습하는가"를 먼저 묶음.</li>
+      <li><b>2) 시간</b> — 주간 학습 가능 시간. 학습 capacity 정의.</li>
+      <li><b>3) 과목·단원</b> — 학습 범위. <i>(audit #7로 SubjectCard min-h 통일, 2026-05-18)</i></li>
+      <li><b>4) 블록 패턴</b> — 집중·분산 등 3종 spec. 학습과학 결정 1단계.</li>
+      <li><b>5) 약점 자동 반영</b> — 어제 정답률 기반 다음날 분배.</li>
+      <li><b>6) 동기 스타일</b> — 보상 톤 결정 (push 문구·이모지).</li>
+      <li><b>7) 알림</b> — 카톡·푸시·5분 전·부모 보고 4종.</li>
+      <li><b>8) 미리보기·활성화</b> — 일주일 preview 카드 + 활성 토글.</li>
+    </ul>
+  </div>
+
+  <div class="panel" style="margin-top:12px;">
+    <h3>배치 의도 — 결정 부담 분산</h3>
+    <ul>
+      <li>한 화면에 결정 1~2개만 — 인지 부하 최소. 단계 indicator로 현재 위치 가시화.</li>
+      <li>Step 8 미리보기는 "내가 만든 시간표가 어떻게 보일지" 결과를 commit 전 노출 — 결정 후회 비용 ↓.</li>
+      <li>audit #7(2026-05-18)에서 Step 3 SubjectCard <code>min-h-[150px]</code> 통일 + Step 8 empty section flex 중앙으로 빈 상태 정합 회복.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- Slide 7: /planner/onboarding -->
+<!-- ============================================== -->
+<section class="slide" data-slide="7">
+  <div class="slide-head">
+    <div>
+      <div class="eyebrow">SCREEN 6 of 7 · slide 7 of 9</div>
+      <h2>/planner/onboarding — 정체성 5요소</h2>
+      <div class="tagline">"어떤 도구인가"를 5 step으로 전달. production UI 직접 노출 X.</div>
+    </div>
+    <div class="meta">코드: <code>app/(student)/planner/onboarding/page.tsx</code> + <code>shell/onboarding-template.tsx</code></div>
+  </div>
+
+  <div class="shots">
+    <div class="shot"><figure>
+      <figcaption><strong>desktop · 1280×800</strong><span>step 5종 · mock browser 위 실제 컴포넌트 미리보기</span></figcaption>
+      <img src="screenshots/onboarding-desktop.png" alt="onboarding desktop" />
+    </figure></div>
+    <div class="shot mobile"><figure>
+      <figcaption><strong>mobile · 375</strong><span>1열 vertical</span></figcaption>
+      <img src="screenshots/onboarding-mobile.png" alt="onboarding mobile" />
+    </figure></div>
+  </div>
+
+  <div class="panel">
+    <h3>5 step · 정체성 정의</h3>
+    <ul>
+      <li><b>1) 일/주/월 캘린더</b> — "시간 블록 단위로 자동 배치" 메타포 도입. 24h side tracker preview.</li>
+      <li><b>2) 다음 블록 hero</b> (signature) — "지금 시작" 1tap. <b>이 화면이 풀림 플래너의 진짜 정체성</b>.</li>
+      <li><b>3) 컨디션 슬라이더</b> — 자기조절 input. ±20% 조정 룰 가시화.</li>
+      <li><b>4) 번아웃 카드 + "쉴래요" 1-tap</b> — 임계 도달 → 시스템 먼저 휴식 제안.</li>
+      <li><b>5) 7대 학습과학 엔진</b> — 블록 카드 엔진 태그 클릭 → 원리 모달. 교육적 투명성 5요소 마지막.</li>
+    </ul>
+  </div>
+
+  <div class="panel" style="margin-top:12px;">
+    <h3>왜 mock browser 안에 실제 컴포넌트를 넣었나</h3>
+    <ul>
+      <li><code>MockBrowser</code>는 "이 화면이 production에서 어떻게 보이는지" 미리보기 frame.</li>
+      <li>온보딩 step 본문은 텍스트 설명이지만, 우측 preview는 <b>실제 SideTimeline24 · ConditionSlider · BurnoutCard · PedagogyTag 컴포넌트</b>를 그대로 사용. 마케팅이 아닌 실물 데모.</li>
+      <li>완료 CTA → <code>/planner</code>로 직진. "지금 바로 사용 가능"을 흐름 자체로 증명.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- Slide 8: /planner/reports -->
+<!-- ============================================== -->
+<section class="slide" data-slide="8">
+  <div class="slide-head">
+    <div>
+      <div class="eyebrow">SCREEN 7 of 7 · slide 8 of 9</div>
+      <h2>/planner/reports — 회고 (day / week / month)</h2>
+      <div class="tagline">"부모님께 보내기" CTA가 첫 우측 액션. analytics track.</div>
+    </div>
+    <div class="meta">코드: <code>app/(student)/planner/reports/page.tsx</code> + <code>reports/*</code></div>
+  </div>
+
+  <div class="shots">
+    <div class="shot"><figure>
+      <figcaption><strong>desktop · 1280×800</strong><span>default view=week · 메트릭 4 + 차트 + 트렌드 + parent card</span></figcaption>
+      <img src="screenshots/reports-desktop.png" alt="reports desktop" />
+    </figure></div>
+    <div class="shot mobile"><figure>
+      <figcaption><strong>mobile · 375</strong><span>1열 vertical · 메트릭 2×2</span></figcaption>
+      <img src="screenshots/reports-mobile.png" alt="reports mobile" />
+    </figure></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>3-view cadence</h3>
+      <ul>
+        <li><b>day</b>: <code>TodayReflection defaultOpen</code> — 오늘 결과 즉시 노출. <i>(audit #8 spacing 강화, 2026-05-18)</i></li>
+        <li><b>week</b>: <code>WeeklySummary</code> — 학습 시간·정답률·약점 진도. default view.</li>
+        <li><b>month</b>: <code>MonthlySummary</code> — D-day까지 마일스톤 점검.</li>
+        <li>view 전환은 <code>track('reports_view_change', { from, to })</code>로 analytics 기록 (PR #13).</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>왜 "부모님께 보내기"가 헤더 액션인가</h3>
+      <ul>
+        <li>풀림 페르소나에 부모가 1순위 stakeholder — 학생의 학습 결과를 부모에게 매주 공유하는 cadence.</li>
+        <li>CTA 클릭 → <code>ConsentDialog</code> 동의 흐름. 학생 자율로 "공유 여부"를 결정.</li>
+        <li><code>track('reports_parent_card_open')</code>로 CTA 노출/클릭 funnel 측정.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:12px;">
+    <h3>audit #8 — TodayReflection 정보감 강화 (오늘)</h3>
+    <ul>
+      <li>dogfood 피드백 "비어 보임" → spacing/padding/font 4건 격상 (PR #15)</li>
+      <li>Metric padding <code>p-2.5 → p-3</code>, value <code>text-base → text-lg</code>, body <code>space-y-4 → space-y-5</code>, 블록 리스트 <code>space-y-1 → space-y-1.5</code></li>
+      <li>reports day + home day 둘 다 사용처라 양쪽 동일 개선</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================================== -->
+<!-- Slide 9: 전반 정리 -->
+<!-- ============================================== -->
+<section class="slide" data-slide="9">
+  <div class="slide-head">
+    <div>
+      <div class="eyebrow">CLOSING · slide 9 of 9</div>
+      <h2>전반 디자인 원칙 정리</h2>
+      <div class="tagline">7개 화면을 관통하는 규칙. 다음 audit·기능 추가 때 참조.</div>
+    </div>
+    <div class="meta">audit cadence: #5(5/14) · #6(5/15) · #7(5/18) · #8(5/18)</div>
+  </div>
+
+  <div class="principle-grid">
+    <div class="principle"><b>1. 결정 표면 우선</b><p>홈에서 "다음 블록 hero · 컨디션 슬라이더 · 번아웃 카드"가 좌측 컬럼에 묶여 첫 시야 점유. 시간표(시계)는 시각 메타포로 그 옆.</p></div>
+    <div class="principle"><b>2. 일관된 2-col grid</b><p>day/week/month 모두 <code>xl:grid-cols-[420px_1fr]</code>. ≤ xl에서 1열 fold. 좌측은 "시간 점유 시각화", 우측은 "이번 단위 메트릭·실행". 뷰 토글 흔들림 0.</p></div>
+    <div class="principle"><b>3. 자기조절 플라이휠</b><p>컨디션 → 블록 난이도 ±20%. 번아웃 → 휴식 제안. 오늘 결과(정답률·감정·시간) → 내일 자동 반영. 회고 페이지는 그 cadence를 가시화.</p></div>
+    <div class="principle"><b>4. 교육적 투명성</b><p>모든 블록에 학습과학 엔진 태그. 태그 클릭 → "왜 이 엔진?" 원리 모달. 결정의 근거가 사용자에게 항상 열림.</p></div>
+    <div class="principle"><b>5. 빌더는 분할 wizard</b><p>학습과학 결정 8개를 1화면 1~2 결정으로 쪼갬. step indicator · prev/next · 미리보기. 단계마다 인지 부하 최소.</p></div>
+    <div class="principle"><b>6. audit cadence</b><p>visual dead-space 발견 시 작은 PR로 정리 — 5/14 timeline trim, 5/15 dead-end 정리, 5/18 builder min-h + reports 정보감. 4일 연속 풀스택.</p></div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>후속 개선 후보 (다음 audit 풀)</h3>
+    <ul>
+      <li><b>weekly-summary mobile</b> — 모바일 메트릭 그리드 squeeze (Mid · ~20m · ★★)</li>
+      <li><b>카드 컬러 토큰화</b> — palettes.ts vs hardcoded class 단절 (Mid · ~50m · ★)</li>
+      <li><b>onboarding 완료 플래그</b> — MVP 범위 외, 상태 관리 layer 필요 (Low · ~40m · ★)</li>
+      <li><b>weekly chart bar_week 중복 제거</b> — 이미 hide 분기 있음, 다른 layout과 일관성 검증 후속</li>
+      <li><b>ribbon 정보 표시 룰 재정의</b> — TodayReflection collapsed 상태 메트릭 노출 옵션 (별 plan)</li>
+    </ul>
+  </div>
+
+  <div class="footnote">
+    캡처 출처 · <code>https://pullim-planner.vercel.app</code> (2026-05-18 시점, commit <code>bcec55b</code>) · Chrome headless 1280×800 / 375×812.<br />
+    이 문서는 정적 분석이며, mock data 기준 화면 상태를 반영한다. 실 사용자 데이터 결합 시 화면 정보 밀도는 달라질 수 있다.<br />
+    탐색: <kbd>←</kbd> <kbd>→</kbd> 화살표 키 또는 상단 navigation 버튼.
+  </div>
+</section>
+
+</main>
+
+<footer class="controls">
+  <button onclick="prev()" aria-label="이전 슬라이드">‹</button>
+  <span class="count"><span id="n2">1</span> / <span id="t2">9</span></span>
+  <button onclick="next()" aria-label="다음 슬라이드">›</button>
+</footer>
+
+<script>
+  const slides = document.querySelectorAll('section.slide');
+  let idx = 0;
+  const total = slides.length;
+  document.getElementById('t').textContent = total;
+  document.getElementById('t2').textContent = total;
+
+  function render() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+    document.getElementById('n').textContent = idx + 1;
+    document.getElementById('n2').textContent = idx + 1;
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  function next() { idx = Math.min(idx + 1, total - 1); render(); }
+  function prev() { idx = Math.max(idx - 1, 0); render(); }
+  function goto(i) { idx = Math.max(0, Math.min(i, total - 1)); render(); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { next(); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { prev(); e.preventDefault(); }
+    else if (e.key === 'Home') { goto(0); }
+    else if (e.key === 'End') { goto(total - 1); }
+  });
+</script>
+
+</body>
+</html>

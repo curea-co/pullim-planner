@@ -72,11 +72,11 @@ export function CalendarShell({
         action={action}
       />
 
-      {/* View 토글 + 시간 이동 — 한 줄 */}
+      {/* View 토글 + 시간 이동 — sm 이상 한 줄, mobile은 2줄 */}
       <div className="bg-card flex flex-wrap items-center gap-2 rounded-xl border p-2">
         <ViewToggle view={view} onChange={onChangeView} />
 
-        <div className="border-pullim-slate-200 ml-auto flex items-center gap-1 border-l pl-2">
+        <div className="border-pullim-slate-200 flex w-full items-center justify-end gap-1 sm:ml-auto sm:w-auto sm:border-l sm:pl-2">
           <button
             type="button"
             onClick={onPrev}

@@ -200,7 +200,7 @@ function Metric({
       >
         {value}
       </div>
-      <div className="text-pullim-slate-400 truncate text-[10px]">{sub}</div>
+      <div className="text-pullim-slate-400 break-words text-[10px] sm:truncate">{sub}</div>
     </div>
   );
 }

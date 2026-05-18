@@ -21,14 +21,14 @@ type Props = {
  */
 export function StepIndicator({ steps, current, onJump }: Props) {
   return (
-    <nav aria-label="봇 빌더 진행" className="bg-card overflow-hidden rounded-2xl border">
-      <ol className="grid grid-cols-4 sm:grid-cols-8 divide-pullim-slate-100 divide-x">
+    <nav aria-label="봇 빌더 진행" className="bg-card overflow-x-auto rounded-2xl border sm:overflow-hidden">
+      <ol className="flex min-w-max sm:grid sm:grid-cols-8 sm:min-w-0 divide-pullim-slate-100 divide-x">
         {steps.map(s => {
           const isActive = s.num === current;
           const isDone = s.num < current;
           const Icon = s.icon;
           return (
-            <li key={s.num}>
+            <li key={s.num} className="min-w-[84px] sm:min-w-0">
               <button
                 type="button"
                 onClick={() => onJump(s.num)}
