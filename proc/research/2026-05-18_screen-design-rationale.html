@@ -558,11 +558,11 @@
   <div class="panel" style="margin-top:16px;">
     <h3>후속 개선 후보 (다음 audit 풀)</h3>
     <ul>
-      <li><b>BottomNav 4번째 탭 cut</b> — PR #17 (<code>grid-cols-4</code> → <code>flex flex-1</code>) 적용 후에도 414/375 둘 다 미해결. DOM 정상, PNG width 정상인데 4탭 미균등. <b>AppShell parent overflow 또는 viewport 계산 layer 추적 필요</b></li>
       <li><b>weekly-summary mobile</b> — 모바일 메트릭 그리드 squeeze (Mid · ~20m · ★★)</li>
       <li><b>카드 컬러 토큰화</b> — palettes.ts vs hardcoded class 단절 (Mid · ~50m · ★)</li>
       <li><b>onboarding 완료 플래그</b> — MVP 범위 외, 상태 관리 layer 필요 (Low · ~40m · ★)</li>
       <li><b>ribbon 정보 표시 룰 재정의</b> — TodayReflection collapsed 상태 메트릭 노출 옵션 (별 plan)</li>
+      <li><b>캡처 도구 — puppeteer mobile emulation 표준화</b> — Chrome <code>--screenshot</code> 단순 캡처가 mobile viewport 계산 부정확. proc/research용 캡처는 puppeteer <code>page.emulate({ isMobile, deviceScaleFactor })</code>로 통일 (slide 10 lesson)</li>
     </ul>
   </div>
 
@@ -591,8 +591,11 @@
 
   <p class="lede">
     "시간표가 모바일에서 엉망이구나, 하단 내비게이터도 엉망" — 슬라이드 9장으로 모바일 캡처가 동시 노출되자
-    결함 분포가 드러났다. 8건을 1 PR atomic으로 묶어 정리. 7건은 시각적으로 즉시 회복됐고,
-    <b>BottomNav 4번째 탭 미노출</b>은 grid → flex fix 시도(PR #17) 후에도 해소되지 않아 AppShell parent layout 추적이 후속 과제로 남았다.
+    결함 분포가 드러났다. 8건을 1 PR atomic으로 묶어 정리(PR #16). BottomNav fix 시도(PR #17)까지 머지·배포 후
+    재캡처에서 4번째 탭이 안 보여 처음엔 layout 결함으로 오해했으나, <b>실제 원인은 캡처 도구</b>였다 —
+    Chrome <code>--screenshot</code> 단순 캡처가 mobile viewport 계산을 부정확히 처리.
+    Puppeteer <code>page.emulate({ isMobile, deviceScaleFactor })</code>로 다시 잡으니
+    <b>BottomNav 4탭 모두 정상 노출</b>. PR #16·#17 fix는 모두 작동 중.
   </p>
 
   <div class="grid2">
@@ -649,24 +652,24 @@
       <li>✅ <b>SideTimeline24</b> — mobile <code>max-h-[320px]</code> (480 → 320, 화면 80% 점유 해소)</li>
       <li>✅ <b>PlannerCard sub</b> — mobile <code>break-words sm:truncate</code>로 정보 손실 0</li>
       <li>✅ <b>StepIndicator</b> — mobile <code>flex overflow-x-auto sm:grid sm:grid-cols-8</code> + 4탭 inline 가시</li>
-      <li>⚠️ <b>BottomNav 4탭</b> — nav-config 4탭 + active 로직은 정상. PR #17에서 <code>grid-cols-4 → flex flex-1 min-w-0</code> fix 시도했으나 mobile 캡처에 4번째("소개") 여전히 viewport 외부. DOM dump는 정상, PNG width 375 정상 → AppShell parent 또는 viewport 계산 layer 결함 추적 후속</li>
+      <li>✅ <b>BottomNav 4탭</b> — nav-config 4탭(홈/관리/리포트/소개) + most-specific active 로직 정상. PR #16 코드는 작동 중이었고, PR #17(<code>grid → flex flex-1</code>)은 안전 보강. Puppeteer 정밀 캡처에서 4탭 모두 균등 노출 확인</li>
     </ul>
   </div>
 
   <div class="panel" style="margin-top:12px;">
-    <h3>왜 슬라이드 작업이 audit 발견을 가속시켰나</h3>
+    <h3>이번 cycle에서 배운 것</h3>
     <ul>
-      <li>슬라이드 9장에 mobile 캡처 7장이 <b>동시 노출</b> → 결함 분포가 한 시야에 들어옴 (캡처 개별로는 누락 가능)</li>
-      <li>"감사 결과를 보기 위한 도구"가 "감사 입력"으로 작용 — 분석 산출물이 다음 작업을 트리거하는 cadence</li>
-      <li>audit #9 1 PR atomic 채택의 이유: 공통 원인이 mobile viewport layout이라 묶음 검증·review가 효율적</li>
-      <li>BottomNav case는 fix가 한 번에 안 풀리는 사례 — 후속 audit로 분리하는 게 cadence 위반 X (정직한 보고)</li>
+      <li><b>슬라이드가 audit 발견을 가속</b> — mobile 캡처 7장이 한 시야에 묶이자 결함 분포가 드러남. 분석 산출물이 다음 작업을 트리거하는 cadence</li>
+      <li><b>1 PR atomic이 맞는 경우</b> — 공통 원인이 mobile viewport layout이라 묶음 검증·review 효율적 (audit #5·#6·#7·#8은 single fix지만 #9는 종합)</li>
+      <li><b>캡처 도구가 진단의 진리값을 결정</b> — Chrome <code>--screenshot</code> 단순 캡처는 mobile viewport 계산이 부정확. <b>이번처럼 viewport-sensitive 결함 진단에는 Puppeteer <code>page.emulate</code> 필수</b>. 도구의 거짓 양성이 root cause를 잘못 추적하게 만들 수 있음 (PR #17은 안전 보강으로 가치 있으나, 진짜 결함은 캡처 도구 쪽이었음)</li>
+      <li><b>정직한 보고 cadence</b> — 캡처 결과를 그대로 신뢰하기보다 "DOM dump · PNG dimensions · 다른 viewport 비교"로 cross-check가 필요. 사용자 직접 지적(<i>"캡처 똑바로 안해"</i>)이 진단 도구 교체의 트리거가 됨</li>
     </ul>
   </div>
 
   <div class="footnote">
-    Before · <code>screenshots/*-mobile.png</code> · 2026-05-18 11:48 시점 (PR #15 직후) ·
-    After · <code>screenshots/after/*-mobile.png</code> · 2026-05-18 14:55 시점 (PR #17 직후).<br />
-    BottomNav 후속 추적 — <code>https://github.com/curea-co/pullim-planner</code> 새 issue 또는 audit #10 plan으로.
+    Before · <code>screenshots/*-mobile.png</code> · Chrome <code>--screenshot</code> 단순 캡처 (PR #16 이전 시점, mobile emulation 부정확) ·
+    After · <code>screenshots/after/*-mobile.png</code> · Puppeteer <code>page.emulate</code> 정밀 캡처 (PR #17 머지 후 시점, viewport 375 deviceScaleFactor 2).<br />
+    Before/After 비교는 viewport 계산 도구 차이도 일부 포함. After 결과로 PR #16·#17 fix 모두 작동 중 확인.
   </div>
 </section>
 
