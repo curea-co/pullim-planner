@@ -64,6 +64,7 @@ bun run dev      # http://localhost:3030 — FE + BE 동시 실행
 | `bun run db:reset` | 컨테이너 + 데이터 볼륨 삭제 후 다시 시작 (clean start) |
 | `bun run db:generate` | `schema.ts` 변경분으로 마이그레이션 SQL 생성 |
 | `bun run db:migrate` | 생성된 마이그레이션을 DB에 적용 |
+| `bun run db:seed` | mock data → DB 시드 (Ph2) |
 | `bun run db:studio` | DB 테이블 GUI (http://localhost:4983) |
 | `bun run build` | 프로덕션 빌드 |
 | `bun run lint` | ESLint |
