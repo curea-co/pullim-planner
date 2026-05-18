@@ -24,10 +24,11 @@
 - [x] **C-2 fix 후보 3안 + 트레이드오프 표** — A 부모 기준 통일 / B 자식 기준 통일 / C 구조 재설계. 추천: A
 - [x] **C-3 plan 파일 작성** — [proc/plan/2026-05-18_builder-min-h.md](2026-05-18_builder-min-h.md) (4단계 구조 1·2단계 완료)
 - [x] **C-4 G4 합의** — 채택: **A. 부모 기준 통일** (2026-05-18). 3·4단계 풀스택 진입 가능
-- [ ] **C-5 (선택) 풀스택 진입** — 구현 → PR → 머지. production 반영은 G1 명시 슬롯에서 별도
+- [x] **C-5 풀스택 진입** — 구현(SubjectCard min-h-[150px] + Step 8 flex 중앙) → tsc 통과 → PR #14 → squash merge (2026-05-18)
+- [x] **C-6 production 반영** — `vercel --prod --yes` 실행 (G1 명시 슬롯 적용)
 
 ### (약속 외 carry) PR #12·#13 production 반영
-- [ ] **carry-1** — A 결정 기준 합의 직후 별도 슬롯에서 판단. 09:30 약속 ✅ 판정에는 포함하지 않음
+- [x] **carry-1** — G1 합의(C. G1 명시) 직후 별도 슬롯에서 PM 명시 → `vercel --prod --yes` 1회 실행으로 #12·#13 production 반영 (READY, https://pullim-planner.vercel.app)
 
 ## 예상 블로커
 - A G1 정렬 응답 시간 — 정책 문서이므로 1줄 합의 필요. 응답 지연 시 17:30까지 결론 미도달 가능 → (1)·(2) PM 단독 진행, (3) G1 응답 대기로 분리. 약속 ✅ 판정은 (1)·(2) 충족이면 가능, 다만 17:30 4행 closing "검증" 행에 ⚠️ 부분 달성 위험
