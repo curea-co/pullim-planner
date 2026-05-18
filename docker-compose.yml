@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pullim-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: pullim
+      POSTGRES_PASSWORD: pullim_local
+      POSTGRES_DB: pullim_planner
+      # 한국어 sort·collation
+      LANG: C.UTF-8
+    volumes:
+      - ./.docker/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pullim -d pullim_planner"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
