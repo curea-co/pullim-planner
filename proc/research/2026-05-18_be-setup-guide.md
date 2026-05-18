@@ -2,7 +2,43 @@
 
 > 2026-05-18 작성 · Phase 1 (Schema + Docker + spec) 완료 시점
 
-## 0. 필요 도구
+## 0. 아키텍처 — 무엇이 어디서 도는가
+
+**DB만 Docker. BE(Next.js)는 host.** dev workflow 표준 패턴.
+
+```
+┌─────────────────── 개발자 머신 (host) ───────────────────┐
+│                                                          │
+│   Next.js dev server (bun run dev → :3030)               │
+│   ├─ SPA / FE pages                                      │
+│   ├─ API routes /api/* (Ph3~)                            │
+│   └─ drizzle-kit (generate/migrate/studio)               │
+│                       │                                  │
+│                       │ pg connection                    │
+│                       │ DATABASE_URL=...localhost:5432   │
+│                       ▼                                  │
+│   Docker Engine                                          │
+│   └─ pullim-postgres (Postgres 16-alpine)                │
+│      ports 5432:5432, vol ./.docker/postgres             │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+| 구성요소 | 위치 | 역할 |
+|---|---|---|
+| Postgres 16 | Docker 컨테이너 | 데이터 저장. 외부 노출 5432 |
+| Next.js (FE + API) | host (`bun run dev`) | FE 페이지 + `/api/*` route handler. hot reload |
+| `drizzle-kit` | host | host에서 실행, DATABASE_URL로 컨테이너 DB 접속 |
+| `bun run db:*` 스크립트 | host | host에서 `docker compose` CLI를 호출하는 wrapper |
+
+**왜 이 구조인가**
+- DB만 컨테이너 → 버전 고정·데이터 격리·팀 환경 동기화. 컨테이너 재시작이 코드에 영향 0.
+- BE는 host → bun hot reload 즉시(ms 단위), IDE 디버거 그대로.
+- `bun run db:*`는 단지 `docker compose` 또는 `drizzle-kit` 호출 wrapper. docker CLI를 매번 외울 필요 없게 표준화.
+
+**BE도 Docker로 돌리지 않는 이유** — dev에서는 host bun이 빠르고, prod에서는 Vercel(또는 별 컨테이너 platform)이 빌드·배포 책임. dev에 Docker 추가 layer는 hot reload·디버거 복잡도만 늘림.
+
+## 0.1 필요 도구
 
 - Bun ≥ 1.3 (현 repo standard)
 - Docker Desktop (또는 OrbStack / colima)
