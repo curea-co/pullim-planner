@@ -110,7 +110,7 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
       {open && (
         <div id="today-reflection-body" className="space-y-5 border-t p-4">
           {/* 메트릭 3 */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <Metric
               Icon={Clock}
               label="학습 시간"

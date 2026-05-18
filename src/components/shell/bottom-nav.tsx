@@ -12,19 +12,33 @@ import { cn } from '@/lib/utils';
 export function BottomNav() {
   const pathname = usePathname();
 
+  // 가장 긴 matchPrefix를 가진 탭 1개만 active — `/planner/manage` 진입 시 "홈" 탭과 동시 active 회귀 방지
+  const activeIdx = (() => {
+    let bestIdx = -1;
+    let bestLen = -1;
+    studentBottomTabs.forEach((tab, i) => {
+      tab.matchPrefix.forEach(p => {
+        if (pathname === p || pathname.startsWith(p + '/')) {
+          const len = p === '/' ? 0 : p.length;
+          if (len > bestLen) {
+            bestLen = len;
+            bestIdx = i;
+          }
+        }
+      });
+    });
+    return bestIdx;
+  })();
+
   return (
     <nav
       aria-label="학생 메인 네비게이션"
       className="bg-background/95 sticky bottom-0 z-30 border-t backdrop-blur-md md:hidden"
     >
-      <ul className="grid grid-cols-5">
-        {studentBottomTabs.map(item => {
+      <ul className="grid grid-cols-4">
+        {studentBottomTabs.map((item, i) => {
           const Icon = item.icon;
-          const active = (() => {
-            if (item.href === '/' && pathname === '/') return true;
-            if (item.href === '/') return false;
-            return item.matchPrefix.some(p => pathname === p || pathname.startsWith(p + '/'));
-          })();
+          const active = i === activeIdx;
           return (
             <li key={item.href}>
               <Link
