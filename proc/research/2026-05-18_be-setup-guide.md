@@ -128,13 +128,23 @@ export async function GET(req: Request) {
 
 DB client는 [`src/lib/db/index.ts`](../../src/lib/db/index.ts)에서 single Pool로 관리. Next.js hot reload에서 connection 누수 방지를 위해 `globalThis` cache.
 
-## 8. 다음 단계 (Ph2~)
+## 8. 다음 단계 (Ph3~)
 
-[`proc/spec/2026-05-18_be-api-design.md`](../spec/2026-05-18_be-api-design.md) §5 로드맵 참조. 이번 Ph1은 Schema + Docker + spec까지. 다음 차례:
+[`proc/spec/2026-05-18_be-api-design.md`](../spec/2026-05-18_be-api-design.md) §5 로드맵 참조. Ph1·Ph2 완료. 다음 차례:
 
-- **Ph2 seed** — mock data를 DB로 insert (`scripts/seed.ts`)
+- ✅ **Ph2 seed** — mock data → DB ([`scripts/seed.ts`](../../scripts/seed.ts), `bun run db:seed`로 실행)
 - **Ph3 read endpoint** — `/api/me`, `/api/planners`, `/api/planners/{id}/blocks?date=...`
 - **Ph4 mutation** — Planner CRUD + activate/archive
+
+### Ph2 seed 사용법
+
+```bash
+bun run db:up        # 컨테이너 떠 있는지 확인
+bun run db:migrate   # 처음 한 번 (이미 했으면 skip)
+bun run db:seed      # mock → DB (idempotent: 매 실행마다 TRUNCATE 후 재삽입)
+```
+
+seed 내용 — users 1건(서연, student_001), planners 3건(6월 모의평가 active / 1학기 기말 / 4월 학평 archived), planner_subject_units, curriculum_nodes 6 과목 × 3 depth, pedagogy_engines 7건, today blocks 8건 + block_completions(done 2건), daily_conditions + burnout_snapshots(2026-04-24 기준).
 
 ## 9. 트러블슈팅
 
@@ -148,8 +158,8 @@ DB client는 [`src/lib/db/index.ts`](../../src/lib/db/index.ts)에서 single Poo
 
 ## 10. 정합 진행 상태
 
-- [x] Phase 1 — Schema + Docker + spec (이번)
-- [ ] Phase 2 — seed (mock → DB)
+- [x] Phase 1 — Schema + Docker + spec
+- [x] Phase 2 — seed (mock → DB)
 - [ ] Phase 3 — read endpoint
 - [ ] Phase 4 — mutation endpoint
 - [ ] Phase 5 — block lifecycle
