@@ -82,6 +82,7 @@ async function main() {
 
   /* 3. curriculum_nodes — 6 과목 트리. depth 1 → 2 → 3 순으로 (parent FK) */
   const trees = Object.values(allCurricula);
+  const curriculumNodeIds = new Set<string>();
   let nodeCount = 0;
   // depth 1 (과목 root) → depth 2 (단원) → depth 3 (성취 기준) 순
   for (const depth of [1, 2, 3] as const) {
@@ -97,6 +98,7 @@ async function main() {
           label: node.label,
           position: i,
         });
+        curriculumNodeIds.add(node.id);
         nodeCount += 1;
       }
     }
@@ -158,8 +160,11 @@ async function main() {
       type: b.type,
       title: b.title,
       linkedFeatureSlug: b.linkedFeatureSlug ?? null,
-      // curriculum FK는 노드 존재 시만 — 없으면 null (mock에 임의 id 있을 수 있음)
-      curriculumNodeId: b.curriculumNodeId ?? null,
+      // curriculum FK는 실제 노드 존재 시만. mock에 트리 밖 임의 id(예: 'math.calc')가 섞여 있어 Set으로 검증.
+      curriculumNodeId:
+        b.curriculumNodeId && curriculumNodeIds.has(b.curriculumNodeId)
+          ? b.curriculumNodeId
+          : null,
       engines: b.engines,
       status: b.status,
       progress: b.progress,
