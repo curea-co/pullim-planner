@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
@@ -33,6 +33,18 @@ function PlannerHome() {
   const view: CalendarView = (VALID_VIEWS as string[]).includes(raw ?? '')
     ? (raw as CalendarView)
     : 'day';
+
+  // 첫 방문이면 onboarding으로 우회 (audit #11) — view 파라미터 있으면 deep link로 간주, 스킵
+  useEffect(() => {
+    if (raw) return;
+    try {
+      if (localStorage.getItem('pullim:visited')) return;
+      localStorage.setItem('pullim:visited', '1');
+      router.replace('/planner/onboarding?firstVisit=1');
+    } catch {
+      // localStorage 비활성 브라우저 — 매 방문 redirect 방지를 위해 무시
+    }
+  }, [raw, router]);
 
   const active = getActivePlanner();
 
