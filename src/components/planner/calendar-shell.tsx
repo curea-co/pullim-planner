@@ -91,7 +91,7 @@ export function CalendarShell({
             {navLabel}
             {isDemoNav && (
               <span
-                className="text-pullim-slate-400 ml-1 font-mono text-[10px] font-semibold"
+                className="text-pullim-slate-500 ml-1 font-mono text-[10px] font-semibold"
                 title="시간 이동은 데모 단계에서는 비활성 — 이번 주 데이터만 채워져 있어요"
               >
                 (데모)

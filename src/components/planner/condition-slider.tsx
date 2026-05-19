@@ -68,7 +68,7 @@ export function ConditionSlider({ initial = 3, onChange }: Props) {
     <section className="bg-card rounded-xl border p-4">
       <div className="mb-3 flex items-baseline justify-between">
         <h3 className="text-pullim-slate-900 text-sm font-bold">오늘의 컨디션</h3>
-        <span className="text-pullim-slate-400 text-[10px]">매일 아침 보고</span>
+        <span className="text-pullim-slate-500 text-[10px]">매일 아침 보고</span>
       </div>
 
       <div

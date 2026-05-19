@@ -80,7 +80,7 @@ export function BarWeekLayout({ paletteId, compact }: Props) {
       </div>
 
       {!compact && (
-        <p className="text-pullim-slate-400 mt-2 text-[10px]">
+        <p className="text-pullim-slate-500 mt-2 text-[10px]">
           점선 = 목표({goal}h). 채워진 막대 = 목표 달성한 날.
         </p>
       )}

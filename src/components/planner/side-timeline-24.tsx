@@ -14,7 +14,7 @@ const STATUS_LABEL: Record<TimeBlock['status'], string> = {
   todo: '대기',
   doing: '진행',
   done: '완료',
-  skipped: '미수행',
+  skipped: '이월',
 };
 
 type Props = {
@@ -218,13 +218,21 @@ export function SideTimeline24({ blocks, now, ddayLabel, className, paletteId, c
             })}
           </div>
 
-          {/* 현재 시각 가로 라인 — trim 범위 밖이면 숨김 */}
+          {/* 현재 시각 가로 라인 — trim 범위 밖이면 숨김 (M1: 좌측 알약 라벨 + 부드러운 이동) */}
           {nowVisible && (
             <div
-              className="border-pullim-danger pointer-events-none absolute right-0 left-0 z-10 border-t-[1.5px]"
+              className="pointer-events-none absolute right-0 left-0 z-10 motion-safe:transition-[top] motion-safe:duration-1000 motion-safe:ease-[var(--pullim-ease-standard)]"
               style={{ top: nowOffsetRaw }}
               aria-label={`현재 시각 ${effectiveNow}`}
-            />
+            >
+              {/* 채도 한 단계 ↓ 가로선 */}
+              <div className="border-pullim-danger/70 border-t-[1.5px]" />
+              {/* 좌측 알약 — 시간 라벨 컬럼에 살짝 돌출 */}
+              <span className="bg-pullim-danger absolute -left-1 -translate-y-1/2 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-bold text-white shadow-pullim-sm">
+                <span className="bg-white/90 inline-block h-1.5 w-1.5 rounded-full" aria-hidden />
+                {effectiveNow} 지금
+              </span>
+            </div>
           )}
         </div>
       </div>

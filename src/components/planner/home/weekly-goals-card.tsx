@@ -182,7 +182,7 @@ function Metric({
       >
         {value}
       </div>
-      {sub && <div className="text-pullim-slate-400 text-[10px]">{sub}</div>}
+      {sub && <div className="text-pullim-slate-500 text-[10px]">{sub}</div>}
     </div>
   );
 }

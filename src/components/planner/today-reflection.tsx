@@ -220,7 +220,7 @@ function Metric({
       >
         {value}
       </div>
-      <div className="text-pullim-slate-400 text-[10px]">{sub}</div>
+      <div className="text-pullim-slate-500 text-[10px]">{sub}</div>
     </div>
   );
 }
@@ -229,7 +229,7 @@ const statusBadge = {
   done:    { Icon: CheckCircle2, className: 'text-pullim-success bg-pullim-success-bg', label: '완료' },
   doing:   { Icon: Sparkles,     className: 'text-pullim-blue-700 bg-pullim-blue-100',  label: '진행' },
   todo:    { Icon: Clock,        className: 'text-pullim-slate-600 bg-pullim-slate-100', label: '대기' },
-  skipped: { Icon: AlertTriangle, className: 'text-pullim-warn bg-pullim-warn-bg',       label: '미수행' },
+  skipped: { Icon: AlertTriangle, className: 'text-pullim-warn bg-pullim-warn-bg',       label: '이월' },
 } as const;
 
 function BlockRow({ block }: { block: TimeBlock }) {
@@ -264,7 +264,7 @@ function BlockRow({ block }: { block: TimeBlock }) {
       >
         {block.title}
       </span>
-      <span className="text-pullim-slate-400 ml-auto shrink-0 text-[10px]">{subjectLabel}</span>
+      <span className="text-pullim-slate-500 ml-auto shrink-0 text-[10px]">{subjectLabel}</span>
       {block.accuracy !== undefined && (
         <span className="text-pullim-slate-700 font-mono shrink-0 text-[11px] font-bold">
           {block.accuracy}%

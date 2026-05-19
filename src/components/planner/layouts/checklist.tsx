@@ -63,7 +63,7 @@ export function ChecklistLayout({ blocks, paletteId, compact }: Props) {
               >
                 {b.title}
               </div>
-              <div className="text-pullim-slate-400 truncate text-[10px]">
+              <div className="text-pullim-slate-500 truncate text-[10px]">
                 {meta.label} · {subjectLabel} · {b.expectedMinutes}분
               </div>
             </div>

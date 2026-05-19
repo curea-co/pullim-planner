@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Heart } from 'lucide-react';
+import { ChevronDown, ChevronUp, Battery } from 'lucide-react';
 import {
   conditionMeta, todayBurnout,
   type ConditionLevel,
@@ -28,7 +28,9 @@ export function ConditionBurnoutPanel({ condition, onConditionChange, defaultOpe
   const [open, setOpen] = useState(defaultOpen);
   const meta = conditionMeta[condition];
   const score = todayBurnout.score;
+  // 안전도 시맨틱 — 높을수록 안전 (todayBurnout.score 와 정합)
   const burnoutTone = score >= 70 ? 'good' : score >= 50 ? 'warn' : 'bad';
+  const burnoutLabel = burnoutTone === 'good' ? '안전' : burnoutTone === 'warn' ? '주의' : '위험';
 
   return (
     <section className={cn('bg-card overflow-hidden rounded-xl border', open && 'shadow-pullim-sm')}>
@@ -44,24 +46,28 @@ export function ConditionBurnoutPanel({ condition, onConditionChange, defaultOpe
           open ? 'bg-pullim-slate-50/60' : 'hover:bg-pullim-slate-50/40',
         )}
       >
-        <span aria-hidden className="text-2xl leading-none">{meta.emoji}</span>
         <div className="min-w-0 flex-1">
           <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
-            오늘 컨디션 · 번아웃
+            오늘 상태
           </div>
-          <div className="text-pullim-slate-900 mt-0.5 text-sm font-bold">
-            {meta.label}
-            <span className="text-pullim-slate-400 mx-1.5 font-normal">·</span>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {/* 컨디션 칩 — 주관 감정 */}
+            <span className="bg-pullim-slate-100 text-pullim-slate-900 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold">
+              <span aria-hidden>{meta.emoji}</span>
+              오늘 {meta.label}
+            </span>
+            {/* 안전도 칩 — 객관 누적 부담 (높을수록 안전) */}
             <span
               className={cn(
-                'inline-flex items-center gap-1 font-mono',
-                burnoutTone === 'good' ? 'text-pullim-success'
-                : burnoutTone === 'warn' ? 'text-pullim-warn'
-                : 'text-pullim-danger',
+                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs font-bold',
+                burnoutTone === 'good' ? 'bg-pullim-success-bg text-pullim-success'
+                : burnoutTone === 'warn' ? 'bg-pullim-warn-bg text-pullim-warn-cta-bg'
+                : 'bg-pullim-danger-bg text-pullim-danger',
               )}
+              title="번아웃 안전도 — 높을수록 안전"
             >
-              <Heart className="h-3 w-3" aria-hidden />
-              {score}/100
+              <Battery className="h-3 w-3" aria-hidden />
+              안전도 {score} · {burnoutLabel}
             </span>
           </div>
         </div>

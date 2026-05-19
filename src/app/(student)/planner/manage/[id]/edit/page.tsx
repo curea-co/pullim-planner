@@ -202,7 +202,7 @@ export default function PlannerEditPage({ params }: { params: Promise<{ id: stri
                 이전
               </button>
 
-              <div className="text-pullim-slate-400 hidden sm:block text-[10px] font-mono">
+              <div className="text-pullim-slate-500 hidden sm:block text-[10px] font-mono">
                 {currentStep}/8 — {stepInfo.label}
               </div>
 

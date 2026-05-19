@@ -65,7 +65,7 @@ export function MonthlySummary() {
           <h3 className="text-pullim-slate-900 mb-1 text-sm font-bold">이번 달 학습 시간</h3>
           <p className="text-pullim-blue-600 font-mono text-2xl font-bold">
             {monthlyHours}h
-            <span className="text-pullim-slate-400 ml-1 text-xs font-normal">
+            <span className="text-pullim-slate-500 ml-1 text-xs font-normal">
               / {monthlyGoalH}h 목표
             </span>
           </p>
@@ -121,7 +121,7 @@ export function MonthlySummary() {
       <section className="bg-card rounded-xl border p-4">
         <h3 className="text-pullim-slate-900 mb-2 text-sm font-bold">약점 단원 — 이번 달 진도</h3>
         {weakNodes.length === 0 ? (
-          <p className="text-pullim-slate-400 text-xs italic">감지된 약점 없음 — 좋은 흐름</p>
+          <p className="text-pullim-slate-500 text-xs italic">감지된 약점 없음 — 좋은 흐름</p>
         ) : (
           <ul className="space-y-1.5">
             {weakNodes.map(node => {
@@ -171,7 +171,7 @@ function KPI({
         {label}
       </div>
       <div className={`mt-1 font-mono text-lg font-bold ${valueClass}`}>{value}</div>
-      <div className="text-pullim-slate-400 text-[10px]">{sub}</div>
+      <div className="text-pullim-slate-500 text-[10px]">{sub}</div>
     </div>
   );
 }

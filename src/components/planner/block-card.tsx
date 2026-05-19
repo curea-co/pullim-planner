@@ -14,6 +14,7 @@ import {
   getFeatureRoute,
   hasQAccess,
   type TimeBlock,
+  type BlockType,
 } from '@/lib/mock';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -26,8 +27,55 @@ const statusMeta = {
   done:    { label: '완료',  Icon: Check,  className: 'text-pullim-success bg-pullim-success-bg' },
   doing:   { label: '진행',  Icon: Pause,  className: 'text-pullim-blue-700 bg-pullim-blue-100' },
   todo:    { label: '대기',  Icon: Play,   className: 'text-pullim-slate-600 bg-pullim-slate-100' },
-  skipped: { label: '미수행', Icon: Clock,  className: 'text-pullim-warn bg-pullim-warn-bg' },
+  skipped: { label: '이월', Icon: Clock,  className: 'text-pullim-warn bg-pullim-warn-bg' },
 } as const;
+
+/**
+ * 5단 상태 색문법 (11-planner-design.md § 1)
+ * 좌측 4px stripe + 카드 배경 톤을 한 곳에서 결정.
+ * - completed: success-strong stripe, success-bg 옅은 면
+ * - active (doing): brand-600 stripe, brand-50 면, ring 강조
+ * - upcoming (todo): stripe 없음 (border만), 무톤
+ * - overflow (skipped, 이월): warn-cta-bg stripe + 사선 빗금 + warn-bg 옅은 면
+ * - recovery (break): stripe 없음, slate-100 면, pill radius
+ */
+function getBlockVisual(status: TimeBlock['status'], isBreak: boolean) {
+  if (isBreak) {
+    return {
+      stripe: null,
+      surface: 'bg-pullim-slate-100/60 border-pullim-slate-200',
+      pattern: null,
+    };
+  }
+  switch (status) {
+    case 'done':
+      return {
+        stripe: 'bg-pullim-success',
+        surface: 'bg-pullim-success-bg/30 border-pullim-success/20',
+        pattern: null,
+      };
+    case 'doing':
+      return {
+        stripe: 'bg-pullim-blue-600',
+        surface: 'bg-pullim-blue-50/40 border-pullim-blue-300 ring-1 ring-pullim-blue-200 shadow-pullim-md',
+        pattern: null,
+      };
+    case 'skipped':
+      return {
+        stripe: 'bg-pullim-warn-cta-bg',
+        surface: 'bg-pullim-warn-bg/30 border-pullim-warn/30',
+        // 사선 빗금 — 미수행/이월 신호
+        pattern: 'before:absolute before:inset-0 before:rounded-[inherit] before:pointer-events-none before:bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgba(217,119,6,0.06)_6px_12px)]',
+      };
+    case 'todo':
+    default:
+      return {
+        stripe: null,
+        surface: 'bg-card hover:border-pullim-blue-200 border-pullim-slate-200',
+        pattern: null,
+      };
+  }
+}
 
 /**
  * 연결된 기능이 출시 전(future stage)이면 진입을 막는다.
@@ -39,6 +87,25 @@ function isLockedSlug(slug: string | undefined): boolean {
   if (!slug) return false;
   const f = findFeature(slug);
   return f?.stage === 'future';
+}
+
+/**
+ * 블록 타입별 아이콘 컨테이너 색 (11-planner-design § 5.1).
+ * mock-시간 학습 도메인 4개 + 회복/식사로 시각 차별화.
+ * 모의평가만 warn 톤 — D-day 임박 신호와 톤 정합.
+ */
+function getTypeContainerClass(type: BlockType): string {
+  switch (type) {
+    case 'mock':         return 'bg-pullim-warn-bg text-pullim-warn-cta-bg';
+    case 'memorize':     return 'bg-pullim-violet-50 text-pullim-violet-600';
+    case 'concept':      return 'bg-pullim-teal-50 text-pullim-teal-600';
+    case 'practice':     return 'bg-pullim-blue-50 text-pullim-blue-700';
+    case 'review':       return 'bg-pullim-blue-100 text-pullim-blue-700';
+    case 'tutor':        return 'bg-pullim-blue-50 text-pullim-blue-600';
+    case 'self_explain': return 'bg-pullim-lemon-soft text-pullim-lemon-ink';
+    case 'break':
+    default:             return 'bg-pullim-slate-100 text-pullim-slate-700';
+  }
 }
 
 /** "HH:MM"에 분 단위 더하기 — 모달/토스트 카피용 데모 헬퍼 */
@@ -127,17 +194,20 @@ function BlockCardFull({ block, onComplete }: Props) {
   const onSkip = () => notifySkip(block);
   const onPostpone = () => notifyPostpone(block);
 
+  const visual = getBlockVisual(block.status, isBreak);
+
   return (
     <article
       className={cn(
-        'rounded-xl border p-3.5 transition-all',
-        isActive
-          ? 'border-pullim-blue-300 bg-pullim-blue-50/40 shadow-pullim-md ring-1 ring-pullim-blue-200'
-          : isDone
-          ? 'border-pullim-slate-200 bg-pullim-slate-50/50'
-          : 'bg-card hover:border-pullim-blue-200',
+        'relative rounded-xl border p-3.5 pl-4 transition-all',
+        visual.surface,
+        visual.pattern,
       )}
     >
+      {/* 좌측 4px stripe — 5단 상태 색문법 */}
+      {visual.stripe && (
+        <span aria-hidden className={cn('absolute left-0 top-2 bottom-2 w-1 rounded-r', visual.stripe)} />
+      )}
       {/* 헤더: 시간·과목·상태·케밥 */}
       <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold">
         <span className="font-mono text-pullim-slate-700">
@@ -181,10 +251,17 @@ function BlockCardFull({ block, onComplete }: Props) {
       <div className="flex items-start gap-3">
         <span
           aria-hidden
-          className="text-pullim-slate-700 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pullim-slate-100"
+          className={cn(
+            'relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
+            getTypeContainerClass(block.type),
+          )}
           style={{ opacity: isDone ? 0.6 : 1 }}
         >
           <TypeIcon className="h-4 w-4" />
+          {/* 모의평가 — 우상단 D-day 점 표시 (실제 시험 일자는 §2.2 칩으로 헤더에 노출) */}
+          {block.type === 'mock' && (
+            <span aria-hidden className="bg-pullim-danger absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-card" />
+          )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-pullim-slate-500 text-[10px] font-semibold tracking-wider uppercase">
@@ -206,10 +283,13 @@ function BlockCardFull({ block, onComplete }: Props) {
         )}
       </div>
 
-      {/* 진행 바 (active일 때만) */}
+      {/* 진행 바 + 우측 wedge 텍스트 (active일 때만) */}
       {isActive && (
-        <div className="mt-2.5">
-          <Progress value={block.progress * 100} className="h-1.5" />
+        <div className="mt-2.5 flex items-center gap-2">
+          <Progress value={block.progress * 100} className="h-1.5 flex-1" />
+          <span className="text-pullim-blue-700 shrink-0 font-mono text-[11px] font-bold tabular-nums">
+            {Math.round(block.progress * 100)}%
+          </span>
         </div>
       )}
 
@@ -230,7 +310,7 @@ function BlockCardFull({ block, onComplete }: Props) {
               <PedagogyTag key={e} engineId={e} />
             ))}
             {block.engines.length > 2 && (
-              <span className="text-pullim-slate-400 text-[10px]">+{block.engines.length - 2}</span>
+              <span className="text-pullim-slate-500 text-[10px]">+{block.engines.length - 2}</span>
             )}
           </div>
           {!isDone && (
@@ -300,30 +380,40 @@ function BlockCardCompact({ block, onComplete }: Props) {
   const onSkip = () => notifySkip(block);
   const onPostpone = () => notifyPostpone(block);
 
+  const visual = getBlockVisual(block.status, isBreak);
+
   return (
     <article
       className={cn(
-        'group relative flex flex-col rounded-lg border px-2.5 py-2 transition-all',
-        isActive
-          ? 'border-pullim-blue-300 bg-pullim-blue-50/40 ring-1 ring-pullim-blue-200'
-          : isDone
-          ? 'border-pullim-slate-200 bg-pullim-slate-50/50'
-          : 'bg-card hover:border-pullim-blue-200',
+        'group relative flex flex-col rounded-lg border px-2.5 py-2 pl-3 transition-all',
+        // compact는 shadow-pullim-md를 제외 (시간표 행 정합 유지)
+        visual.surface.replace('shadow-pullim-md', ''),
+        visual.pattern,
       )}
     >
+      {/* 좌측 4px stripe — 5단 상태 색문법 */}
+      {visual.stripe && (
+        <span aria-hidden className={cn('absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r', visual.stripe)} />
+      )}
       <div className="flex items-center gap-2">
         {/* 시간 */}
         <span className="text-pullim-slate-700 shrink-0 font-mono text-[10px] font-bold tabular-nums">
           {block.start}
         </span>
 
-        {/* 타입 아이콘 */}
+        {/* 타입 아이콘 — type별 컨테이너 색 (§ 5.1) */}
         <span
-          className="bg-pullim-slate-100 text-pullim-slate-700 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+          className={cn(
+            'relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md',
+            getTypeContainerClass(block.type),
+          )}
           aria-hidden
           title={meta.label}
         >
           <TypeIcon className={cn('h-3.5 w-3.5', isDone && 'opacity-60')} />
+          {block.type === 'mock' && (
+            <span aria-hidden className="bg-pullim-danger absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full ring-1 ring-card" />
+          )}
         </span>
 
         {/* 제목 + reasoning chip */}

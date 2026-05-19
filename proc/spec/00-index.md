@@ -16,6 +16,7 @@
 | 08 | [08-design-system.md](08-design-system.md) | 디자인 토큰·컬러·타이포·레이아웃·컴포넌트·버튼 어포던스 |
 | 09 | [09-tech-stack.md](09-tech-stack.md) | 기술 스택·개발 환경·배포 정책 |
 | 10 | [10-roadmap.md](10-roadmap.md) | 로드맵·Phase·통합 이력·검증 기준 |
+| 11 | [11-planner-design.md](11-planner-design.md) | 풀림 플래너 도메인 디자인 시그니처 — 상태 색문법·D-day Tier·컨디션 vs 번아웃·시간 그리드·블록 카드·인사이트·온보딩·모션 |
 
 ## 참고 자료
 
@@ -36,3 +37,4 @@
 - **2026-05-06**: 기존 `docs/` 11개 문서 + `pullim-study-screens` 스킬을 본 spec으로 합성 (역설계 마이그레이션)
 - **2026-05-06**: UX/디자인 베이스라인 보강 — `04 § 6.6` 오버플로 처리 규칙 신설, `08 § 7.3` 버튼 어포던스 규칙 신설, `07 § 5.2` 학술 기호·약어 매핑 추가, `07 § 6` UX writing(한자어 정책) 신설. 트리거: `/q/infinity/solve` 시험 모드 다이얼로그 viewport 초과 버그, `/q/review` "정복 세트 풀이" 버튼 어포던스 미달, θ 등 학술 기호 노출 + 한자어("잔존" 등) 사용성 이슈.
 - **2026-05-07**: 명세 회귀 사례 closing — `04 § 6.6.3/6.6.4` (오버플로·다이얼로그 footer cleanup), `08 § 7.3.5` (버튼 어포던스 회귀: Q·라이브러리·클래스봇·플래너 처리 완료), `07 § 5.2` (학술 기호 회귀: 2026-05-06 시점 5건 + 2026-05-07 시점 신규 도메인 발견 처리 완료) 갱신. [2026-05-07 spec-regression-closing plan](../archive/2026-05-07_spec-regression-closing.md).
+- **2026-05-19**: `input/design-system/` (Pullim 통합 디자인 시스템 v0.1) + `input/planner/` (라이브 감사 REPORT)의 발견을 흡수 — `08 § 1.2/1.3` (slate-400 14px+ 가드 + `warn-cta-bg #D97706` 신설), `08 § 14.1` 메타 hierarchy 정합, `08 § 3.4` H2/H3 위계 회복 룰 (18·20 명시), `08 § 6.5` Layout 토큰 신설 (header/sidebar/tabBar/fab/content), `08 § 10` 모션 easing 토큰 명시화 (standard / emphasis), `07 § 4.5.1~4.5.3` 플래너 카피 4원칙 + 위협→권유 교체표 + 컨디션/번아웃 메타 분리. **신규**: `11-planner-design.md` (플래너 도메인 시그니처 — 5단 상태 색문법, D-day Tier, 컨디션 vs 번아웃, 시간 그리드, 블록 카드, 인사이트, 마법사형 온보딩, 8 모션). 코드 동기화 (`src/app/globals.css` + `src/lib/tokens/`)는 후속 plan.

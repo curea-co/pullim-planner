@@ -25,7 +25,7 @@ export function AccuracyTrendChart() {
     <section className="bg-card rounded-xl border p-4">
       <div className="mb-2 flex items-baseline justify-between">
         <h3 className="text-pullim-slate-900 text-sm font-bold">정답률 추세</h3>
-        <span className="text-pullim-slate-400 text-[10px]">목표 {goalLine}% · 점선</span>
+        <span className="text-pullim-slate-500 text-[10px]">목표 {goalLine}% · 점선</span>
       </div>
 
       <div className="h-32">

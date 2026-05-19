@@ -22,7 +22,7 @@ export function ParentReportCard() {
         <span className="text-pullim-blue-700 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
           <Heart className="h-3 w-3" /> 부모님이 받는 카드
         </span>
-        <span className="text-pullim-slate-400 text-[10px]">미리보기</span>
+        <span className="text-pullim-slate-500 text-[10px]">미리보기</span>
       </header>
 
       <h4 className="text-pullim-slate-900 mt-2 text-sm font-bold leading-snug">

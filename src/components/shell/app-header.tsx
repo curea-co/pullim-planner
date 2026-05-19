@@ -10,7 +10,8 @@ import {
   DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
-import { currentPersona } from '@/lib/mock';
+import { currentPersona, getDday, getActivePlanner } from '@/lib/mock';
+import { DDayChip } from '@/components/planner/d-day-chip';
 import { type Role } from './nav-config';
 import { MobileDrawer } from './mobile-drawer';
 
@@ -18,6 +19,10 @@ import { MobileDrawer } from './mobile-drawer';
  * 상단 헤더 — 플래너 전용 단순화 (student 단일 역할).
  */
 export function AppHeader({ role }: { role: Role }) {
+  // 가장 가까운 시험 D-day — 어디 페이지에 있든 헤더에 상시 가시 (§ 2.3)
+  const dday = getDday(currentPersona);
+  const examName = getActivePlanner().name;
+
   return (
     <header className="bg-card/85 sticky top-0 z-30 border-b backdrop-blur-md">
       <div className="flex h-14 items-center gap-2 px-3 md:px-4">
@@ -25,12 +30,21 @@ export function AppHeader({ role }: { role: Role }) {
 
         <Link href="/" className="flex items-center gap-1.5 shrink-0">
           <PullimLogo size={22} />
-          <span className="text-pullim-slate-400 hidden text-[10px] font-bold uppercase md:inline">
+          <span className="text-pullim-slate-500 hidden text-[10px] font-bold uppercase md:inline">
             플래너
           </span>
         </Link>
 
         <div className="ml-auto flex items-center gap-1">
+          {/* D-day 상시 칩 — Tier별 색 자동 매핑 (§ 2.3) */}
+          <Link
+            href="/planner"
+            aria-label={`${examName} D-day로 이동`}
+            className="hidden rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 sm:inline-flex"
+            title={`${examName}까지 D-${dday > 0 ? dday : 0}`}
+          >
+            <DDayChip dday={dday} examName={examName} />
+          </Link>
           <Badge
             variant="secondary"
             className="bg-pullim-blue-50 text-pullim-blue-700 border-pullim-blue-100 hidden gap-1 sm:inline-flex"

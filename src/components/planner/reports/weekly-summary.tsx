@@ -12,6 +12,7 @@ import {
 } from '@/lib/mock';
 import { WeeklyChart } from '@/components/planner/weekly-chart';
 import { AccuracyTrendChart } from './accuracy-trend-chart';
+import { WeeklyInsights } from './weekly-insights';
 import { cn } from '@/lib/utils';
 
 const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: string; bg: string }> = {
@@ -28,6 +29,9 @@ export function WeeklySummary() {
 
   return (
     <div className="space-y-4">
+      {/* 인사이트 카드 — 자동 한 줄 멘트 (§ 6.1) */}
+      <WeeklyInsights />
+
       {/* 메트릭 4종 — 주간 평균 + vs 지난 주 보조 */}
       <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <Metric
@@ -106,7 +110,7 @@ export function WeeklySummary() {
             );
           })}
           {weakNodes.length === 0 && (
-            <li className="text-pullim-slate-400 text-xs italic">현재 약점 없음 — 좋은 흐름</li>
+            <li className="text-pullim-slate-500 text-xs italic">현재 약점 없음 — 좋은 흐름</li>
           )}
         </ul>
       </section>
@@ -145,7 +149,7 @@ function ConditionTrendCard() {
         <h3 className="text-pullim-slate-900 inline-flex items-center gap-1.5 text-sm font-bold">
           <Heart className="text-pullim-blue-600 h-3.5 w-3.5" /> 컨디션 trend
         </h3>
-        <span className="text-pullim-slate-400 text-[10px]">7일 자기 보고</span>
+        <span className="text-pullim-slate-500 text-[10px]">7일 자기 보고</span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-1">
         {weeklyConditionTrend.map(d => {
@@ -177,7 +181,7 @@ function BurnoutTrendCard() {
         <h3 className="text-pullim-slate-900 inline-flex items-center gap-1.5 text-sm font-bold">
           <Battery className="text-pullim-blue-600 h-3.5 w-3.5" /> 번아웃 안전도
         </h3>
-        <span className="text-pullim-slate-400 text-[10px]">높을수록 안전</span>
+        <span className="text-pullim-slate-500 text-[10px]">높을수록 안전</span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-1">
         {weeklyBurnoutTrend.map(d => {
@@ -201,7 +205,7 @@ function BurnoutTrendCard() {
       </div>
       {lowDay.score < 60 && (
         <p className="text-pullim-warn mt-2 text-[11px] font-semibold">
-          ⚠ {lowDay.day}요일 위험 신호 — 휴식 권장
+          {lowDay.day}요일이 좀 빡빡했어요. 30분 쉬어볼까요?
         </p>
       )}
     </div>
@@ -238,13 +242,13 @@ function Metric({
         {label}
       </div>
       <div className={`mt-1 font-mono text-base font-bold ${valueClass}`}>{value}</div>
-      <div className="text-pullim-slate-400 mt-0.5 text-[10px] flex items-center justify-between gap-1">
+      <div className="text-pullim-slate-500 mt-0.5 text-[10px] flex items-center justify-between gap-1">
         <span className="truncate">{sub}</span>
         {deltaText && (
           <span
             className={cn(
               'font-mono font-semibold shrink-0',
-              isUp ? 'text-pullim-success' : isDown ? 'text-pullim-warn' : 'text-pullim-slate-400',
+              isUp ? 'text-pullim-success' : isDown ? 'text-pullim-warn' : 'text-pullim-slate-500',
             )}
             title="지난 주 대비"
           >

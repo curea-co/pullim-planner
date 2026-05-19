@@ -2,7 +2,7 @@
 
 import { Trash2, AlertTriangle } from 'lucide-react';
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { type Planner } from '@/lib/mock';
@@ -38,6 +38,7 @@ export function DeleteConfirmDialog({ open, onOpenChange, target, onConfirm }: P
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         <aside className="bg-pullim-warn-bg text-pullim-warn flex items-start gap-2 rounded-lg p-3 text-xs">
           <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
@@ -45,6 +46,7 @@ export function DeleteConfirmDialog({ open, onOpenChange, target, onConfirm }: P
             <span>리포트의 *지난 회고*에서도 사라집니다.</span>
           </div>
         </aside>
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

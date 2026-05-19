@@ -53,7 +53,7 @@ export const consentTypeMeta: Record<ConsentType, { label: string; description: 
   monthly_report:   { label: '월간 회고',     description: '시험까지 진척·약점 정복 진도',          sensitive: false },
   weak_nodes:       { label: '약점 단원',     description: '내가 어려워하는 단원 목록',             sensitive: false },
   emotion_share:    { label: '감정 평균',     description: '블록별 감정 체크인 평균 — 민감',         sensitive: true },
-  realtime_alert:   { label: '실시간 알림',   description: '학습 시작·완료·미수행 즉시 카톡',        sensitive: false },
+  realtime_alert:   { label: '실시간 알림',   description: '학습 시작·완료·이월 즉시 카톡',          sensitive: false },
 };
 
 /* ─── 데모 데이터 ─────────────────────────────────────────── */

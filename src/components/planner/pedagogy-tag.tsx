@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { GraduationCap } from 'lucide-react';
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+  Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { pedagogyEngineMeta, type PedagogyEngineId } from '@/lib/mock';
 import { cn } from '@/lib/utils';
@@ -50,18 +50,20 @@ export function PedagogyTag({ engineId, size = 'sm' }: { engineId: PedagogyEngin
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 text-sm">
-          <div>
-            <div className="text-pullim-slate-500 mb-1 text-[11px] font-semibold tracking-wider uppercase">원리</div>
-            <p className="text-pullim-slate-700 leading-relaxed">{meta.principle}</p>
+        <DialogBody className="pb-4">
+          <div className="space-y-3 text-sm">
+            <div>
+              <div className="text-pullim-slate-500 mb-1 text-[11px] font-semibold tracking-wider uppercase">원리</div>
+              <p className="text-pullim-slate-700 leading-relaxed">{meta.principle}</p>
+            </div>
+            <div>
+              <div className="text-pullim-slate-500 mb-1 text-[11px] font-semibold tracking-wider uppercase">예시</div>
+              <p className="text-pullim-slate-700 bg-pullim-blue-50 rounded-lg p-2.5 text-xs leading-relaxed">
+                {meta.example}
+              </p>
+            </div>
           </div>
-          <div>
-            <div className="text-pullim-slate-500 mb-1 text-[11px] font-semibold tracking-wider uppercase">예시</div>
-            <p className="text-pullim-slate-700 bg-pullim-blue-50 rounded-lg p-2.5 text-xs leading-relaxed">
-              {meta.example}
-            </p>
-          </div>
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

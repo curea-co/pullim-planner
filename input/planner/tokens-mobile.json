@@ -1,0 +1,419 @@
+{
+  "cssVars": {
+    "--font-geist-mono": "\"Geist Mono\", \"Geist Mono Fallback\"",
+    "--radius": ".625rem",
+    "--background": "#080b18",
+    "--foreground": "#fbfcfe",
+    "--card": "#121627",
+    "--card-foreground": "#fbfcfe",
+    "--popover": "#121627",
+    "--popover-foreground": "#fbfcfe",
+    "--primary": "#5a8bff",
+    "--primary-foreground": "#070f2c",
+    "--secondary": "#20263a",
+    "--secondary-foreground": "#fbfcfe",
+    "--muted": "#20263a",
+    "--muted-foreground": "#97a0b4",
+    "--accent": "#1d3fa8",
+    "--accent-foreground": "#dce6ff",
+    "--destructive": "#e5484d",
+    "--border": "#ffffff14",
+    "--input": "#ffffff1a",
+    "--ring": "#5a8bff",
+    "--chart-1": "#5a8bff",
+    "--chart-2": "#8baeff",
+    "--chart-3": "#3b6ff6",
+    "--chart-4": "#b8cdff",
+    "--chart-5": "#2854d8",
+    "--sidebar": "#121627",
+    "--sidebar-foreground": "#fbfcfe",
+    "--sidebar-primary": "#5a8bff",
+    "--sidebar-primary-foreground": "#070f2c",
+    "--sidebar-accent": "#20263a",
+    "--sidebar-accent-foreground": "#dce6ff",
+    "--sidebar-border": "#ffffff14",
+    "--sidebar-ring": "#5a8bff",
+    "--shadow-pullim-xs": "0 1px 2px #1216270a",
+    "--shadow-pullim-sm": "0 1px 3px #1216270f, 0 1px 2px #1216270a",
+    "--shadow-pullim-md": "0 4px 12px #1216270f, 0 2px 4px #1216270a",
+    "--shadow-pullim-lg": "0 12px 24px #12162714, 0 4px 8px #1216270a",
+    "--shadow-pullim-glow": "0 0 0 4px #3b6ff626",
+    "--toast-icon-margin-start": "4px",
+    "--toast-icon-margin-end": "-3px",
+    "--toast-svg-margin-start": "0px",
+    "--toast-svg-margin-end": "-1px",
+    "--toast-button-margin-start": "0",
+    "--toast-button-margin-end": "auto",
+    "--toast-close-button-start": "unset",
+    "--toast-close-button-end": "0",
+    "--toast-close-button-transform": "translate(35%, -35%)",
+    "--gray1": "hsl(0, 0%, 99%)",
+    "--gray2": "hsl(0, 0%, 97.3%)",
+    "--gray3": "hsl(0, 0%, 95.1%)",
+    "--gray4": "hsl(0, 0%, 93%)",
+    "--gray5": "hsl(0, 0%, 90.9%)",
+    "--gray6": "hsl(0, 0%, 88.7%)",
+    "--gray7": "hsl(0, 0%, 85.8%)",
+    "--gray8": "hsl(0, 0%, 78%)",
+    "--gray9": "hsl(0, 0%, 56.1%)",
+    "--gray10": "hsl(0, 0%, 52.3%)",
+    "--gray11": "hsl(0, 0%, 43.5%)",
+    "--gray12": "hsl(0, 0%, 9%)",
+    "--border-radius": "8px",
+    "--y": "translateY(40%)",
+    "--lift-amount": "calc(var(--lift) * var(--gap))",
+    "--lift": "-1",
+    "--scale": "var(--toasts-before) * 0.05 + 1",
+    "--normal-bg": "#000",
+    "--normal-border": "hsl(0, 0%, 20%)",
+    "--normal-text": "var(--gray1)",
+    "--success-bg": "hsl(150, 100%, 6%)",
+    "--success-border": "hsl(147, 100%, 12%)",
+    "--success-text": "hsl(150, 86%, 65%)",
+    "--info-bg": "hsl(215, 100%, 6%)",
+    "--info-border": "hsl(223, 43%, 17%)",
+    "--info-text": "hsl(216, 87%, 65%)",
+    "--warning-bg": "hsl(64, 100%, 6%)",
+    "--warning-border": "hsl(60, 100%, 9%)",
+    "--warning-text": "hsl(46, 87%, 65%)",
+    "--error-bg": "hsl(358, 76%, 10%)",
+    "--error-border": "hsl(357, 89%, 16%)",
+    "--error-text": "hsl(358, 100%, 81%)",
+    "--normal-bg-hover": "hsl(0, 0%, 12%)",
+    "--normal-border-hover": "hsl(0, 0%, 25%)",
+    "--size": "16px"
+  },
+  "colorsText": [
+    [
+      "rgb(18, 22, 39)",
+      173
+    ],
+    [
+      "rgb(52, 59, 80)",
+      83
+    ],
+    [
+      "rgb(107, 116, 137)",
+      72
+    ],
+    [
+      "rgb(29, 63, 168)",
+      64
+    ],
+    [
+      "rgb(0, 0, 0)",
+      59
+    ],
+    [
+      "rgb(151, 160, 180)",
+      43
+    ],
+    [
+      "rgb(74, 83, 106)",
+      43
+    ],
+    [
+      "rgb(40, 84, 216)",
+      17
+    ],
+    [
+      "rgb(255, 255, 255)",
+      15
+    ],
+    [
+      "rgb(245, 158, 11)",
+      7
+    ],
+    [
+      "rgb(18, 178, 107)",
+      6
+    ],
+    [
+      "rgb(59, 111, 246)",
+      5
+    ],
+    [
+      "rgb(196, 203, 218)",
+      1
+    ]
+  ],
+  "colorsBg": [
+    [
+      "rgb(237, 240, 245)",
+      19
+    ],
+    [
+      "rgb(255, 255, 255)",
+      12
+    ],
+    [
+      "rgb(238, 243, 255)",
+      6
+    ],
+    [
+      "rgb(40, 84, 216)",
+      5
+    ],
+    [
+      "rgb(29, 63, 168)",
+      3
+    ],
+    [
+      "rgb(245, 247, 251)",
+      2
+    ],
+    [
+      "rgb(139, 174, 255)",
+      2
+    ],
+    [
+      "rgb(184, 205, 255)",
+      2
+    ],
+    [
+      "rgb(59, 111, 246)",
+      2
+    ],
+    [
+      "rgb(220, 230, 255)",
+      2
+    ],
+    [
+      "lab(97.1635 -0.153184 -2.17012 / 0.5)",
+      2
+    ],
+    [
+      "rgb(230, 247, 238)",
+      2
+    ],
+    [
+      "oklab(0.999994 0.0000455678 0.0000200868 / 0.85)",
+      1
+    ],
+    [
+      "rgb(229, 72, 77)",
+      1
+    ],
+    [
+      "lab(97.1635 -0.153184 -2.17012 / 0.8)",
+      1
+    ]
+  ],
+  "fontSizes": [
+    [
+      "16px",
+      310
+    ],
+    [
+      "12px",
+      96
+    ],
+    [
+      "11px",
+      71
+    ],
+    [
+      "9px",
+      37
+    ],
+    [
+      "10px",
+      32
+    ],
+    [
+      "14px",
+      31
+    ],
+    [
+      "12.5px",
+      8
+    ],
+    [
+      "24px",
+      2
+    ],
+    [
+      "15.84px",
+      1
+    ]
+  ],
+  "fontFamilies": [
+    [
+      "\"Pretendard Variable\", Pretendard, -apple-system, \"system-ui\", system-ui, Roboto, sans-serif",
+      555
+    ],
+    [
+      "\"Geist Mono\", \"Geist Mono Fallback\", ui-monospace, SFMono-Regular, monospace",
+      33
+    ]
+  ],
+  "fontWeights": [
+    [
+      "400",
+      322
+    ],
+    [
+      "700",
+      118
+    ],
+    [
+      "500",
+      82
+    ],
+    [
+      "600",
+      66
+    ]
+  ],
+  "radii": [
+    [
+      "14px",
+      28
+    ],
+    [
+      "10px",
+      24
+    ],
+    [
+      "3.35544e+07px",
+      12
+    ],
+    [
+      "20px",
+      5
+    ],
+    [
+      "4px",
+      2
+    ],
+    [
+      "26px",
+      1
+    ],
+    [
+      "18px",
+      1
+    ]
+  ],
+  "shadows": [
+    [
+      "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px",
+      1
+    ],
+    [
+      "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(184, 205, 255) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      1
+    ]
+  ],
+  "paddings": [
+    [
+      "2px 0px 0px",
+      11
+    ],
+    [
+      "8px 10px",
+      8
+    ],
+    [
+      "2px 6px",
+      8
+    ],
+    [
+      "8px",
+      6
+    ],
+    [
+      "4px 10px",
+      6
+    ],
+    [
+      "10px 0px",
+      4
+    ],
+    [
+      "6px 10px",
+      3
+    ],
+    [
+      "2px 8px",
+      2
+    ],
+    [
+      "6px 8px",
+      2
+    ],
+    [
+      "12px 16px",
+      2
+    ],
+    [
+      "0px 12px",
+      1
+    ],
+    [
+      "12px 8px",
+      1
+    ],
+    [
+      "0px 0px 0px 8px",
+      1
+    ],
+    [
+      "12px 6px",
+      1
+    ],
+    [
+      "0px 16px",
+      1
+    ]
+  ],
+  "margins": [
+    [
+      "2px 0px 0px",
+      9
+    ],
+    [
+      "0px 0px 6px",
+      7
+    ],
+    [
+      "0px 0px 2px",
+      6
+    ],
+    [
+      "0px 4px",
+      4
+    ],
+    [
+      "0px 0px 0px 4px",
+      3
+    ],
+    [
+      "0px 0px 16px",
+      3
+    ],
+    [
+      "0px 6px",
+      3
+    ],
+    [
+      "0px 0px 12px",
+      2
+    ],
+    [
+      "16px 0px 0px",
+      2
+    ],
+    [
+      "0px 0px 0px 141.562px",
+      1
+    ]
+  ],
+  "sampledElements": 588,
+  "totalElements": 588,
+  "viewport": {
+    "w": 390,
+    "h": 844,
+    "dpr": 3
+  }
+}

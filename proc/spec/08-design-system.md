@@ -34,8 +34,8 @@
 | 100 | `#EDF0F5` | secondary |
 | 200 | `#DDE2EC` | border |
 | 300 | `#C4CBDA` | 비활성 텍스트 |
-| 400 | `#97A0B4` | 다크 muted-foreground |
-| 500 | `#6B7489` | muted-foreground |
+| 400 | `#97A0B4` | 다크 muted-foreground / ⚠ 라이트 위 **14px 이상만** (12px 메타에는 금지) |
+| 500 | `#6B7489` | muted-foreground (라이트 위 12px 메타의 **최소선** — AA 4.5:1 통과) |
 | 600 | `#4A536A` | 보조 텍스트 |
 | 700 | `#343B50` | 강조 텍스트 |
 | 800 | `#20263A` | secondary-foreground (라이트) |
@@ -46,9 +46,12 @@
 
 | 토큰 | HEX | 배경 (-bg) | 용도 |
 |------|-----|-----------|------|
-| success | `#12B26B` | `#E6F7EE` | 성공·정답·완료 |
-| warn | `#F59E0B` | `#FEF3DB` | 경고·주의 |
+| success | `#12B26B` | `#E6F7EE` | 성공·정답·완료 (★ 흰 글자 텍스트엔 `#0E8C56` 사용) |
+| warn | `#F59E0B` | `#FEF3DB` | 경고·주의 — **장식·배경·아이콘 한정** |
+| warn-cta-bg | `#D97706` | — | ★ **흰 글자 위 CTA 배경 전용** (`#F59E0B`+흰글자=2.6:1 AA 미달 회피). 흰 텍스트 4.6:1 통과 |
 | danger | `#E5484D` | `#FCE9EA` | 오답·삭제·destructive |
+
+> **흰 글자 위 시맨틱 컬러 가드**: 흰 텍스트(`#FFFFFF`)를 얹어야 하는 CTA·뱃지에는 `warn`이 아닌 `warn-cta-bg`를 사용. 마찬가지로 `success` 면 위에 흰 글자는 `#0E8C56`(success-strong)이 한 톤 어두운 안전 값. 디자인 시스템 통합 권고 ([input/design-system/DESIGN_SYSTEM.md § 4.1](../../input/design-system/DESIGN_SYSTEM.md)).
 
 ### 1.4 IRT 난이도 (5단계)
 
@@ -140,11 +143,21 @@
 |------|----|----|----|----|
 | 본문 | **≥ 16px** | ≥ 15px | ≥ 14px | `text-base` ~ `text-sm` |
 | 캡션 | 12px | 12px | 12px | `text-xs` |
-| H3 | 18px | 18~20px | 18~20px | `text-lg` |
-| H2 | 22px | 24px | 24px | `text-xl` ~ `text-2xl` |
-| H1 | 28px | 30px | 32~36px | `text-2xl` ~ `text-4xl` |
+| H4 | 16px / 600 | 16~18px / 600 | 18px / 600 | `text-base font-semibold` |
+| H3 | **18px / 600** | **18~20px / 600** | **20px / 600** | `text-lg` |
+| H2 | **22px / 700** | **24px / 700** | **24px / 700** | `text-xl` ~ `text-2xl` |
+| H1 | 28px / 700 | 30px / 700 | 32~36px / 700 | `text-2xl` ~ `text-4xl` |
 
 > Compact 본문 16px 하한은 iOS Safari 자동 줌 방지 + 학생 가독성 보장 (Layer 1 베이스라인).
+
+#### 3.4.1 H2/H3 위계 회복 룰
+
+본문(16/14)과 H2·H3가 같은 16px로 붕괴되는 사례가 라이브 감사에서 반복 발견됨([input/planner/REPORT.md § 3](../../input/planner/REPORT.md), [input/design-system/IMPROVEMENTS.md P2](../../input/design-system/IMPROVEMENTS.md)). 다음 룰로 통일:
+
+- **본문과 H3 사이 최소 2px + weight 차이** 강제. H3는 weight 600 이상.
+- **H2는 본문 대비 +6px 이상 + weight 700**. H1과 H2 사이도 최소 4~8px 차이.
+- 16↔24 사이의 빈 스케일은 **18·20**으로 채움 (위 표). `text-[17px]`, `text-[19px]` 같은 비표준 사이즈 금지.
+- 9·10·10.5·11·12.5px 사용 금지 ([Layer 1 베이스라인](#141-layer-1--공통-베이스라인-모든-화면-필수) 캡션 12px 하한).
 
 수식 렌더링: **KaTeX** (`react-katex`).
 
@@ -208,6 +221,25 @@
 ### 6.4 터치 타겟 (Layer 1 베이스라인)
 - 인터랙티브 요소: **≥ 44×44pt** (태블릿 메인 사용 — 터치 우선)
 - 버튼·토글 안 텍스트: **`white-space: nowrap`** 강제 (Compact에서 텍스트 wrap 깨짐 방지)
+
+### 6.5 Layout 토큰 (셸 골격 정합용)
+
+| 토큰 | 값 | 용도 / 위치 |
+|---|---|---|
+| `header.height.desktop` | **56px** | `AppHeader` (≥1024) — sticky GNB |
+| `header.height.mobile` | **52px** | `AppHeader` (<1024) — 컴팩트 모바일 헤더 |
+| `sidebar.width.full` | **240px** | `AppSidebar` Comfortable 풀 사이드바 |
+| `sidebar.width.compact` | **64px** | `AppSidebar` Cozy 아이콘 사이드바 |
+| `tabBar.height` | **64px + safe-area** | `BottomNav` — 모바일 하단 5탭 + iOS safe-area inset |
+| `content.maxWidth` | **1280px** | Comfortable 콘텐츠 최대 폭 (Planner 1000px → 1280으로 확장 회수) |
+| `content.gutter.desktop` | **24px** | ≥1024 좌우 거터 |
+| `content.gutter.mobile` | **16px** | <1024 좌우 거터 |
+| `fab.offset.bottom` | **`calc(tabBar.height + 24px)`** | 모바일 FAB의 하단 오프셋 (탭바와 충돌 방지). 채팅/입력 화면에서는 자동 숨김 |
+| `viewport.safety.padding` | **2rem** | 다이얼로그 viewport 여백 (§ 6.6.2 dvh 정책과 정합) |
+
+> Layout 토큰의 정규 위치는 `src/lib/tokens/layout-templates.ts`와 `src/components/shell/*` 안 상수. 본 표는 명세적 요약. **변경 시 두 곳 동기화 필수.**
+
+> 사이드바 vs 하단 탭바 분기점은 **`lg = 1024px`** ([§ 6.2 3-Bracket 그리드](#62-3-bracket-그리드-태블릿-우선) Comfortable 진입선과 동일).
 
 ---
 
@@ -336,16 +368,33 @@
 ## 10. 모션 / 애니메이션
 
 - **tw-animate-css** 활용 (Tailwind 기반)
-- 표준 duration:
-  - 짧음 (hover): 120ms
-  - 중간 (페이지 전환): 200ms
-  - 김 (모달): 300ms
-- easing: 기본 `ease`, 강조 시 `ease-out`
 
-### 인터랙션 표준
-- 버튼 hover: `transition-colors duration-120`
+### 10.1 Duration 토큰
+
+| 토큰 | 값 | 용도 |
+|---|---|---|
+| `duration.fast` | **120ms** | hover, 작은 transform, 칩 확장 |
+| `duration.base` | **200ms** | 일반 전환, 페이지 진입, 메시지 mount |
+| `duration.slow` | **320ms** | 모달·시트, 슬라이드인, confetti |
+
+> 옛 "긴 모달 300ms"는 320ms로 통일 (motion 토큰 [DESIGN_SYSTEM.md § 4.6](../../input/design-system/DESIGN_SYSTEM.md)와 정합).
+
+### 10.2 Easing 토큰
+
+| 토큰 | 값 | 용도 |
+|---|---|---|
+| `easing.standard` | `cubic-bezier(0.4, 0, 0.2, 1)` | 기본 전환, hover, 페이지 mount |
+| `easing.emphasis` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | 강조 진입, 카드 등장, 보상 모션 |
+
+- focus ring 적용은 **즉시 (transition 없음)** — 키보드 접근성.
+- `prefers-reduced-motion: reduce` 시 모든 모션 토큰의 effective duration = 0.
+
+### 10.3 인터랙션 표준
+- 버튼 hover: `transition-colors duration-[120ms] ease-[cubic-bezier(.4,0,.2,1)]`
 - 슬라이더 thumb: `transition-transform 120ms`, hover `scale(1.1)`, active `scale(1.15)`
-- 카드 hover: 살짝 떠오르기 (`shadow-pullim-md` → `shadow-pullim-lg`)
+- 카드 hover: 살짝 떠오르기 (`shadow-pullim-md` → `shadow-pullim-lg`), 120ms standard
+- 메시지 mount (chat): `opacity 0→1` + `translateY(8→0)`, 200ms standard
+- 모달·시트: 320ms emphasis, dismiss 200ms standard
 
 ---
 
@@ -415,7 +464,7 @@
 | 카드/블록 간격 | **≥ 12px** | |
 | Primary CTA | **한 화면에 정확히 1개** | 시각적으로 가장 강한 단일 액션 |
 | Secondary 액션 | **≤ 3개** | primary 외 액션 수 제한 |
-| 메타 텍스트 hierarchy | **2단계 (primary/secondary)** | primary: slate-600/700 / secondary: slate-400/500 — 한 회색 단계 금지 |
+| 메타 텍스트 hierarchy | **2단계 (primary/secondary)** | primary: slate-600/700 / secondary: slate-500 (`#6B7489`) — 한 회색 단계 금지. **slate-400(`#97A0B4`)은 12px 메타에 금지** (AA 미달), 14px 이상 + 일시적 강조에서만 허용 |
 | 토글·버튼 텍스트 | **`white-space: nowrap`** | Compact에서 한 글자씩 wrap 깨짐 방지 |
 | 화면 베이스 톤 | **단일 (다크 OR 라이트)** | 한 화면에 두 톤 혼재 금지 — **예외**: 시험 모드 시그니처(`exam-status-bar.tsx`) 등 사용자에게 모드 변경을 명시 신호하는 의도적 다크 영역은 허용 |
 | 색 강조 토큰 동시 사용 | **≤ 3종** (성공/주의/위험 + 풀림 블루까지 4종 한도) | 이모지·아이콘 색은 별도 |

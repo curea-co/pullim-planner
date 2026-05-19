@@ -27,7 +27,7 @@ export function MobileDrawer({ role }: { role: Role }) {
         <SheetHeader className="border-b p-4">
           <SheetTitle className="flex items-center gap-2">
             <PullimLogo size={22} />
-            <span className="text-pullim-slate-400 text-[10px] font-bold uppercase">
+            <span className="text-pullim-slate-500 text-[10px] font-bold uppercase">
               플래너
             </span>
           </SheetTitle>
