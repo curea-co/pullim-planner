@@ -1,30 +1,22 @@
 'use client';
 
 import {
-  Clock, Target, Flame, Smile, Sparkles, AlertTriangle, CheckCircle2,
+  Clock, Target, Flame, Smile,
   Heart, Battery,
   type LucideIcon,
 } from 'lucide-react';
 import {
-  getWeakNodes, weeklyReflection, thisWeekInsights, lastWeekSummary,
+  getWeakNodes, weeklyReflection, lastWeekSummary,
   weeklyConditionTrend, weeklyBurnoutTrend, conditionMeta,
-  type ReflectionInsight,
 } from '@/lib/mock';
 import { WeeklyChart } from '@/components/planner/weekly-chart';
 import { AccuracyTrendChart } from './accuracy-trend-chart';
 import { WeeklyInsights } from './weekly-insights';
 import { cn } from '@/lib/utils';
 
-const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: string; bg: string }> = {
-  sparkle: { Icon: Sparkles,        tone: 'text-pullim-blue-700',   bg: 'bg-pullim-blue-50' },
-  check:   { Icon: CheckCircle2,    tone: 'text-pullim-success',    bg: 'bg-pullim-success-bg' },
-  warn:    { Icon: AlertTriangle,   tone: 'text-pullim-warn',       bg: 'bg-pullim-warn-bg' },
-};
-
-/** 주간 회고 본문 — 메트릭 4(주간 평균) + 차트 2 + 컨디션·번아웃 trend + 약점 진도 + 동적 인사이트 */
+/** 주간 회고 본문 — 시그니처 인사이트 + 메트릭 4 + 차트 2 + 컨디션·번아웃 trend + 약점 진도 */
 export function WeeklySummary() {
   const w = weeklyReflection();
-  const insights = thisWeekInsights();
   const weakNodes = getWeakNodes(0.7);
 
   return (
@@ -115,28 +107,6 @@ export function WeeklySummary() {
         </ul>
       </section>
 
-      {/* 동적 인사이트 */}
-      <section>
-        <h3 className="text-pullim-slate-900 mb-2 text-sm font-bold">이번 주 인사이트</h3>
-        <ul className="space-y-1.5">
-          {insights.map((it, i) => {
-            const meta = insightIcon[it.icon];
-            const Icon = meta.Icon;
-            return (
-              <li
-                key={i}
-                className={cn(
-                  'flex items-start gap-2 rounded-lg p-2.5 text-xs leading-relaxed',
-                  meta.bg,
-                )}
-              >
-                <Icon aria-hidden className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', meta.tone)} />
-                <span className={cn('font-semibold', meta.tone)}>{it.text}</span>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
     </div>
   );
 }
