@@ -120,12 +120,12 @@ export const todayBlocks: TimeBlock[] = [
     // 점심 직후 단어 복습을 빠뜨려 미수행으로 이월된 블록 — `skipped` 상태 시각 검증용
     id: 'b0', start: '13:30', end: '13:55',
     subject: 'english', type: 'memorize',
-    title: '점심 직후 단어 복습 (어제 누락분)',
+    title: '점심 직후 단어 복습 (어제 못한 25분)',
     linkedFeatureSlug: 'memory',
     curriculumNodeId: 'eng.vocab.high',
     engines: ['spaced_repetition'],
     progress: 0, status: 'skipped', expectedMinutes: 25,
-    reasoning: '어제 누락분 이월',
+    reasoning: '어제 못한 25분, 오늘로 이월했어요',
   },
   {
     id: 'b1', start: '17:30', end: '18:10',
@@ -344,7 +344,7 @@ export function tomorrowDifferences(blocks: TimeBlock[] = todayBlocks): Reflecti
     const skippedBlock = blocks.find(b => b.status === 'skipped');
     out.push({
       icon: 'warn',
-      text: `${skippedBlock?.subject === 'english' ? '단어 복습' : '미수행 블록'} 누락 — 내일 우선 재배치`,
+      text: `${skippedBlock?.subject === 'english' ? '단어 복습' : '이월된 블록'} — 내일 우선 재배치`,
     });
   }
 
@@ -512,6 +512,48 @@ export const weeklyBurnoutTrend: { day: string; score: number }[] = [
   { day: '금', score: 58 },
   { day: '토', score: 66 },
   { day: '일', score: 71 },
+];
+
+/**
+ * 주간 인사이트 카드 — 11-planner-design § 6.1.
+ * 학생이 처음 보는 화면이 "데이터 덤프"가 아닌 "선생님 멘트".
+ * 카피 톤은 07 § 4.5.1 4원칙 준수 — 평가어 금지, 관찰어·권유형.
+ *
+ * `kind` 가 액션 칩 라우팅의 키 (시간표 조정, 블록 줄이기 등).
+ */
+export type WeeklyInsight = {
+  emoji: string;
+  headline: string;
+  /** action 칩 텍스트 + 동작 키 (현 시점은 toast로 대응) */
+  action?: { label: string; kind: 'adjust_schedule' | 'reduce_block' | 'review_weak' | 'celebrate' };
+  /** 카드 강조 톤 */
+  tone: 'good' | 'warn' | 'info';
+};
+
+export const weeklyInsights: WeeklyInsight[] = [
+  {
+    emoji: '📈',
+    headline: '수학 정답률 +12% — 새 단원 진입 적기',
+    action: { label: '시간표 조정', kind: 'adjust_schedule' },
+    tone: 'good',
+  },
+  {
+    emoji: '⏱',
+    headline: '화요일 학습 시간이 짧았어요. 평일 시간대 점검해볼까요?',
+    action: { label: '시간표 조정', kind: 'adjust_schedule' },
+    tone: 'info',
+  },
+  {
+    emoji: '🔋',
+    headline: '금요일 부담 신호 — 토요일 30분 줄여볼까요?',
+    action: { label: '블록 줄이기', kind: 'reduce_block' },
+    tone: 'warn',
+  },
+  {
+    emoji: '💪',
+    headline: '17일 연속 1블록 이상 완료 — 흐름 유지',
+    tone: 'good',
+  },
 ];
 
 /* ─── 부모 전송 카드 — Reports `부모님께 보내기` 후 큐레이션 ────────── */

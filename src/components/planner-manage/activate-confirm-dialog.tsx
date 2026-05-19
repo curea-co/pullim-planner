@@ -2,7 +2,7 @@
 
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { type Planner } from '@/lib/mock';
@@ -39,6 +39,7 @@ export function ActivateConfirmDialog({ open, onOpenChange, current, target, onC
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         <section className="bg-pullim-slate-50 flex items-center gap-3 rounded-lg p-3">
           {current && (
             <>
@@ -54,6 +55,7 @@ export function ActivateConfirmDialog({ open, onOpenChange, current, target, onC
             <div className="text-pullim-slate-900 truncate text-sm font-bold">{target.name}</div>
           </div>
         </section>
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

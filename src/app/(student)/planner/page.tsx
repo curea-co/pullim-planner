@@ -8,17 +8,15 @@ import { CalendarShell, type CalendarView } from '@/components/planner/calendar-
 import { DayView } from '@/components/planner/views/day-view';
 import { WeekView, getWeekMeta } from '@/components/planner/views/week-view';
 import { MonthView, getMonthMeta } from '@/components/planner/views/month-view';
+import { DDayChip } from '@/components/planner/d-day-chip';
+import { DDayHeaderBand } from '@/components/planner/d-day-header-band';
+import { BurnoutThresholdBanner } from '@/components/planner/burnout-threshold-banner';
 import {
   currentPersona, getDday, plannerProgress, getActivePlanner,
+  todayBurnout,
 } from '@/lib/mock';
 
 const VALID_VIEWS: CalendarView[] = ['day', 'week', 'month'];
-
-function formatDday(dday: number): string {
-  if (dday > 0) return `D-${dday}`;
-  if (dday === 0) return 'D-DAY';
-  return `D+${Math.abs(dday)}`;
-}
 
 /**
  * 풀림 플래너 홈 — 활성 플래너의 시간표 (일/주/월 토글).
@@ -47,7 +45,7 @@ function PlannerHome() {
   );
 
   const dday = getDday(currentPersona);
-  const ddayLabel = formatDday(dday);
+  const examName = active.name;
 
   const switchAction = (
     <Link
@@ -69,7 +67,7 @@ function PlannerHome() {
           <>
             <strong className="text-pullim-blue-700">{active.name}</strong>
             <span className="mx-1">·</span>
-            <span className="font-mono font-semibold">{ddayLabel}</span>
+            <DDayChip dday={dday} examName={examName} />
             <span className="mx-1">·</span>
             {summary.done}/{summary.total} 블록 완료
           </>
@@ -101,7 +99,7 @@ function PlannerHome() {
       title: '2026년 4월',
       description: (
         <>
-          <strong className="text-pullim-blue-700">{active.name}</strong>까지 <span className="text-pullim-danger font-mono font-bold">{ddayLabel}</span>
+          <strong className="text-pullim-blue-700">{active.name}</strong>까지 <DDayChip dday={dday} examName={examName} />
           <span className="mx-1">·</span>
           이번 달 학습 블록 <span className="font-mono font-bold">{m.totalBlocks}개</span>
         </>
@@ -113,20 +111,24 @@ function PlannerHome() {
   })();
 
   return (
-    <CalendarShell
-      view={view}
-      onChangeView={onChangeView}
-      title={headerProps.title}
-      description={headerProps.description}
-      navLabel={headerProps.navLabel}
-      prevLabel={headerProps.prevLabel}
-      nextLabel={headerProps.nextLabel}
-      action={switchAction}
-    >
-      {view === 'day' && <DayView />}
-      {view === 'week' && <WeekView />}
-      {view === 'month' && <MonthView />}
-    </CalendarShell>
+    <>
+      <DDayHeaderBand dday={dday} examName={examName} />
+      <BurnoutThresholdBanner score={todayBurnout.score} />
+      <CalendarShell
+        view={view}
+        onChangeView={onChangeView}
+        title={headerProps.title}
+        description={headerProps.description}
+        navLabel={headerProps.navLabel}
+        prevLabel={headerProps.prevLabel}
+        nextLabel={headerProps.nextLabel}
+        action={switchAction}
+      >
+        {view === 'day' && <DayView />}
+        {view === 'week' && <WeekView />}
+        {view === 'month' && <MonthView />}
+      </CalendarShell>
+    </>
   );
 }
 

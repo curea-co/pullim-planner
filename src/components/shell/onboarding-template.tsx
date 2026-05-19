@@ -171,7 +171,7 @@ function StepCard({ step, index }: { step: OnboardingStep; index: number }) {
           <div className={cn('min-w-0', isOdd && 'lg:order-1')}>
             {step.screenshot}
             {step.screenshotCaption && (
-              <p className="text-pullim-slate-400 mt-1.5 text-center text-[10px] italic">
+              <p className="text-pullim-slate-500 mt-1.5 text-center text-[10px] italic">
                 {step.screenshotCaption}
               </p>
             )}

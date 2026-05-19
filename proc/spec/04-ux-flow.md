@@ -351,7 +351,7 @@ L4: 거의 정답 ("맞아! 그럼 여기서 a, b, C에 해당하는 값은?")
 
 | 컨테이너 유형 | 위치 정책 | 오버플로 처리 |
 |---|---|---|
-| **다이얼로그·모달** | viewport 중앙 | `max-height: calc(100dvh - 2rem)` + 본문만 스크롤, 헤더·푸터 sticky |
+| **다이얼로그·모달** | viewport 중앙 | `max-height: calc(100dvh - 2rem)` + **`flex flex-col overflow-hidden`** 외부 + `DialogBody`만 `flex-1 min-h-0 overflow-y-auto`로 스크롤. 헤더·푸터는 `shrink-0` — **스크롤 범위 밖**. CTA가 항상 가시 |
 | **시트(Sheet/Drawer)** | viewport 엣지 부착 | `height: 100dvh` + 본문만 스크롤, 헤더·푸터 sticky |
 | **팝오버·드롭다운·콤보박스** | 트리거 앵커 | 자체 collision boundary + `max-height` 내부 스크롤 (Base UI 기본 동작 유지) |
 | **카드·섹션 (페이지 흐름 안)** | 페이지 인라인 | **내부 스크롤 만들지 않음** — 페이지 스크롤에 위임 (중첩 스크롤 금지) |
@@ -361,8 +361,10 @@ L4: 거의 정답 ("맞아! 그럼 여기서 a, b, C에 해당하는 값은?")
 
 - **단위는 `dvh`**: 모바일 주소창 동적 변화에 대응. `vh`/`%` 사용 금지.
 - **viewport 여백 `2rem` 보존**: 다이얼로그가 화면 끝에 붙지 않도록.
-- **헤더·푸터 sticky**: `top-0` / `bottom-0` + 본문 `overflow-y-auto`. 스크롤 가능성을 시사하는 시각 단서(스크롤바 또는 fade mask)를 노출한다.
+- **다이얼로그 CTA는 스크롤 범위 밖**: `DialogContent`는 `flex flex-col overflow-hidden`. 본문은 `DialogBody`로 감싸 `flex-1 min-h-0 overflow-y-auto overflow-x-hidden`. 헤더·푸터는 `shrink-0` — 사용자가 스크롤하더라도 CTA·타이틀 항상 가시. 옛 sticky 패턴(`top-0`/`bottom-0` + bg-popover/bg-muted overlay)은 본문이 footer 뒤로 가려지는 문제로 폐기.
+- **시트(Sheet)는 본문 단일 스크롤**: 본문 영역만 `overflow-y-auto`. 좌우 padding은 헤더/풋터/본문이 각자 관리.
 - **중첩 스크롤 금지**: 한 화면에 두 개 이상의 독립 스크롤 영역을 만들지 않는다. 단, 페이지 스크롤과 직교하는 좌·우 분할 패널은 예외.
+- **횡스크롤 금지**: 다이얼로그/시트 모두 `overflow-x-hidden` 강제. 콘텐츠 폭이 컨테이너를 넘으면 `min-w-0`/`truncate`로 처리.
 - **무한 스크롤은 별개 패턴**: 본 규칙은 "유한 콘텐츠가 viewport를 초과하는 경우"에 적용. 무한 스크롤(피드·타임라인)은 별도 명세 대상.
 
 #### 6.6.3 적용 예시

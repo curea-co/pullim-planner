@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<TimeBlock['status'], string> = {
   todo: '대기',
   doing: '진행',
   done: '완료',
-  skipped: '미수행',
+  skipped: '이월',
 };
 
 export function BlockCardsLayout({ blocks, paletteId, compact }: Props) {

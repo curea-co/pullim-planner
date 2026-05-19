@@ -1,0 +1,42 @@
+[
+  {
+    "text": "풀림\n플래너",
+    "href": "/"
+  },
+  {
+    "text": "풀림 플래너",
+    "href": "/planner"
+  },
+  {
+    "text": "홈",
+    "href": "/planner"
+  },
+  {
+    "text": "시간표 관리",
+    "href": "/planner/manage"
+  },
+  {
+    "text": "성장 리포트",
+    "href": "/planner/reports"
+  },
+  {
+    "text": "소개하기",
+    "href": "/planner/onboarding"
+  },
+  {
+    "text": "다른 시간표로 전환",
+    "href": "/planner/manage"
+  },
+  {
+    "text": "일간",
+    "href": ""
+  },
+  {
+    "text": "주간",
+    "href": ""
+  },
+  {
+    "text": "월간",
+    "href": ""
+  }
+]

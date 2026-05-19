@@ -65,7 +65,7 @@ function PlannerReports() {
             className="bg-pullim-blue-600 hover:bg-pullim-blue-700 inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold text-white shadow-pullim-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1"
           >
             <Send className="h-3.5 w-3.5" />
-            부모님께 보내기
+            부모님께 회고 공유
           </button>
         }
       >

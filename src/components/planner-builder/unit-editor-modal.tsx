@@ -263,7 +263,7 @@ export function UnitEditorModal({
                       <summary className="hover:bg-pullim-slate-50 flex cursor-pointer items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold list-none">
                         <ChevronRight className="text-pullim-slate-400 h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90" />
                         <span className="text-pullim-slate-900">{course}</span>
-                        <span className="text-pullim-slate-400 ml-1 font-mono text-[10px]">
+                        <span className="text-pullim-slate-500 ml-1 font-mono text-[10px]">
                           ({pending.filter(p => nodes.some(n => n.label === p)).length}/{nodes.length})
                         </span>
                       </summary>
@@ -316,7 +316,7 @@ export function UnitEditorModal({
             </section>
 
             {courseList.length === 0 && weakNodes.length === 0 && customPending.length === 0 && (
-              <p className="text-pullim-slate-400 py-4 text-center text-xs italic">
+              <p className="text-pullim-slate-500 py-4 text-center text-xs italic">
                 교과 단원 데이터 없음 — 위에서 직접 입력해주세요
               </p>
             )}

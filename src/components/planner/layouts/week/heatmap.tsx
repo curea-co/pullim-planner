@@ -116,7 +116,7 @@ export function HeatmapLayout({ paletteId, compact }: Props) {
         </table>
       </div>
       {!compact && (
-        <p className="text-pullim-slate-400 mt-2 text-[10px]">
+        <p className="text-pullim-slate-500 mt-2 text-[10px]">
           진한 셀 = 학습 강도 높음. 데모용 가중치 (평일은 저녁, 주말은 오후 강화).
         </p>
       )}

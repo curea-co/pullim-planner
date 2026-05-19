@@ -8,7 +8,7 @@ import {
   type ConsentType, type ConsentLog,
 } from '@/lib/mock';
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ParentReportCard } from './parent-report-card';
@@ -85,12 +85,13 @@ export function ConsentDialog({ open, onOpenChange }: Props) {
             <ShieldCheck aria-hidden className="mr-1 inline-block h-3 w-3" />
             데이터 공유 동의
           </span>
-          <DialogTitle>부모님께 보내기</DialogTitle>
+          <DialogTitle>부모님께 회고 공유</DialogTitle>
           <DialogDescription>
             동의한 항목·기간 동안만 부모님 앱에서 볼 수 있어요. 언제든 철회 가능.
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         {/* 부모가 받는 카드 — 미리보기 */}
         <ParentReportCard />
 
@@ -184,6 +185,8 @@ export function ConsentDialog({ open, onOpenChange }: Props) {
             })}
           </div>
         </section>
+
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

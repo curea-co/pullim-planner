@@ -1,0 +1,268 @@
+{
+  "headings": [
+    {
+      "tag": "H1",
+      "text": "오늘의 학습 — 4월 24일 목요일"
+    },
+    {
+      "tag": "H3",
+      "text": "오늘 일과"
+    },
+    {
+      "tag": "H2",
+      "text": "오늘의 학습 블록"
+    },
+    {
+      "tag": "H3",
+      "text": "점심 직후 단어 복습 (어제 누락분)"
+    },
+    {
+      "tag": "H3",
+      "text": "미분 기본 공식 시각화"
+    },
+    {
+      "tag": "H3",
+      "text": "저녁 식사"
+    },
+    {
+      "tag": "H3",
+      "text": "미분 — 적응형 문제 풀이"
+    },
+    {
+      "tag": "H3",
+      "text": "빈칸 추론 정복 세트"
+    },
+    {
+      "tag": "H3",
+      "text": "수능 빈출 어휘 50개 복습"
+    },
+    {
+      "tag": "H3",
+      "text": "뉴턴 운동 법칙 — 실전 문제"
+    },
+    {
+      "tag": "H3",
+      "text": "미적분 미니 모의고사"
+    }
+  ],
+  "buttons": [
+    {
+      "tag": "A",
+      "text": "풀림",
+      "classes": "flex items-center gap-1.5 shrink-0"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "서",
+      "classes": "bg-pullim-blue-600 hover:bg-pullim-blue-700 hover:ring-pullim-blue-200 ml-1 inline-flex h-8 w-8 items-center justify-cen"
+    },
+    {
+      "tag": "A",
+      "text": "풀림 플래너",
+      "classes": "group flex items-center gap-2 rounded-lg text-sm font-medium transition-colors min-h-11 px-2 py-2 bg-pullim-blue-50 text"
+    },
+    {
+      "tag": "A",
+      "text": "홈",
+      "classes": "group flex items-center gap-2 rounded-lg text-xs font-medium transition-colors min-h-10 px-2 py-2 bg-pullim-blue-600 tex"
+    },
+    {
+      "tag": "A",
+      "text": "시간표 관리",
+      "classes": "group flex items-center gap-2 rounded-lg text-xs font-medium transition-colors min-h-10 px-2 py-2 text-pullim-slate-600 "
+    },
+    {
+      "tag": "A",
+      "text": "성장 리포트",
+      "classes": "group flex items-center gap-2 rounded-lg text-xs font-medium transition-colors min-h-10 px-2 py-2 text-pullim-slate-600 "
+    },
+    {
+      "tag": "A",
+      "text": "소개하기",
+      "classes": "group flex items-center gap-2 rounded-lg text-xs font-medium transition-colors min-h-10 px-2 py-2 text-pullim-slate-600 "
+    },
+    {
+      "tag": "A",
+      "text": "다른 시간표로 전환",
+      "classes": "text-pullim-blue-600 hover:bg-pullim-blue-50 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold foc"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "일간",
+      "classes": "inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors bg-card text-pullim-blue-700"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "주간",
+      "classes": "inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors text-pullim-slate-500 hover:"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "월간",
+      "classes": "inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors text-pullim-slate-500 hover:"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "전체 24h",
+      "classes": "text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-[11px] font-semibold focus-visible:"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "색상 범례",
+      "classes": "text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-[11px] font-semibold focus-visible:"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "지금 시작",
+      "classes": "bg-pullim-blue-600 inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-sm font-bol"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "🙂\n오늘 컨디션 · 번아웃\n보통이에요·\n64/100\n펼치기",
+      "classes": "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 foc"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "시작",
+      "classes": "inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors bg-pullim-slate"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "이어서",
+      "classes": "inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors bg-pullim-blue-"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "시작",
+      "classes": "inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors bg-pullim-slate"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "시작",
+      "classes": "inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors bg-pullim-slate"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "시작",
+      "classes": "inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors bg-pullim-slate"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "시작",
+      "classes": "inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors bg-pullim-slate"
+    },
+    {
+      "tag": "BUTTON",
+      "text": "오늘 회고\n1/7 완료·88%·🙂\n펼치기",
+      "classes": "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 foc"
+    },
+    {
+      "tag": "A",
+      "text": "홈",
+      "classes": "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors text-pullim-blue-600"
+    }
+  ],
+  "imgs": [],
+  "inputs": [],
+  "links": [
+    {
+      "href": "https://pullim-planner.vercel.app/",
+      "text": "풀림"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner",
+      "text": "풀림 플래너"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner",
+      "text": "홈"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/manage",
+      "text": "시간표 관리"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/reports",
+      "text": "성장 리포트"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/onboarding",
+      "text": "소개하기"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner",
+      "text": ""
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner",
+      "text": ""
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/manage",
+      "text": ""
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/reports",
+      "text": ""
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/onboarding",
+      "text": ""
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/manage",
+      "text": "다른 시간표로 전환"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner",
+      "text": "홈"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/manage",
+      "text": "관리"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/reports",
+      "text": "리포트"
+    },
+    {
+      "href": "https://pullim-planner.vercel.app/planner/onboarding",
+      "text": "소개"
+    }
+  ],
+  "navs": [
+    {
+      "tag": "HEADER",
+      "classes": "bg-card/85 sticky top-0 z-30 border-b backdrop-blur-md",
+      "text": "풀림\n서"
+    },
+    {
+      "tag": "NAV",
+      "classes": "flex-col overflow-y-auto py-3 px-2 hidden lg:flex",
+      "text": "풀림 플래너홈시간표 관리성장 리포트소개하기"
+    },
+    {
+      "tag": "NAV",
+      "classes": "flex-col overflow-y-auto py-3 px-1.5 flex lg:hidden",
+      "text": ""
+    },
+    {
+      "tag": "HEADER",
+      "classes": "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between",
+      "text": "일간 캘린더\n\n오늘의 학습 — 4월 24일 목요일\n\n6월 모의평가·D-16·1/7 블록 완료\n\n다른 시간표로 전환"
+    },
+    {
+      "tag": "HEADER",
+      "classes": "mb-3 flex items-center justify-between gap-2",
+      "text": "오늘 일과\n전체 24h\n색상 범례"
+    },
+    {
+      "tag": "NAV",
+      "classes": "bg-background/95 sticky bottom-0 z-30 border-t backdrop-blur-md md:hidden",
+      "text": "홈\n관리\n리포트\n소개"
+    }
+  ],
+  "bodyTextSample": "풀림\n서\n\n일간 캘린더\n\n오늘의 학습 — 4월 24일 목요일\n\n6월 모의평가·D-16·1/7 블록 완료\n\n다른 시간표로 전환\n일간\n주간\n월간\n2026.04.24 (목)(데모)\n오늘 일과\n전체 24h\n색상 범례\nD-16\n1.9h / 4.4h\n·\n1/7 블록\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n다음 블록\n미분 — 적응형 문제 풀이\n18:25·수학·60분\n지금 시작\n🙂\n오늘 컨디션 · 번아웃\n보통이에요·\n64/100\n펼치기\n오늘의 학습 블록\n\n7대 교육학 엔진이 자동 적용된 학습 단위\n\n드래그 정렬 곧 열려요\n13:30\n점심 직후 단어 복습 (어제 누락분)\n어제 누락분 이월\n미수행\n시작\n17:30\n미분 기본 공식 시각화\n88%🙂\n완료\n18:10\n저녁 식사\n완료\n18:25\n미분 — 적응형 문제 풀이\nD-day 빈출 가중\n진행\n이어서\n19:30\n빈칸 추론 정복 세트\n어제 오답 보강\n대기\n시작\n20:05\n수능 빈출 어휘 50개 복습\n대기\n시작\n20:35\n뉴턴 운동 법칙 — 실전 문제\n대기\n시작\n21:20\n미적분 미니 모의고사\n대기\n시작\n오늘 회고\n1/7 완료·88%·🙂\n펼치기\n홈\n관리\n리포트\n소개",
+  "title": "풀림 플래너 — 시험까지의 시간을 설계하는 AI",
+  "url": "https://pullim-planner.vercel.app/planner"
+}

@@ -76,8 +76,10 @@
   /* 시맨틱 */
   --color-pullim-success: #12B26B;
   --color-pullim-success-bg: #E6F7EE;
+  --color-pullim-success-strong: #0E8C56; /* 흰글자 위 success 텍스트 안전 값 (AA) */
   --color-pullim-warn: #F59E0B;
   --color-pullim-warn-bg: #FEF3DB;
+  --color-pullim-warn-cta-bg: #D97706;    /* 흰글자 위 warn CTA 배경 전용 (AA — #F59E0B+흰글자 2.6:1 회피) */
   --color-pullim-danger: #E5484D;
   --color-pullim-danger-bg: #FCE9EA;
 
@@ -92,6 +94,12 @@
   --color-pullim-lemon: #E6FF4C;
   --color-pullim-lemon-soft: #F5FFB8;
   --color-pullim-lemon-ink: #5C6B0A;
+
+  /* 보조 색 — 블록 타입별 아이콘 컨테이너 (11-planner-design § 5.1) */
+  --color-pullim-violet-50: #F5F3FF;
+  --color-pullim-violet-600: #7C3AED;
+  --color-pullim-teal-50:   #ECFDF5;
+  --color-pullim-teal-600:  #0D9488;
 
   /* 학습 히트맵 6단계 */
   --color-pullim-heat-0: #F0F3F9;
@@ -111,6 +119,25 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* 모션 — duration / easing 토큰 (08-design-system § 10) */
+  --pullim-duration-fast: 120ms;
+  --pullim-duration-base: 200ms;
+  --pullim-duration-slow: 320ms;
+  --pullim-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --pullim-ease-emphasis: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* 레이아웃 — 셸 골격 (08-design-system § 6.5) */
+  --pullim-header-height-desktop: 56px;
+  --pullim-header-height-mobile: 52px;
+  --pullim-sidebar-width-full: 240px;
+  --pullim-sidebar-width-compact: 64px;
+  --pullim-tabbar-height: 64px;
+  --pullim-content-maxwidth: 1280px;
+  --pullim-content-gutter-desktop: 24px;
+  --pullim-content-gutter-mobile: 16px;
+  --pullim-fab-offset-bottom: calc(var(--pullim-tabbar-height) + 24px);
+  --pullim-viewport-safety-padding: 2rem;
 }
 
 :root {

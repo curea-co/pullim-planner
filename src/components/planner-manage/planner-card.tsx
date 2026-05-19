@@ -154,7 +154,7 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
       </div>
 
       <footer className="border-pullim-slate-100 mt-3 flex items-center justify-between gap-2 border-t pt-3">
-        <span className="text-pullim-slate-400 text-[10px]">
+        <span className="text-pullim-slate-500 text-[10px]">
           {formatRelativeUpdate(planner.updatedAt)}
         </span>
         {!isActive && !isArchived && (
@@ -200,7 +200,7 @@ function Metric({
       >
         {value}
       </div>
-      <div className="text-pullim-slate-400 break-words text-[10px] sm:truncate">{sub}</div>
+      <div className="text-pullim-slate-500 break-words text-[10px] sm:truncate">{sub}</div>
     </div>
   );
 }

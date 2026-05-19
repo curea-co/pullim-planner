@@ -53,7 +53,9 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // 외부 컨테이너 — flex 컬럼, 자체 스크롤 없음 (스크롤은 DialogBody가 담당)
+          // 그래야 sticky footer 대신 진짜 fixed footer로 동작 — CTA가 스크롤 범위 밖.
+          "fixed top-1/2 left-1/2 z-50 flex w-full max-w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
@@ -85,7 +87,27 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-header"
       className={cn(
-        "sticky top-0 z-10 flex flex-col gap-2 bg-popover pb-2",
+        // 스크롤 범위 밖 — shrink-0로 항상 표시
+        "shrink-0 flex flex-col gap-2 bg-popover px-4 pt-4 pb-3",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+/**
+ * Dialog 본문 — 유일하게 스크롤되는 영역.
+ * Header/Footer가 자동으로 viewport에 고정되도록 DialogContent를 flex column로 두고
+ * 본문만 `flex-1 min-h-0 overflow-y-auto`로 처리.
+ * CTA(Footer) 영역이 절대 스크롤 범위에 포함되지 않는다.
+ */
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-body"
+      className={cn(
+        "flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 py-2",
         className
       )}
       {...props}
@@ -105,7 +127,8 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted p-4 sm:flex-row sm:justify-end",
+        // 스크롤 범위 밖 — shrink-0 + border-t로 본문과 분리. bg-muted로 시각 격리.
+        "shrink-0 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted px-4 py-3 sm:flex-row sm:justify-end",
         className
       )}
       {...props}
@@ -151,6 +174,7 @@ function DialogDescription({
 
 export {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,

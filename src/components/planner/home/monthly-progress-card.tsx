@@ -135,7 +135,7 @@ export function MonthlyProgressCard() {
           약점 단원 — 이번 달 진도
         </h3>
         {weakNodes.length === 0 ? (
-          <p className="text-pullim-slate-400 text-xs italic">감지된 약점 없음</p>
+          <p className="text-pullim-slate-500 text-xs italic">감지된 약점 없음</p>
         ) : (
           <ul className="space-y-1.5">
             {weakNodes.map(node => {
@@ -197,7 +197,7 @@ function KPI({
       >
         {value}
       </div>
-      <div className="text-pullim-slate-400 text-[10px]">{sub}</div>
+      <div className="text-pullim-slate-500 text-[10px]">{sub}</div>
     </div>
   );
 }

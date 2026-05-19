@@ -8,7 +8,7 @@ import {
   type BurnoutFactor, type TimeBlock,
 } from '@/lib/mock';
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -64,16 +64,16 @@ export function BurnoutCard() {
   return (
     <section className="bg-card rounded-xl border p-4">
       <div className="flex items-start gap-4">
-        {/* 점수 도넛 */}
+        {/* 점수 도넛 — 두께 5px (절반), 배경 ring slate-50로 옅게 */}
         <div
           className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full"
           style={{
-            background: `conic-gradient(${ringColor} ${angle}deg, var(--color-pullim-slate-100) 0deg)`,
+            background: `conic-gradient(${ringColor} ${angle}deg, var(--color-pullim-slate-50) 0deg)`,
           }}
         >
-          <div className="bg-card flex h-15 w-15 flex-col items-center justify-center rounded-full" style={{ width: 60, height: 60 }}>
+          <div className="bg-card flex flex-col items-center justify-center rounded-full" style={{ width: 70, height: 70 }}>
             <span className="text-pullim-slate-900 font-mono text-xl font-bold leading-none">{score}</span>
-            <span className="text-pullim-slate-400 text-[9px] tracking-wider">/ 100</span>
+            <span className="text-pullim-slate-500 text-[10px] tracking-wider">/ 100</span>
           </div>
         </div>
 
@@ -81,10 +81,10 @@ export function BurnoutCard() {
         <div className="flex-1">
           <div className="text-pullim-slate-500 flex items-center gap-1 text-[11px] font-semibold tracking-wider uppercase">
             <Heart className="h-3 w-3" />
-            번아웃 지수
+            번아웃 안전도
           </div>
           <div className="text-pullim-slate-900 mt-0.5 text-base font-bold">
-            컨디션 관리 필요해요
+            {tone === 'good' ? '컨디션 좋아요' : tone === 'warn' ? '컨디션 살펴볼게요' : '오늘은 쉬어가요'}
           </div>
           <div className={cn('mt-1 inline-flex items-center gap-1 text-xs font-semibold', color)}>
             <Icon className="h-3 w-3" />
@@ -124,7 +124,7 @@ export function BurnoutCard() {
           '오늘은 쉴래요'
         )}
       </button>
-      <p className="text-pullim-slate-400 mt-1.5 text-center text-[10px]">
+      <p className="text-pullim-slate-500 mt-1.5 text-center text-[10px]">
         오늘 블록은 내일로 자동 이월돼요
       </p>
 
@@ -165,6 +165,7 @@ function RestDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         {recommendBreak && (
           <aside className="bg-pullim-lemon/30 text-pullim-lemon-ink inline-flex w-full items-start gap-1.5 rounded-lg px-3 py-2 text-[11px] leading-relaxed">
             <Sparkles aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -193,7 +194,7 @@ function RestDialog({
                     <span className="font-mono text-pullim-slate-500 w-20 shrink-0">{b.start}–{b.end}</span>
                     <TypeIcon aria-hidden className="text-pullim-slate-500 h-3 w-3 shrink-0" />
                     <span className="text-pullim-slate-900 truncate font-semibold">{b.title}</span>
-                    <span className="text-pullim-slate-400 ml-auto shrink-0 text-[10px]">
+                    <span className="text-pullim-slate-500 ml-auto shrink-0 text-[10px]">
                       {b.subject !== 'rest' && subjectLabels[b.subject]}
                     </span>
                   </li>
@@ -208,6 +209,7 @@ function RestDialog({
           <li>· 망각 곡선상 가장 위험한 단원만 우선 재배치</li>
           <li>· 부모·튜터 알림은 기본 비활성 (설정에서 변경)</li>
         </ul>
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -440,12 +440,12 @@ function HoursRow({
       {/* 시간 라벨 */}
       <div className="mt-2 flex items-center justify-between font-mono">
         <span className="text-pullim-blue-700 text-base font-bold">{fmt(start)}</span>
-        <span className="text-pullim-slate-400 text-xs">→</span>
+        <span className="text-pullim-slate-500 text-xs">→</span>
         <span className="text-pullim-blue-700 text-base font-bold">{fmt(end)}</span>
       </div>
 
       {/* 시간 눈금 */}
-      <div className="text-pullim-slate-400 mt-1 flex justify-between font-mono text-[9px]">
+      <div className="text-pullim-slate-500 mt-1 flex justify-between font-mono text-[10px]">
         <span>00</span>
         <span>06</span>
         <span>12</span>
@@ -704,7 +704,7 @@ export function PStep5Weakness({ form, setForm }: Props) {
                 </li>
               ))}
               {weak.length === 0 && (
-                <li className="text-pullim-slate-400 text-[11px] italic">현재 약점 없음 — 일반 분배.</li>
+                <li className="text-pullim-slate-500 text-[11px] italic">현재 약점 없음 — 일반 분배.</li>
               )}
             </ul>
           </section>
@@ -1137,7 +1137,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props
             </div>
           )}
 
-          <p className="text-pullim-slate-400 mt-1.5 text-[10px]">
+          <p className="text-pullim-slate-500 mt-1.5 text-[10px]">
             ↑ 자동 생성 예시 — 3단계 단원·4단계 패턴·5단계 약점 설정이 그대로 반영돼요.
           </p>
         </section>

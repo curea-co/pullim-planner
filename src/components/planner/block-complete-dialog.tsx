@@ -10,7 +10,7 @@ import {
   type TimeBlock,
 } from '@/lib/mock';
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -141,6 +141,7 @@ export function BlockCompleteDialog({ block, onClose, nextBlock }: Props) {
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         {/* 자동 결과 ─ 정확도 / 소요 시간 */}
         {block.accuracy !== undefined && (
           <section className="bg-pullim-slate-50 grid grid-cols-2 gap-2 rounded-lg p-3">
@@ -203,6 +204,7 @@ export function BlockCompleteDialog({ block, onClose, nextBlock }: Props) {
             className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
           />
         </section>
+        </DialogBody>
 
         <DialogFooter className="gap-1.5">
           <Button type="button" variant="ghost" onClick={handleClose}>

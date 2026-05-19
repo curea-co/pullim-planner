@@ -196,7 +196,7 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
                   compact
                 />
               )}
-              <p className="text-pullim-slate-400 mt-2 text-[10px]">
+              <p className="text-pullim-slate-500 mt-2 text-[10px]">
                 * 미리보기에는 오늘·이번 주 데모 데이터가 사용됩니다.
               </p>
             </div>
