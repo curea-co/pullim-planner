@@ -1,8 +1,11 @@
 name: Codex Review
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  # Codex 지적(3차 #1): pull_request_target 패턴 — base 브랜치의 워크플로 yml만
+  # secret 에 접근. PR 가 본 yml 자체를 수정해도 secret 유출 불가.
+  # 단점: 본 yml 의 변경은 main 머지 후 다음 PR 부터 효력 발생.
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -16,17 +19,17 @@ jobs:
   review:
     name: Review
     runs-on: self-hosted
-    # Codex 지적(P0 보안): self-hosted + pull_request → 포크 PR 차단. curea-co 소속 브랜치만 실행.
+    # 사전 sweep: workflow hang 방지 — 15분 상한.
+    timeout-minutes: 15
+    # 포크 PR 차단 — curea-co 소속 브랜치만 self-hosted runner 실행.
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Clear stale git credentials
-        run: |
-          git config --global --unset-all http.https://github.com/.extraheader || true
-          git config --global --unset-all http.proxy || true
-          git config --global --unset-all https.proxy || true
-
+      # Codex 지적(3차 #2): PR head SHA 명시 체크아웃.
+      # pull_request_target 의 기본은 base 체크아웃이므로 head 받기 위해 ref 의무.
+      # diff·라인 매핑이 pr.head.sha 와 일치해야 인라인 코멘트 위치 정확.
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -38,14 +41,20 @@ jobs:
 
       - name: Extract PR diff
         run: |
-          git diff origin/${{ github.event.pull_request.base.ref }}...HEAD \
+          set -euo pipefail
+          # base.sha · head.sha 직접 사용 — base.ref 가 force-push 시 흔들리지 않음.
+          git diff "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" \
             > /tmp/pr-diff-${{ github.event.repository.name }}.txt
           echo "PR diff: $(wc -l < /tmp/pr-diff-${{ github.event.repository.name }}.txt) lines"
 
+      # safety_strategy=unsafe 정당화:
+      # Codex CLI 가 /tmp/pr-diff*.txt 읽기 · /tmp/codex-review*.json 쓰기 필요.
+      # workspace-write sandbox + unsafe = 워크스페이스 외부 파일 시스템 접근 허용.
+      # /tmp 만 사용 + concurrency group 으로 PR 격리 → 실제 영향 격리됨.
       - name: Codex Review
         id: codex
         run: |
-          cat <<'PROMPT' | codex exec --model gpt-5.4 --sandbox workspace-write -c safety_strategy=unsafe -
+          cat <<PROMPT | codex exec --model gpt-5.4 --sandbox workspace-write -c safety_strategy=unsafe -
           /tmp/pr-diff-${{ github.event.repository.name }}.txt 파일에 이 PR의 변경 diff가 있다.
           이 diff를 대상으로 루트 AGENTS.md 와 CLAUDE.md 를 우선 적용해 리뷰해라.
           명시되지 않은 공통 규칙은 CLAUDE.md 가 가리키는 권위 문서를 참조해라.
@@ -73,6 +82,15 @@ jobs:
           - 모든 인라인 코멘트 body 끝에 반드시 `— Reviewed by Codex` 서명 포함
           - JSON 파일에는 순수 JSON만 출력 (마크다운 펜스나 부가 텍스트 금지)
           PROMPT
+
+      # 사전 sweep: Codex 산출 JSON 보관 — 디버깅·감사·회귀 추적용.
+      - name: Upload Codex review artifact
+        if: always() && steps.codex.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-review-${{ github.event.pull_request.number }}
+          path: /tmp/codex-review-${{ github.event.repository.name }}.json
+          retention-days: 7
 
       - name: Generate App Token
         id: app-token
@@ -107,13 +125,49 @@ jobs:
               return;
             }
 
+            // Codex 지적(3차 #3): JSON 스키마 인라인 검증 — "외부 입력 런타임 검증" 룰 준수.
+            // Codex JSON 도 외부 입력. (워크플로 안 javascript 에 Zod import 불가 — 인라인 검증으로 대체.)
+            const isString = (v) => typeof v === 'string';
+            const isNumber = (v) => typeof v === 'number' && Number.isFinite(v);
+            const ACTIONS = ['COMMENT', 'APPROVE'];
+
+            if (!review || typeof review !== 'object') {
+              core.setFailed('스키마 검증 실패: review 가 객체가 아님');
+              return;
+            }
+            if (!ACTIONS.includes(review.action)) {
+              core.setFailed(`스키마 검증 실패: action 은 ${ACTIONS.join('/')} 만 허용. 실제: ${review.action}`);
+              return;
+            }
+            if (review.body !== undefined && !isString(review.body)) {
+              core.setFailed('스키마 검증 실패: body 는 문자열');
+              return;
+            }
+            const rawComments = Array.isArray(review.comments) ? review.comments : [];
+            const validatedComments = [];
+            let skipped = 0;
+            for (let i = 0; i < rawComments.length; i++) {
+              const c = rawComments[i];
+              if (!c || typeof c !== 'object') {
+                console.warn(`comment[${i}] 객체 아님 — 건너뜀`);
+                skipped++;
+                continue;
+              }
+              if (!isString(c.path) || !isNumber(c.line) || !isString(c.body)) {
+                console.warn(`comment[${i}] 필드 누락/형식 오류 — 건너뜀`, c);
+                skipped++;
+                continue;
+              }
+              validatedComments.push(c);
+            }
+
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
             });
 
-            // Codex 지적(신뢰성): pagination 처리 — 301+ 파일 PR 에서 인라인 코멘트 손실 방지.
+            // Codex 지적(2차): pagination — 301+ 파일 PR 인라인 손실 방지.
             const files = await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -142,7 +196,7 @@ jobs:
             const validComments = [];
             const fallbackComments = [];
 
-            for (const c of (review.comments || [])) {
+            for (const c of validatedComments) {
               const fileLines = diffLines.get(c.path);
               if (fileLines && fileLines.has(c.line)) {
                 validComments.push({ path: c.path, line: c.line, side: 'RIGHT', body: c.body });
@@ -171,4 +225,4 @@ jobs:
             }
 
             await github.rest.pulls.createReview(params);
-            console.log(`인라인: ${validComments.length}, fallback: ${fallbackComments.length}`);
+            console.log(`인라인: ${validComments.length}, fallback: ${fallbackComments.length}, 스키마 검증 거른 코멘트: ${skipped}`);
