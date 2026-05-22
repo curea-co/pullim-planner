@@ -4,7 +4,7 @@ import { planners, plannerSubjectUnits } from '@/lib/db/schema';
 import { getUserId } from '../_lib/auth';
 import { apiError, ok } from '../_lib/response';
 import { reshapePlanner } from '../_lib/planner-shape';
-import { parsePlannerCreate, readJson } from '../_lib/validation';
+import { parsePlannerCreate, readJson, validatePlannerInvariants } from '../_lib/validation';
 
 export async function GET(req: Request) {
   const userId = getUserId(req);
@@ -27,6 +27,9 @@ export async function POST(req: Request) {
   if (!parsed.ok) return apiError('validation_failed', parsed.message);
 
   const data = parsed.data;
+  const invariants = validatePlannerInvariants(data);
+  if (!invariants.ok) return apiError('validation_failed', invariants.message);
+
   const id = newPlannerId();
 
   const created = await db.transaction(async (tx) => {

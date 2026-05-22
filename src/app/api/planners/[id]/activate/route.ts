@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { planners } from '@/lib/db/schema';
+import { planners, type Planner } from '@/lib/db/schema';
 import { getUserId } from '../../../_lib/auth';
 import { apiError, ok } from '../../../_lib/response';
 import { reshapePlanner } from '../../../_lib/planner-shape';
@@ -12,16 +12,27 @@ export async function POST(
   const userId = getUserId(req);
   const { id } = await ctx.params;
 
-  const target = await db.query.planners.findFirst({ where: eq(planners.id, id) });
-  if (!target) return apiError('not_found', `Planner ${id} not found`);
-  if (target.userId !== userId) return apiError('forbidden', `Planner ${id} is not yours`);
-  if (target.archived) {
-    return apiError('conflict', `Planner ${id} is archived. Unarchive before activating.`);
-  }
+  // TOCTOU 가드: 읽기·검증·갱신을 같은 트랜잭션에서. UPDATE WHERE 절에 archived=false
+  // 가드를 둬 동시 archive 요청과의 race로 archived=true 인 planner가 활성화되는 경우 차단.
+  type RowWithUnits = Planner & {
+    subjectUnits: Array<{ subject: string; unitLabel: string; position: number }>;
+  };
+  type Result =
+    | { kind: 'not_found' }
+    | { kind: 'forbidden' }
+    | { kind: 'archived' }
+    | { kind: 'race' }
+    | { kind: 'ok'; row: RowWithUnits };
 
+  let result: Result;
   try {
-    const updated = await db.transaction(async (tx) => {
-      // 같은 user의 다른 active planner 모두 비활성화 (partial unique index 충돌 방지)
+    result = await db.transaction<Result>(async (tx) => {
+      const target = await tx.query.planners.findFirst({ where: eq(planners.id, id) });
+      if (!target) return { kind: 'not_found' };
+      if (target.userId !== userId) return { kind: 'forbidden' };
+      if (target.archived) return { kind: 'archived' };
+
+      // 같은 user의 다른 active planner 모두 비활성화 (partial unique 충돌 방지)
       await tx
         .update(planners)
         .set({ active: false, updatedAt: sql`now()` })
@@ -33,19 +44,20 @@ export async function POST(
           ),
         );
 
-      await tx
+      const activated = await tx
         .update(planners)
         .set({ active: true, updatedAt: sql`now()` })
-        .where(eq(planners.id, id));
+        .where(and(eq(planners.id, id), eq(planners.archived, false)))
+        .returning({ id: planners.id });
+      if (activated.length === 0) return { kind: 'race' };
 
       const row = await tx.query.planners.findFirst({
         where: eq(planners.id, id),
         with: { subjectUnits: true },
       });
       if (!row) throw new Error('Planner missing after activate');
-      return row;
+      return { kind: 'ok', row };
     });
-    return ok(reshapePlanner(updated));
   } catch (err) {
     if (isUniqueViolation(err)) {
       return apiError(
@@ -54,6 +66,22 @@ export async function POST(
       );
     }
     throw err;
+  }
+
+  switch (result.kind) {
+    case 'not_found':
+      return apiError('not_found', `Planner ${id} not found`);
+    case 'forbidden':
+      return apiError('forbidden', `Planner ${id} is not yours`);
+    case 'archived':
+      return apiError('conflict', `Planner ${id} is archived. Unarchive before activating.`);
+    case 'race':
+      return apiError(
+        'conflict',
+        `Planner ${id} state changed concurrently (likely archived). Retry shortly.`,
+      );
+    case 'ok':
+      return ok(reshapePlanner(result.row));
   }
 }
 

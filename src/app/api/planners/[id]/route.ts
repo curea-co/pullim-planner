@@ -1,10 +1,14 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, or, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { planners, plannerSubjectUnits } from '@/lib/db/schema';
 import { getUserId } from '../../_lib/auth';
 import { apiError, ok } from '../../_lib/response';
 import { reshapePlanner } from '../../_lib/planner-shape';
-import { parsePlannerPatch, readJson } from '../../_lib/validation';
+import {
+  parsePlannerPatch,
+  readJson,
+  validatePlannerInvariants,
+} from '../../_lib/validation';
 
 export async function GET(
   req: Request,
@@ -42,12 +46,25 @@ export async function PATCH(
 
   const patch = parsed.data;
 
-  // patch에 한 쪽 날짜만 들어와도 기존 row와 합쳐 시작/종료 순서 유지.
+  // existing + patch를 합친 최종 상태로 create와 동일한 도메인 invariants 재검증.
+  // (Codex 지적: 한 필드만 패치돼도 examType↔target.kind, 단일일자 시험의 == 등 교차 불변식이 깨질 수 있음.)
   const mergedStart = patch.examStartDate ?? existing.examStartDate;
   const mergedEnd = patch.examEndDate ?? existing.examEndDate;
   if (mergedEnd < mergedStart) {
     return apiError('validation_failed', 'examEndDate must be on or after examStartDate');
   }
+  const invariants = validatePlannerInvariants({
+    examType: (patch.examType ?? existing.examType) as Parameters<
+      typeof validatePlannerInvariants
+    >[0]['examType'],
+    examStartDate: mergedStart,
+    examEndDate: mergedEnd,
+    targetKind: (patch.targetKind ?? existing.targetKind) as Parameters<
+      typeof validatePlannerInvariants
+    >[0]['targetKind'],
+    targetValue: patch.targetValue ?? existing.targetValue,
+  });
+  if (!invariants.ok) return apiError('validation_failed', invariants.message);
 
   const { subjectUnits, ...scalarPatch } = patch;
 
@@ -101,17 +118,53 @@ export async function DELETE(
   const userId = getUserId(req);
   const { id } = await ctx.params;
 
-  const existing = await db.query.planners.findFirst({ where: eq(planners.id, id) });
-  if (!existing) return apiError('not_found', `Planner ${id} not found`);
-  if (existing.userId !== userId) return apiError('forbidden', `Planner ${id} is not yours`);
+  // TOCTOU 가드: 읽기·검증·삭제를 같은 트랜잭션으로 묶고, DELETE WHERE 절에도
+  // active=false 또는 archived=true 상태 가드를 둬 동시 activate 요청 후에
+  // 활성화된 planner가 삭제되는 race 차단.
+  type Result =
+    | { kind: 'not_found' }
+    | { kind: 'forbidden' }
+    | { kind: 'active' }
+    | { kind: 'race' }
+    | { kind: 'ok' };
 
-  if (existing.active && !existing.archived) {
-    return apiError(
-      'conflict',
-      `Planner ${id} is active. Activate another planner before deleting.`,
-    );
+  const result = await db.transaction<Result>(async (tx) => {
+    const existing = await tx.query.planners.findFirst({ where: eq(planners.id, id) });
+    if (!existing) return { kind: 'not_found' };
+    if (existing.userId !== userId) return { kind: 'forbidden' };
+    if (existing.active && !existing.archived) return { kind: 'active' };
+
+    const deleted = await tx
+      .delete(planners)
+      .where(
+        and(
+          eq(planners.id, id),
+          // active=false OR archived=true (archived는 active와 무관하게 삭제 허용)
+          or(eq(planners.active, false), eq(planners.archived, true)),
+        ),
+      )
+      .returning({ id: planners.id });
+
+    if (deleted.length === 0) return { kind: 'race' };
+    return { kind: 'ok' };
+  });
+
+  switch (result.kind) {
+    case 'not_found':
+      return apiError('not_found', `Planner ${id} not found`);
+    case 'forbidden':
+      return apiError('forbidden', `Planner ${id} is not yours`);
+    case 'active':
+      return apiError(
+        'conflict',
+        `Planner ${id} is active. Activate another planner before deleting.`,
+      );
+    case 'race':
+      return apiError(
+        'conflict',
+        `Planner ${id} state changed concurrently. Retry shortly.`,
+      );
+    case 'ok':
+      return new Response(null, { status: 204 });
   }
-
-  await db.delete(planners).where(eq(planners.id, id));
-  return new Response(null, { status: 204 });
 }

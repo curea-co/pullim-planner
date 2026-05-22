@@ -9,6 +9,19 @@ const TARGET_KINDS = ['grade', 'score', 'free'] as const;
 const BLOCK_PATTERNS = ['pomodoro', 'focused', 'deep'] as const;
 const MOTIVATION_STYLES = ['autonomous', 'guided', 'spartan'] as const;
 
+// 빌더 examTypeMeta(src/components/planner-builder/builder-types.ts)와 정합 —
+// FE 권위 그대로 서버에 복제. 빌더 변경 시 본 표도 갱신.
+const EXAM_TYPE_META: Record<
+  (typeof EXAM_TYPES)[number],
+  { isRange: boolean; targetKind: (typeof TARGET_KINDS)[number] }
+> = {
+  mock: { isRange: false, targetKind: 'grade' },
+  suneung: { isRange: false, targetKind: 'grade' },
+  midterm: { isRange: true, targetKind: 'score' },
+  final: { isRange: true, targetKind: 'score' },
+  other: { isRange: false, targetKind: 'free' },
+};
+
 export type ParseResult<T> =
   | { ok: true; data: T }
   | { ok: false; message: string };
@@ -38,6 +51,45 @@ export type PlannerCreateInput = {
 };
 
 export type PlannerPatchInput = Partial<PlannerCreateInput>;
+
+/**
+ * Planner 도메인 불변식 — examType↔target.kind, single-day exam, value 범위.
+ * 빌더가 강제하는 규칙을 서버에서도 동일 적용.
+ * create 시 1회, patch 시 merged final state로 1회 호출.
+ */
+export function validatePlannerInvariants(state: {
+  examType: (typeof EXAM_TYPES)[number];
+  examStartDate: string;
+  examEndDate: string;
+  targetKind: (typeof TARGET_KINDS)[number];
+  targetValue: string;
+}): ParseResult<true> {
+  const meta = EXAM_TYPE_META[state.examType];
+  if (state.targetKind !== meta.targetKind) {
+    return fail(
+      `examType=${state.examType} requires target.kind=${meta.targetKind}, got ${state.targetKind}`,
+    );
+  }
+  if (!meta.isRange && state.examEndDate !== state.examStartDate) {
+    return fail(
+      `examType=${state.examType} is single-day; examEndDate must equal examStartDate`,
+    );
+  }
+  if (state.targetKind === 'grade') {
+    const n = Number(state.targetValue);
+    if (!Number.isInteger(n) || n < 1 || n > 4) {
+      return fail('target.value must be integer 1~4 when target.kind=grade');
+    }
+  }
+  if (state.targetKind === 'score') {
+    const n = Number(state.targetValue);
+    if (!Number.isInteger(n) || n < 0 || n > 100) {
+      return fail('target.value must be integer 0~100 when target.kind=score');
+    }
+  }
+  // free → 문자열 자유, 범위 검증 없음
+  return { ok: true, data: true as const };
+}
 
 export async function readJson(req: Request): Promise<ParseResult<unknown>> {
   try {

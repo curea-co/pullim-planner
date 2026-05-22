@@ -11,8 +11,12 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
 
+// build(`next build`) phase에서는 모듈 평가 시 DATABASE_URL 없어도 통과.
+// 실제 연결은 첫 query에서 일어나므로 build 단계에서는 안전.
+// runtime에서 DATABASE_URL 누락은 pg 자체 에러로 노출됨.
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
 const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
+if (!connectionString && !isBuildPhase) {
   throw new Error(
     'DATABASE_URL is not set. Copy .env.example to .env.local and start `docker compose up -d`.',
   );
@@ -20,7 +24,6 @@ if (!connectionString) {
 
 // 단일 풀 — Next.js hot reload에서 중복 생성 방지 (Node runtime 기준)
 declare global {
-  // eslint-disable-next-line no-var
   var __pullim_pg_pool: Pool | undefined;
 }
 
