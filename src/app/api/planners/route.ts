@@ -1,14 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { planners } from '@/lib/db/schema';
+import { planners, plannerSubjectUnits } from '@/lib/db/schema';
 import { getUserId } from '../_lib/auth';
-import { ok } from '../_lib/response';
-
-type PlannerRow = NonNullable<
-  Awaited<ReturnType<typeof db.query.planners.findFirst>>
-> & {
-  subjectUnits: Array<{ subject: string; unitLabel: string; position: number }>;
-};
+import { apiError, ok } from '../_lib/response';
+import { reshapePlanner } from '../_lib/planner-shape';
+import { parsePlannerCreate, readJson } from '../_lib/validation';
 
 export async function GET(req: Request) {
   const userId = getUserId(req);
@@ -18,40 +14,84 @@ export async function GET(req: Request) {
     with: { subjectUnits: true },
   });
 
-  return ok(rows.map(reshape));
+  return ok(rows.map(reshapePlanner));
 }
 
-function reshape(row: PlannerRow) {
-  const subjectUnits: Record<string, string[]> = {};
-  for (const u of [...row.subjectUnits].sort((a, b) => a.position - b.position)) {
-    (subjectUnits[u.subject] ??= []).push(u.unitLabel);
+export async function POST(req: Request) {
+  const userId = getUserId(req);
+
+  const body = await readJson(req);
+  if (!body.ok) return apiError('validation_failed', body.message);
+
+  const parsed = parsePlannerCreate(body.data);
+  if (!parsed.ok) return apiError('validation_failed', parsed.message);
+
+  const data = parsed.data;
+  const id = newPlannerId();
+
+  const created = await db.transaction(async (tx) => {
+    await tx.insert(planners).values({
+      id,
+      userId,
+      name: data.name,
+      examType: data.examType,
+      examLabel: data.examLabel,
+      examStartDate: data.examStartDate,
+      examEndDate: data.examEndDate,
+      targetKind: data.targetKind,
+      targetValue: data.targetValue,
+      weekdayStart: data.weekdayStart,
+      weekdayEnd: data.weekdayEnd,
+      weekendStart: data.weekendStart,
+      weekendEnd: data.weekendEnd,
+      blockPattern: data.blockPattern,
+      weaknessAutoReflect: data.weaknessAutoReflect,
+      motivationStyle: data.motivationStyle,
+      motto: data.motto,
+      active: false,
+      archived: false,
+      customization: data.customization,
+    });
+
+    const unitRows = subjectUnitsToRows(id, data.subjectUnits);
+    if (unitRows.length > 0) {
+      await tx.insert(plannerSubjectUnits).values(unitRows);
+    }
+
+    const row = await tx.query.planners.findFirst({
+      where: eq(planners.id, id),
+      with: { subjectUnits: true },
+    });
+    if (!row) {
+      throw new Error('Created planner not found after insert');
+    }
+    return row;
+  });
+
+  return new Response(JSON.stringify({ data: reshapePlanner(created) }), {
+    status: 201,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+function newPlannerId(): string {
+  return `pl_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+}
+
+function subjectUnitsToRows(
+  plannerId: string,
+  subjectUnits: Record<string, string[]>,
+) {
+  const rows: Array<{
+    plannerId: string;
+    subject: string;
+    unitLabel: string;
+    position: number;
+  }> = [];
+  for (const [subject, units] of Object.entries(subjectUnits)) {
+    units.forEach((unitLabel, position) => {
+      rows.push({ plannerId, subject, unitLabel, position });
+    });
   }
-
-  return {
-    id: row.id,
-    name: row.name,
-    examType: row.examType,
-    examLabel: row.examLabel,
-    examStartDate: row.examStartDate,
-    examEndDate: row.examEndDate,
-    target: { kind: row.targetKind, value: parseTargetValue(row.targetKind, row.targetValue) },
-    weekdayHours: { start: row.weekdayStart, end: row.weekdayEnd },
-    weekendHours: { start: row.weekendStart, end: row.weekendEnd },
-    subjectUnits,
-    blockPattern: row.blockPattern,
-    weaknessAutoReflect: row.weaknessAutoReflect,
-    motivationStyle: row.motivationStyle,
-    motto: row.motto,
-    active: row.active,
-    archived: row.archived,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-    customization: row.customization,
-  };
-}
-
-function parseTargetValue(kind: string, value: string): number | string {
-  if (kind === 'free') return value;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : value;
+  return rows;
 }
