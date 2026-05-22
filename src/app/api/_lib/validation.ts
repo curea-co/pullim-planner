@@ -61,6 +61,10 @@ export function parsePlannerCreate(input: unknown): ParseResult<PlannerCreateInp
   if (!examStartDate.ok) return examStartDate;
   const examEndDate = mustDate(input.examEndDate, 'examEndDate');
   if (!examEndDate.ok) return examEndDate;
+  // 빌더 setStart/setEnd가 강제하는 불변식 — 서버도 동일 적용 (YYYY-MM-DD 문자열은 사전순 = 시계열).
+  if (examEndDate.data < examStartDate.data) {
+    return fail('examEndDate must be on or after examStartDate');
+  }
 
   if (!isObject(input.target)) return fail('target must be { kind, value }');
   const targetKind = mustEnum(input.target.kind, 'target.kind', TARGET_KINDS);
@@ -144,6 +148,10 @@ export function parsePlannerPatch(input: unknown): ParseResult<PlannerPatchInput
     const r = mustDate(input.examEndDate, 'examEndDate');
     if (!r.ok) return r;
     patch.examEndDate = r.data;
+  }
+  // patch에 두 필드가 함께 오면 순서 검증. 한 필드만 오는 경우는 라우트에서 기존 row 와 합쳐 재검증.
+  if (patch.examStartDate && patch.examEndDate && patch.examEndDate < patch.examStartDate) {
+    return fail('examEndDate must be on or after examStartDate');
   }
   if ('target' in input) {
     if (!isObject(input.target)) return fail('target must be { kind, value }');
@@ -230,6 +238,17 @@ function mustDate(v: unknown, field: string): ParseResult<string> {
   if (typeof v !== 'string' || !DATE_RE.test(v)) {
     return fail(`${field} must be YYYY-MM-DD`);
   }
+  // 정규식만으로는 2026-02-31 같은 비실존 날짜 통과 → DB 거부 시 500.
+  // Date 파싱 후 round-trip 비교로 실제 달력 날짜인지 확인.
+  const [y, m, d] = v.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (
+    dt.getUTCFullYear() !== y ||
+    dt.getUTCMonth() !== m - 1 ||
+    dt.getUTCDate() !== d
+  ) {
+    return fail(`${field} is not a valid calendar date: ${v}`);
+  }
   return { ok: true, data: v };
 }
 
@@ -265,6 +284,7 @@ function mustHourRange(
   if (!isObject(v)) return fail(`${field} must be { start, end }`);
   const start = v.start;
   const end = v.end;
+  // 빌더 UI 슬라이더는 max={24} → 종료시각 24:00 허용. start는 0~23, end는 0~24.
   if (
     typeof start !== 'number' ||
     typeof end !== 'number' ||
@@ -273,9 +293,12 @@ function mustHourRange(
     start < 0 ||
     start > 23 ||
     end < 0 ||
-    end > 23
+    end > 24
   ) {
-    return fail(`${field}.start/end must be integers 0~23`);
+    return fail(`${field}.start must be 0~23 and ${field}.end must be 0~24`);
+  }
+  if (start >= end) {
+    return fail(`${field}.start must be less than ${field}.end`);
   }
   return { ok: true, data: { start, end } };
 }

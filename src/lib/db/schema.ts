@@ -20,6 +20,7 @@ import {
   primaryKey,
   uniqueIndex,
   index,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 /* ─── users ───────────────────────────────────────────────────────────── */
@@ -115,7 +116,7 @@ export const plannerSubjectUnitsRelations = relations(plannerSubjectUnits, ({ on
 
 export const curriculumNodes = pgTable('curriculum_nodes', {
   id: text('id').primaryKey(),                          // 'math.calc_diff.application'
-  parentId: text('parent_id').references((): any => curriculumNodes.id, { onDelete: 'cascade' }),
+  parentId: text('parent_id').references((): AnyPgColumn => curriculumNodes.id, { onDelete: 'cascade' }),
   subject: text('subject').notNull(),
   level: smallint('level').notNull(),                   // 1=과목, 2=단원, 3=세부
   label: text('label').notNull(),

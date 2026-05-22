@@ -41,6 +41,14 @@ export async function PATCH(
   if (!parsed.ok) return apiError('validation_failed', parsed.message);
 
   const patch = parsed.data;
+
+  // patch에 한 쪽 날짜만 들어와도 기존 row와 합쳐 시작/종료 순서 유지.
+  const mergedStart = patch.examStartDate ?? existing.examStartDate;
+  const mergedEnd = patch.examEndDate ?? existing.examEndDate;
+  if (mergedEnd < mergedStart) {
+    return apiError('validation_failed', 'examEndDate must be on or after examStartDate');
+  }
+
   const { subjectUnits, ...scalarPatch } = patch;
 
   const updated = await db.transaction(async (tx) => {
