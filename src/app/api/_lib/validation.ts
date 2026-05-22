@@ -330,7 +330,9 @@ function fail<T>(message: string): ParseResult<T> {
 }
 
 function mustStr(v: unknown, field: string): ParseResult<string> {
-  if (typeof v !== 'string' || v.length === 0) return fail(`${field} must be a non-empty string`);
+  if (typeof v !== 'string' || v.trim().length === 0) {
+    return fail(`${field} must be a non-empty string (whitespace-only is rejected)`);
+  }
   return { ok: true, data: v };
 }
 
@@ -416,8 +418,15 @@ function mustHourRange(
 
 function mustSubjectUnits(v: unknown): ParseResult<Record<string, string[]>> {
   if (!isObject(v)) return fail('subjectUnits must be Record<SubjectKey, string[]>');
+  // 빌더는 "3단계에서 과목을 1개 이상 추가해주세요"로 빈 입력 차단. 서버도 동일하게
+  // ≥ 1 과목, ≥ 1 전체 단원 수 강제.
+  const entries = Object.entries(v);
+  if (entries.length === 0) {
+    return fail('subjectUnits must contain at least one subject');
+  }
   const out: Record<string, string[]> = {};
-  for (const [subject, list] of Object.entries(v)) {
+  let totalUnits = 0;
+  for (const [subject, list] of entries) {
     // mock 도메인 권위 SubjectKey enum 외 키 차단 — UI subjectLabels 매핑 안전 보장.
     if (!(SUBJECT_KEYS as readonly string[]).includes(subject)) {
       return fail(
@@ -429,11 +438,15 @@ function mustSubjectUnits(v: unknown): ParseResult<Record<string, string[]>> {
     }
     for (let i = 0; i < list.length; i++) {
       const u = list[i];
-      if (typeof u !== 'string' || u.length === 0) {
-        return fail(`subjectUnits.${subject}[${i}] must be a non-empty string`);
+      if (typeof u !== 'string' || u.trim().length === 0) {
+        return fail(`subjectUnits.${subject}[${i}] must be a non-empty string (whitespace-only is rejected)`);
       }
     }
+    totalUnits += list.length;
     out[subject] = list as string[];
+  }
+  if (totalUnits === 0) {
+    return fail('subjectUnits must contain at least one unit across all subjects');
   }
   return { ok: true, data: out };
 }
