@@ -18,7 +18,10 @@ concurrency:
 jobs:
   review:
     name: Review
-    runs-on: self-hosted
+    runs-on:
+      # runner group으로 격리 — curea-runner-groups-2(=curea-runner-2 단독) 고정.
+      # 기본 group(curea-runner-groups, curea-runner 단독)과 분리해 리포 간 간섭 방지.
+      group: curea-runner-groups-2
     # 사전 sweep: workflow hang 방지 — 15분 상한.
     timeout-minutes: 15
     # 포크 PR 차단 — curea-co 소속 브랜치만 self-hosted runner 실행.
