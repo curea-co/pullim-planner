@@ -107,22 +107,23 @@ export async function PATCH(
     const { subjectUnits, customization: _customizationPatch, ...scalarPatch } = patch;
     void _customizationPatch; // raw patch는 위에서 머지 처리
 
-    const hasScalarUpdate = Object.keys(scalarPatch).length > 0 || customizationChanged;
-    if (hasScalarUpdate || subjectUnits) {
-      const setMap = {
-        ...scalarPatch,
-        ...(customizationChanged ? { customization: mergedCustomization } : {}),
-        updatedAt: sql`now()`,
-      };
-      const touched = await tx
-        .update(planners)
-        .set(setMap)
-        .where(and(eq(planners.id, id), eq(planners.userId, userId)))
-        .returning({ id: planners.id });
-      if (touched.length === 0) {
-        // 동시 delete로 row 사라짐 — 트랜잭션 자체는 정상 종료 but 응답은 404.
-        return { kind: 'not_found' };
-      }
+    // Planner row를 항상 touch — scalarPatch가 비어도 updated_at만 갱신.
+    // 목적 2가지:
+    // (1) 동시 delete race 차단 — UPDATE는 row-lock을 트랜잭션 끝까지 보유 →
+    //     subsequent INSERT plannerSubjectUnits 의 FK 위반 race 차단.
+    // (2) row가 사라졌으면 .returning() 0건 → not_found 응답.
+    const setMap = {
+      ...scalarPatch,
+      ...(customizationChanged ? { customization: mergedCustomization } : {}),
+      updatedAt: sql`now()`,
+    };
+    const touched = await tx
+      .update(planners)
+      .set(setMap)
+      .where(and(eq(planners.id, id), eq(planners.userId, userId)))
+      .returning({ id: planners.id });
+    if (touched.length === 0) {
+      return { kind: 'not_found' };
     }
 
     if (subjectUnits) {

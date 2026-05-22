@@ -91,19 +91,27 @@ export function validatePlannerInvariants(state: {
       `examType=${state.examType} is single-day; examEndDate must equal examStartDate`,
     );
   }
+  // 빈/공백 문자열은 Number()가 0으로 변환해버려 score=0이 통과해버리는 문제 차단.
+  // 정규식으로 정수 문자열만 허용.
+  const parseIntStrict = (s: string): number | null =>
+    /^-?\d+$/.test(s) ? Number(s) : null;
   if (state.targetKind === 'grade') {
-    const n = Number(state.targetValue);
-    if (!Number.isInteger(n) || n < 1 || n > 4) {
+    const n = parseIntStrict(state.targetValue);
+    if (n === null || n < 1 || n > 4) {
       return fail('target.value must be integer 1~4 when target.kind=grade');
     }
   }
   if (state.targetKind === 'score') {
-    const n = Number(state.targetValue);
-    if (!Number.isInteger(n) || n < 0 || n > 100) {
+    const n = parseIntStrict(state.targetValue);
+    if (n === null || n < 0 || n > 100) {
       return fail('target.value must be integer 0~100 when target.kind=score');
     }
   }
-  // free → 문자열 자유, 범위 검증 없음
+  if (state.targetKind === 'free') {
+    if (state.targetValue.trim().length === 0) {
+      return fail('target.value must be a non-empty string when target.kind=free');
+    }
+  }
   return { ok: true, data: true as const };
 }
 
