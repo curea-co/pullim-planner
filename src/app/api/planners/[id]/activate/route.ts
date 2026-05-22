@@ -5,6 +5,14 @@ import { getUserId } from '../../../_lib/auth';
 import { apiError, ok } from '../../../_lib/response';
 import { reshapePlanner } from '../../../_lib/planner-shape';
 
+// 대상 planner가 트랜잭션 진행 중 archive/delete된 경우의 race —
+// 기존 active 비활성화까지 함께 롤백되도록 throw 로 전파.
+class ActivateRaceError extends Error {
+  constructor(public plannerId: string) {
+    super(`Planner ${plannerId} state changed concurrently during activate`);
+  }
+}
+
 export async function POST(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
@@ -12,8 +20,8 @@ export async function POST(
   const userId = getUserId(req);
   const { id } = await ctx.params;
 
-  // TOCTOU 가드: 읽기·검증·갱신을 같은 트랜잭션에서. UPDATE WHERE 절에 archived=false
-  // 가드를 둬 동시 archive 요청과의 race로 archived=true 인 planner가 활성화되는 경우 차단.
+  // TOCTOU 가드: 읽기·검증·갱신을 같은 트랜잭션. UPDATE WHERE 절에 archived=false
+  // 가드 + race 시 throw로 롤백해 "기존 active만 꺼지고 새 active는 못 켜지는" 상태 차단.
   type RowWithUnits = Planner & {
     subjectUnits: Array<{ subject: string; unitLabel: string; position: number }>;
   };
@@ -21,7 +29,6 @@ export async function POST(
     | { kind: 'not_found' }
     | { kind: 'forbidden' }
     | { kind: 'archived' }
-    | { kind: 'race' }
     | { kind: 'ok'; row: RowWithUnits };
 
   let result: Result;
@@ -49,7 +56,10 @@ export async function POST(
         .set({ active: true, updatedAt: sql`now()` })
         .where(and(eq(planners.id, id), eq(planners.archived, false)))
         .returning({ id: planners.id });
-      if (activated.length === 0) return { kind: 'race' };
+      if (activated.length === 0) {
+        // 대상 row가 직전에 archive/delete 됨 → 전체 트랜잭션 롤백.
+        throw new ActivateRaceError(id);
+      }
 
       const row = await tx.query.planners.findFirst({
         where: eq(planners.id, id),
@@ -59,6 +69,12 @@ export async function POST(
       return { kind: 'ok', row };
     });
   } catch (err) {
+    if (err instanceof ActivateRaceError) {
+      return apiError(
+        'conflict',
+        `Planner ${err.plannerId} state changed concurrently (likely archived/deleted). Retry shortly.`,
+      );
+    }
     if (isUniqueViolation(err)) {
       return apiError(
         'conflict',
@@ -75,11 +91,6 @@ export async function POST(
       return apiError('forbidden', `Planner ${id} is not yours`);
     case 'archived':
       return apiError('conflict', `Planner ${id} is archived. Unarchive before activating.`);
-    case 'race':
-      return apiError(
-        'conflict',
-        `Planner ${id} state changed concurrently (likely archived). Retry shortly.`,
-      );
     case 'ok':
       return ok(reshapePlanner(result.row));
   }
