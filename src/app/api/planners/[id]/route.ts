@@ -46,6 +46,31 @@ export async function PATCH(
 
   const patch = parsed.data;
 
+  // customization은 PATCH에서 partial 머지 — 기존 + 부분 객체. null은 clear.
+  // 최종 상태에 layoutId·paletteId 모두 있어야 함.
+  let mergedCustomization: typeof existing.customization | undefined;
+  let customizationChanged = false;
+  if ('customization' in patch) {
+    customizationChanged = true;
+    if (patch.customization === null) {
+      mergedCustomization = null;
+    } else {
+      const base = existing.customization ?? {};
+      const next = { ...base, ...patch.customization } as {
+        layoutId?: string;
+        paletteId?: string;
+        weekLayoutId?: string;
+      };
+      if (!next.layoutId || !next.paletteId) {
+        return apiError(
+          'validation_failed',
+          'customization requires layoutId and paletteId after merge',
+        );
+      }
+      mergedCustomization = next as NonNullable<typeof existing.customization>;
+    }
+  }
+
   // existing + patch를 합친 최종 상태로 create와 동일한 도메인 invariants 재검증.
   // (Codex 지적: 한 필드만 패치돼도 examType↔target.kind, 단일일자 시험의 == 등 교차 불변식이 깨질 수 있음.)
   const mergedStart = patch.examStartDate ?? existing.examStartDate;
@@ -66,13 +91,19 @@ export async function PATCH(
   });
   if (!invariants.ok) return apiError('validation_failed', invariants.message);
 
-  const { subjectUnits, ...scalarPatch } = patch;
+  const { subjectUnits, customization: _customizationPatch, ...scalarPatch } = patch;
+  void _customizationPatch; // raw patch는 위에서 머지 처리, scalarPatch에는 미포함
 
   const updated = await db.transaction(async (tx) => {
-    if (Object.keys(scalarPatch).length > 0) {
+    const hasScalarUpdate = Object.keys(scalarPatch).length > 0 || customizationChanged;
+    if (hasScalarUpdate) {
       await tx
         .update(planners)
-        .set({ ...scalarPatch, updatedAt: sql`now()` })
+        .set({
+          ...scalarPatch,
+          ...(customizationChanged ? { customization: mergedCustomization } : {}),
+          updatedAt: sql`now()`,
+        })
         .where(eq(planners.id, id));
     } else if (subjectUnits) {
       // subjectUnits만 변경되어도 updated_at은 갱신

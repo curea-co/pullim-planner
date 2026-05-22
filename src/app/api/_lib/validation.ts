@@ -56,7 +56,17 @@ export type PlannerCreateInput = {
   } | null;
 };
 
-export type PlannerPatchInput = Partial<PlannerCreateInput>;
+// customization은 PATCH에서 3가지 의미를 가짐 — 생략(변경 없음) · null(clear) · 부분 객체(merge).
+// raw 옵셔널 패치는 라우트가 기존 row의 customization과 머지하면서 최종 검증.
+export type CustomizationPatch = null | {
+  layoutId?: (typeof LAYOUT_TEMPLATE_IDS)[number];
+  paletteId?: (typeof PALETTE_IDS)[number];
+  weekLayoutId?: (typeof WEEK_LAYOUT_IDS)[number];
+};
+
+export type PlannerPatchInput = Partial<Omit<PlannerCreateInput, 'customization'>> & {
+  customization?: CustomizationPatch;
+};
 
 /**
  * Planner 도메인 불변식 — examType↔target.kind, single-day exam, value 범위.
@@ -212,13 +222,26 @@ export function parsePlannerPatch(input: unknown): ParseResult<PlannerPatchInput
     return fail('examEndDate must be on or after examStartDate');
   }
   if ('target' in input) {
-    if (!isObject(input.target)) return fail('target must be { kind, value }');
-    const k = mustEnum(input.target.kind, 'target.kind', TARGET_KINDS);
-    if (!k.ok) return k;
-    const v = mustTargetValue(input.target.value, k.data);
-    if (!v.ok) return v;
-    patch.targetKind = k.data;
-    patch.targetValue = v.data;
+    // PATCH는 nested partial 허용 — kind·value 둘 다 옵셔널. value 타입 검증은
+    // 라우트가 기존 row 와 머지한 뒤 validatePlannerInvariants에서 수행.
+    if (!isObject(input.target)) return fail('target must be { kind?, value? }');
+    if ('kind' in input.target) {
+      const k = mustEnum(input.target.kind, 'target.kind', TARGET_KINDS);
+      if (!k.ok) return k;
+      patch.targetKind = k.data;
+    }
+    if ('value' in input.target) {
+      if (typeof input.target.value === 'number') {
+        if (!Number.isFinite(input.target.value)) {
+          return fail('target.value must be a finite number');
+        }
+        patch.targetValue = String(input.target.value);
+      } else if (typeof input.target.value === 'string') {
+        patch.targetValue = input.target.value;
+      } else {
+        return fail('target.value must be number or string');
+      }
+    }
   }
   if ('weekdayHours' in input) {
     const r = mustHourRange(input.weekdayHours, 'weekdayHours');
@@ -258,9 +281,31 @@ export function parsePlannerPatch(input: unknown): ParseResult<PlannerPatchInput
     patch.motto = r.data;
   }
   if ('customization' in input) {
-    const r = mustOptCustomization(input.customization);
-    if (!r.ok) return r;
-    patch.customization = r.data;
+    // PATCH는 nested partial 허용 — null(clear) 또는 부분 객체(merge).
+    // 최종 layoutId+paletteId 필수 검증은 라우트가 기존 row 와 머지한 뒤 수행.
+    if (input.customization === null) {
+      patch.customization = null;
+    } else if (!isObject(input.customization)) {
+      return fail('customization must be null or { layoutId?, paletteId?, weekLayoutId? }');
+    } else {
+      const cust: NonNullable<CustomizationPatch> = {};
+      if ('layoutId' in input.customization) {
+        const r = mustEnum(input.customization.layoutId, 'customization.layoutId', LAYOUT_TEMPLATE_IDS);
+        if (!r.ok) return r;
+        cust.layoutId = r.data;
+      }
+      if ('paletteId' in input.customization) {
+        const r = mustEnum(input.customization.paletteId, 'customization.paletteId', PALETTE_IDS);
+        if (!r.ok) return r;
+        cust.paletteId = r.data;
+      }
+      if ('weekLayoutId' in input.customization) {
+        const r = mustEnum(input.customization.weekLayoutId, 'customization.weekLayoutId', WEEK_LAYOUT_IDS);
+        if (!r.ok) return r;
+        cust.weekLayoutId = r.data;
+      }
+      patch.customization = cust;
+    }
   }
 
   return { ok: true, data: patch };
