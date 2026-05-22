@@ -39,6 +39,7 @@ export async function POST(
       .where(
         and(
           eq(planners.id, id),
+          eq(planners.userId, userId),
           eq(planners.active, false),
           eq(planners.archived, false),
         ),

@@ -32,7 +32,13 @@ export async function POST(
     const unarchived = await tx
       .update(planners)
       .set({ archived: false, updatedAt: sql`now()` })
-      .where(and(eq(planners.id, id), eq(planners.archived, true)))
+      .where(
+        and(
+          eq(planners.id, id),
+          eq(planners.userId, userId),
+          eq(planners.archived, true),
+        ),
+      )
       .returning({ id: planners.id });
     if (unarchived.length === 0) return { kind: 'race' };
 

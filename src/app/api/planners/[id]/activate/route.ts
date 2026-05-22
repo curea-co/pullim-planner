@@ -54,7 +54,13 @@ export async function POST(
       const activated = await tx
         .update(planners)
         .set({ active: true, updatedAt: sql`now()` })
-        .where(and(eq(planners.id, id), eq(planners.archived, false)))
+        .where(
+          and(
+            eq(planners.id, id),
+            eq(planners.userId, userId),
+            eq(planners.archived, false),
+          ),
+        )
         .returning({ id: planners.id });
       if (activated.length === 0) {
         // 대상 row가 직전에 archive/delete 됨 → 전체 트랜잭션 롤백.

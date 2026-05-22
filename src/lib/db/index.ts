@@ -44,9 +44,13 @@ function getClient(): DrizzleClient {
 }
 
 // Proxy를 통해 lazy access — 어떤 속성·메서드든 첫 접근에 클라이언트 초기화.
+// 함수는 실제 클라이언트에 bind해서 `this`가 Proxy로 잡히지 않도록 함 (drizzle 내부
+// 메서드가 this 의존 시 깨지는 회귀 차단).
 export const db = new Proxy({} as DrizzleClient, {
-  get(_target, prop, receiver) {
-    return Reflect.get(getClient(), prop, receiver);
+  get(_target, prop) {
+    const client = getClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === 'function' ? value.bind(client) : value;
   },
 });
 

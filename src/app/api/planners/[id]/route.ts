@@ -191,7 +191,13 @@ export async function DELETE(
 
     const deleted = await tx
       .delete(planners)
-      .where(and(eq(planners.id, id), eq(planners.active, false)))
+      .where(
+        and(
+          eq(planners.id, id),
+          eq(planners.userId, userId),
+          eq(planners.active, false),
+        ),
+      )
       .returning({ id: planners.id });
 
     if (deleted.length === 0) return { kind: 'race' };
