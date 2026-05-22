@@ -97,10 +97,14 @@ export async function POST(
 }
 
 function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code: unknown }).code === '23505'
-  );
+  // drizzle은 pg 에러를 DrizzleQueryError로 wrap — code는 err.cause.code 에 위치할 수 있음.
+  if (typeof err !== 'object' || err === null) return false;
+  const top = (err as { code?: unknown }).code;
+  if (top === '23505') return true;
+  const cause = (err as { cause?: unknown }).cause;
+  if (typeof cause === 'object' && cause !== null) {
+    const c = (cause as { code?: unknown }).code;
+    if (c === '23505') return true;
+  }
+  return false;
 }

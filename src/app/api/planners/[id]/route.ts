@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { planners, plannerSubjectUnits } from '@/lib/db/schema';
+import { planners, plannerSubjectUnits, type Planner } from '@/lib/db/schema';
 import { getUserId } from '../../_lib/auth';
 import { apiError, ok } from '../../_lib/response';
 import { reshapePlanner } from '../../_lib/planner-shape';
@@ -34,10 +34,6 @@ export async function PATCH(
   const userId = getUserId(req);
   const { id } = await ctx.params;
 
-  const existing = await db.query.planners.findFirst({ where: eq(planners.id, id) });
-  if (!existing) return apiError('not_found', `Planner ${id} not found`);
-  if (existing.userId !== userId) return apiError('forbidden', `Planner ${id} is not yours`);
-
   const body = await readJson(req);
   if (!body.ok) return apiError('validation_failed', body.message);
 
@@ -46,75 +42,93 @@ export async function PATCH(
 
   const patch = parsed.data;
 
-  // customization은 PATCH에서 partial 머지 — 기존 + 부분 객체. null은 clear.
-  // 최종 상태에 layoutId·paletteId 모두 있어야 함.
-  let mergedCustomization: typeof existing.customization | undefined;
-  let customizationChanged = false;
-  if ('customization' in patch) {
-    customizationChanged = true;
-    if (patch.customization === null) {
-      mergedCustomization = null;
-    } else {
-      const base = existing.customization ?? {};
-      const next = { ...base, ...patch.customization } as {
-        layoutId?: string;
-        paletteId?: string;
-        weekLayoutId?: string;
-      };
-      if (!next.layoutId || !next.paletteId) {
-        return apiError(
-          'validation_failed',
-          'customization requires layoutId and paletteId after merge',
-        );
+  // 읽기·검증·갱신을 같은 트랜잭션. UPDATE WHERE 절에도 userId/id 가드 둬
+  // 동시 delete 후 PATCH가 사라진 row를 다시 조회하다가 500을 던지는 race 차단.
+  type RowWithUnits = Planner & {
+    subjectUnits: Array<{ subject: string; unitLabel: string; position: number }>;
+  };
+  type Result =
+    | { kind: 'not_found' }
+    | { kind: 'forbidden' }
+    | { kind: 'validation'; message: string }
+    | { kind: 'ok'; row: RowWithUnits };
+
+  const result: Result = await db.transaction<Result>(async (tx) => {
+    const existing = await tx.query.planners.findFirst({ where: eq(planners.id, id) });
+    if (!existing) return { kind: 'not_found' };
+    if (existing.userId !== userId) return { kind: 'forbidden' };
+
+    // customization PATCH partial 머지 — 기존 + 부분 객체. null은 clear.
+    let mergedCustomization: typeof existing.customization | undefined;
+    let customizationChanged = false;
+    if ('customization' in patch) {
+      customizationChanged = true;
+      if (patch.customization === null) {
+        mergedCustomization = null;
+      } else {
+        const base = existing.customization ?? {};
+        const next = { ...base, ...patch.customization } as {
+          layoutId?: string;
+          paletteId?: string;
+          weekLayoutId?: string;
+        };
+        if (!next.layoutId || !next.paletteId) {
+          return {
+            kind: 'validation',
+            message: 'customization requires layoutId and paletteId after merge',
+          };
+        }
+        mergedCustomization = next as NonNullable<typeof existing.customization>;
       }
-      mergedCustomization = next as NonNullable<typeof existing.customization>;
     }
-  }
 
-  // existing + patch를 합친 최종 상태로 create와 동일한 도메인 invariants 재검증.
-  // (Codex 지적: 한 필드만 패치돼도 examType↔target.kind, 단일일자 시험의 == 등 교차 불변식이 깨질 수 있음.)
-  const mergedStart = patch.examStartDate ?? existing.examStartDate;
-  const mergedEnd = patch.examEndDate ?? existing.examEndDate;
-  if (mergedEnd < mergedStart) {
-    return apiError('validation_failed', 'examEndDate must be on or after examStartDate');
-  }
-  const invariants = validatePlannerInvariants({
-    examType: (patch.examType ?? existing.examType) as Parameters<
-      typeof validatePlannerInvariants
-    >[0]['examType'],
-    examStartDate: mergedStart,
-    examEndDate: mergedEnd,
-    targetKind: (patch.targetKind ?? existing.targetKind) as Parameters<
-      typeof validatePlannerInvariants
-    >[0]['targetKind'],
-    targetValue: patch.targetValue ?? existing.targetValue,
-  });
-  if (!invariants.ok) return apiError('validation_failed', invariants.message);
+    // existing + patch 합친 final state로 create와 동일한 invariants 재검증.
+    const mergedStart = patch.examStartDate ?? existing.examStartDate;
+    const mergedEnd = patch.examEndDate ?? existing.examEndDate;
+    if (mergedEnd < mergedStart) {
+      return {
+        kind: 'validation',
+        message: 'examEndDate must be on or after examStartDate',
+      };
+    }
+    const invariants = validatePlannerInvariants({
+      examType: (patch.examType ?? existing.examType) as Parameters<
+        typeof validatePlannerInvariants
+      >[0]['examType'],
+      examStartDate: mergedStart,
+      examEndDate: mergedEnd,
+      targetKind: (patch.targetKind ?? existing.targetKind) as Parameters<
+        typeof validatePlannerInvariants
+      >[0]['targetKind'],
+      targetValue: patch.targetValue ?? existing.targetValue,
+    });
+    if (!invariants.ok) return { kind: 'validation', message: invariants.message };
 
-  const { subjectUnits, customization: _customizationPatch, ...scalarPatch } = patch;
-  void _customizationPatch; // raw patch는 위에서 머지 처리, scalarPatch에는 미포함
+    const { subjectUnits, customization: _customizationPatch, ...scalarPatch } = patch;
+    void _customizationPatch; // raw patch는 위에서 머지 처리
 
-  const updated = await db.transaction(async (tx) => {
     const hasScalarUpdate = Object.keys(scalarPatch).length > 0 || customizationChanged;
-    if (hasScalarUpdate) {
-      await tx
+    if (hasScalarUpdate || subjectUnits) {
+      const setMap = {
+        ...scalarPatch,
+        ...(customizationChanged ? { customization: mergedCustomization } : {}),
+        updatedAt: sql`now()`,
+      };
+      const touched = await tx
         .update(planners)
-        .set({
-          ...scalarPatch,
-          ...(customizationChanged ? { customization: mergedCustomization } : {}),
-          updatedAt: sql`now()`,
-        })
-        .where(eq(planners.id, id));
-    } else if (subjectUnits) {
-      // subjectUnits만 변경되어도 updated_at은 갱신
-      await tx
-        .update(planners)
-        .set({ updatedAt: sql`now()` })
-        .where(eq(planners.id, id));
+        .set(setMap)
+        .where(and(eq(planners.id, id), eq(planners.userId, userId)))
+        .returning({ id: planners.id });
+      if (touched.length === 0) {
+        // 동시 delete로 row 사라짐 — 트랜잭션 자체는 정상 종료 but 응답은 404.
+        return { kind: 'not_found' };
+      }
     }
 
     if (subjectUnits) {
-      await tx.delete(plannerSubjectUnits).where(eq(plannerSubjectUnits.plannerId, id));
+      await tx
+        .delete(plannerSubjectUnits)
+        .where(eq(plannerSubjectUnits.plannerId, id));
       const rows: Array<{
         plannerId: string;
         subject: string;
@@ -135,11 +149,20 @@ export async function PATCH(
       where: eq(planners.id, id),
       with: { subjectUnits: true },
     });
-    if (!row) throw new Error('Planner missing after update');
-    return row;
+    if (!row) return { kind: 'not_found' };
+    return { kind: 'ok', row };
   });
 
-  return ok(reshapePlanner(updated));
+  switch (result.kind) {
+    case 'not_found':
+      return apiError('not_found', `Planner ${id} not found`);
+    case 'forbidden':
+      return apiError('forbidden', `Planner ${id} is not yours`);
+    case 'validation':
+      return apiError('validation_failed', result.message);
+    case 'ok':
+      return ok(reshapePlanner(result.row));
+  }
 }
 
 export async function DELETE(

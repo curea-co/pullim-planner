@@ -32,49 +32,77 @@ export async function POST(req: Request) {
 
   const id = newPlannerId();
 
-  const created = await db.transaction(async (tx) => {
-    await tx.insert(planners).values({
-      id,
-      userId,
-      name: data.name,
-      examType: data.examType,
-      examLabel: data.examLabel,
-      examStartDate: data.examStartDate,
-      examEndDate: data.examEndDate,
-      targetKind: data.targetKind,
-      targetValue: data.targetValue,
-      weekdayStart: data.weekdayStart,
-      weekdayEnd: data.weekdayEnd,
-      weekendStart: data.weekendStart,
-      weekendEnd: data.weekendEnd,
-      blockPattern: data.blockPattern,
-      weaknessAutoReflect: data.weaknessAutoReflect,
-      motivationStyle: data.motivationStyle,
-      motto: data.motto,
-      active: false,
-      archived: false,
-      customization: data.customization,
-    });
+  let created;
+  try {
+    created = await db.transaction(async (tx) => {
+      await tx.insert(planners).values({
+        id,
+        userId,
+        name: data.name,
+        examType: data.examType,
+        examLabel: data.examLabel,
+        examStartDate: data.examStartDate,
+        examEndDate: data.examEndDate,
+        targetKind: data.targetKind,
+        targetValue: data.targetValue,
+        weekdayStart: data.weekdayStart,
+        weekdayEnd: data.weekdayEnd,
+        weekendStart: data.weekendStart,
+        weekendEnd: data.weekendEnd,
+        blockPattern: data.blockPattern,
+        weaknessAutoReflect: data.weaknessAutoReflect,
+        motivationStyle: data.motivationStyle,
+        motto: data.motto,
+        active: false,
+        archived: false,
+        customization: data.customization,
+      });
 
-    const unitRows = subjectUnitsToRows(id, data.subjectUnits);
-    if (unitRows.length > 0) {
-      await tx.insert(plannerSubjectUnits).values(unitRows);
-    }
+      const unitRows = subjectUnitsToRows(id, data.subjectUnits);
+      if (unitRows.length > 0) {
+        await tx.insert(plannerSubjectUnits).values(unitRows);
+      }
 
-    const row = await tx.query.planners.findFirst({
-      where: eq(planners.id, id),
-      with: { subjectUnits: true },
+      const row = await tx.query.planners.findFirst({
+        where: eq(planners.id, id),
+        with: { subjectUnits: true },
+      });
+      if (!row) {
+        throw new Error('Created planner not found after insert');
+      }
+      return row;
     });
-    if (!row) {
-      throw new Error('Created planner not found after insert');
+  } catch (err) {
+    // 존재하지 않는 X-User-Id → FK 위반(23503)을 domain error로 번역.
+    // (/api/me는 user 누락 시 404로 명시하고 있으므로 POST도 정합.)
+    if (isForeignKeyViolation(err)) {
+      return apiError('not_found', `User ${userId} not found`);
     }
-    return row;
-  });
+    throw err;
+  }
 
   return new Response(JSON.stringify({ data: reshapePlanner(created) }), {
     status: 201,
     headers: { 'content-type': 'application/json' },
   });
+}
+
+function isForeignKeyViolation(err: unknown): boolean {
+  // drizzle은 pg 에러를 DrizzleQueryError로 wrap — code는 err.cause.code 에 위치.
+  // 안전성 위해 양쪽 모두 확인.
+  return getPgErrorCode(err) === '23503';
+}
+
+function getPgErrorCode(err: unknown): string | undefined {
+  if (typeof err !== 'object' || err === null) return undefined;
+  const top = (err as { code?: unknown }).code;
+  if (typeof top === 'string') return top;
+  const cause = (err as { cause?: unknown }).cause;
+  if (typeof cause === 'object' && cause !== null) {
+    const c = (cause as { code?: unknown }).code;
+    if (typeof c === 'string') return c;
+  }
+  return undefined;
 }
 
 function newPlannerId(): string {
