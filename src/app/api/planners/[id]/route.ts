@@ -1,4 +1,4 @@
-import { and, eq, or, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { planners, plannerSubjectUnits } from '@/lib/db/schema';
 import { getUserId } from '../../_lib/auth';
@@ -118,9 +118,9 @@ export async function DELETE(
   const userId = getUserId(req);
   const { id } = await ctx.params;
 
-  // TOCTOU 가드: 읽기·검증·삭제를 같은 트랜잭션으로 묶고, DELETE WHERE 절에도
-  // active=false 또는 archived=true 상태 가드를 둬 동시 activate 요청 후에
-  // 활성화된 planner가 삭제되는 race 차단.
+  // spec [§3 표] + mock deletePlanner 권위와 정합: active=true 면 삭제 차단
+  // (archived 여부 무관). TOCTOU 가드: 읽기·검증·삭제를 같은 트랜잭션, DELETE
+  // WHERE 절에도 active=false 가드 둬 동시 activate 후 활성화된 planner 삭제 race 차단.
   type Result =
     | { kind: 'not_found' }
     | { kind: 'forbidden' }
@@ -132,17 +132,11 @@ export async function DELETE(
     const existing = await tx.query.planners.findFirst({ where: eq(planners.id, id) });
     if (!existing) return { kind: 'not_found' };
     if (existing.userId !== userId) return { kind: 'forbidden' };
-    if (existing.active && !existing.archived) return { kind: 'active' };
+    if (existing.active) return { kind: 'active' };
 
     const deleted = await tx
       .delete(planners)
-      .where(
-        and(
-          eq(planners.id, id),
-          // active=false OR archived=true (archived는 active와 무관하게 삭제 허용)
-          or(eq(planners.active, false), eq(planners.archived, true)),
-        ),
-      )
+      .where(and(eq(planners.id, id), eq(planners.active, false)))
       .returning({ id: planners.id });
 
     if (deleted.length === 0) return { kind: 'race' };

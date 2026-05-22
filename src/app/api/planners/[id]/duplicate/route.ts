@@ -25,7 +25,7 @@ export async function POST(
     await tx.insert(planners).values({
       id: newId,
       userId,
-      name: `${source.name} (사본)`,
+      name: `${source.name} (복사)`,
       examType: source.examType,
       examLabel: source.examLabel,
       examStartDate: source.examStartDate,
