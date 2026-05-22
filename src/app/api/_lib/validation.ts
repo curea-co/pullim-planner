@@ -8,6 +8,12 @@ const EXAM_TYPES = ['mock', 'suneung', 'midterm', 'final', 'other'] as const;
 const TARGET_KINDS = ['grade', 'score', 'free'] as const;
 const BLOCK_PATTERNS = ['pomodoro', 'focused', 'deep'] as const;
 const MOTIVATION_STYLES = ['autonomous', 'guided', 'spartan'] as const;
+// 도메인 권위 enum (mock SubjectKey + tokens LayoutTemplateId/WeekLayoutId/PaletteId 정합)
+// 도메인 권위 변경 시 본 표도 동기화.
+const SUBJECT_KEYS = ['korean', 'math', 'english', 'science', 'social', 'history'] as const;
+const LAYOUT_TEMPLATE_IDS = ['vertical_timeline', 'checklist', 'block_cards', 'pie_list'] as const;
+const WEEK_LAYOUT_IDS = ['matrix_by_type', 'school_grid', 'bar_week', 'heatmap'] as const;
+const PALETTE_IDS = ['pullim_blue', 'forest', 'sunset', 'pastel', 'mono', 'mint', 'rose'] as const;
 
 // 빌더 examTypeMeta(src/components/planner-builder/builder-types.ts)와 정합 —
 // FE 권위 그대로 서버에 복제. 빌더 변경 시 본 표도 갱신.
@@ -356,11 +362,23 @@ function mustHourRange(
 }
 
 function mustSubjectUnits(v: unknown): ParseResult<Record<string, string[]>> {
-  if (!isObject(v)) return fail('subjectUnits must be Record<subject, string[]>');
+  if (!isObject(v)) return fail('subjectUnits must be Record<SubjectKey, string[]>');
   const out: Record<string, string[]> = {};
   for (const [subject, list] of Object.entries(v)) {
-    if (!Array.isArray(list) || !list.every((u) => typeof u === 'string')) {
+    // mock 도메인 권위 SubjectKey enum 외 키 차단 — UI subjectLabels 매핑 안전 보장.
+    if (!(SUBJECT_KEYS as readonly string[]).includes(subject)) {
+      return fail(
+        `subjectUnits.${subject}: subject must be one of ${SUBJECT_KEYS.join(', ')}`,
+      );
+    }
+    if (!Array.isArray(list)) {
       return fail(`subjectUnits.${subject} must be an array of strings`);
+    }
+    for (let i = 0; i < list.length; i++) {
+      const u = list[i];
+      if (typeof u !== 'string' || u.length === 0) {
+        return fail(`subjectUnits.${subject}[${i}] must be a non-empty string`);
+      }
     }
     out[subject] = list as string[];
   }
@@ -372,20 +390,22 @@ function mustOptCustomization(
 ): ParseResult<PlannerCreateInput['customization']> {
   if (v === null || v === undefined) return { ok: true, data: null };
   if (!isObject(v)) return fail('customization must be { layoutId, paletteId, weekLayoutId? } or null');
-  const layoutId = v.layoutId;
-  const paletteId = v.paletteId;
-  const weekLayoutId = v.weekLayoutId;
-  if (typeof layoutId !== 'string' || typeof paletteId !== 'string') {
-    return fail('customization.layoutId / paletteId must be strings');
-  }
-  if (weekLayoutId !== undefined && typeof weekLayoutId !== 'string') {
-    return fail('customization.weekLayoutId must be a string when present');
+  // tokens 권위 enum 외 값 차단 — getBlockColor/layoutTemplates 등 렌더러 크래시 사전 방지.
+  const layoutId = mustEnum(v.layoutId, 'customization.layoutId', LAYOUT_TEMPLATE_IDS);
+  if (!layoutId.ok) return layoutId;
+  const paletteId = mustEnum(v.paletteId, 'customization.paletteId', PALETTE_IDS);
+  if (!paletteId.ok) return paletteId;
+  let weekLayoutId: (typeof WEEK_LAYOUT_IDS)[number] | undefined;
+  if (v.weekLayoutId !== undefined) {
+    const r = mustEnum(v.weekLayoutId, 'customization.weekLayoutId', WEEK_LAYOUT_IDS);
+    if (!r.ok) return r;
+    weekLayoutId = r.data;
   }
   return {
     ok: true,
     data: {
-      layoutId,
-      paletteId,
+      layoutId: layoutId.data,
+      paletteId: paletteId.data,
       ...(weekLayoutId !== undefined ? { weekLayoutId } : {}),
     },
   };

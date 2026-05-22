@@ -33,12 +33,14 @@ export function reshapePlanner(row: PlannerRowWithUnits) {
     blockPattern: row.blockPattern,
     weaknessAutoReflect: row.weaknessAutoReflect,
     motivationStyle: row.motivationStyle,
-    motto: row.motto,
+    // mock 도메인 권위 타입 정합 — motto: string (null 아님), customization?: {...} (null 아님).
+    // DB nullable → API 응답에서 빈 값/필드 누락으로 정규화. FE 교체 시 round-trip 안전.
+    motto: row.motto ?? '',
     active: row.active,
     archived: row.archived,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    customization: row.customization,
+    ...(row.customization ? { customization: row.customization } : {}),
   };
 }
 
