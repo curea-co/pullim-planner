@@ -65,5 +65,5 @@ audit #5(timeline trim) · #6(demo dead-end) · #7(builder min-h) · #8(reports 
   - `proc/knowhow/` = 일회성 spot check·관찰 기록의 표준 위치 (2026-05-12 `extract-feature-and-deploy`, 2026-05-14 `reports-prod-dogfood` 등 동일 패턴)
   - 파일명 prefix `2026-05-19_audit-capture-matrix` = 실행일·도메인·산출물 묶음 명시 → 재참조 시 식별 즉시
   - audit #5~#8은 PR #15~#17 시점 머지된 코드 회귀 검증 spot check 1회로 종결됨 — 후속 시각 회귀 plan은 별 트리거 (한계/후속 §) 발생 시 신규 파일로 분기
-- **신규 파일 분기 안 함**: 시각 회귀·viewport별 etag 확장은 별 plan 후보로 §41~44에 이미 명시. 본 파일은 그대로 종결, 후속 작업은 신규 파일/plan으로 시작.
-- **연관 기록**: daily_outcome 2026-05-22 항목 B.
+- **신규 파일 분기 안 함**: 시각 회귀·viewport별 etag 확장은 별 plan 후보로 위 [`## 한계 / 후속`](#한계--후속) 절에 이미 명시. 본 파일은 그대로 종결, 후속 작업은 신규 파일/plan으로 시작.
+- **연관 기록**: PM 일일 산출 노트 2026-05-22 항목 B (해당 노트는 `daily_outcome/` 하위로 로컬 보관 — `.gitignore` 대상이라 저장소에는 비공개). 공개 산출물 추적은 본 파일과 PR #28에서 완결.
