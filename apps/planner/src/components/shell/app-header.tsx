@@ -11,7 +11,7 @@ import {
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { currentPersona, getDday, getActivePlanner } from '@/lib/mock';
-import { DDayChip } from '@/components/features/planner-home/components/d-day-chip';
+import { DDayChip } from '@/components/shared/d-day-chip';
 import { type Role } from './nav-config';
 import { MobileDrawer } from './mobile-drawer';
 

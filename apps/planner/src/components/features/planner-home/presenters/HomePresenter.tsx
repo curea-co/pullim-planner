@@ -6,7 +6,7 @@ import { CalendarShell, type CalendarView } from '../components/calendar-shell';
 import { DayView } from '../components/views/day-view';
 import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
-import { DDayChip } from '../components/d-day-chip';
+import { DDayChip } from '@/components/shared/d-day-chip';
 import { DDayHeaderBand } from '../components/d-day-header-band';
 import { BurnoutThresholdBanner } from '../components/burnout-threshold-banner';
 
