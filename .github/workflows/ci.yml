@@ -5,14 +5,57 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Job 1. 변경된 앱 감지 (pullim 패턴 — bun 워크스페이스 정렬)
+  # packages/** 또는 root 설정 변경 시 → 양쪽 모두 영향
+  # ─────────────────────────────────────────────────────────────
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      planner: ${{ steps.filter.outputs.planner }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            planner:
+              - 'apps/planner/**'
+              - 'packages/**'
+              - 'tsconfig.base.json'
+              - 'turbo.json'
+              - 'package.json'
+              - 'bun.lock'
+            backend:
+              - 'apps/backend/**'
+              - 'packages/**'
+              - 'tsconfig.base.json'
+              - 'turbo.json'
+              - 'package.json'
+              - 'bun.lock'
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 2. Lint & Typecheck (영향받은 앱만 / turbo --filter 병렬)
+  # ─────────────────────────────────────────────────────────────
   validate:
     name: validate (typecheck + lint)
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: >-
+      needs.detect-changes.outputs.planner == 'true' ||
+      needs.detect-changes.outputs.backend == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -23,20 +66,51 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Typecheck
-        run: bunx tsc --noEmit
+      - name: Typecheck (affected)
+        run: |
+          FILTER=""
+          if [ "${{ needs.detect-changes.outputs.planner }}" = "true" ]; then
+            FILTER="$FILTER --filter=@pullim-planner/planner"
+          fi
+          if [ "${{ needs.detect-changes.outputs.backend }}" = "true" ]; then
+            FILTER="$FILTER --filter=@pullim-planner/backend"
+          fi
+          bunx turbo typecheck $FILTER
 
-      - name: Lint
-        run: bun run lint
+      - name: Lint (affected)
+        run: |
+          FILTER=""
+          if [ "${{ needs.detect-changes.outputs.planner }}" = "true" ]; then
+            FILTER="$FILTER --filter=@pullim-planner/planner"
+          fi
+          if [ "${{ needs.detect-changes.outputs.backend }}" = "true" ]; then
+            FILTER="$FILTER --filter=@pullim-planner/backend"
+          fi
+          bunx turbo lint $FILTER
 
+  # ─────────────────────────────────────────────────────────────
+  # Job 3. Build (영향받은 앱만)
+  # ─────────────────────────────────────────────────────────────
   build:
-    name: build (Next.js)
-    needs: validate
+    name: build (Next.js + NestJS)
+    needs: [detect-changes, validate]
     runs-on: ubuntu-latest
+    if: >-
+      needs.detect-changes.outputs.planner == 'true' ||
+      needs.detect-changes.outputs.backend == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun run build
+      - name: Build (affected)
+        run: |
+          FILTER=""
+          if [ "${{ needs.detect-changes.outputs.planner }}" = "true" ]; then
+            FILTER="$FILTER --filter=@pullim-planner/planner"
+          fi
+          if [ "${{ needs.detect-changes.outputs.backend }}" = "true" ]; then
+            FILTER="$FILTER --filter=@pullim-planner/backend"
+          fi
+          bunx turbo build $FILTER
