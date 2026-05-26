@@ -1,0 +1,15 @@
+{
+  "name": "@pullim-planner/types",
+  "version": "0.0.1",
+  "private": true,
+  "description": "BE↔FE 공유 타입. Phase γ에서 planner entity 시그니처를 export.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "type": "module"
+}

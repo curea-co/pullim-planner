@@ -1,16 +1,20 @@
 # 풀림 플래너 — BE 설계 spec (FE mock → BE 정합)
 
 > 2026-05-18 작성 · BE 1차 정합 입력 · PR #16/#17 production 시점 기준
+> **2026-05-26 갱신** — BE 구조를 [curea-co/pullim](https://github.com/curea-co/pullim) 패턴으로 차용 (NestJS + TypeORM). 결정 사항 표만 본 갱신에서 반영. §1 entity 모델·§2 schema·§3 endpoint 계약은 의미상 유지하되, 표기 방식(Drizzle DSL → TypeORM entity)은 Phase γ·δ 진행 시 점진 갱신. 마이그레이션 plan: [proc/plan/2026-05-26_pullim-be-adoption.md](../plan/2026-05-26_pullim-be-adoption.md)
 
-## 결정 사항
+## 결정 사항 (2026-05-26 갱신)
 
-| 항목 | 채택 | 이유 |
-|---|---|---|
-| 로컬 DB | **PostgreSQL 16** | Docker image 안정, JSON·array 타입 지원으로 `subjectUnits` 같은 포장과 정합. Vercel Postgres·Supabase 이전 쉬움 |
-| ORM | **Drizzle** | TypeScript-first, lightweight, SQL에 가까운 표현. schema-as-code → migration CLI |
-| API 스타일 | **Next.js API routes 단일 repo** | 현 repo 그대로. `/api/*` route handler. FE·BE 타입 공유 쉬움 |
-| 인증 | 1차는 mock 사용자 1명 (`student_001`) 고정 | NextAuth/Clerk 도입은 별 spec |
-| 마이그레이션 | **drizzle-kit** generate + push | schema.ts 변경 → `bunx drizzle-kit generate` → SQL diff |
+| 항목 | 채택 | 이전 결정 | 이유 |
+|---|---|---|---|
+| 모노레포 | **bun workspaces + turbo** | (없음, 단일 Next.js repo) | pullim 차용 — `apps/{planner,backend}` + `packages/*` 분리, FE↔BE 타입 공유는 `@pullim-planner/types` |
+| 로컬 DB | **PostgreSQL 16** | (동일) | Docker image 안정, JSON·array 타입 지원으로 `subjectUnits` 같은 포장과 정합 |
+| ORM | **TypeORM 0.3.x** (Data Mapper) | Drizzle | pullim 차용. `BaseRepositoryInterface<T>` / `BaseRepository<T>` 공통 CRUD + 도메인 Repo는 고유 메서드만 추가 |
+| API 스타일 | **NestJS 11 — `apps/backend`** | Next.js API routes 단일 repo | pullim 차용. controller / use-cases (Facade) / service / interface / infrastructure 5 layer |
+| 인증 | 1차는 mock 사용자 1명 (`student_001`) 고정 — `X-User-Id` 헤더 + fallback. `packages/auth` MockAuthProvider 위에 NestJS Guard | (동일 — 모델 유지) | Ph8 실인증 도입 보류 |
+| 마이그레이션 | **typeorm CLI** (`migration:generate` / `migration:run`) | drizzle-kit | pullim 차용. Phase γ에서 첫 마이그레이션 생성 (기존 Drizzle 마이그레이션은 폐기) |
+| 응답 envelope | `{ success: true, data }` / `{ success: false, error: { code, message, statusCode } }` — pullim `ResponseInterceptor` + `HttpExceptionFilter` 차용 | `{ data }` / `{ error: { code, message, details? } }` (raw) | plan §6.2 envelope 분석 — 옵션 A 자동 채택 |
+| 에러 코드 | `ErrorMessages` 상수 (`COMMON_VALIDATION_FAILED` / `PLANNER_NOT_FOUND` 등) | lowercase snake 5종 (`not_found` 등) | pullim 컨벤션. Phase β에서 `apps/backend/src/common/constants/error-messages.constant.ts` 생성 |
 
 ## 1. Entity 모델 (관계도)
 
@@ -255,19 +259,37 @@ bunx drizzle-kit studio         # 웹 UI로 테이블 확인 (localhost:4983)
 bun run db:seed                 # mock data → DB seed (선택)
 ```
 
-## 5. mock → BE 정합 로드맵 (별 plan)
+## 5. mock → BE 정합 로드맵 (2026-05-26 재진입)
+
+### 5.1 1차 로드맵 (2026-05-18 ~ 2026-05-22 머지 완료) — Drizzle 기반
+
+| Phase | 범위 | 산출물 | 상태 |
+|---|---|---|---|
+| Ph1 | Schema + Docker + spec | 본 문서, schema.ts, docker-compose.yml, drizzle config | ✅ PR #18 머지 |
+| Ph2 | seed 스크립트 — mock data → DB | `scripts/seed.ts` (planner 3건, today blocks 8건 등) | ✅ PR #19 머지 |
+| Ph3 | read endpoint 구현 (1차) | `/api/me`, `/api/planners`, `/api/planners/{id}/blocks?date=...` | ✅ PR #24 머지 |
+| Ph4 | mutation endpoint — Planner CRUD + activate/archive | `/api/planners` POST/PATCH/DELETE + `/activate` `/archive` 등 6건 | ✅ PR #27 머지 |
+
+→ **2026-05-26 결정**: Ph5 진입 직전, BE 구조를 pullim 패턴으로 차용하기로 결정. Ph1~Ph4 산출물(Drizzle / Next.js API routes / seed)은 **폐기** — 코드는 sunk cost지만 DB 스키마·엔드포인트 계약·seed 데이터는 의미적으로 보존하여 5.2 재진입 로드맵에서 동등하게 재현.
+
+### 5.2 재진입 로드맵 (2026-05-26 ~) — NestJS + TypeORM
+
+세부는 [proc/plan/2026-05-26_pullim-be-adoption.md](../plan/2026-05-26_pullim-be-adoption.md) §5.
 
 | Phase | 범위 | 산출물 |
 |---|---|---|
-| **Ph1 (이번)** | Schema + Docker + spec | 본 문서, schema.ts, docker-compose.yml, drizzle config |
-| Ph2 | seed 스크립트 — mock data → DB | `scripts/seed.ts` (planner 3건, today blocks 8건 등) |
-| Ph3 | read endpoint 구현 (1차) | `/api/me`, `/api/planners`, `/api/planners/{id}/blocks?date=...` |
-| Ph4 | mutation endpoint — Planner CRUD + activate/archive | `/api/planners` POST/PATCH/DELETE + `/activate` `/archive` |
-| Ph5 | block lifecycle | `/api/blocks/{id}` PATCH + `/complete` |
-| Ph6 | condition·burnout·report 집계 | DailyCondition, BurnoutSnapshot, /api/reports/* |
-| Ph7 | FE → API 교체 | mock 함수 → fetch (`src/lib/api/`) 점진 교체 |
-| Ph8 | 인증 | NextAuth Google + 학생 가입 흐름 |
-| Ph9 | prod DB | Vercel Postgres 또는 Supabase, drizzle push 또는 migration CI |
+| α | 모노레포 재편 + Drizzle 폐기 + NestJS Hello World | `apps/{planner,backend}`, `packages/{types,api-client,auth}`, root workspace · turbo · tsconfig.base, 기존 BE 자산 폐기 |
+| β | pullim common 패턴 차용 | `apps/backend/src/common/{bootstrap,filters,guards,interceptors,decorators}`, MockAuthGuard, `ErrorMessages` 상수 |
+| γ | planner entity + 마이그레이션 + seed | `apps/backend/src/entities/*.entity.ts`, TypeORM 마이그레이션 1개(기존 Drizzle 스키마와 pg_dump diff 0), seed |
+| δ | read endpoint 3건 이식 | `/api/me`, `/api/planners`, `/api/planners/{id}/blocks` (Ph3 산출물 재현, 응답은 envelope shape) |
+| ε | mutation endpoint 6건 이식 | POST/PATCH/DELETE/activate/archive/unarchive/duplicate (Ph4 산출물 재현) |
+| ζ | planner mock 잔여 시그니처 이식 | DailyCondition, BurnoutSnapshot, curriculum, subjectUnits 등 + 관련 read endpoint |
+| η | FE → BE 호출 전환 | `@pullim-planner/api-client` 함수 추가 + `apps/planner` 측 mock import 제거 |
+
+### 5.3 보류된 phase (1차 로드맵 Ph8/Ph9 — 재진입 후에도 유보)
+
+- **실인증** (Ph8 원안: NextAuth Google) — 본 차용 결정에서 보류. `packages/auth` MockAuthProvider 위에 `X-User-Id` 헤더 가드만 유지
+- **prod DB** (Ph9 원안: Vercel Postgres / Supabase + RLS) — 재진입 로드맵 ζ·η 머지 후 별 plan에서 결정
 
 ## 6. 알려진 결정 보류
 

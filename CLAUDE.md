@@ -1,62 +1,99 @@
 @AGENTS.md
 
-# 풀림 플래너 작업 가이드
+# 풀림 플래너 작업 가이드 (모노레포)
 
-이 프로젝트는 원본 `pullim-study-demo`(6 도메인 모놀리식 데모)에서 **풀림 플래너 기능만 추출**한 단독 프로젝트입니다.
-SPARK + IPO 하네스 구조는 그대로 유지하되, 모든 도메인 락인은 *플래너 단일*입니다.
+이 리포는 [curea-co/pullim](https://github.com/curea-co/pullim) 의 BE 구조를 차용한 **bun workspace 모노레포**입니다. `pullim-planner`는 향후 `pullim` 플랫폼의 하위 도메인으로 흡수될 SaaS 단위로, 본 리포는 그 흡수 전 단계의 단독 운영체입니다.
 
-## 1. 편집 영역
+마이그레이션 plan(권위): [proc/plan/2026-05-26_pullim-be-adoption.md](proc/plan/2026-05-26_pullim-be-adoption.md)
 
-| 영역 | 경로 |
-|---|---|
-| **페이지** | `src/app/(student)/planner/` |
-| **도메인 컴포넌트** | `src/components/planner/`, `src/components/planner-manage/`, `src/components/planner-builder/`, `src/components/builder/` |
-| **mock** | `src/lib/mock/planner.ts` (도메인 권위), `persona.ts`, `curriculum.ts`, `family.ts`, `features.ts`, `subscriptions.ts` |
+## 1. 모노레포 구조
 
-## 2. 공유 영역 — read 자유, write는 글로벌 작업으로 분리
+```
+pullim-planner/
+├── apps/
+│   ├── planner/        # Next.js 16 (App Router) — 학생용 학습 플래너 FE
+│   └── backend/        # NestJS 11 — Planner 도메인 BE (Phase β 이후 본격)
+├── packages/
+│   ├── types/          # BE↔FE 공유 타입 (현재 빈 placeholder)
+│   ├── api-client/     # FE → BE fetch 래퍼 (현재 빈 placeholder)
+│   └── auth/           # IAuthProvider 추상화 + MockAuthProvider (현재 빈 placeholder)
+├── proc/               # plan / spec / knowhow / archive / research
+├── input/              # 기획 문서 (docs-archive 권위)
+├── daily_outcome/      # PM 일일 보고
+├── docker-compose.yml  # 로컬 Postgres 16
+├── turbo.json
+├── tsconfig.base.json
+├── package.json        # workspace root
+└── bun.lock
+```
 
-플래너 락인 중에도 **읽기는 항상 자유**. 단 **편집은 사용자 명시 확인** 후에만 진행.
+## 2. 작업 영역별 boundary
 
-### 공유 코드 (편집 시 전역 영향)
-- `src/components/shell/*` — AppHeader, AppSidebar, BottomNav, nav-config 등 셸 골격 (플래너 전용으로 이미 축소됨)
-- `src/components/ui/*` — shadcn/ui 프리미티브
-- `src/components/brand/*` — 로고
-- `src/lib/tokens/*`, `src/lib/utils.ts`
-- `src/app/layout.tsx`, `src/app/(student)/layout.tsx`, `src/app/(student)/page.tsx` (`/` → `/planner` redirect)
-- `next.config.ts`, `eslint.config.mjs`, `package.json`, `tsconfig.json`
+### apps/planner — Planner FE
+- **편집 영역**: 페이지, 컴포넌트, mock, lib, public 등 자유
+- **셸**(`apps/planner/src/components/shell/*`), **UI 프리미티브**(`apps/planner/src/components/ui/*`), **brand**(`apps/planner/src/components/brand/*`), **tokens**(`apps/planner/src/lib/tokens/*`)는 플래너 단일 도메인이라 자유롭게 수정 가능
+- mock 메타 구조(`apps/planner/src/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중
 
-### 공통 문서 (read only — orchestration 핵심 입력)
+### apps/backend — Planner BE (NestJS)
+- **편집 영역**: planner 도메인 모듈, common, config, database, entities — Phase β 이후부터
+- pullim 패턴 그대로 차용: controller / use-cases / service / interface / infrastructure
+- 다른 도메인(user/auth/workbook 등) 추가는 **사용자 명시 확인 필요** (현 차용 결정 = planner 단일 도메인)
+
+### packages/* — 공유 패키지
+- 편집 시 apps/planner와 apps/backend 양쪽에 영향 → 신중
+- 현재는 빈 placeholder, Phase β·δ에서 본격 구현
+
+### 공통 문서 (read only)
 - `input/docs-archive/00_풀림_기능기획_Skill.md` — 기획 작성 가이드
 - `input/docs-archive/04_풀림_종합_마스터.md` — 풀림 전체 IA 컨텍스트
 - `input/docs-archive/06_풀림_시간표_세부기획.md` — 시간표 세부 기획
-- `input/docs-archive/08_풀림_플래너_핸드오프.md` — **플래너 도메인 권위** (이 프로젝트의 source of truth)
+- `input/docs-archive/08_풀림_플래너_핸드오프.md` — **플래너 도메인 권위** (이 리포의 source of truth)
+- `proc/spec/2026-05-18_be-api-design.md` — BE API 설계 spec (Phase α 머지 후 갱신됨)
 
-## 3. 락인 작업 컨벤션
+## 3. 명령어
 
-이 프로젝트는 사실상 *영구 플래너 락인* 상태이므로, 별도 도메인 선언 없이도 플래너 boundary가 기본값입니다.
+| 작업 | 명령 |
+|---|---|
+| 의존성 설치 | `bun install` |
+| Planner FE dev (port 3030) | `bun run dev:planner` |
+| Backend dev (port 4030) | `bun run dev:backend` |
+| 둘 다 dev (turbo 병렬) | `bun run dev` |
+| Planner build (standalone) | `bun run build:planner` |
+| Backend build | `bun run build:backend` |
+| 전체 build | `bun run build` |
+| 전체 typecheck | `bun run typecheck` |
+| 전체 lint | `bun run lint` |
+| Postgres 컨테이너 | `bun run db:up` / `db:down` / `db:reset` |
+
+특정 워크스페이스에만 명령 실행:
+```
+bun --filter @pullim-planner/planner <script>
+bun --filter @pullim-planner/backend <script>
+```
+
+## 4. 락인 컨벤션
+
+이 리포는 *영구 플래너 락인*이라 별도 도메인 선언 없이도 planner boundary가 기본값입니다.
 
 ### 해도 되는 것 (편집)
-- 플래너 페이지 / 컴포넌트 / mock 수정·신규
-- 플래너 내 import 경로 갱신
-- 플래너 onboarding 페이지/UX 작업
+- `apps/planner/` 내 페이지·컴포넌트·mock·lib 수정·신규
+- `apps/backend/src/modules/planner/` 내 BE 작업 (Phase β 이후)
+- 마이그레이션 plan(`proc/plan/2026-05-26_pullim-be-adoption.md`) 의 Phase 진행
 
-### 하면 안 되는 것 (사용자 명시 확인 필요)
-- 셸·UI 프리미티브 **edit** → "글로벌 작업"으로 컨텍스트 전환 후 진행
-- mock 메타 구조 변경 → 데이터 경계가 흔들릴 수 있음
+### 사용자 명시 확인 필요 (글로벌 작업)
+- root 파일(`package.json`, `turbo.json`, `tsconfig.base.json`, `docker-compose.yml`) 편집
+- `packages/*` 내부 인터페이스 변경 (apps 양쪽 영향)
+- `apps/backend/src/common/*` 편집 (BE 전역 영향)
+- 새 도메인 모듈 추가 (user, auth, workbook 등 — pullim에서 추가 차용)
+- 이 가이드 / AGENTS.md / README.md 편집
 
-## 4. Orchestration 체크리스트 (작업 마치기 전)
+## 5. Orchestration 체크리스트 (작업 마치기 전)
 
-1. **`src/components/shell/nav-config.ts`** — `plannerSection` 안 href가 실제 라우트와 일치하는지
+1. **`apps/planner/src/components/shell/nav-config.ts`** — `plannerSection` 안 href가 실제 라우트와 일치하는지
 2. **`input/docs-archive/08_풀림_플래너_핸드오프.md`** — 권위 문서의 IA·용어와 코드가 어긋나지 않는지
-3. **`src/lib/mock/planner.ts`** — 시간표·블록·컨디션·번아웃 등 시그니처 데이터 구조 일관성
-
-## 5. 도구 보조
-
-| 상황 | 도구 |
-|---|---|
-| 실행 (개발) | `bun dev` (포트 3030) |
-| 검증 (정적) | `bunx tsc --noEmit && bun run lint` |
-| 빌드 | `bun run build` |
+3. **`apps/planner/src/lib/mock/planner.ts`** — 시간표·블록·컨디션·번아웃 등 시그니처 데이터 구조 일관성
+4. **`apps/backend/src/entities/`** (Phase γ 이후) — entity 시그니처와 mock·spec 정합
+5. **Codex Review 통과** — PR 머지 전 필수
 
 ## 6. 컨벤션 변경
 

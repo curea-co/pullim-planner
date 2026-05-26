@@ -1,30 +1,27 @@
-# 풀림 플래너 — SPARK + IPO 하네스
+# 풀림 플래너 — bun workspace 모노레포
 
-원본 `pullim-study-demo`(6 도메인 모놀리식 데모)에서 **풀림 플래너 기능만 추출**한 단독 프로젝트입니다.
-AI 에이전트(Claude Code, Gemini 등)와 함께 사용하는 **컨텍스트 엔지니어링 하네스 템플릿** 구조를 그대로 유지합니다.
+학생용 학습 플래너. 향후 `pullim` 플랫폼의 하위 도메인으로 흡수될 SaaS 단위로, 본 리포는 흡수 전 단계의 단독 운영체입니다.
+
+BE 구조는 [curea-co/pullim](https://github.com/curea-co/pullim) 패턴 차용 (NestJS 11 + TypeORM, clean architecture + Facade). 마이그레이션은 [proc/plan/2026-05-26_pullim-be-adoption.md](proc/plan/2026-05-26_pullim-be-adoption.md) Phase α~η로 단계적 진행.
 
 ## 구조
 
 ```
 pullim-planner/
-├── input/                   # 입력·참고 데이터 (IPO)
-│   ├── docs-archive/        # 핸드오프·마스터 문서 (플래너·시간표·종합)
-│   └── design-prototype/    # JSX 모형 (planner-ai / planner-custom + 공유)
-├── proc/                    # 명령 처리 규칙 (SPARK)
-│   ├── spec/                # 설계 명세 (BE API design 등)
-│   ├── plan/                # 작업 계획
-│   ├── archive/             # 완료 작업 로그
-│   ├── research/            # 조사·분석 결과 (BE setup guide·화면 역분석 등)
-│   └── knowhow/             # 재사용 프롬프트 (배포 정책 등)
-├── output/                  # 출력 데이터 (스크린샷·아티팩트)
-├── drizzle/                 # DB 마이그레이션 SQL (auto-generated)
-├── docker-compose.yml       # 로컬 Postgres 컨테이너
-├── drizzle.config.ts        # Drizzle ORM 설정
-├── .env.example             # 환경 변수 템플릿
-└── src/                     # Next.js 16 App Router 소스
-    ├── app/(student)/planner/
-    ├── components/{planner,planner-manage,planner-builder,shell,ui,brand,builder}/
-    └── lib/{mock,tokens,utils,db}/   # db: Drizzle schema + client
+├── apps/
+│   ├── planner/        # Next.js 16 (App Router) — Planner FE
+│   └── backend/        # NestJS 11 — Planner BE (Phase β 이후 본격)
+├── packages/
+│   ├── types/          # BE↔FE 공유 타입 (Phase γ에서 본격)
+│   ├── api-client/     # FE → BE fetch 래퍼 (Phase δ에서 본격)
+│   └── auth/           # IAuthProvider 추상화 (Phase β에서 본격)
+├── proc/               # plan / spec / knowhow / archive / research
+├── input/              # 기획 문서 (docs-archive 권위)
+├── daily_outcome/      # PM 일일 보고
+├── docker-compose.yml  # 로컬 Postgres 16
+├── turbo.json          # turbo 2.x
+├── tsconfig.base.json  # 공유 compiler options
+└── package.json        # workspace root
 ```
 
 ## 실행
@@ -32,72 +29,59 @@ pullim-planner/
 ### 처음 한 번 (setup)
 
 ```bash
-# 1. 의존성 설치
 bun install
-
-# 2. 환경 변수 복사
-cp .env.example .env.local
-
-# 3. Docker로 Postgres 컨테이너 띄우기
-bun run db:up
-
-# 4. DB에 테이블 9개 생성 (drizzle 마이그레이션 적용)
-bun run db:migrate
+cp apps/planner/.env.example apps/planner/.env.local
+cp apps/backend/.env.example apps/backend/.env       # 선택 (Phase γ에서 활용)
+bun run db:up                                         # Phase γ 진입 후 실제 사용
 ```
 
 ### 매일 개발할 때
 
 ```bash
-bun run db:up    # 컨테이너 꺼져 있을 때만 (이미 떠 있으면 자동 skip)
-bun run dev      # http://localhost:3030 — FE + BE 동시 실행
+bun run dev               # planner(3030) + backend(4030) 동시 (turbo 병렬)
+bun run dev:planner       # planner만
+bun run dev:backend       # backend만
 ```
-
-`bun run dev`가 Next.js를 띄우면 FE 페이지(`/planner/*`)와 BE API(`/api/*`)가 같은 프로세스에서 같이 동작합니다.
-
-### 자주 쓰는 명령
 
 | 명령 | 설명 |
 |---|---|
-| `bun run dev` | FE + BE 동시 실행 (port 3030) |
-| `bun run db:up` | Postgres 컨테이너 시작 |
-| `bun run db:down` | Postgres 컨테이너 종료 (데이터 유지) |
-| `bun run db:reset` | 컨테이너 + 데이터 볼륨 삭제 후 다시 시작 (clean start) |
-| `bun run db:generate` | `schema.ts` 변경분으로 마이그레이션 SQL 생성 |
-| `bun run db:migrate` | 생성된 마이그레이션을 DB에 적용 |
-| `bun run db:seed` | mock data → DB 시드 (Ph2) |
-| `bun run db:studio` | DB 테이블 GUI (http://localhost:4983) |
-| `bun run build` | 프로덕션 빌드 |
-| `bun run lint` | ESLint |
+| `bun run dev` | planner + backend 병렬 |
+| `bun run dev:planner` | Next.js dev (port 3030) |
+| `bun run dev:backend` | NestJS dev with watch (port 4030) |
+| `bun run build` | 전체 build (turbo) |
+| `bun run typecheck` | 전체 typecheck |
+| `bun run lint` | 전체 lint |
+| `bun run db:up` / `db:down` / `db:reset` | Postgres 컨테이너 |
+| `bun --filter @pullim-planner/<pkg> <script>` | 특정 워크스페이스만 |
 
 ### 필요 도구
 
 - **Bun ≥ 1.3** — 패키지 매니저·런타임
-- **Docker Desktop** (또는 OrbStack / colima) — Postgres 컨테이너용
-
-자세한 BE 가이드는 [`proc/research/2026-05-18_be-setup-guide.md`](proc/research/2026-05-18_be-setup-guide.md), API 설계는 [`proc/spec/2026-05-18_be-api-design.md`](proc/spec/2026-05-18_be-api-design.md) 참조.
+- **Docker Desktop** (또는 OrbStack / colima) — Phase γ 이후 Postgres 컨테이너용
+- **Node ≥ 20** — nest-cli 호환용 (시스템에 설치되어 있으면 충분)
 
 ## 기술 스택
 
-- **런타임**: Bun
-- **프레임워크**: Next.js 16 (App Router, Turbopack) + React 19 + TypeScript
-- **스타일**: TailwindCSS 4 + shadcn/ui (base-nova)
-- **차트**: recharts
-- **알림**: sonner
-- **아이콘**: lucide-react
-- **DB**: PostgreSQL 16 (Docker) + Drizzle ORM
-- **분석**: Vercel Web Analytics
+| 레이어 | 기술 |
+|---|---|
+| FE 프레임워크 | Next.js 16 (App Router, Turbopack) + React 19 + TypeScript |
+| FE 스타일 | TailwindCSS 4 + shadcn/ui (base-nova) |
+| FE 차트·알림·아이콘 | recharts / sonner / lucide-react |
+| BE 프레임워크 | NestJS 11 (clean architecture + Facade) |
+| BE ORM | TypeORM 0.3.x — Phase γ 진입 후 |
+| DB | PostgreSQL 16 (Docker) |
+| 모노레포 | bun workspaces + turbo 2.x |
 
-## 주요 스킬 (.claude/skills)
+## Phase 진행 상황
 
-| 명령 | 설명 |
-|------|------|
-| `/create-spec` | 명세 작성 |
-| `/update-plan` | 작업 계획 생성·업데이트 |
-| `/update-spec` | 명세 업데이트 |
+| Phase | 내용 | 상태 |
+|---|---|---|
+| α | 모노레포 재편 + Drizzle 폐기 + NestJS Hello World | 진행 중 |
+| β | pullim common 패턴 차용 (filters/interceptors/guards) | 대기 |
+| γ | planner entity + 마이그레이션 + seed | 대기 |
+| δ | read endpoint 3건 이식 | 대기 |
+| ε | mutation endpoint 6건 이식 | 대기 |
+| ζ | planner mock 잔여 시그니처 이식 | 대기 |
+| η | FE mock 제거 → @pullim-planner/api-client 전환 | 대기 |
 
-## 원본 출처
-
-이 프로젝트는 다음 모놀리식 데모에서 추출되었습니다:
-- `/Users/curea/dev_git/[260506] pullim-study-demo`
-
-플래너 도메인 외 기능(풀림 Q·클래스봇·라이브러리·스튜디오·스토어·교사·보호자 영역)은 모두 제거되었습니다.
+상세는 [proc/plan/2026-05-26_pullim-be-adoption.md](proc/plan/2026-05-26_pullim-be-adoption.md).
