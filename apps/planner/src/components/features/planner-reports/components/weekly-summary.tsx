@@ -9,7 +9,7 @@ import {
   getWeakNodes, weeklyReflection, lastWeekSummary,
   weeklyConditionTrend, weeklyBurnoutTrend, conditionMeta,
 } from '@/lib/mock';
-import { WeeklyChart } from '@/components/planner/weekly-chart';
+import { WeeklyChart } from '@/components/shared/charts/weekly-chart';
 import { AccuracyTrendChart } from './accuracy-trend-chart';
 import { WeeklyInsights } from './weekly-insights';
 import { cn } from '@/lib/utils';

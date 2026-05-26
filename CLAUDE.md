@@ -35,6 +35,7 @@ pullim-planner/
   - 진행 중인 재편: [proc/plan/2026-05-26_container-presenter-adoption.md](proc/plan/2026-05-26_container-presenter-adoption.md)
   - `features/`로 이동된 도메인: `planner-reports` (Phase 1)
   - 미이동 (잔여): `src/components/{planner,planner-manage,planner-builder,builder}/` — Phase 2~4에서 이동 예정
+- **공유 컴포넌트** (`apps/planner/src/components/shared/*`) — feature 간 공유되는 프리젠테이션 (예: `shared/charts/weekly-chart`, `shared/charts/month-heatmap`). pullim `apps/web/components/shared/` 패턴 차용
 - **셸**(`apps/planner/src/components/shell/*`), **UI 프리미티브**(`apps/planner/src/components/ui/*`), **brand**(`apps/planner/src/components/brand/*`), **tokens**(`apps/planner/src/lib/tokens/*`)는 플래너 단일 도메인이라 자유롭게 수정 가능 (글로벌 셸/프리미티브로 유지)
 - mock 메타 구조(`apps/planner/src/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중
 

@@ -1,5 +1,3 @@
-'use client';
-
 import { Suspense } from 'react';
 import ReportsContainer from '@/components/features/planner-reports/containers/ReportsContainer';
 

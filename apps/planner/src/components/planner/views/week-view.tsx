@@ -2,7 +2,7 @@
 
 import { weekView } from '@/lib/mock';
 import { ActiveWeekLayout } from '@/components/planner/layouts/active-week-layout';
-import { WeeklyChart } from '@/components/planner/weekly-chart';
+import { WeeklyChart } from '@/components/shared/charts/weekly-chart';
 import { WeeklyGoalsCard } from '@/components/planner/home/weekly-goals-card';
 import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
 
