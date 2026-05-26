@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import ManagePlannersContainer from '@/components/features/planner-manage/containers/ManagePlannersContainer';
 
 /**
@@ -7,5 +8,9 @@ import ManagePlannersContainer from '@/components/features/planner-manage/contai
  * 빌더는 하위 라우트(/manage/new, /manage/[id]/edit)로 종속.
  */
 export default function PlannerManagePage() {
-  return <ManagePlannersContainer />;
+  return (
+    <Suspense fallback={<div className="text-pullim-slate-400 py-10 text-center text-sm">시간표 불러오는 중…</div>}>
+      <ManagePlannersContainer />
+    </Suspense>
+  );
 }
