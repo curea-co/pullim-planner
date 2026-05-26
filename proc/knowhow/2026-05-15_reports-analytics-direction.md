@@ -77,5 +77,7 @@
 ## 참고
 - 어제 dogfood: [proc/knowhow/2026-05-14_reports-prod-dogfood.md](../knowhow/2026-05-14_reports-prod-dogfood.md)
 - 어제 F1~F7 archive: [proc/archive/2026-05-13_reports-f1-to-f7-impl.md](../archive/2026-05-13_reports-f1-to-f7-impl.md), [proc/archive/2026-05-13_reports-enhancement.md](../archive/2026-05-13_reports-enhancement.md)
-- reports 셸: [src/components/planner/reports/reports-shell.tsx](../../src/components/planner/reports/reports-shell.tsx)
-- reports 페이지: [src/app/(student)/planner/reports/page.tsx](../../src/app/(student)/planner/reports/page.tsx)
+- reports 셸: [apps/planner/src/components/features/planner-reports/components/reports-shell.tsx](../../apps/planner/src/components/features/planner-reports/components/reports-shell.tsx) (Phase 1, PR #32 — `src/components/planner/reports/`에서 이동)
+- reports 페이지: [apps/planner/src/app/(student)/planner/reports/page.tsx](../../apps/planner/src/app/(student)/planner/reports/page.tsx) (Phase 1, PR #32 — Server Component + Container/Presenter)
+- reports Container: [apps/planner/src/components/features/planner-reports/containers/ReportsContainer.tsx](../../apps/planner/src/components/features/planner-reports/containers/ReportsContainer.tsx)
+- reports Presenter: [apps/planner/src/components/features/planner-reports/presenters/ReportsPresenter.tsx](../../apps/planner/src/components/features/planner-reports/presenters/ReportsPresenter.tsx)
