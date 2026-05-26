@@ -105,7 +105,8 @@ src/components/brand/  ── 그대로
 - [x] `features/planner-reports/presenters/ReportsPresenter.tsx` 생성 (description 조합 보유)
 - [x] `src/components/planner/reports/*` → `features/planner-reports/components/*` 이동 (7 파일, git mv)
 - [x] `reports/page.tsx` → Server Component + `<Suspense><ReportsContainer /></Suspense>` (`'use client'` 제거)
-- [x] Codex 권고 반영: `weekly-chart` + `month-heatmap` → `shared/charts/`, `today-reflection` → `shared/`
+- [x] Codex 권고 반영: `weekly-chart` + `month-heatmap` + `today-reflection` → **`features/planner-home/components/`** 선이동 (3 widget이 useRouter/toast/mock 도메인 결합 보유 → shared 부적합. Phase 3에서 planner-home 페이지/Container/Presenter 본격 도입)
+- [x] reports ↔ planner-home **cross-feature import** 허용 정책 명시 (widget 소유권은 planner-home, reports는 빌려옴)
 
 **검증**
 - [x] `bun run typecheck && bun run lint` 통과 (5 워크스페이스, 0 error)
@@ -134,8 +135,9 @@ src/components/brand/  ── 그대로
 
 - [ ] `planner/page.tsx` → `HomeContainer` + `HomePresenter` (redirect 가드 포함)
 - [ ] `onboarding/page.tsx` → `OnboardingContainer` + `OnboardingPresenter`
-- [ ] `src/components/planner/{home,layouts,views}/*` → `features/planner-home/components/*` 이동 (단, planner-reports로 옮긴 것 제외)
+- [ ] `src/components/planner/{home,layouts,views}/*` → `features/planner-home/components/*` 이동 (Phase 1에서 선이동된 3 widget 제외, planner-reports로 옮긴 것 제외)
 - [ ] `/planner`, `/planner/onboarding` 동작 확인
+- [ ] **widget 정제 검토** — Phase 1에서 선이동된 `today-reflection`(285줄), `month-heatmap`이 자체 useRouter/toast/mock selector 보유. Container/Presenter로 쪼개서 reports presenter가 더 작은 props 인터페이스만 보게 할지 결정 (현재는 reports → planner-home 직접 import)
 
 ### Phase 4 — 잔여 폴더 통합 + import 경로 일괄 정리 (PR #4)
 

@@ -16,7 +16,7 @@ import { ActiveDayLayout } from '@/components/planner/layouts/active-day-layout'
 import { ConditionBurnoutPanel } from '@/components/planner/condition-burnout-panel';
 import { BlockCard } from '@/components/planner/block-card';
 import { BlockCompleteDialog } from '@/components/planner/block-complete-dialog';
-import { TodayReflection } from '@/components/shared/today-reflection';
+import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 
 /** 완료한 블록 다음의 첫 학습 블록(휴식 제외, todo/doing) — 모달 CTA 라우팅용 */
 function findFollowing(block: TimeBlock): TimeBlock | null {

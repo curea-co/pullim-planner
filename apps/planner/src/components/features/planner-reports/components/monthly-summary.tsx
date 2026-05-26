@@ -8,7 +8,7 @@ import {
   monthView, currentPersona, getDday, getNextMilestone,
   getWeakNodes, weeklyStudyHours,
 } from '@/lib/mock';
-import { MonthHeatmap } from '@/components/shared/charts/month-heatmap';
+import { MonthHeatmap } from '@/components/features/planner-home/components/month-heatmap';
 import { cn } from '@/lib/utils';
 
 /** 월간 회고 본문 — KPI 3 + 히트맵 + 약점 단원 + 다가오는 마일스톤 */

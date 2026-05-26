@@ -33,11 +33,12 @@ pullim-planner/
 - **편집 영역**: 페이지, 컴포넌트, mock, lib, public 등 자유
 - **도메인 컴포넌트** — `apps/planner/src/components/features/<domain>/{containers,presenters,components,hooks}/` 컨벤션 ([AGENTS.md](AGENTS.md) Container/Presenter 표 참조)
   - 진행 중인 재편: [proc/plan/2026-05-26_container-presenter-adoption.md](proc/plan/2026-05-26_container-presenter-adoption.md)
-  - `features/`로 이동된 도메인: `planner-reports` (Phase 1)
+  - `features/`로 이동된 도메인:
+    - `planner-reports` (Phase 1 — Container/Presenter 분리 완료)
+    - `planner-home` (Phase 1 partial — widget 3개만 선이동: `weekly-chart`, `month-heatmap`, `today-reflection`. 페이지·Container/Presenter는 Phase 3)
   - 미이동 (잔여): `src/components/{planner,planner-manage,planner-builder,builder}/` — Phase 2~4에서 이동 예정
-- **공유 컴포넌트** (`apps/planner/src/components/shared/*`) — feature 간 공유되는 컴포넌트. pullim `apps/web/components/shared/` 패턴 차용. 두 카테고리:
-  - **순수 프리젠테이션** (예: `shared/charts/weekly-chart`, `shared/charts/month-heatmap`) — state·router·side effect 없음
-  - **self-contained widget** (예: `shared/today-reflection`) — 자체 state/effect 보유 가능. 단 **feature 로직(도메인 fetch, 비즈니스 분기)은 금지** — feature 로직은 `features/<domain>/`에 둠. widget 추가는 신중하게 (`shared/`가 잡동사니 저장소가 되는 것 방지)
+  - **cross-feature import** — feature 간 컴포넌트 직접 import 허용 (예: `planner-reports` Presenter가 `planner-home`의 `today-reflection` 사용). 단 widget 소유권은 명확히 (`today-reflection`은 `planner-home` 소유, reports는 빌려옴)
+- **공유 컴포넌트** (`apps/planner/src/components/shared/*`) — 현재 비어있음. **진짜 순수 프리젠테이션**만 (state·router·side effect·mock selector 일체 없음). 도메인 로직이 한 줄이라도 있으면 해당 feature(`features/<domain>/`) 소유로 분류. pullim `apps/web/components/shared/` 패턴 차용
 - **셸**(`apps/planner/src/components/shell/*`), **UI 프리미티브**(`apps/planner/src/components/ui/*`), **brand**(`apps/planner/src/components/brand/*`), **tokens**(`apps/planner/src/lib/tokens/*`)는 플래너 단일 도메인이라 자유롭게 수정 가능 (글로벌 셸/프리미티브로 유지)
 - mock 메타 구조(`apps/planner/src/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중
 

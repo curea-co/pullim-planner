@@ -8,7 +8,7 @@ import {
 import { WeeklySummary } from '../components/weekly-summary';
 import { MonthlySummary } from '../components/monthly-summary';
 import { ConsentDialog } from '../components/consent-dialog';
-import { TodayReflection } from '@/components/shared/today-reflection';
+import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 
 interface ReportsPresenterProps {
   view: ReportsView;

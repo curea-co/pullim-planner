@@ -1,5 +1,5 @@
 import { monthView } from '@/lib/mock';
-import { MonthHeatmap } from '@/components/shared/charts/month-heatmap';
+import { MonthHeatmap } from '@/components/features/planner-home/components/month-heatmap';
 import { MonthlyProgressCard } from '@/components/planner/home/monthly-progress-card';
 
 /**
