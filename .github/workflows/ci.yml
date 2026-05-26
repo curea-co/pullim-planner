@@ -38,6 +38,7 @@ jobs:
               - 'turbo.json'
               - 'package.json'
               - 'bun.lock'
+              - '.github/workflows/**'
             backend:
               - 'apps/backend/**'
               - 'packages/**'
@@ -45,6 +46,7 @@ jobs:
               - 'turbo.json'
               - 'package.json'
               - 'bun.lock'
+              - '.github/workflows/**'
 
   # ─────────────────────────────────────────────────────────────
   # Job 2. Lint & Typecheck (영향받은 앱만 / turbo --filter 병렬)

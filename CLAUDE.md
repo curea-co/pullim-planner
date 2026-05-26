@@ -35,8 +35,9 @@ pullim-planner/
 - mock 메타 구조(`apps/planner/src/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중
 
 ### apps/backend — Planner BE (NestJS)
-- **편집 영역**: planner 도메인 모듈, common, config, database, entities — Phase β 이후부터
+- **편집 영역**: `apps/backend/src/modules/planner/` 등 planner 도메인 모듈, entities — Phase β 이후부터
 - pullim 패턴 그대로 차용: controller / use-cases / service / interface / infrastructure
+- **BE 전역 인프라**(`apps/backend/src/{common,config,database,bootstrap}/`)는 §4 글로벌 작업으로 분리 — Phase β에서 pullim common 패턴 차용 시 신중 수정
 - 다른 도메인(user/auth/workbook 등) 추가는 **사용자 명시 확인 필요** (현 차용 결정 = planner 단일 도메인)
 
 ### packages/* — 공유 패키지
@@ -83,7 +84,7 @@ bun --filter @pullim-planner/backend <script>
 ### 사용자 명시 확인 필요 (글로벌 작업)
 - root 파일(`package.json`, `turbo.json`, `tsconfig.base.json`, `docker-compose.yml`) 편집
 - `packages/*` 내부 인터페이스 변경 (apps 양쪽 영향)
-- `apps/backend/src/common/*` 편집 (BE 전역 영향)
+- `apps/backend/src/{common,config,database,bootstrap}/*` 편집 (BE 전역 영향)
 - 새 도메인 모듈 추가 (user, auth, workbook 등 — pullim에서 추가 차용)
 - 이 가이드 / AGENTS.md / README.md 편집
 
