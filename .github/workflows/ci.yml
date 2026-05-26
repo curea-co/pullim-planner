@@ -24,8 +24,12 @@ jobs:
     outputs:
       planner: ${{ steps.filter.outputs.planner }}
       backend: ${{ steps.filter.outputs.backend }}
+      packages: ${{ steps.filter.outputs.packages }}
     steps:
       - uses: actions/checkout@v4
+        # main push 이벤트에서도 paths-filter가 이전 커밋과 git diff 계산 가능하도록 전체 이력 fetch
+        with:
+          fetch-depth: 0
 
       - uses: dorny/paths-filter@v3
         id: filter
@@ -47,6 +51,13 @@ jobs:
               - 'package.json'
               - 'bun.lock'
               - '.github/workflows/**'
+            packages:
+              - 'packages/**'
+              - 'tsconfig.base.json'
+              - 'turbo.json'
+              - 'package.json'
+              - 'bun.lock'
+              - '.github/workflows/**'
 
   # ─────────────────────────────────────────────────────────────
   # Job 2. Lint & Typecheck (영향받은 앱만 / turbo --filter 병렬)
@@ -57,7 +68,8 @@ jobs:
     needs: detect-changes
     if: >-
       needs.detect-changes.outputs.planner == 'true' ||
-      needs.detect-changes.outputs.backend == 'true'
+      needs.detect-changes.outputs.backend == 'true' ||
+      needs.detect-changes.outputs.packages == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -68,6 +80,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # packages/** 변경 시 packages 워크스페이스 자체도 typecheck 대상에 추가 —
+      # 두 앱이 packages를 아직 직접 참조하지 않아도 packages 내부 타입 오류 검출
       - name: Typecheck (affected)
         run: |
           FILTER=""
@@ -77,9 +91,16 @@ jobs:
           if [ "${{ needs.detect-changes.outputs.backend }}" = "true" ]; then
             FILTER="$FILTER --filter=@pullim-planner/backend"
           fi
+          if [ "${{ needs.detect-changes.outputs.packages }}" = "true" ]; then
+            FILTER="$FILTER --filter=@pullim-planner/types --filter=@pullim-planner/api-client --filter=@pullim-planner/auth"
+          fi
           bunx turbo typecheck $FILTER
 
       - name: Lint (affected)
+        # packages는 아직 lint script 없음 — Phase β에서 도입 예정
+        if: >-
+          needs.detect-changes.outputs.planner == 'true' ||
+          needs.detect-changes.outputs.backend == 'true'
         run: |
           FILTER=""
           if [ "${{ needs.detect-changes.outputs.planner }}" = "true" ]; then

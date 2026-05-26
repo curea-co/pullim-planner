@@ -78,14 +78,23 @@
       "dependencies": {
         "@pullim-planner/types": "workspace:*",
       },
+      "devDependencies": {
+        "typescript": "^5.7.3",
+      },
     },
     "packages/auth": {
       "name": "@pullim-planner/auth",
       "version": "0.0.1",
+      "devDependencies": {
+        "typescript": "^5.7.3",
+      },
     },
     "packages/types": {
       "name": "@pullim-planner/types",
       "version": "0.0.1",
+      "devDependencies": {
+        "typescript": "^5.7.3",
+      },
     },
   },
   "packages": {
