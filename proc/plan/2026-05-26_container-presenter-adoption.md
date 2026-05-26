@@ -96,20 +96,21 @@ src/components/brand/  ── 그대로
 가장 작은 88줄 페이지로 패턴 검증. 사고 나도 되돌리기 쉬움. 컨벤션 문서는 **실제 동작하는 코드와 함께** 머지 (문서만 머지는 검증 가치 낮음).
 
 **문서**
-- [ ] `AGENTS.md` 에 §3 컨벤션 표 추가 (Container/Presenter 책임 분리)
-- [ ] `CLAUDE.md` §1 편집 영역 표 — `features/` 경로 추가
+- [x] `AGENTS.md` 에 §3 컨벤션 표 추가 (Container/Presenter 책임 분리) — PR #32
+- [x] `CLAUDE.md` §2 편집 영역 표 — `features/` 경로 + `shared/` 컨벤션 추가 — PR #32
 
 **파일럿 코드**
-- [ ] `reports/page.tsx` 분석 → 로직/UI 라인 식별
-- [ ] `features/planner-reports/containers/ReportsContainer.tsx` 생성
-- [ ] `features/planner-reports/presenters/ReportsPresenter.tsx` 생성
-- [ ] `src/components/planner/reports/*` → `features/planner-reports/components/*` 이동
-- [ ] `reports/page.tsx` → `<Suspense><ReportsContainer /></Suspense>` 만 남기기
+- [x] `reports/page.tsx` 분석 → 로직/UI 라인 식별 (88줄 → 11줄)
+- [x] `features/planner-reports/containers/ReportsContainer.tsx` 생성 (Container 순수성: JSX 0줄, 원시값만 props)
+- [x] `features/planner-reports/presenters/ReportsPresenter.tsx` 생성 (description 조합 보유)
+- [x] `src/components/planner/reports/*` → `features/planner-reports/components/*` 이동 (7 파일, git mv)
+- [x] `reports/page.tsx` → Server Component + `<Suspense><ReportsContainer /></Suspense>` (`'use client'` 제거)
+- [x] Codex 권고 반영: `weekly-chart` + `month-heatmap` → `shared/charts/`, `today-reflection` → `shared/`
 
 **검증**
-- [ ] `bunx tsc --noEmit && bun run lint` 통과
-- [ ] `bun dev`로 `/planner/reports` 라우트 동작 확인 (golden path)
-- [ ] PR 본문에 **before/after 라인 수 + 차용한 pullim 파일 링크** 첨부 → Codex review 컨텍스트
+- [x] `bun run typecheck && bun run lint` 통과 (5 워크스페이스, 0 error)
+- [x] `bun dev`로 `/planner/reports` 라우트 동작 확인 (3 view + invalid fallback + 회귀 라우트)
+- [x] PR 본문에 before/after 라인 수 + 차용한 pullim 파일 링크 첨부 — PR #32
 
 ### Phase 2 — `manage` 도메인 3개 페이지 (PR #2)
 

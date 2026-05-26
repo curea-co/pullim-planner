@@ -35,7 +35,9 @@ pullim-planner/
   - 진행 중인 재편: [proc/plan/2026-05-26_container-presenter-adoption.md](proc/plan/2026-05-26_container-presenter-adoption.md)
   - `features/`로 이동된 도메인: `planner-reports` (Phase 1)
   - 미이동 (잔여): `src/components/{planner,planner-manage,planner-builder,builder}/` — Phase 2~4에서 이동 예정
-- **공유 컴포넌트** (`apps/planner/src/components/shared/*`) — feature 간 공유되는 프리젠테이션 (예: `shared/charts/weekly-chart`, `shared/charts/month-heatmap`). pullim `apps/web/components/shared/` 패턴 차용
+- **공유 컴포넌트** (`apps/planner/src/components/shared/*`) — feature 간 공유되는 컴포넌트. pullim `apps/web/components/shared/` 패턴 차용. 두 카테고리:
+  - **순수 프리젠테이션** (예: `shared/charts/weekly-chart`, `shared/charts/month-heatmap`) — state·router·side effect 없음
+  - **self-contained widget** (예: `shared/today-reflection`) — 자체 state/effect 보유 가능. 단 **feature 로직(도메인 fetch, 비즈니스 분기)은 금지** — feature 로직은 `features/<domain>/`에 둠. widget 추가는 신중하게 (`shared/`가 잡동사니 저장소가 되는 것 방지)
 - **셸**(`apps/planner/src/components/shell/*`), **UI 프리미티브**(`apps/planner/src/components/ui/*`), **brand**(`apps/planner/src/components/brand/*`), **tokens**(`apps/planner/src/lib/tokens/*`)는 플래너 단일 도메인이라 자유롭게 수정 가능 (글로벌 셸/프리미티브로 유지)
 - mock 메타 구조(`apps/planner/src/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중
 
