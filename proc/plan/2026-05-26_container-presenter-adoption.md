@@ -64,7 +64,7 @@ src/components/brand/  ── 그대로
 
 ## 3. 컨벤션 — pullim이 강제하는 규칙
 
-> 출처: `/Users/curea/dev_git/pullim/apps/web/components/features/faq/` 등 33개 feature 관찰
+> 출처: [curea-co/pullim `apps/web/components/features/faq/`](https://github.com/curea-co/pullim/tree/main/apps/web/components/features/faq) 등 33개 feature 관찰
 
 ### 3.1 layer 책임
 
@@ -97,7 +97,7 @@ feature A의 컴포넌트를 feature B에서 import해도 된다. 단:
 
 ## 4. Phase 분할 (= PR 분할)
 
-각 phase = 1 PR. **Codex review 통과 필수** ([feedback_codex_review_required](/Users/curea/.claude/projects/-Users-curea-dev-git-pullim-planner/memory/feedback_codex_review_required.md)).
+각 phase = 1 PR. **Codex review 통과 필수** — 2026-05-20 결정사항: COMMENT 상태로 그대로 머지 금지, 지적사항 반영 후 재리뷰 또는 사용자 명시 무시 승인 후 진행 ([CLAUDE.md](../../CLAUDE.md) §5 Orchestration 체크리스트 항목 5).
 
 ### Phase 1 — 컨벤션 문서화 + `reports` 파일럿 (PR #1)
 
@@ -109,7 +109,7 @@ feature A의 컴포넌트를 feature B에서 import해도 된다. 단:
 
 **파일럿 코드**
 - [x] `reports/page.tsx` 분석 → 로직/UI 라인 식별 (88줄 → 11줄)
-- [x] `features/planner-reports/containers/ReportsContainer.tsx` 생성 (Container 순수성: JSX 0줄, 원시값만 props)
+- [x] `features/planner-reports/containers/ReportsContainer.tsx` 생성 (Container 순수성: 마크업 0줄 — `<ReportsPresenter ... />` mount만 허용, 원시값만 props로 전달)
 - [x] `features/planner-reports/presenters/ReportsPresenter.tsx` 생성 (description 조합 보유)
 - [x] `src/components/planner/reports/*` → `features/planner-reports/components/*` 이동 (7 파일, git mv)
 - [x] `reports/page.tsx` → Server Component + `<Suspense><ReportsContainer /></Suspense>` (`'use client'` 제거)
@@ -161,7 +161,7 @@ feature A의 컴포넌트를 feature B에서 import해도 된다. 단:
 - [ ] `CLAUDE.md` §1 편집 영역 표 최종본 (`features/<domain>/` 경로로 교체)
 - [ ] `AGENTS.md` 에 "이 프로젝트는 Container/Presenter 컨벤션을 따른다" 명문화
 - [ ] `README.md` 에 폴더 구조 다이어그램 갱신
-- [ ] plan 문서는 사용자 명시 시에만 archive ([feedback_plan_archive](/Users/curea/.claude/projects/-Users-curea-dev-git-pullim-planner/memory/feedback_plan_archive.md))
+- [ ] plan 문서는 **사용자 명시 시에만 archive** — PR 머지 후 자동 archive 금지. 사용자가 "archive로 옮겨"라고 명시할 때만 `proc/archive/`로 이동
 
 ---
 
