@@ -12,10 +12,10 @@ import {
 } from '@/lib/mock';
 import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
 import { SectionHeading } from '@/components/shell/section-heading';
-import { ActiveDayLayout } from '@/components/planner/layouts/active-day-layout';
-import { ConditionBurnoutPanel } from '@/components/planner/condition-burnout-panel';
-import { BlockCard } from '@/components/planner/block-card';
-import { BlockCompleteDialog } from '@/components/planner/block-complete-dialog';
+import { ActiveDayLayout } from '@/components/features/planner-home/components/layouts/active-day-layout';
+import { ConditionBurnoutPanel } from '@/components/features/planner-home/components/condition-burnout-panel';
+import { BlockCard } from '@/components/features/planner-home/components/block-card';
+import { BlockCompleteDialog } from '@/components/features/planner-home/components/block-complete-dialog';
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 
 /** 완료한 블록 다음의 첫 학습 블록(휴식 제외, todo/doing) — 모달 CTA 라우팅용 */

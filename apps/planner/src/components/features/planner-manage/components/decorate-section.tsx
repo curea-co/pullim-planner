@@ -26,8 +26,8 @@ import {
   type WeekLayoutId,
 } from '@/lib/mock';
 import { getCustomization } from '@/lib/hooks/use-planner-customization';
-import { ActiveDayLayout } from '@/components/planner/layouts/active-day-layout';
-import { ActiveWeekLayout } from '@/components/planner/layouts/active-week-layout';
+import { ActiveDayLayout } from '@/components/features/planner-home/components/layouts/active-day-layout';
+import { ActiveWeekLayout } from '@/components/features/planner-home/components/layouts/active-week-layout';
 import { cn } from '@/lib/utils';
 
 type PreviewTab = 'day' | 'week';

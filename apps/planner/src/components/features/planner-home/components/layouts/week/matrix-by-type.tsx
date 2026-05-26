@@ -5,7 +5,7 @@
  * 기존 `WeekGrid` 컴포넌트를 그대로 래핑 (디폴트 템플릿).
  */
 
-import { WeekGrid } from '@/components/planner/week-grid';
+import { WeekGrid } from '@/components/features/planner-home/components/week-grid';
 import type { PaletteId } from '@/lib/mock';
 
 type Props = {

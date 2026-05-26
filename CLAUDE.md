@@ -35,9 +35,11 @@ pullim-planner/
   - 진행 중인 재편: [proc/plan/2026-05-26_container-presenter-adoption.md](proc/plan/2026-05-26_container-presenter-adoption.md)
   - `features/`로 이동된 도메인:
     - `planner-reports` (Phase 1 — Container/Presenter 분리 완료)
-    - `planner-home` (Phase 1 partial — widget 3개만 선이동: `weekly-chart`, `month-heatmap`, `today-reflection`. 페이지·Container/Presenter는 Phase 3)
-  - 미이동 (잔여): `src/components/{planner,planner-manage,planner-builder,builder}/` — Phase 2~4에서 이동 예정
-  - **cross-feature import** — feature 간 컴포넌트 직접 import 허용 (예: `planner-reports` Presenter가 `planner-home`의 `today-reflection` 사용). 단 widget 소유권은 명확히 (`today-reflection`은 `planner-home` 소유, reports는 빌려옴)
+    - `planner-manage` (Phase 2 — list/new/edit 3 페이지 분리 + `usePlannerForm` hook + `PlannerWizard` 컴포넌트)
+    - `planner-home` (Phase 3 — `HomeContainer`/`HomePresenter` + `planner/*` 28개 컴포넌트 전체 흡수)
+    - `planner-onboarding` (Phase 3 — `OnboardingContainer`/`OnboardingPresenter`, widget은 planner-home에서 빌려옴)
+  - 미이동 (잔여): `src/components/{planner-builder,builder}/` — Phase 4에서 이동 예정
+  - **cross-feature import** — feature 간 컴포넌트 직접 import 허용 (예: `planner-reports` Presenter가 `planner-home`의 `today-reflection` 사용, `planner-onboarding`이 `planner-home`의 widget들 사용). 단 widget 소유권은 명확히
 - **공유 컴포넌트** (`apps/planner/src/components/shared/*`) — 현재 비어있음. **진짜 순수 프리젠테이션**만 (state·router·side effect·mock selector 일체 없음). 도메인 로직이 한 줄이라도 있으면 해당 feature(`features/<domain>/`) 소유로 분류. pullim `apps/web/components/shared/` 패턴 차용
 - **셸**(`apps/planner/src/components/shell/*`), **UI 프리미티브**(`apps/planner/src/components/ui/*`), **brand**(`apps/planner/src/components/brand/*`), **tokens**(`apps/planner/src/lib/tokens/*`)는 플래너 단일 도메인이라 자유롭게 수정 가능 (글로벌 셸/프리미티브로 유지)
 - mock 메타 구조(`apps/planner/src/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중

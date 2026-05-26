@@ -1,6 +1,6 @@
 import { monthView } from '@/lib/mock';
 import { MonthHeatmap } from '@/components/features/planner-home/components/month-heatmap';
-import { MonthlyProgressCard } from '@/components/planner/home/monthly-progress-card';
+import { MonthlyProgressCard } from '@/components/features/planner-home/components/home/monthly-progress-card';
 
 /**
  * 월간 시간표 본문 — 좌측 히트맵, 우측 해당 월 달성률 통합 카드.
