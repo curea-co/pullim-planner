@@ -6,6 +6,7 @@ import { CalendarShell, type CalendarView } from '../components/calendar-shell';
 import { DayView } from '../components/views/day-view';
 import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
+import { composeDDayChipProps } from '@/lib/planner/d-day-tier';
 import { DDayChip } from '@/components/shared/d-day-chip';
 import { DDayHeaderBand } from '../components/d-day-header-band';
 import { BurnoutThresholdBanner } from '../components/burnout-threshold-banner';
@@ -49,7 +50,7 @@ export default function HomePresenter({
           <>
             <strong className="text-pullim-blue-700">{examName}</strong>
             <span className="mx-1">·</span>
-            <DDayChip dday={dday} examName={examName} />
+            <DDayChip {...composeDDayChipProps(dday, examName)} />
             <span className="mx-1">·</span>
             {daySummary.done}/{daySummary.total} 블록 완료
           </>
@@ -80,7 +81,7 @@ export default function HomePresenter({
       title: '2026년 4월',
       description: (
         <>
-          <strong className="text-pullim-blue-700">{examName}</strong>까지 <DDayChip dday={dday} examName={examName} />
+          <strong className="text-pullim-blue-700">{examName}</strong>까지 <DDayChip {...composeDDayChipProps(dday, examName)} />
           <span className="mx-1">·</span>
           이번 달 학습 블록 <span className="font-mono font-bold">{monthMeta.totalBlocks}개</span>
         </>

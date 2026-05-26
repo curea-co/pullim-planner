@@ -40,7 +40,12 @@ pullim-planner/
     - `planner-onboarding` (Phase 3 — `OnboardingContainer`/`OnboardingPresenter`, widget은 planner-home에서 빌려옴)
   - 미이동 (잔여): `src/components/{planner-builder,builder}/` — Phase 4에서 이동 예정
   - **cross-feature import** — feature 간 컴포넌트 직접 import 허용 (예: `planner-reports` Presenter가 `planner-home`의 `today-reflection` 사용, `planner-onboarding`이 `planner-home`의 widget들 사용). 단 widget 소유권은 명확히
-- **공유 컴포넌트** (`apps/planner/src/components/shared/*`) — **진짜 순수 프리젠테이션**만 (state·router·side effect·mock selector 일체 없음). 도메인 로직이 한 줄이라도 있으면 해당 feature(`features/<domain>/`) 소유로 분류. 현재 거주자: `d-day-chip.tsx` (D-day 표시, props만). pullim `apps/web/components/shared/` 패턴 차용
+- **공유 컴포넌트** (`apps/planner/src/components/shared/*`) — **진짜 순수 뷰**만. 다음 조건 모두 충족:
+  - state·router·side effect·mock selector 일체 없음
+  - **도메인 계산도 없음** (예: tier 분류, label 조합, 시험·블록·플래너 관련 분기). 필요한 모든 표시값은 props로 주입
+  - 도메인 계산이 필요하면 `@/lib/planner/*`(또는 적절한 lib)에 helper(예: `composeDDayChipProps`)를 두고 호출자가 compose 후 spread
+  - 현재 거주자: `d-day-chip.tsx` (compose된 props만 받음 — tier/label/title/showCalIcon)
+  - pullim `apps/web/components/shared/` 패턴 차용. **widget 추가는 신중** (`shared/`가 잡동사니 저장소가 되는 것 방지)
 - **셸**(`apps/planner/src/components/shell/*`), **UI 프리미티브**(`apps/planner/src/components/ui/*`), **brand**(`apps/planner/src/components/brand/*`), **tokens**(`apps/planner/src/lib/tokens/*`)는 플래너 단일 도메인이라 자유롭게 수정 가능 (글로벌 셸/프리미티브로 유지)
 - mock 메타 구조(`apps/planner/src/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중
 

@@ -11,6 +11,7 @@ import {
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { currentPersona, getDday, getActivePlanner } from '@/lib/mock';
+import { composeDDayChipProps } from '@/lib/planner/d-day-tier';
 import { DDayChip } from '@/components/shared/d-day-chip';
 import { type Role } from './nav-config';
 import { MobileDrawer } from './mobile-drawer';
@@ -43,7 +44,7 @@ export function AppHeader({ role }: { role: Role }) {
             className="hidden rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 sm:inline-flex"
             title={`${examName}까지 D-${dday > 0 ? dday : 0}`}
           >
-            <DDayChip dday={dday} examName={examName} />
+            <DDayChip {...composeDDayChipProps(dday, examName)} />
           </Link>
           <Badge
             variant="secondary"
