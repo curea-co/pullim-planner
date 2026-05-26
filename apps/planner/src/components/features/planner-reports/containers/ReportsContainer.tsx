@@ -9,15 +9,6 @@ import ReportsPresenter from '../presenters/ReportsPresenter';
 
 const VALID_VIEWS: ReportsView[] = ['day', 'week', 'month'];
 
-const descriptionByView: Record<
-  ReportsView,
-  (dday: number, examLabel: string) => React.ReactNode
-> = {
-  day:   (dday, examLabel) => <>오늘 학습 결과를 한 화면에서 — {examLabel} · D-{dday}</>,
-  week:  (_, examLabel) => <>이번 주 학습 시간·정답률·약점 진도 종합 — {examLabel}</>,
-  month: (dday, examLabel) => <>{examLabel}까지 D-{dday} · 큰 그림과 마일스톤 점검</>,
-};
-
 export default function ReportsContainer() {
   const router = useRouter();
   const params = useSearchParams();
@@ -54,7 +45,8 @@ export default function ReportsContainer() {
   return (
     <ReportsPresenter
       view={view}
-      description={descriptionByView[view](dday, currentPersona.examLabel)}
+      dday={dday}
+      examLabel={currentPersona.examLabel}
       consentOpen={consentOpen}
       onChangeView={onChangeView}
       onConsentOpenChange={setConsentOpen}

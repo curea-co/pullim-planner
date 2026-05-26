@@ -8,20 +8,31 @@ import {
 import { WeeklySummary } from '../components/weekly-summary';
 import { MonthlySummary } from '../components/monthly-summary';
 import { ConsentDialog } from '../components/consent-dialog';
-import { TodayReflection } from '@/components/planner/today-reflection';
+import { TodayReflection } from '@/components/shared/today-reflection';
 
 interface ReportsPresenterProps {
   view: ReportsView;
-  description: React.ReactNode;
+  dday: number;
+  examLabel: string;
   consentOpen: boolean;
   onChangeView: (next: ReportsView) => void;
   onConsentOpenChange: (open: boolean) => void;
   onParentShareClick: () => void;
 }
 
+const descriptionByView: Record<
+  ReportsView,
+  (dday: number, examLabel: string) => React.ReactNode
+> = {
+  day:   (dday, examLabel) => <>오늘 학습 결과를 한 화면에서 — {examLabel} · D-{dday}</>,
+  week:  (_, examLabel) => <>이번 주 학습 시간·정답률·약점 진도 종합 — {examLabel}</>,
+  month: (dday, examLabel) => <>{examLabel}까지 D-{dday} · 큰 그림과 마일스톤 점검</>,
+};
+
 export default function ReportsPresenter({
   view,
-  description,
+  dday,
+  examLabel,
   consentOpen,
   onChangeView,
   onConsentOpenChange,
@@ -32,7 +43,7 @@ export default function ReportsPresenter({
       <ReportsShell
         view={view}
         onChangeView={onChangeView}
-        description={description}
+        description={descriptionByView[view](dday, examLabel)}
         action={
           <button
             type="button"
