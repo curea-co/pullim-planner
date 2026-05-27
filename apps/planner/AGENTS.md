@@ -75,6 +75,7 @@ apps/planner/
   - `components/` — 도메인 내부 재사용 UI
   - `hooks/` — 도메인 hook (선택)
 - `app/(student)/.../page.tsx` 는 **Container import + `<Suspense>` 래핑** 만. 로직 금지
+  - **예외 — 분리 안 해도 되는 페이지**: thin page (~20줄 이하, redirect/래퍼만). 현 `app/(student)/planner/{calendar,day,week,month,builder}/page.tsx` 같은 redirect 전용 페이지는 Container/Presenter 분리에서 제외 (루트 [AGENTS.md](../../AGENTS.md) 와 동일 기준)
 - Presenter / components 에서 라우팅 hook 사용 **금지** (간단한 UI 상태 useState 는 허용)
 - **cross-feature import 허용** — widget 소유권이 명확하고 사이클 없는 경우. 빌려오는 쪽은 widget 동작 변경 금지
 

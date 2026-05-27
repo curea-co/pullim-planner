@@ -104,6 +104,7 @@ components/features/<도메인>/
 ```
 
 - `app/(student)/.../page.tsx` 는 Container만 import + Suspense 래핑
+  - **예외 — thin redirect/래퍼 페이지** (`~20줄 이하`): `/planner/calendar`, `/planner/day`, `/planner/week`, `/planner/month`, `/planner/builder` 같은 redirect-only 페이지는 Container/Presenter 분리에서 제외 (루트 [AGENTS.md](../../AGENTS.md) 와 동일 기준)
 - Container에서 `useState`/`useCallback`/`useRouter` 사용
 - Presenter / 하위 컴포넌트에서 API 호출 / 라우팅 hook 사용 금지 (간단한 UI 상태 useState 는 허용)
 - 진행 중인 재편 plan: [proc/plan/2026-05-26_container-presenter-adoption.md](../../proc/plan/2026-05-26_container-presenter-adoption.md)
