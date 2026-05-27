@@ -31,23 +31,25 @@ pullim-planner/
 
 ### apps/planner — Planner FE
 - **편집 영역**: 페이지, 컴포넌트, mock, lib, public 등 자유
-- **도메인 컴포넌트** — `apps/planner/src/components/features/<domain>/{containers,presenters,components,hooks}/` 컨벤션 ([AGENTS.md](AGENTS.md) Container/Presenter 표 참조)
+- **앱별 상세 가이드**: [apps/planner/CLAUDE.md](apps/planner/CLAUDE.md) — UI 컴포넌트 소스, i18n 미도입, 디렉터리, 코드 패턴, 테스트 등
+- **AI 리뷰어 가이드**: [apps/planner/AGENTS.md](apps/planner/AGENTS.md) — Must/Should Fix 체크리스트
+- **도메인 컴포넌트** — `apps/planner/components/features/<domain>/{containers,presenters,components,hooks}/` 컨벤션 ([AGENTS.md](AGENTS.md) Container/Presenter 표 참조)
   - 진행 중인 재편: [proc/plan/2026-05-26_container-presenter-adoption.md](proc/plan/2026-05-26_container-presenter-adoption.md)
   - `features/`로 이동된 도메인:
     - `planner-reports` (Phase 1 — Container/Presenter 분리 완료)
     - `planner-manage` (Phase 2 — list/new/edit 3 페이지 분리 + `usePlannerForm` hook + `PlannerWizard` 컴포넌트)
     - `planner-home` (Phase 3 — `HomeContainer`/`HomePresenter` + `planner/*` 28개 컴포넌트 전체 흡수)
     - `planner-onboarding` (Phase 3 — `OnboardingContainer`/`OnboardingPresenter`, widget은 planner-home에서 빌려옴)
-  - 미이동 (잔여): `src/components/{planner-builder,builder}/` — Phase 4에서 이동 예정
+  - 미이동 (잔여): `apps/planner/components/{planner-builder,builder}/` — Phase 4에서 이동 예정
   - **cross-feature import** — feature 간 컴포넌트 직접 import 허용 (예: `planner-reports` Presenter가 `planner-home`의 `today-reflection` 사용, `planner-onboarding`이 `planner-home`의 widget들 사용). 단 widget 소유권은 명확히
-- **공유 컴포넌트** (`apps/planner/src/components/shared/*`) — **진짜 순수 뷰**만. 다음 조건 모두 충족:
+- **공유 컴포넌트** (`apps/planner/components/shared/*`) — **진짜 순수 뷰**만. 다음 조건 모두 충족:
   - state·router·side effect·mock selector 일체 없음
   - **도메인 계산도 없음** (예: tier 분류, label 조합, 시험·블록·플래너 관련 분기). 필요한 모든 표시값은 props로 주입
   - 도메인 계산이 필요하면 `@/lib/planner/*`(또는 적절한 lib)에 helper(예: `composeDDayChipProps`)를 두고 호출자가 compose 후 spread
   - 현재 거주자: `d-day-chip.tsx` (compose된 props만 받음 — tier/label/title/showCalIcon)
   - pullim `apps/web/components/shared/` 패턴 차용. **widget 추가는 신중** (`shared/`가 잡동사니 저장소가 되는 것 방지)
-- **셸**(`apps/planner/src/components/shell/*`), **UI 프리미티브**(`apps/planner/src/components/ui/*`), **brand**(`apps/planner/src/components/brand/*`), **tokens**(`apps/planner/src/lib/tokens/*`)는 플래너 단일 도메인이라 자유롭게 수정 가능 (글로벌 셸/프리미티브로 유지)
-- mock 메타 구조(`apps/planner/src/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중
+- **셸**(`apps/planner/components/shell/*`), **UI 프리미티브**(`apps/planner/components/ui/*`), **brand**(`apps/planner/components/brand/*`), **tokens**(`apps/planner/lib/tokens/*`)는 플래너 단일 도메인이라 자유롭게 수정 가능 (글로벌 셸/프리미티브로 유지)
+- mock 메타 구조(`apps/planner/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중
 
 ### apps/backend — Planner BE (NestJS)
 - **편집 영역**: `apps/backend/src/modules/planner/` 등 planner 도메인 모듈, entities — Phase β 이후부터
@@ -106,9 +108,9 @@ bun --filter @pullim-planner/backend <script>
 
 ## 5. Orchestration 체크리스트 (작업 마치기 전)
 
-1. **`apps/planner/src/components/shell/nav-config.ts`** — `plannerSection` 안 href가 실제 라우트와 일치하는지
+1. **`apps/planner/components/shell/nav-config.ts`** — `plannerSection` 안 href가 실제 라우트와 일치하는지
 2. **`input/docs-archive/08_풀림_플래너_핸드오프.md`** — 권위 문서의 IA·용어와 코드가 어긋나지 않는지
-3. **`apps/planner/src/lib/mock/planner.ts`** — 시간표·블록·컨디션·번아웃 등 시그니처 데이터 구조 일관성
+3. **`apps/planner/lib/mock/planner.ts`** — 시간표·블록·컨디션·번아웃 등 시그니처 데이터 구조 일관성
 4. **`apps/backend/src/entities/`** (Phase γ 이후) — entity 시그니처와 mock·spec 정합
 5. **Codex Review 통과** — PR 머지 전 필수
 

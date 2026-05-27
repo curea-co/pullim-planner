@@ -1,0 +1,167 @@
+# apps/planner
+
+풀림 플래너 FE — Next.js 16 (App Router), port 3030. 학생용 학습 플래너 (시간표, 블록, 컨디션, 번아웃, 리포트).
+
+전체 모노레포 가이드는 [루트 CLAUDE.md](../../CLAUDE.md), 도메인 권위는 [input/docs-archive/08_풀림_플래너_핸드오프.md](../../input/docs-archive/08_풀림_플래너_핸드오프.md), BE 차용 plan은 [proc/plan/2026-05-26_pullim-be-adoption.md](../../proc/plan/2026-05-26_pullim-be-adoption.md).
+
+## UI 컴포넌트 — shadcn/ui 사용
+
+이 앱은 **shadcn/ui + Base UI** 로컬 프리미티브 기반이다. (pullim 정본의 `@pullim/design-system` 미사용 — 별 트랙)
+
+```
+@/components/ui/*       ← shadcn/ui 프리미티브 (Button, Card, Dialog, Input, Tabs 등)
+lucide-react            ← 아이콘 (DS 재export 없음 — 직접 import 허용)
+sonner                  ← toast (DS 재export 없음 — 직접 import 허용)
+@base-ui/react          ← 일부 복합 컴포넌트
+```
+
+- DS 패키지(`@pullim/design-system`) 미설치 — import 시도 금지
+- 새 shadcn 컴포넌트는 `bunx shadcn@latest add <name>` 로 추가 (`components.json` 의 css 경로는 `app/globals.css`)
+- `cn` → `@/lib/utils`
+
+## i18n — 미도입
+
+- 사용자 노출 텍스트 **한국어 하드코딩** 허용 (next-intl 미설치)
+- 추후 i18n 도입은 별 트랙으로 진행 — 현 단계에서는 `useTranslations()` 패턴 도입 금지
+
+## 관측 — 미도입
+
+- **Sentry 미설치** — `@sentry/*` import 금지, `logService` 패턴 미사용
+- 분석/원격 설정(`@pullim/analytics`, `@pullim/remote-config`) 미설치
+- 에러는 `console.error` 또는 `toast.error` 로만 처리
+
+## 데이터 레이어 — Drizzle ORM (이식 중)
+
+현재는 `apps/planner/lib/` 에 잔존하는 mock 위주로 동작한다. BE 차용 계획에 따라 `apps/backend` (NestJS 11, port 4030) 로 점진 이식 중이다.
+
+- 권위 plan: [proc/plan/2026-05-26_pullim-be-adoption.md](../../proc/plan/2026-05-26_pullim-be-adoption.md)
+- 새 mock 추가 시에는 미래 BE entity 시그니처와의 정합을 고려
+
+## Mock 잔존 — BE 이식 예정
+
+```
+apps/planner/lib/mock/
+├── planner.ts                  ← 시간표·블록·컨디션·번아웃 (핵심 시그니처)
+├── curriculum.ts · family.ts · features.ts
+├── persona.ts · subscriptions.ts
+└── index.ts (barrel export)
+```
+
+- 현 단계에서는 페이지/컴포넌트가 `@/lib/mock/*` 에서 직접 import
+- Phase γ에서 `apps/backend` API 로 점진 교체 예정
+- **Container 에서만** mock import (Presenter 에서는 props 로 전달)
+
+## 디렉터리 구조 (src/ 없음 — `apps/planner/` 직속)
+
+```
+apps/planner/
+├── app/                                # App Router (no src/)
+│   ├── (student)/                      # 플래너 라우트 그룹
+│   ├── layout.tsx · globals.css
+│   └── opengraph-image.tsx · twitter-image.tsx
+├── components/
+│   ├── ui/                             # shadcn/ui 프리미티브
+│   ├── shell/                          # AppHeader, AppSidebar, BottomNav, nav-config.ts
+│   ├── brand/                          # 로고
+│   ├── features/<도메인>/              # Container/Presenter (planner-home, planner-manage, planner-onboarding, planner-reports)
+│   ├── shared/                         # 진짜 순수 뷰 (d-day-chip 등)
+│   ├── planner-builder/ · builder/     # 미이동 (Phase 4에서 features/로 이식 예정)
+├── lib/
+│   ├── mock/                           # mock 데이터
+│   ├── planner/                        # 도메인 helper (d-day-tier 등)
+│   ├── hooks/ · tokens/
+│   └── utils.ts                        # cn 등
+├── public/
+├── __tests__/                          # Jest 단위 테스트
+├── test/setup.ts                       # 앱 전용 Jest setup
+├── jest.config.ts
+├── package.json · tsconfig.json
+├── next.config.ts · postcss.config.mjs · eslint.config.mjs
+├── components.json                     # shadcn 설정 (css: app/globals.css)
+└── Dockerfile
+```
+
+## 수정 금지 영역
+
+| 경로                    | 이유              |
+| ----------------------- | ----------------- |
+| `lib/hooks/`            | 개발자 전용       |
+| `package.json`          | 의존성 변경 금지  |
+| `next.config.ts`        | 설정 변경 금지    |
+| `tsconfig.json`         | 설정 변경 금지    |
+
+## Container/Presenter 패턴
+
+```
+components/features/<도메인>/
+├── containers/     ← 상태, 핸들러, mock 호출. "use client"
+├── presenters/     ← 순수 렌더링. props만 받음
+├── components/     ← 도메인 내부 재사용 UI
+├── hooks/          ← 도메인 hook (선택)
+└── types.ts        ← 공유 타입 (선택)
+```
+
+- `app/(student)/.../page.tsx` 는 Container만 import + Suspense 래핑
+- Container에서 `useState`/`useCallback`/`useRouter` 사용
+- Presenter / 하위 컴포넌트에서 API 호출 / 라우팅 hook 사용 금지 (간단한 UI 상태 useState 는 허용)
+- 진행 중인 재편 plan: [proc/plan/2026-05-26_container-presenter-adoption.md](../../proc/plan/2026-05-26_container-presenter-adoption.md)
+
+### cross-feature import 정책
+- feature A의 widget을 feature B에서 import 허용 (예: `planner-onboarding` 이 `planner-home` widget 빌려옴)
+- 단 widget 소유권이 한쪽 feature에 명확해야 함
+- 양방향 의존 금지 (feature 그래프가 사이클 없도록)
+- 빌려오는 쪽은 widget을 **있는 그대로** 사용 (감싸서 동작 변경 금지)
+
+## 코드 패턴
+
+### 허용
+
+```tsx
+const [isOpen, setIsOpen] = useState(false);
+import { getMockPlanner } from "@/lib/mock/planner";
+import { Button } from "@/components/ui/button";    // shadcn (DS 아님)
+import { Search } from "lucide-react";              // 직접 import OK
+import { toast } from "sonner";                     // 직접 import OK
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+```
+
+### 금지
+
+```tsx
+import { Button } from "@pullim/design-system";       // 미설치
+import { useTranslations } from "next-intl";         // 미도입
+import * as Sentry from "@sentry/nextjs";            // 미도입
+fetch("/api/...");                                   // BE 연동 후 @pullim-planner/api-client 사용
+```
+
+## 스타일링
+
+- Tailwind CSS v4 만 사용 (인라인 style 금지)
+- 모바일 우선 반응형: 기본 → `md:` → `lg:`
+- shadcn semantic 토큰: `text-foreground`, `bg-background`, `border-border`
+- primitive 토큰(`text-gray-500` 등)보다 semantic 토큰 우선
+- 교육 서비스 특성상 **촘촘한 UI 권장**, 과도한 여백 지양
+
+## 테스트
+
+- **Jest + RTL** (단위 테스트): `bun --filter @pullim-planner/planner test`
+  - 설정: `apps/planner/jest.config.ts`, `apps/planner/test/setup.ts`
+  - 공통 mock: `<repo-root>/config/jest.setup.ts` (next/navigation 등)
+
+## 커밋 전 확인
+
+- `bun --filter @pullim-planner/planner typecheck` 통과
+- `bun --filter @pullim-planner/planner lint` 통과
+- `bun --filter @pullim-planner/planner test` 통과
+- shadcn 외 컴포넌트 소스 import 없는지 확인 (DS 패키지 import 금지)
+
+## 명령어
+
+| 작업                    | 명령                                              |
+| ----------------------- | ------------------------------------------------- |
+| dev (port 3030)         | `bun --filter @pullim-planner/planner dev`        |
+| build (standalone)      | `bun --filter @pullim-planner/planner build`      |
+| typecheck               | `bun --filter @pullim-planner/planner typecheck`  |
+| lint                    | `bun --filter @pullim-planner/planner lint`       |
+| test (Jest)             | `bun --filter @pullim-planner/planner test`       |
