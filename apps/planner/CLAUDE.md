@@ -4,6 +4,8 @@
 
 전체 모노레포 가이드는 [루트 CLAUDE.md](../../CLAUDE.md), 도메인 권위는 [input/docs-archive/08_풀림_플래너_핸드오프.md](../../input/docs-archive/08_풀림_플래너_핸드오프.md), BE 차용 plan은 [proc/plan/2026-05-26_pullim-be-adoption.md](../../proc/plan/2026-05-26_pullim-be-adoption.md).
 
+> ⚠️ **linked plan 경로 표기 주의** — `proc/plan/2026-05-26_pullim-be-adoption.md`, `proc/plan/2026-05-26_container-presenter-adoption.md` 두 문서 모두 D-Lite 이전 작성됐다. 본문이 `src/lib/mock/...`, `src/components/...` 기준으로 서술돼 있지만, 실제 코드는 이미 `src/` 제거 완료 — 현 경로는 `apps/planner/{lib,components,app}/...` 다. plan 의 의도·완료기준만 참고하고 경로는 현재 트리 기준으로 해석할 것.
+
 ## UI 컴포넌트 — shadcn/ui 사용
 
 이 앱은 **shadcn/ui + Base UI** 로컬 프리미티브 기반이다. (pullim 정본의 `@pullim/design-system` 미사용 — 별 트랙)

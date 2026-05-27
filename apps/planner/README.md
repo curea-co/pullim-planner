@@ -72,6 +72,7 @@ Next.js standalone 출력 기준. `apps/planner/server.js` 가 진입점, port 3
 - BE 미연동 — `lib/mock/*` mock 데이터 중심
 - BE 차용 plan: `proc/plan/2026-05-26_pullim-be-adoption.md` (apps/backend NestJS 11, port 4030)
 - Container/Presenter 재편 plan: `proc/plan/2026-05-26_container-presenter-adoption.md`
+- > ⚠️ 두 plan 모두 D-Lite 이전 작성. 본문 경로 표기가 `src/lib/...`, `src/components/...` 인데, 실제 코드는 이미 `src/` 제거됨 — 현재 경로는 `apps/planner/{lib,components,app}/...`. plan 의 의도·완료기준만 참고하고 경로는 현재 트리 기준으로 해석할 것.
 - 인증 미도입 — Phase γ에서 `@pullim-planner/auth` 추상화 위에 구현 예정
 - i18n / Sentry / `@pullim/analytics` / `@pullim/remote-config` 미도입 — 별 트랙
 - `@vercel/analytics` 는 도입 완료 (`app/layout.tsx` 의 `<Analytics />`, `track()` 호출 패턴 허용)

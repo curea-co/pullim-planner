@@ -34,7 +34,7 @@ pullim-planner/
 - **앱별 상세 가이드**: [apps/planner/CLAUDE.md](apps/planner/CLAUDE.md) — UI 컴포넌트 소스, i18n 미도입, 디렉터리, 코드 패턴, 테스트 등
 - **AI 리뷰어 가이드**: [apps/planner/AGENTS.md](apps/planner/AGENTS.md) — Must/Should Fix 체크리스트
 - **도메인 컴포넌트** — `apps/planner/components/features/<domain>/{containers,presenters,components,hooks}/` 컨벤션 ([AGENTS.md](AGENTS.md) Container/Presenter 표 참조)
-  - 진행 중인 재편: [proc/plan/2026-05-26_container-presenter-adoption.md](proc/plan/2026-05-26_container-presenter-adoption.md)
+  - 진행 중인 재편: [proc/plan/2026-05-26_container-presenter-adoption.md](proc/plan/2026-05-26_container-presenter-adoption.md) ⚠️ **plan 본문은 D-Lite 이전 작성** — 경로 표기가 `src/components/...`, `src/app/...` 기준이다. 실제 코드는 이미 `src/` 제거됨 (`apps/planner/{app,components,lib}/...`). plan 의 의도·완료기준만 참고하고 경로는 현재 트리 기준으로 해석할 것
   - `features/`로 이동된 도메인:
     - `planner-reports` (Phase 1 — Container/Presenter 분리 완료)
     - `planner-manage` (Phase 2 — list/new/edit 3 페이지 분리 + `usePlannerForm` hook + `PlannerWizard` 컴포넌트)
