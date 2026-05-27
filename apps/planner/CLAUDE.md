@@ -24,17 +24,18 @@ sonner                  ← toast (DS 재export 없음 — 직접 import 허용)
 - 사용자 노출 텍스트 **한국어 하드코딩** 허용 (next-intl 미설치)
 - 추후 i18n 도입은 별 트랙으로 진행 — 현 단계에서는 `useTranslations()` 패턴 도입 금지
 
-## 관측 — 미도입
+## 관측 / 분석
 
 - **Sentry 미설치** — `@sentry/*` import 금지, `logService` 패턴 미사용
-- 분석/원격 설정(`@pullim/analytics`, `@pullim/remote-config`) 미설치
+- **`@pullim/analytics`, `@pullim/remote-config` 미설치** — import 금지
+- **`@vercel/analytics` 는 도입 완료** — `app/layout.tsx` 의 `<Analytics />` 마운트, 그리고 `track()` 호출 (예: `components/features/planner-reports/containers/ReportsContainer.tsx`) 패턴 허용
 - 에러는 `console.error` 또는 `toast.error` 로만 처리
 
-## 데이터 레이어 — Drizzle ORM (이식 중)
+## 데이터 레이어 — mock → NestJS+TypeORM (이식 중)
 
-현재는 `apps/planner/lib/` 에 잔존하는 mock 위주로 동작한다. BE 차용 계획에 따라 `apps/backend` (NestJS 11, port 4030) 로 점진 이식 중이다.
+현재 FE 는 `apps/planner/lib/mock/*` 에 잔존하는 mock 위주로 동작한다. BE 차용 계획에 따라 `apps/backend` (NestJS 11 + TypeORM, port 4030) 로 점진 이식 중이다. FE / BE 어느 쪽에도 **Drizzle 의존성은 없다** (Phase α 에서 폐기 완료).
 
-- 권위 plan: [proc/plan/2026-05-26_pullim-be-adoption.md](../../proc/plan/2026-05-26_pullim-be-adoption.md)
+- 권위 plan: [proc/plan/2026-05-26_pullim-be-adoption.md](../../proc/plan/2026-05-26_pullim-be-adoption.md) — `Drizzle → NestJS+TypeORM 완전 대체` 방향
 - 새 mock 추가 시에는 미래 BE entity 시그니처와의 정합을 고려
 
 ## Mock 잔존 — BE 이식 예정
@@ -47,9 +48,10 @@ apps/planner/lib/mock/
 └── index.ts (barrel export)
 ```
 
-- 현 단계에서는 페이지/컴포넌트가 `@/lib/mock/*` 에서 직접 import
+- **현재 상태**: 페이지/Container 뿐 아니라 Presenter / feature `components/*` / `shell/*` 에서도 `@/lib/mock/*` 을 직접 import (예: `planner-home/components/*`, `planner-onboarding/presenters/*`, `planner-reports/components/*`, `shell/app-header.tsx`). 기존 코드는 그대로 둔다
+- **신규 코드 권장**: `Container → Presenter` 로 props 주입, mock selector 호출은 Container 에 모은다 (Container/Presenter plan 의 목표 상태)
+- **타입 import** (`import type { Planner } from '@/lib/mock'`) 은 어디서나 허용
 - Phase γ에서 `apps/backend` API 로 점진 교체 예정
-- **Container 에서만** mock import (Presenter 에서는 props 로 전달)
 
 ## 디렉터리 구조 (src/ 없음 — `apps/planner/` 직속)
 

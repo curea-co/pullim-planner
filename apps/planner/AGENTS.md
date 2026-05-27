@@ -8,7 +8,7 @@
 - 인증: 미도입 (Phase γ에서 `@pullim-planner/auth` 추상화 위에 구현 예정)
 - i18n: 미도입 (한국어 하드코딩 허용)
 - UI: `@/components/ui/*` (shadcn/ui + Base UI). DS 패키지 미사용
-- 관측: Sentry / analytics / remote-config 미도입
+- 관측: Sentry / `@pullim/analytics` / `@pullim/remote-config` 미도입 (`@vercel/analytics` 는 이미 도입 — `app/layout.tsx`, `components/features/planner-reports/containers/ReportsContainer.tsx` 에서 사용 중)
 - 상태: useState (UI), Container 내부에서 상태/핸들러 직접 관리
 - 도메인 권위: `input/docs-archive/08_풀림_플래너_핸드오프.md`
 
@@ -52,9 +52,10 @@ apps/planner/
 - `useTranslations()` / `getTranslations()` / `next-intl` 도입 금지 (별 트랙)
 - 메시지 파일 (`messages/*.json`) 없음
 
-### 3. 관측 / 분석 — 미도입
-- ❌ `@sentry/*` import 금지
-- ❌ `@pullim/analytics`, `@pullim/remote-config` import 금지
+### 3. 관측 / 분석
+- ❌ `@sentry/*` import 금지 (Sentry 미도입)
+- ❌ `@pullim/analytics`, `@pullim/remote-config` import 금지 (미설치)
+- ✅ `@vercel/analytics` 는 이미 도입 — `app/layout.tsx` 의 `<Analytics />`, 그리고 `track()` 호출 (예: `ReportsContainer.tsx`) 패턴 허용
 - 에러 처리: `console.error` / `toast.error` 만 사용
 
 ### 4. 수정 금지 영역
@@ -79,7 +80,10 @@ apps/planner/
 
 ### 6. 데이터 레이어
 - ❌ `fetch("/api/...")` 직접 호출 금지 — BE 연동 후에는 `@pullim-planner/api-client` 사용
-- 현 단계 mock 데이터: `lib/mock/*` 에서 import, **Container 에서만** (Presenter 에서 import 금지)
+- 현 단계 mock 데이터: `lib/mock/*` 에서 import
+  - **현재 상태**: Presenter / feature `components/*` / `shell/*` 에서도 `@/lib/mock` 을 직접 import 하는 코드가 다수 존재 (예: `planner-home/components/*`, `planner-onboarding/presenters/*`, `planner-reports/components/*`, `shell/app-header.tsx`) — 기존 코드 그대로 허용
+  - **신규 코드 권장**: `Container → Presenter` 로 props 주입. mock selector 호출은 Container 에 모으는 방향으로 점진 이행
+  - **타입 import (`import type { Planner } from '@/lib/mock'`)** 는 Presenter / 하위 컴포넌트 어디서나 허용
 - mock 메타 구조 변경은 미래 BE entity 정합 영향 — 신중하게
 
 ### 7. shared/ 승격 조건

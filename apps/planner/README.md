@@ -13,11 +13,11 @@ bun --filter @pullim-planner/planner dev          # http://localhost:3030
 
 | 영역 | 경로 | 설명 |
 |---|---|---|
-| **planner-home** | `/` (또는 student 라우트 그룹) | 오늘의 시간표, 리포트, 컨디션, 번아웃 위젯 |
-| **planner-manage** | `/planner/manage` | 플래너 list / new / edit (3 페이지 분리) |
-| **planner-onboarding** | `/onboarding` | 신규 사용자 온보딩 (planner-home widget 재사용) |
-| **planner-reports** | `/reports` | 학습 리포트 |
-| **planner-builder** (잔여) | `/builder` | Phase 4에서 features/ 이식 예정 |
+| **planner-home** | `/`, `/planner`, `/planner/day` · `/planner/week` · `/planner/month` · `/planner/calendar` | 오늘의 시간표, 리포트, 컨디션, 번아웃 위젯 (라우트 그룹 `(student)`) |
+| **planner-manage** | `/planner/manage`, `/planner/manage/new`, `/planner/manage/[id]/edit` | 플래너 list / new / edit (3 페이지 분리) |
+| **planner-onboarding** | `/planner/onboarding` | 신규 사용자 온보딩 (planner-home widget 재사용) |
+| **planner-reports** | `/planner/reports` | 학습 리포트 |
+| **planner-builder** (잔여) | `/planner/builder` → `/planner/manage/new` 로 redirect | 외부 링크 호환용. Phase 4에서 features/ 이식 예정 |
 
 도메인 권위: `input/docs-archive/08_풀림_플래너_핸드오프.md`.
 
@@ -73,4 +73,5 @@ Next.js standalone 출력 기준. `apps/planner/server.js` 가 진입점, port 3
 - BE 차용 plan: `proc/plan/2026-05-26_pullim-be-adoption.md` (apps/backend NestJS 11, port 4030)
 - Container/Presenter 재편 plan: `proc/plan/2026-05-26_container-presenter-adoption.md`
 - 인증 미도입 — Phase γ에서 `@pullim-planner/auth` 추상화 위에 구현 예정
-- i18n / Sentry / analytics 미도입 — 별 트랙
+- i18n / Sentry / `@pullim/analytics` / `@pullim/remote-config` 미도입 — 별 트랙
+- `@vercel/analytics` 는 도입 완료 (`app/layout.tsx` 의 `<Analytics />`, `track()` 호출 패턴 허용)
