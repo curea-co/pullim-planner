@@ -1,9 +1,9 @@
 'use client';
 
 import { weekView } from '@/lib/mock';
-import { ActiveWeekLayout } from '@/components/planner/layouts/active-week-layout';
+import { ActiveWeekLayout } from '@/components/features/planner-home/components/layouts/active-week-layout';
 import { WeeklyChart } from '@/components/features/planner-home/components/weekly-chart';
-import { WeeklyGoalsCard } from '@/components/planner/home/weekly-goals-card';
+import { WeeklyGoalsCard } from '@/components/features/planner-home/components/home/weekly-goals-card';
 import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
 
 /**

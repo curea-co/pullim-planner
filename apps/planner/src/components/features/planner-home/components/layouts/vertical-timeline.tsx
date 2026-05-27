@@ -5,7 +5,7 @@
  * 기존 SideTimeline24 컴포넌트를 그대로 사용 (디폴트 템플릿).
  */
 
-import { SideTimeline24 } from '@/components/planner/side-timeline-24';
+import { SideTimeline24 } from '@/components/features/planner-home/components/side-timeline-24';
 import type { TimeBlock, PaletteId } from '@/lib/mock';
 
 type Props = {

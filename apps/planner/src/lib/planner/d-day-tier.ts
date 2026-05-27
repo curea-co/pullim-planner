@@ -42,3 +42,28 @@ export function shouldShowDDayHeaderBand(dday: number): boolean {
   const tier = getDDayTier(dday);
   return tier === 'today' || tier === 'critical';
 }
+
+/** DDayChip(순수 뷰)에 줄 props 조합 — tier/label/title/showCalIcon 도메인 계산 */
+export interface DDayChipViewProps {
+  chipClass: string;
+  label: string;
+  title?: string;
+  showCalIcon: boolean;
+}
+
+export function composeDDayChipProps(dday: number, examName?: string): DDayChipViewProps {
+  const tier = getDDayTier(dday);
+  const chipClass = tierChipClass(tier);
+  const showCalIcon = tier === 'imminent' || tier === 'critical' || tier === 'today';
+
+  const label =
+    tier === 'today' ? '오늘 D-DAY'
+    : dday > 0 ? `D-${dday}`
+    : `D+${Math.abs(dday)}`;
+
+  const title = examName
+    ? `${examName} · ${tier === 'today' ? '오늘' : dday > 0 ? `${dday}일 남음` : `${Math.abs(dday)}일 지남`}`
+    : undefined;
+
+  return { chipClass, label, title, showCalIcon };
+}
