@@ -47,7 +47,9 @@ export class AppController implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.devRoutesEnabled = DEV_ROUTE_ENABLED_ENVS.includes(this.config.nodeEnv);
+    this.devRoutesEnabled = DEV_ROUTE_ENABLED_ENVS.includes(
+      this.config.nodeEnv,
+    );
   }
 
   /** 서비스 헬스 체크 — 인증 없이 접근 가능. */
