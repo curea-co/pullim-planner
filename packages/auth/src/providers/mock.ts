@@ -69,9 +69,17 @@ export class MockAuthProvider implements IAuthProvider {
     );
   }
 
+  /**
+   * Mock 환경 로그아웃.
+   *
+   * 기본 mock 사용자는 `email/password`가 없어 한 번 `currentUser = null`이 되면
+   * 다시 로그인할 방법이 없다. 따라서 mock 모드에서는 fallback 사용자(seed 첫 번째)로
+   * 되돌려 세션을 복구 가능한 상태로 유지한다.
+   */
   async signOut(): Promise<void> {
-    this.currentUser = null;
-    this.notify(null);
+    const fallback = this.toAuthUser(this.users[0]);
+    this.currentUser = fallback;
+    this.notify(fallback);
   }
 
   async getSession(): Promise<AuthUser | null> {

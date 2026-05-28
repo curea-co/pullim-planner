@@ -13,8 +13,14 @@ import { UNIQUE_CONSTRAINT_MAP } from "../constants/unique-constraint-map.consta
 import { maskSensitiveFields } from "../utils/mask.util";
 
 /**
- * PostgreSQL unique constraint 위반(23505)을 409 Conflict로 변환한다.
- * detail 필드에서 컬럼명을 추출하여 매핑된 ErrorMessages를 사용한다.
+ * PostgreSQL `QueryFailedError`를 envelope 형식으로 변환한다.
+ *
+ * - `23505` (unique violation): 409 Conflict + 매핑된 `ErrorMessages` 사용.
+ * - 그 외 모든 DB 오류: 500 Internal Server Error + `COMMON_INTERNAL_SERVER_ERROR`.
+ *
+ * `@Catch(QueryFailedError)` 필터에서 `throw exception`으로 재던지면 다른 전역 필터
+ * 체인이 이를 다시 잡는다는 보장이 없어 envelope가 깨질 수 있다. 따라서 이 필터에서
+ * 모든 QueryFailedError를 직접 처리한다 (pullim 본체 동일 패턴).
  */
 @Catch(QueryFailedError)
 export class QueryFailedExceptionFilter implements ExceptionFilter {
@@ -29,24 +35,38 @@ export class QueryFailedExceptionFilter implements ExceptionFilter {
       code?: string;
       detail?: string;
     };
-
-    if (driverError.code !== "23505") {
-      throw exception;
-    }
-
-    const errorMessage = this.resolveErrorMessage(driverError.detail);
     const requestContext = this.buildRequestContext(request);
 
-    this.logger.warn(
-      `${request.method} ${request.url} ${HttpStatus.CONFLICT} - Unique constraint violation: ${driverError.detail} ${requestContext}`,
+    if (driverError.code === "23505") {
+      const errorMessage = this.resolveErrorMessage(driverError.detail);
+
+      this.logger.warn(
+        `${request.method} ${request.url} ${HttpStatus.CONFLICT} - Unique constraint violation: ${driverError.detail} ${requestContext}`,
+      );
+
+      response.status(HttpStatus.CONFLICT).json({
+        success: false,
+        error: {
+          code: errorMessage.code,
+          message: errorMessage.message,
+          statusCode: HttpStatus.CONFLICT,
+        },
+      });
+      return;
+    }
+
+    // 23505 이외 DB 오류 — re-throw 시 envelope 새어나갈 위험. 직접 500으로 감싼다.
+    this.logger.error(
+      `${request.method} ${request.url} ${HttpStatus.INTERNAL_SERVER_ERROR} - QueryFailedError(${driverError.code ?? "unknown"}): ${exception.message} ${requestContext}`,
+      exception.stack,
     );
 
-    response.status(HttpStatus.CONFLICT).json({
+    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
-        code: errorMessage.code,
-        message: errorMessage.message,
-        statusCode: HttpStatus.CONFLICT,
+        code: ErrorMessages.COMMON_INTERNAL_SERVER_ERROR.code,
+        message: ErrorMessages.COMMON_INTERNAL_SERVER_ERROR.message,
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       },
     });
   }
