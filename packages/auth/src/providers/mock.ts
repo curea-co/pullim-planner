@@ -70,16 +70,31 @@ export class MockAuthProvider implements IAuthProvider {
   }
 
   /**
-   * Mock 환경 로그아웃.
+   * 로그아웃.
    *
-   * 기본 mock 사용자는 `email/password`가 없어 한 번 `currentUser = null`이 되면
-   * 다시 로그인할 방법이 없다. 따라서 mock 모드에서는 fallback 사용자(seed 첫 번째)로
-   * 되돌려 세션을 복구 가능한 상태로 유지한다.
+   * `IAuthProvider` 계약대로 `currentUser = null`로 설정하고 listener에 null을 통지한다.
+   * mock 환경에서 다시 fallback 사용자로 되돌리려면 {@link resetToSeed}를 사용한다.
    */
   async signOut(): Promise<void> {
-    const fallback = this.toAuthUser(this.users[0]);
-    this.currentUser = fallback;
-    this.notify(fallback);
+    this.currentUser = null;
+    this.notify(null);
+  }
+
+  /**
+   * mock 전용 헬퍼 — seed 사용자(기본은 첫 번째)로 currentUser를 복구한다.
+   *
+   * 기본 mock 사용자는 `email/password`가 없어 `signOut()` 이후 `signInWithEmail`로
+   * 재로그인할 수 없다. 테스트·개발 흐름에서 로그아웃 후 다시 로그인 상태로 되돌릴 때만
+   * 사용한다 (Phase η 실인증 도입 후 제거 예정).
+   *
+   * @param index - 복구할 seed 사용자의 인덱스. 기본 0.
+   */
+  resetToSeed(index = 0): AuthUser {
+    const target = this.users[index] ?? this.users[0];
+    const user = this.toAuthUser(target);
+    this.currentUser = user;
+    this.notify(user);
+    return user;
   }
 
   async getSession(): Promise<AuthUser | null> {
