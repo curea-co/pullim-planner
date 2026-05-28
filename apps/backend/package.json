@@ -13,7 +13,11 @@
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,test}/**/*.ts\" --fix",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "migration:generate": "nest build && typeorm migration:generate -d dist/database/data-source.js",
+    "migration:create": "typeorm migration:create",
+    "migration:run": "nest build && typeorm migration:run -d dist/database/data-source.js",
+    "migration:revert": "nest build && typeorm migration:revert -d dist/database/data-source.js"
   },
   "jest": {
     "moduleFileExtensions": ["js", "json", "ts"],
@@ -26,10 +30,22 @@
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.2.6",
+    "@nestjs/typeorm": "^11.0.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "helmet": "^8.1.0",
+    "joi": "^18.0.2",
+    "luxon": "^3.7.2",
+    "nestjs-cls": "^6.2.0",
+    "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "typeorm": "^0.3.28",
+    "typeorm-naming-strategies": "^4.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -39,7 +55,9 @@
     "@nestjs/testing": "^11.0.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
+    "@types/luxon": "^3.7.1",
     "@types/node": "^22.10.7",
+    "@types/pg": "^8.15.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
