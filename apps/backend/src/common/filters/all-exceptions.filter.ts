@@ -37,8 +37,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
-        code: ErrorMessages.COMMON_INTERNAL_SERVER_ERROR.code,
-        message: ErrorMessages.COMMON_INTERNAL_SERVER_ERROR.message,
+        code: ErrorMessages.COMMON_UNKNOWN_ERROR.code,
+        message: ErrorMessages.COMMON_UNKNOWN_ERROR.message,
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       },
     });

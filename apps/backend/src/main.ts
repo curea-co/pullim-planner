@@ -25,7 +25,21 @@ async function bootstrap() {
   setupLogging(app);
   setupSwagger(app);
 
-  const port = configService.get<number>("PORT", DEFAULT_PORT);
+  // `ConfigService.get<number>("PORT")` 는 타입 인자만 붙는 것이지 런타임 coercion이
+  // 보장되지 않는다. env 문자열을 그대로 `app.listen()`에 넘기면 Node가 TCP 포트가 아니라
+  // 소켓 경로로 해석할 여지가 있어 `Number(...)` 변환을 명시한다.
+  const rawPort = configService.get<string | number>("PORT");
+  const port =
+    typeof rawPort === "number"
+      ? rawPort
+      : rawPort !== undefined && rawPort !== ""
+        ? Number(rawPort)
+        : DEFAULT_PORT;
+  if (!Number.isFinite(port)) {
+    throw new Error(
+      `[pullim-planner/backend] Invalid PORT value: ${String(rawPort)}`,
+    );
+  }
   await app.listen(port);
   console.log(`[pullim-planner/backend] listening on :${port}`);
 }

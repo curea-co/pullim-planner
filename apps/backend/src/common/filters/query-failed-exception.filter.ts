@@ -16,7 +16,7 @@ import { maskSensitiveFields } from "../utils/mask.util";
  * PostgreSQL `QueryFailedError`를 envelope 형식으로 변환한다.
  *
  * - `23505` (unique violation): 409 Conflict + 매핑된 `ErrorMessages` 사용.
- * - 그 외 모든 DB 오류: 500 Internal Server Error + `COMMON_INTERNAL_SERVER_ERROR`.
+ * - 그 외 모든 DB 오류: 500 Internal Server Error + `COMMON_UNKNOWN_ERROR`.
  *
  * `@Catch(QueryFailedError)` 필터에서 `throw exception`으로 재던지면 다른 전역 필터
  * 체인이 이를 다시 잡는다는 보장이 없어 envelope가 깨질 수 있다. 따라서 이 필터에서
@@ -64,8 +64,8 @@ export class QueryFailedExceptionFilter implements ExceptionFilter {
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: {
-        code: ErrorMessages.COMMON_INTERNAL_SERVER_ERROR.code,
-        message: ErrorMessages.COMMON_INTERNAL_SERVER_ERROR.message,
+        code: ErrorMessages.COMMON_UNKNOWN_ERROR.code,
+        message: ErrorMessages.COMMON_UNKNOWN_ERROR.message,
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       },
     });

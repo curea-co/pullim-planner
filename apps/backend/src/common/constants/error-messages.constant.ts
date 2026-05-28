@@ -32,12 +32,13 @@ export const ErrorMessages = {
     code: "COMMON_VALIDATION_FAILED",
     message: "입력값 검증에 실패했습니다.",
   },
+  /**
+   * 500 계열 공통 에러 코드 — plan §3.2 매핑 `internal → COMMON_UNKNOWN_ERROR` 단일화.
+   * AllExceptionsFilter / QueryFailedExceptionFilter / HttpExceptionFilter(5xx fallback)
+   * 모두 본 코드 하나만 사용.
+   */
   COMMON_UNKNOWN_ERROR: {
     code: "COMMON_UNKNOWN_ERROR",
-    message: "알 수 없는 오류가 발생했습니다.",
-  },
-  COMMON_INTERNAL_SERVER_ERROR: {
-    code: "COMMON_INTERNAL_SERVER_ERROR",
     message: "서버 내부 오류가 발생했습니다.",
   },
   // Auth
