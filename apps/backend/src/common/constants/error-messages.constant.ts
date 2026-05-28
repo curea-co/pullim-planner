@@ -29,11 +29,11 @@ export const ErrorMessages = {
     message: "데이터가 중복되었습니다.",
   },
   COMMON_VALIDATION_FAILED: {
-    code: "VALIDATION_FAILED",
+    code: "COMMON_VALIDATION_FAILED",
     message: "입력값 검증에 실패했습니다.",
   },
   COMMON_UNKNOWN_ERROR: {
-    code: "UNKNOWN_ERROR",
+    code: "COMMON_UNKNOWN_ERROR",
     message: "알 수 없는 오류가 발생했습니다.",
   },
   COMMON_INTERNAL_SERVER_ERROR: {

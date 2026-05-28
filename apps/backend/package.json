@@ -14,8 +14,8 @@
     "lint:fix": "eslint \"{src,test}/**/*.ts\" --fix",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest",
-    "migration:generate": "nest build && typeorm migration:generate -d dist/database/data-source.js",
-    "migration:create": "typeorm migration:create",
+    "migration:generate": "nest build && typeorm migration:generate src/database/migrations/Migration -d dist/database/data-source.js",
+    "migration:create": "typeorm migration:create src/database/migrations/Migration",
     "migration:run": "nest build && typeorm migration:run -d dist/database/data-source.js",
     "migration:revert": "nest build && typeorm migration:revert -d dist/database/data-source.js"
   },
