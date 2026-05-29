@@ -131,9 +131,9 @@
 - **5 도메인 전체 — pnpm/i18n/Sentry/Redis/BullMQ/AWS SDK 0%**
 - **classbot — drizzle 채택**: 정본 TypeORM 과 ORM 충돌 (가장 큰 단일 이슈)
 - **classbot — 보안 구현 미정(bcryptjs 부재)**: §3 매트릭스(인증 열)대로 classbot 은 bcryptjs 자체가 없다(인증 보안 구현 미정). P1-1 에서 bcrypt 신규 도입 대상. (bcryptjs→bcrypt *전환*이 필요한 것은 arcade — `bcryptjs 3.0.3`. classbot 과 혼동 금지.)
-- **버전 정렬 기준 = exact**: §2-A 정본이 정확한 버전(Next 16.1.2 / React 19.2.3)이므로 정렬 목표도 exact 다. major 만 맞으면 되는 게 아니다.
-- **games — Next.js 15**: 정본 16 과 한 단계 major lag
-- **planner·arcade — Next 16.2.4 / React 19.2.4**: 정본 16.1.2 / 19.2.3 과 minor/patch drift (exact 기준 mismatch — 둘 다 정렬 대상. major-only 가 아님). Q 는 정확 패치값 재확인 필요
+- **버전 정렬 기준 = exact (단, §2-A commit 고정 후 확정)**: 정렬 목표는 exact 지만, §2-A 의 본체 버전이 commit/tag 미고정(참고용)인 동안에는 patch/minor drift 를 "필수 갭"으로 확정하지 않는다.
+- **games — Next.js 15**: 정본 16 과 한 단계 major lag — **commit 무관하게 확정 갭** (major 차이)
+- **planner·arcade — Next 16.2.4 / React 19.2.4 (참고)**: 정본 16.1.2 / 19.2.3 과 minor/patch drift. **§2-A 본체 commit/tag 고정 후에만 필수 갭으로 확정** (고정 전엔 참고용 — 불필요한 다운그레이드 금지). Q 도 동일.
 - **games — BE 없음**: 5 중 유일. **§16.2 D-GM-BE 에서 자체 NestJS 신설로 결정 완료** (초안의 'SPA 유지 옵션'은 superseded — §15 참조)
 - **TanStack Query 보유는 classbot 만**: 정본 패턴이 아닌 채택임 (FE 데이터 계층 통합 시 일관성 확보 필요)
 
@@ -145,8 +145,8 @@
 |---|---|---|---|---|---|
 | G1 | 패키지 매니저 | pnpm 10.26.1 | bun 1.3.12 | **L** (lockfile/Dockerfile/workflow 동시 갱신) | 5 도메인 동일 — 5건 일괄 |
 | G2 | 모노레포 | Turborepo + apps/{web,backend} + packages/* | planner/Q/arcade 일부 / classbot·games 미완 | **M** | classbot/games 가 모노레포 전환 선행 필요 |
-| G3 | Next.js / React | Next 16.1.2 / React 19.2.3 (**exact 정렬 목표**) | games Next 15(major lag); planner·arcade Next 16.2.4·React 19.2.4(minor/patch drift); Q 패치값 재확인 | **S~M** | games — Next 15→16(major); **planner·arcade — 16.2.4→16.1.2·19.2.4→19.2.3 정렬**; Q — exact 핀 확인 |
-| G4 | BE 프레임워크 | NestJS 11 (common·config·database 표준 모듈) | planner/Q/classbot/arcade skeleton, games 부재 | **L** | games — BE 신설 결정 필요 |
+| G3 | Next.js / React | Next 16.1.2 / React 19.2.3 (§2-A — **현재 commit 미고정 → 참고용**) | **확정 갭 = games Next 15 major lag**(이건 commit 무관). planner·arcade 의 16.2.4·19.2.4 minor/patch 차이는 **§2-A 본체 commit/tag 고정 후에만 "필수 갭"으로 확정** (그 전엔 참고) | **S~M** | games — Next 15→16(major, 즉시 유효); planner·arcade·Q 의 exact 정렬은 **§2-A commit 고정 후 판단** — 고정 전 불필요한 다운그레이드/재정렬 착수 금지 |
+| G4 | BE 프레임워크 | NestJS 11 (common·config·database 표준 모듈) | planner/Q/classbot/arcade skeleton, games 부재 | **L** | games — **BE 신설 결정 완료(§16.2 D-GM-BE: 자체 NestJS) → 구현만 남음** (결정 대기 아님) |
 | G5 | ORM | TypeORM 0.3.28 + naming-strategies | classbot drizzle, 나머지 미적용 | **L** | classbot — drizzle → TypeORM 마이그레이션 |
 | G6 | 인증 | Passport/JWT + bcrypt | Mock 4건, arcade bcryptjs, games 없음 | **L** | 5건 모두 JWT 도입 |
 | G7 | 캐시·큐 | Redis(ioredis) + BullMQ | 0건 | **L** | 5건 모두 신규 도입 |
@@ -394,7 +394,7 @@
 - [ ] 5 도메인 코드·디렉터리·로컬 툴링이 본체와 동형 — **typecheck/lint/test/`build` 게이트** (인프라 비의존). planner 앱 가이드의 자동 검증 명령이 `build` 까지 포함하므로, 툴체인 전환(P0-1)·의존성/프레임워크 변경 후 build 가 깨지면 부분 완료로 보지 않는다. ⚠ CI **배포** workflow(Vercel→Docker→ECR→ECS, P0-4)는 §10/§16.3 으로 보류되므로 본 항목에서 제외하고 14-B 로 이관한다.
 - [ ] **(권위 문서 갱신 선행 필수 — i18n)** 5 도메인 모두 `messages/{ko,en}.json` 단일 파일 활성 — ⚠ planner 앱 가이드가 `next-intl`/`useTranslations()` 도입을 금지하므로, 각 리포 앱 가이드/spec 을 먼저 갱신해 금지를 해제(G4 승인 + spec 갱신 PR 머지)한 뒤에만 체크 가능. (DS 와 달리 i18n 은 앱 가이드 갱신만으로 해제 가능하므로 14-A 에 남긴다.)
 - [ ] **(TanStack Query — 기능 금지는 아니나 글로벌 파일 수정 동반)** 5 도메인 모두 TanStack Query QueryClient 활성 — planner 앱 가이드가 기능 자체를 금지하진 않지만, 실제 도입은 `apps/planner/package.json`(의존성 추가)·provider/bootstrap(`next.config.ts`/레이아웃) 수정을 동반한다. 이 파일들은 앱 가이드 "수정 금지 영역"이자 §12 글로벌 영역이므로, **G4 컨벤션 합의 + (앱 가이드 수정금지 해제 또는 사용자 명시 확인)** 이 함께 필요하다. DS/i18n 과 별개 항목이되 승인 절차는 과소기재하지 않는다.
-- [ ] **(D-DS 보류로 14-A 에서 제외 → 14-B 로 이관)** `@pullim/design-system` 사용 — ⚠ DS 는 i18n 과 달리 앱 가이드 갱신만으로 해결되지 않고 **본체팀의 외부 노출 정책(D-DS, §15/§16.2 보류)** 합의가 선행되어야 한다. 따라서 D-DS 가 풀리기 전에는 14-A 를 닫을 수 없으므로, DS 도입은 **14-B(또는 D-DS 해제 후 별도 보류 조건)** 로 옮긴다. 14-A 에서는 DS 를 요구하지 않는다.
+> **DS 는 14-A 항목이 아니다 (논리 명확화)**: `@pullim/design-system` 도입은 본체팀 외부 노출 정책(D-DS, §15/§16.2 보류)에 묶이므로 **14-A 의 완료 조건에서 완전히 제외**한다. 따라서 **14-A 는 DS 없이도 닫힌다** (DS 보류가 14-A 를 막지 않는다). DS 는 **최종 완료(14-B)에서만** D-DS 해제 후 요구된다. (이전 표현의 'D-DS 풀리기 전 14-A 못 닫음'은 오류 — 삭제.)
 - [ ] **(권위 문서 갱신 선행 필수)** JWT 인증 + Redis 연결의 **코드 레벨** 구현 (로컬 docker 검증) — ⚠ planner 의 `proc/plan/2026-05-26_pullim-be-adoption.md` 는 **Mock auth 유지 + JWT/Redis/BullMQ scope-out** 을 명시한다. 이 항목도 각 리포 spec/plan 갱신으로 scope-out 을 해제한 뒤에만 체크 가능하며, 배포 측면은 14-B 로 이관한다. 갱신 전에는 진행률에 포함하지 않는다.
 - [ ] §11 의 인프라 비의존 H 리스크(R-AUT, R-DS, R-I18N, R-DS-EXT, R-DRIZ) mitigation 적용 또는 별 plan 이관
 
