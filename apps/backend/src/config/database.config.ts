@@ -1,6 +1,7 @@
 import { registerAs } from "@nestjs/config";
 
 import { DEFAULT_DATABASE_PORT } from "../common/constants/server.constant";
+import { parsePort } from "../common/utils/env.util";
 
 /**
  * `DATABASE_URL` (`postgres://user:pass@host:port/dbname`) 형식 env를 파싱해
@@ -62,7 +63,11 @@ export default registerAs("database", () => {
     host: fromUrl?.host ?? process.env.DATABASE_HOST ?? "localhost",
     port:
       fromUrl?.port ??
-      parseInt(process.env.DATABASE_PORT ?? String(DEFAULT_DATABASE_PORT), 10),
+      parsePort(
+        process.env.DATABASE_PORT,
+        DEFAULT_DATABASE_PORT,
+        "DATABASE_PORT",
+      ),
     username: fromUrl?.username ?? process.env.DATABASE_USERNAME ?? "pullim",
     password:
       fromUrl?.password ?? process.env.DATABASE_PASSWORD ?? "pullim_local",

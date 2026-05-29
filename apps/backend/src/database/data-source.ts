@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { SnakeNamingStrategy } from "typeorm-naming-strategies";
 
 import { DEFAULT_DATABASE_PORT } from "../common/constants/server.constant";
+import { parsePort } from "../common/utils/env.util";
 
 /**
  * `DATABASE_URL` 우선 파싱 — 누락 필드는 discrete env vars 로 보충.
@@ -50,9 +51,16 @@ function resolveDbConfig() {
 
   return {
     host: fromUrl?.host ?? process.env.DATABASE_HOST ?? "localhost",
+    // `DATABASE_PORT` 도 `DATABASE_URL` 과 동일하게 fail-fast 검증한다.
+    // `NaN` 이 그대로 통과해 migration CLI 가 TypeORM 내부에서 불명확하게
+    // 터지는 것을 막는다 (codex R8 지적).
     port:
       fromUrl?.port ??
-      parseInt(process.env.DATABASE_PORT ?? String(DEFAULT_DATABASE_PORT), 10),
+      parsePort(
+        process.env.DATABASE_PORT,
+        DEFAULT_DATABASE_PORT,
+        "DATABASE_PORT",
+      ),
     username: fromUrl?.username ?? process.env.DATABASE_USERNAME ?? "pullim",
     password:
       fromUrl?.password ?? process.env.DATABASE_PASSWORD ?? "pullim_local",
