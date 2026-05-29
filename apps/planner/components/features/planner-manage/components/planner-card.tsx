@@ -6,7 +6,7 @@ import {
   Pencil, Copy, Archive, Trash2, Sparkles, Palette,
 } from 'lucide-react';
 import { type Planner } from '@/lib/mock';
-import { examTypeMeta, blockPatternMeta } from '@/components/planner-builder/builder-types';
+import { examTypeMeta, blockPatternMeta } from '@/components/features/planner-builder/components/builder-types';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator,

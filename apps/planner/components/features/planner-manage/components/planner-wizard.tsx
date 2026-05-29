@@ -1,14 +1,14 @@
 'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { StepIndicator } from '@/components/builder/step-indicator';
+import { StepIndicator } from '@/components/features/planner-builder/components/step-indicator';
 import {
   PStep1Goal, PStep2Hours, PStep3Subjects, PStep4Pattern,
   PStep5Weakness, PStep6Motivation, PStep7Reminder, PStep8Activate,
-} from '@/components/planner-builder/step-content';
+} from '@/components/features/planner-builder/components/step-content';
 import {
   plannerStepConfig, type PlannerForm,
-} from '@/components/planner-builder/builder-types';
+} from '@/components/features/planner-builder/components/builder-types';
 import { cn } from '@/lib/utils';
 
 /**

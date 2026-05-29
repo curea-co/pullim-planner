@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Wrench, Save, Palette, ListChecks } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { FlywheelNote } from '@/components/shell/flywheel-note';
-import type { PlannerForm } from '@/components/planner-builder/builder-types';
+import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 import type { Planner } from '@/lib/mock';
 import { PlannerWizard } from '../components/planner-wizard';
 import { DecorateSection } from '../components/decorate-section';
