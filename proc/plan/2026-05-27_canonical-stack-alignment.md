@@ -16,7 +16,7 @@
 
 1. **각 리포 루트 `AGENTS.md` / `CLAUDE.md`** — 현행 운영 규칙. 본 문서가 충돌하는 항목은 항상 패배한다.
 2. **각 리포 앱별 가이드 (예: planner 의 `apps/planner/AGENTS.md` / `apps/planner/CLAUDE.md`)** — 루트 `CLAUDE.md` 가 FE 작업의 상세 규칙(UI 컴포넌트 소스, i18n 미도입, 디렉터리, 코드 패턴, Must/Should Fix 체크리스트)을 이 앱별 문서에 위임한다. 본 문서가 정본 스택으로 적은 항목(예: `@pullim/design-system` / `next-intl` / `@sentry/*`)이라도, 현재 이 문서들이 금지·미도입으로 명시한 것을 본 plan 근거로 도입해서는 안 된다.
-3. **각 리포 `proc/spec/`** — 도메인 SOT. 본 문서는 spec 변경 제안일 뿐, spec 자체가 아니다.
+3. **각 리포의 도메인 SOT + `proc/spec/`** — ⚠ 리포마다 SOT 가 다르다. **planner 의 도메인 SOT 는 `proc/spec/` 가 아니라 `input/docs-archive/08_풀림_플래너_핸드오프.md`(핸드오프)** 이고, `proc/spec/2026-05-18_be-api-design.md` 는 그보다 좁은 **BE API 설계 spec** 이다(루트 `CLAUDE.md` 명시). 따라서 정렬 PR 은 spec 을 핸드오프보다 우선 근거로 삼아선 안 된다. 다른 리포도 각자의 SOT(핸드오프/spec/audit 등)를 우선한다. 본 문서는 어느 경우든 spec/SOT 변경 *제안*일 뿐 그 자체가 아니다.
 4. **각 리포 `proc/plan/2026-05-26_pullim-be-adoption.md` / `2026-05-26_container-presenter-adoption.md`** — 이미 채택된 BE/FE 정본 plan. 본 문서가 충돌하는 항목은 패배한다.
 5. **본 문서** — PROPOSAL. §15 게이트(G1/G3/G4) 합의 + 각 리포의 spec 갱신 PR이 머지된 뒤에만 실행 게이트로 승격된다.
 
@@ -51,7 +51,7 @@
 
 본 §2 는 **두 종류의 출처를 명확히 구분**한다. 후속 마이그레이션이 "본체 정합인가, 별도 정책 제안인가" 를 혼동하지 않도록 표를 분리한다 (codex 지적 반영).
 
-- **§2-A — 본체 리포 검증값**: 루트 `AGENTS.md` 가 권위로 지정한 `curea-co/pullim` 패턴. 본 문서 작성 시점(2026-05-27)에 정독한 관찰값이다. ⚠ **감사 가능성 단서**: 아래 표의 버전값(Next 16.1.2, React 19.2.3 등)은 **관찰 당시 본체 commit/tag 가 함께 고정돼야만 재현·감사 가능**하다 — 경로만으로는 upstream 변경 후 같은 경로가 다른 값을 가리킨다. 본 초안은 작성 시점 commit/tag 를 미확보(`TODO: 관찰 commit SHA/tag 기입`)했으므로, 이 표를 실행 근거로 쓰는 후속 PR 은 **그 시점 본체 commit/tag 를 직접 재확인해 기입**한 뒤 인용해야 한다. (commit 고정 전에는 "관찰값"일 뿐 감사된 정본이 아니다.)
+- **§2-A — 본체 리포 검증값 (현재: commit 미고정 → 참고용)**: 루트 `AGENTS.md` 가 권위로 지정한 `curea-co/pullim` 패턴을 본 문서 작성 시점(2026-05-27)에 정독한 관찰값이다. ⚠ **현재 이 표는 감사된 정본이 아니라 "참고용"이다**: `curea-co/pullim` 의 관찰 기준 commit SHA/tag 가 비어 있어(`TODO: 관찰 commit SHA/tag 기입`) 시간이 지나면 어느 스냅샷을 봤는지 재현할 수 없다 — 경로만으로는 upstream 변경 후 같은 경로가 다른 값을 가리킨다. 따라서 **commit/tag 를 기입하기 전까지 아래 exact 버전값(Next 16.1.2, React 19.2.3 등)을 실행 근거(감사 가능 기준선)로 쓰지 않는다.** 이 표를 정렬 근거로 삼는 후속 PR 은 먼저 그 시점 본체 commit/tag 를 직접 재확인해 기입한 뒤에만 감사된 정본으로 승격해 인용한다.
 - **§2-B — 별도 정책 제안 (repo 비검증)**: `curea-co/pullim` 저장소에 **그대로 존재하지 않거나** 코드로 확인 불가능한 항목. 작성자 운영 의도("사용자 정본 표")에서 온 제안이며, 본체 패턴 자체가 아니다. 채택은 각 리포의 별도 spec 갱신 + 게이트 합의를 통해서만.
 
 ### 2-A. 본체 리포 검증값 (`curea-co/pullim` — 감사 가능)
@@ -106,7 +106,7 @@
 | 항목 | planner | Q | classbot | games | arcade |
 |---|---|---|---|---|---|
 | **레포** | `curea-co/pullim-planner` | `curea-co/pullim-Q` | `curea-co/pullim-classbot` | `curea-co/pullim-games` | `curea-co/pullim-arcade` |
-| **모노레포** | ✅ bun workspace + Turborepo | ✅ bun workspace + Turborepo | ❌ 단일 앱 (D-Lite 진행) | ❌ 단일 앱 (alignment PR #108 작성) | ✅ Turborepo 없음, 단일 앱 (D-Lite 머지) |
+| **모노레포** | ✅ bun workspace + Turborepo | ✅ bun workspace + Turborepo | ❌ 단일 앱 (D-Lite 진행) | ❌ 단일 앱 (alignment PR #108 작성) | 🟡 **부분** — 단일 앱, **Turborepo 없음**(D-Lite 머지). 정본(Turborepo+apps/*) 기준 미정렬이므로 G2 정렬 대상 |
 | **패키지 매니저** | bun 1.3.12 | bun 1.3.12 | bun | bun | bun |
 | **Next.js** | **16.2.4** (정본 16.1.2 ≠, minor drift) | 16 (apps/q — exact 핀 확인 필요) | 16 | **15** (정본 ≠, major lag) | **16.2.4** (정본 16.1.2 ≠, minor drift) |
 | **React** | **19.2.4** (정본 19.2.3 ≠, patch drift) | 19 (exact 핀 확인 필요) | 19 | 19 | **19.2.4** (정본 19.2.3 ≠, patch drift) |
@@ -189,7 +189,7 @@
 | **P0-1** | bun → pnpm 전환 | 5 도메인 일괄 | bun.lock 삭제·pnpm-lock.yaml 생성, `packageManager: "pnpm@10.26.1"`, scripts `bun --filter` → `pnpm -C` 또는 `pnpm --filter`, `predev`의 `bun run` → `pnpm`, Dockerfile pnpm 베이스, CI workflow pnpm/action-setup |
 | **P0-2** | AWS ECS Fargate 셋업 | 5 도메인 또는 공유 cluster | cluster·service·task definition·ALB·target group·security group. cluster 옵션은 §8 결정 후 |
 | **P0-3** | RDS PostgreSQL 셋업 | 5 도메인 또는 공유 RDS | RDS 인스턴스·VPC·subnet group·parameter group·migrations. RDS 옵션은 §9 결정 후 |
-| **P0-4** | CI/CD 재작성 (Vercel 폐기 → Docker → ECR → ECS) | 5 도메인 각자 | `.github/workflows/{ci.yml,deploy.yml}`: actions/setup-pnpm·typecheck·lint·test → docker build → aws-actions/configure-aws-credentials → ECR push → ECS service update |
+| **P0-4** | CI/CD 재작성 (Vercel 폐기 → Docker → ECR → ECS) | 5 도메인 각자 | `.github/workflows/{ci.yml,deploy.yml}`: actions/setup-pnpm·typecheck·lint·test → docker build → aws-actions/configure-aws-credentials → ECR push → ECS service update. ⚠ **Vercel 전용 런타임 의존성 제거/대체도 포함**: planner 는 이미 `@vercel/analytics`(`app/layout.tsx` 의 `<Analytics />`, `ReportsContainer.tsx` 의 `track()`) 를 사용 중이므로, workflow 교체만으로 끝나지 않고 이 의존성을 제거 또는 비-Vercel 관측(예: `@pullim/analytics`)으로 대체하는 step 이 migration 에 들어가야 한다. 누락 시 ECS 전환 후에도 앱 코드에 Vercel 결합이 남는다 |
 | **P0-5** | Secrets Manager + CloudWatch Logs + S3 + SES | 5 도메인 또는 공유 | env 추출·Secrets Manager rotation policy·로그 그룹·S3 버킷 정책·SES verified identity |
 
 ### P1 — 코드 마이그레이션 (단계별 진입 조건 상이 — 아래 주의)
