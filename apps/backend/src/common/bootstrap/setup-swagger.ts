@@ -27,21 +27,19 @@ export function setupSwagger(app: INestApplication): void {
     .setTitle("Pullim Planner API")
     .setDescription("풀림 플래너 백엔드 API 문서")
     .setVersion("0.1")
-    .addApiKey(
-      {
-        type: "apiKey",
-        in: "header",
-        name: "X-User-Id",
-        description:
-          "Mock 인증 헤더. fallback: student_001. Phase η에서 실인증으로 교체.",
-      },
-      "mock-user",
-    )
+    // X-User-Id 를 보안 요구사항(security)이 아니라 모든 operation 의 **선택 헤더
+    // 파라미터**로 등록한다. try-it-out 시 헤더가 전송되면서도(R5 해소), public(@Public)
+    // 라우트까지 인증 필수로 OpenAPI 계약이 굳는 문제(R7)를 피한다. MockAuthGuard 는
+    // 헤더 부재 시 student_001 로 fallback 하므로 required=false 가 실제 동작과 일치한다.
+    .addGlobalParameters({
+      name: "X-User-Id",
+      in: "header",
+      required: false,
+      description:
+        "Mock 인증 헤더. 미전송 시 fallback: student_001. Phase η에서 실인증으로 교체.",
+      schema: { type: "string" },
+    })
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  // codex R5 지적 반영: securityScheme 만 등록하면 Swagger UI "Authorize" 가
-  // 실제 try-it-out 요청에 X-User-Id 헤더를 붙이지 않는다. document.security 를
-  // 명시해 모든 operation 에 mock-user 가 전역 적용되도록 한다 (Mock auth phase).
-  document.security = [{ "mock-user": [] }];
   SwaggerModule.setup("api-docs", app, document);
 }

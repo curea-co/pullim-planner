@@ -1,13 +1,16 @@
-import {
-  DeepPartial,
-  FindOptionsWhere,
-  ObjectLiteral,
-  Repository,
-} from "typeorm";
+import { DeepPartial, FindOptionsWhere, Repository } from "typeorm";
 import { BaseRepositoryInterface } from "../interfaces/base-repository.interface";
+import { BaseModel } from "../entities/base.model";
 
+/**
+ * 공통 저장소.
+ *
+ * `delete()` 가 `softDelete()` 로 동작하므로 제네릭 제약을 `BaseModel`(=`@DeleteDateColumn`
+ * 보유) 로 강화한다. `DeleteDateColumn` 이 없는 엔티티가 상속해 런타임 SQL 오류가 나는 것을
+ * 컴파일 타임에 차단한다 (codex R7).
+ */
 export abstract class BaseRepository<
-  T extends ObjectLiteral,
+  T extends BaseModel,
 > implements BaseRepositoryInterface<T> {
   constructor(protected readonly repository: Repository<T>) {}
 
