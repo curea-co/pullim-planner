@@ -284,7 +284,7 @@
 
 > ⚠ **§16 정합 — 인프라 의존 P0 는 현재 진입 불가**: §16.2/§16.3 는 병합 토폴로지 확정 전까지 **P0-2(ECS)/P0-3(RDS)/P0-4(CI/CD) 진입 자체를 보류**한다. 따라서 "P1-1 머지 후 4 도메인 일제 P0 시작" 같은 실행 시퀀스는 현재 **성립하지 않는다**. 시퀀싱은 다음 두 트랙으로 분리한다:
 >
-> - **트랙 1 — 지금 진행 가능 (인프라 비의존)**: P0-1(pnpm, G3 승인) 만 5 도메인 학습-선행(옵션 C 골격: planner 선행 → 회고 → 4 도메인) 으로 굴린다. 코드·디렉터리·CI 툴링 구조 동형화는 인프라 결정과 무관하므로 §16 보류와 충돌하지 않는다.
+> - **트랙 1 — 인프라 비의존(단, 기존 채택 plan 대체 합의 선행 필요)**: P0-1(pnpm) 은 인프라 결정과 무관하다는 점에서만 트랙 2 와 구분된다. **그러나 "즉시 진행 가능"이 아니다.** planner 의 현행 정본 `proc/plan/2026-05-26_pullim-be-adoption.md` 는 **`bun 유지`** 를 못박고(bun+Nest 호환성 실패 시에만 backend 를 node+pnpm 으로 분기), pnpm 전환은 그 채택 plan 을 **대체**하는 행위다. 따라서 P0-1 은 G3 승인 **이전에** 각 리포(특히 planner)의 기존 채택 plan 을 대체하는 별도 합의 + spec/plan 갱신 PR 이 선행되어야 진입 가능하다. 옵션 C 골격(planner 선행 → 회고 → 나머지)은 그 선행 합의가 끝난 뒤의 실행 순서일 뿐이다.
 > - **트랙 2 — 보류 (인프라 의존)**: P0-2/3/4/5 및 그에 종속된 P1-1(JWT)·P1-2(Redis/BullMQ) 의 *배포 측면*은 §16.3 트리거((a) 병합 안 함 확정 또는 (b) 토폴로지 확정) 충족 시에만 진입. 진입 순서는 그 시점에 옵션 C 골격으로 재확정한다.
 
 **결정자**: G1(일정) — 단, 트랙 2 진입 자체는 §16.3 트리거 + G3 가 선행.
@@ -362,8 +362,8 @@
 
 - [ ] 5 도메인 `package.json` 의 `packageManager` 가 `pnpm@10.26.1` (P0-1, G3 승인 후)
 - [ ] 5 도메인 코드·디렉터리·CI **툴링** 구조가 본체와 동형 (pnpm workflow, typecheck/lint/test 게이트)
-- [ ] 5 도메인 모두 `@pullim/design-system` 사용 + `messages/{ko,en}.json` 단일 파일 + TanStack Query QueryClient 활성 (FE — 인프라 비의존, G4 승인 후 + 각 리포 spec 갱신)
-- [ ] JWT 인증 + Redis 연결의 **코드 레벨** 구현 (로컬 docker 검증) — 배포 측면은 14-B 로 이관
+- [ ] **(권위 문서 갱신 선행 필수)** 5 도메인 모두 `@pullim/design-system` 사용 + `messages/{ko,en}.json` 단일 파일 + TanStack Query QueryClient 활성 — ⚠ planner 의 `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md` 와 `proc/plan/2026-05-26_container-presenter-adoption.md` 는 **현재 `@pullim/design-system`·`next-intl`/`useTranslations()` 도입을 금지·별도 plan 분리**로 두고 있다. 따라서 이 항목은 각 리포의 앱 가이드/spec 을 먼저 갱신해 금지를 해제(G4 승인 + spec 갱신 PR 머지)한 뒤에만 체크 가능하다. 갱신 전에는 본 항목을 진행률에 포함하지 않는다.
+- [ ] **(권위 문서 갱신 선행 필수)** JWT 인증 + Redis 연결의 **코드 레벨** 구현 (로컬 docker 검증) — ⚠ planner 의 `proc/plan/2026-05-26_pullim-be-adoption.md` 는 **Mock auth 유지 + JWT/Redis/BullMQ scope-out** 을 명시한다. 이 항목도 각 리포 spec/plan 갱신으로 scope-out 을 해제한 뒤에만 체크 가능하며, 배포 측면은 14-B 로 이관한다. 갱신 전에는 진행률에 포함하지 않는다.
 - [ ] §11 의 인프라 비의존 H 리스크(R-AUT, R-DS, R-I18N, R-DS-EXT, R-DRIZ) mitigation 적용 또는 별 plan 이관
 
 ### 14-B. 최종 완료 — 병합 토폴로지 확정 후 (§16.3 트리거 충족 시)
@@ -388,7 +388,7 @@
 | **D-SEQ** | 출시 시퀀스 (옵션 A/B/C) | G1 | 본 plan 합의 시 | **옵션 C** — planner 선행 → 4 도메인 병렬 |
 | **D-DS** | `@pullim/design-system` 외부 노출·발행·deprecation 정책 | 본체팀 + G4 | P1-3 시작 | GitHub release tag pin + semver + 5 도메인 deprecation lead time 1 sprint |
 | **D-CB-ORM** | classbot drizzle → TypeORM 전환 방식 (data migration) | G3 | P0-3 시작 | drizzle schema SQL dump → TypeORM entities 재생성 + 첫 migration generate |
-| **D-GM-BE** | games BE 신설 여부 (5 중 유일 BE 없음) | G1 + G3 | P0-2 + alignment plan #108 정합 | 신설 — 추후 진척·점수·랭킹·콘텐츠 메타 backend 후보. SPA 유지는 옵션 |
+| **D-GM-BE** | (해당 도메인) BE 신설 여부 (5 중 유일 BE 없음) | G1 + G3 | P0-2 정합 | **§16.2 에서 결정 완료 — 본 §15 행은 §16.2 가 대체(superseded)**. §15 초안의 'SPA 유지는 옵션' 은 더 이상 유효하지 않으며, 최신 결정은 §16.2 를 따른다 |
 | **D-GM-N16** | games Next 15 → 16 시점 | G4 + games audit T5 | P2-5 | P1 완료 후 별 PR. 21 게임 회귀 audit 필수 |
 | **D-COST** | 월 AWS 청구 상한선 (CW Logs retention, S3 lifecycle, RDS 인스턴스 사이즈) | G1 | P0-5 | retention 7d, S3 90d → IA → 1y Glacier, RDS db.t4g.small 시작 |
 
@@ -400,7 +400,7 @@
 
 - 본체: `curea-co/pullim` 의 `package.json`, `apps/web/package.json`, `apps/backend/package.json`
 - 본체 컨벤션: `curea-co/pullim` 의 `apps/web/CLAUDE.md`, `apps/backend/CLAUDE.md`
-- 5 도메인 컨벤션: `curea-co/pullim-{planner,Q,classbot,games,arcade}` 각 리포의 루트 `CLAUDE.md`
+- 5 도메인 컨벤션: 각 리포의 루트 `CLAUDE.md` **+ 루트가 위임하는 앱별 가이드**. 특히 planner 는 루트 `CLAUDE.md` 가 FE 상세 규칙을 `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md` 로 위임하므로, 루트만 보면 DS/i18n/Sentry 금지 같은 **앱 레벨 제약을 놓친다**. 참고 경로는 반드시 루트 + 앱별 가이드를 함께 따라가야 한다. (다른 도메인도 루트가 앱별 문서로 위임하면 동일.)
 - 공통 운영 룰: 별도 워크스페이스 외 메타 리포(`.pullim-meta`) — *본 plan 의 권위 출처 아님, 메모용*
 - 표류 결정 이력: 동(同) `.pullim-meta/DECISIONS.md` — *메모용*
 - planner BE 차용 plan: `curea-co/pullim-planner` 의 `proc/plan/2026-05-26_pullim-be-adoption.md`
