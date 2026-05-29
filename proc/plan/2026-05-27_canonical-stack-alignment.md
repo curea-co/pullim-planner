@@ -114,7 +114,7 @@
 | **DB** | Postgres 16 docker-compose | Postgres 16 docker-compose | Postgres + **drizzle-orm 0.36.4** (정본 ≠ TypeORM) | (없음) | Postgres docker-compose (host 5435) |
 | **ORM** | TypeORM 예정 | TypeORM 예정 | **drizzle** (정본 ≠) | (없음) | (드라이버 pg 만) |
 | **i18n** | (없음) | (없음) | (없음) | (없음) | (없음) |
-| **DS** | shadcn 로컬 | shadcn 로컬 | shadcn 로컬 + sonner | shadcn (new-york/slate, 자체 토큰) | shadcn 4.4.0 |
+| **DS** | shadcn/ui + Base UI (로컬, `@base-ui/react`) | shadcn 로컬 | shadcn 로컬 + sonner | shadcn (new-york/slate, 자체 토큰) | shadcn 4.4.0 |
 | **TanStack Query** | (없음) | (없음) | ✅ 5.100.1 | (없음) | (없음) |
 | **Sentry** | (없음) | (없음) | (없음) | (없음) | (없음) |
 | **Redis** | (없음) | (없음) | (없음) | (없음) | (없음) |
@@ -196,7 +196,7 @@
 |---|---|---|---|
 | **P1-1** | Passport/JWT 인증 도입 | 5 도메인 | MockAuth → @nestjs/passport + @nestjs/jwt, refresh token rotation, bcrypt password hashing. classbot·arcade 의 bcryptjs → bcrypt 전환 |
 | **P1-2** | Redis + BullMQ 도입 (BE) | 5 도메인 | ioredis connection, BullMQ queue 셋업, ElastiCache 또는 Redis container 모두 |
-| **P1-3** | shadcn 로컬 → @pullim/design-system 마이그레이션 (FE) | 5 도메인 | Button/Card/Dialog/Input/Tabs/Heading/Text/toast import 전환, lucide-react → @pullim/design-system/icons, sonner → @pullim/design-system. 도메인별 GitHub Action으로 release tag 핀 |
+| **P1-3** | shadcn/ui(+Base UI) 로컬 → @pullim/design-system 마이그레이션 (FE) | 5 도메인 | Button/Card/Dialog/Input/Tabs/Heading/Text/toast import 전환, lucide-react → @pullim/design-system/icons, sonner → @pullim/design-system. **planner 는 `@base-ui/react` 의존 복합 컴포넌트도 범위 포함**(권위: `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md`). 도메인별 GitHub Action으로 release tag 핀 |
 | **P1-4** | next-intl 도입 (i18n) | 5 도메인 | `messages/{ko,en}.json` 단일 파일, `useTranslations()` / `getTranslations()` 적용, 하드코딩 텍스트 전수 추출. mock 데이터의 한글은 예외 |
 | **P1-5** | TanStack Query 도입 (FE 서버 state) | 4 도메인 (classbot 제외 — 이미 보유) | QueryClient provider, hydration boundary, queryKey 컨벤션 |
 
@@ -227,7 +227,7 @@
 | P0-5 Secrets·Logs·S3·SES | 신규 적용 | 신규 적용 | 신규 적용 | 신규 적용 | 신규 적용 |
 | P1-1 JWT | Phase γ 의 BE 도입 시점 | BE 본격 시점 | bcryptjs → bcrypt + JWT | BE 신설 시 신규 | bcryptjs → bcrypt + JWT |
 | P1-2 Redis·BullMQ | BE 신규 | BE 신규 | BE 신규 + drizzle 호환성 검토 | BE 신설 시 | BE 신규 |
-| P1-3 DS | shadcn 28+ 컴포넌트 마이그레이션 | shadcn 마이그레이션 | shadcn 마이그레이션 + sonner | shadcn (new-york/slate) → DS (시각 회귀 위험 — `bun run ui:audit` 4 viewport 필수) | shadcn 마이그레이션 |
+| P1-3 DS | shadcn/ui 28+ **+ Base UI(`@base-ui/react`)** 컴포넌트 마이그레이션 — Base UI 의존 복합 컴포넌트도 범위 포함 | shadcn 마이그레이션 | shadcn 마이그레이션 + sonner | shadcn (new-york/slate) → DS (시각 회귀 위험 — `bun run ui:audit` 4 viewport 필수) | shadcn 마이그레이션 |
 | P1-4 i18n | hard-coded 한글 추출 (planner-home/reports/manage/onboarding 28+ 컴포넌트) | hard-coded 한글 추출 (q/{infinity,talk,analysis,review}) | hard-coded 한글 추출 (classbot/builder 13 파일) | hard-coded 한글 추출 (21 게임 + 셸 + 메커니즘) — **mock 한글 데이터는 예외 컨벤션 적용** | placeholder 라 비용 작음 |
 | P1-5 TanStack Query | 신규 | 신규 | **이미 보유 (5.100.1)** — 정본 5.90.21 과 minor 호환 확인 | 신규 (BE 신설 시) | 신규 |
 | P2-1 Sentry | 신규 | 신규 | 신규 | 신규 | 신규 |
@@ -238,9 +238,11 @@
 
 ---
 
-## 8. AWS 인프라 결정 — 미해결
+## 8. AWS 인프라 결정 — **§16.2/§16.3 에 의해 보류(superseded)**
 
-5 도메인을 어떤 AWS 토폴로지로 운영할 것인가:
+> ⚠ **상태 갱신**: 본 절의 '미해결 즉시 결정' 프레이밍은 §16.2(D-CLU 무기한 보류)·§16.3(병합 토폴로지 확정 전 P0-2 진입 불가)·§16.5 에 의해 **대체되었다**. 아래 옵션 비교표와 PM 권장(옵션 C)은 **보류 해제 시점에 참고할 후보**로만 남기며, 지금 결정해야 하는 안건이 아니다. 후속 PR 은 §16 을 기준으로 삼는다.
+
+5 도메인을 어떤 AWS 토폴로지로 운영할 것인가 (보류 해제 후 검토):
 
 | 옵션 | 설명 | 장점 | 단점 |
 |---|---|---|---|
@@ -248,15 +250,17 @@
 | **B** | 공유 cluster `pullim` + 도메인별 service | 본체와 같은 cluster. NAT/ALB 공유로 비용 효율 | "본체 흡수 아님" 원칙과 운영 경계 충돌. 본체 incident 가 5 도메인 전파 |
 | **C** | 신규 공유 cluster `pullim-domains` + 도메인별 service | 본체와 분리 + 5 묶음. 비용 효율 + 본체 격리 | cluster 1 추가 운영. 5 도메인 cross-team 권한 정책 필요 |
 
-**권장 (PM 의견)**: 옵션 C. 본체 격리 의도와 비용 효율의 절충. 도메인별 service 라 무중단 deploy 와 capacity 독립.
+**권장 후보 (보류 해제 후 참고)**: 옵션 C. 본체 격리 의도와 비용 효율의 절충. 도메인별 service 라 무중단 deploy 와 capacity 독립.
 **결정자**: G1 + G3 (BE 게이트키퍼).
-**결정 시점**: P0-2 시작 전 — 본 plan §15 즉시 결정 사안.
+**결정 시점**: ~~P0-2 시작 전~~ → **§16.3 트리거(병합 안 함 확정 또는 토폴로지 확정) 충족 후**. §15 D-CLU 도 §16.2 로 보류 처리됨.
 
 ---
 
-## 9. RDS 결정 — 미해결
+## 9. RDS 결정 — **§16.2/§16.3 에 의해 보류(superseded)**
 
-5 도메인 RDS 운영 방식:
+> ⚠ **상태 갱신**: §8 과 동일하게 §16.2(D-RDS 보류)·§16.3 에 의해 **대체되었다**. 아래 옵션·권장(옵션 B)은 보류 해제 후 참고 후보일 뿐, 지금 결정 안건이 아니다.
+
+5 도메인 RDS 운영 방식 (보류 해제 후 검토):
 
 | 옵션 | 설명 | 장점 | 단점 |
 |---|---|---|---|
@@ -264,13 +268,13 @@
 | **B** | 공유 RDS instance + DB 분리 (database-per-domain) | 비용 절약. 인스턴스 1 운영 | RDS connection 한계, IOPS 경합 |
 | **C** | 공유 RDS + 공유 DB + schema 분리 (schema-per-domain) | 최저 비용. cross-domain JOIN 가능 | schema migration 충돌. 도메인 격리 약화 — "본체 흡수 아님" 원칙과 충돌 |
 
-**권장 (PM 의견)**: 옵션 B. 비용 절약 + 도메인 격리 보존. 인스턴스는 1 이지만 DB 가 분리되어 권한·dump 도 분리 가능.
+**권장 후보 (보류 해제 후 참고)**: 옵션 B. 비용 절약 + 도메인 격리 보존. 인스턴스는 1 이지만 DB 가 분리되어 권한·dump 도 분리 가능.
 **결정자**: G1 + G3.
-**결정 시점**: P0-3 시작 전.
+**결정 시점**: ~~P0-3 시작 전~~ → **§16.3 트리거 충족 후**. §15 D-RDS 도 §16.2 로 보류 처리됨.
 
 ---
 
-## 10. 출시 우선순위 — 미해결
+## 10. 출시 우선순위 — 트랙1(착수 가능) / 트랙2(§16 보류) 분리 (아래 권장 참조)
 
 5 도메인 마이그레이션을 어떻게 시퀀싱:
 
@@ -328,27 +332,36 @@
 
 ---
 
-## 13. PR 분할 제안 — 15+ PR
+## 13. PR 분할 제안 — 15+ PR (착수 가능 / 보류 두 트랙)
 
-| PR # | Phase | 도메인 | 제목 (안) | 의존 |
+> §16.3(P0-2/3/4 진입 보류)·§14-A 권위 문서 갱신 선행 조건에 맞춰, 아래 표를 **두 트랙으로 구분**한다. `🔒` 표시 PR 은 트리거/선행 합의가 충족되기 전에는 **착수 불가**다 — 일반 실행 순서로 오독하지 말 것 (codex 지적).
+
+### 13-A. 현재 착수 가능 트랙 (인프라 비의존, 단 P0-1 은 §10 트랙1 선행 합의 필요)
+
+| PR # | Phase | 도메인 | 제목 (안) | 의존 / 선행 조건 |
 |---|---|---|---|---|
-| 1 | P0-1 | planner | `chore(planner): bun → pnpm 10.26.1 전환` | — |
-| 2 | P0-1 | Q | `chore(q): bun → pnpm 10.26.1 전환` | PR1 회고 |
-| 3 | P0-1 | classbot | `chore(classbot): D-Lite 모노레포 + pnpm 동시 적용` | PR1 회고 |
-| 4 | P0-1 | games | `chore(games): bun → pnpm + alignment Phase 0a 흡수` | PR1 회고 |
-| 5 | P0-1 | arcade | `chore(arcade): bun → pnpm 10.26.1` | PR1 회고 |
-| 6 | P0-2/3 | (인프라) | `infra: ECS cluster pullim-domains + RDS shared instance 셋업` | §8/§9 결정 후 |
-| 7 | P0-4 | 5 도메인 | `ci(<scope>): Vercel → Docker → ECR → ECS workflow` (5 PR) | PR6 |
-| 8 | P0-5 | 5 도메인 | `infra(<scope>): Secrets Manager + CloudWatch + S3 + SES` | PR6 |
-| 9 | P1-1 | 5 도메인 | `feat(<scope>): MockAuth → Passport/JWT 인증` (5 PR) | PR8 |
-| 10 | P1-2 | 5 도메인 | `feat(<scope>): Redis + BullMQ 도입` (5 PR) | PR8 |
-| 11 | P1-3 | 5 도메인 | `refactor(<scope>): shadcn → @pullim/design-system 마이그레이션` (5 PR — games 는 4 viewport audit 첨부) | DS 외부 정책 합의 |
-| 12 | P1-4 | 5 도메인 | `feat(<scope>): next-intl ko/en 도입 + 텍스트 추출` (5 PR) | — |
-| 13 | P1-5 | 4 도메인 | `feat(<scope>): TanStack Query 도입` (4 PR — classbot 제외) | — |
-| 14 | P2-1 | 5 도메인 | `feat(<scope>): Sentry instrumentation` (5 PR) | — |
-| 15 | P2-* | 도메인별 | AWS SDK / Tiptap / packages / Next16 (games 단독) | — |
+| 1 | P0-1 | planner | `chore(planner): bun → pnpm 10.26.1 전환` | **선행: §10 트랙1(기존 bun 유지 plan 대체 합의 + spec 갱신) + G3 승인** |
+| 2 | P0-1 | Q | `chore(q): bun → pnpm 10.26.1 전환` | PR1 회고 + (도메인별 동일 선행) |
+| 3 | P0-1 | classbot | `chore(classbot): D-Lite 모노레포 + pnpm 동시 적용` | PR1 회고 + (동일 선행) |
+| 4 | P0-1 | games | `chore: bun → pnpm + alignment 흡수` | PR1 회고 + (동일 선행) |
+| 5 | P0-1 | arcade | `chore: bun → pnpm 10.26.1` | PR1 회고 + (동일 선행) |
 
-총 **30+ 개별 PR** 예상 (5 도메인 × 6 Phase 기본 + 도메인별 별도).
+### 13-B. 보류 트랙 (🔒 §16.3 트리거 또는 권위 문서 갱신 후에만 착수)
+
+| PR # | Phase | 도메인 | 제목 (안) | 의존 / 차단 조건 |
+|---|---|---|---|---|
+| 6 | P0-2/3 | (인프라) | `infra: ECS cluster + RDS 셋업` | 🔒 **§16.3 트리거(병합 안 함 확정 또는 토폴로지 확정) 충족 후** |
+| 7 | P0-4 | 5 도메인 | `ci(<scope>): Vercel → Docker → ECR → ECS workflow` (5 PR) | 🔒 PR6 (§16.3 트리거 후) |
+| 8 | P0-5 | 5 도메인 | `infra(<scope>): Secrets Manager + CloudWatch + S3 + SES` | 🔒 PR6 (§16.3 트리거 후) |
+| 9 | P1-1 | 5 도메인 | `feat(<scope>): MockAuth → Passport/JWT 인증` (5 PR) | 🔒 PR8 + 각 리포 scope-out 해제(§14-A) — 배포측면은 §16.3 후 |
+| 10 | P1-2 | 5 도메인 | `feat(<scope>): Redis + BullMQ 도입` (5 PR) | 🔒 PR8 + scope-out 해제 — 배포측면은 §16.3 후 |
+| 11 | P1-3 | 5 도메인 | `refactor(<scope>): shadcn(+Base UI) → @pullim/design-system 마이그레이션` (5 PR — games 는 4 viewport audit 첨부) | 🔒 DS 외부 정책 합의 + 각 리포 앱 가이드의 DS 금지 해제(§14-A) |
+| 12 | P1-4 | 5 도메인 | `feat(<scope>): next-intl ko/en 도입 + 텍스트 추출` (5 PR) | 🔒 각 리포 i18n 금지 해제(§14-A) |
+| 13 | P1-5 | 4 도메인 | `feat(<scope>): TanStack Query 도입` (4 PR — classbot 제외) | (FE — 권위 문서 갱신 후 G4) |
+| 14 | P2-1 | 5 도메인 | `feat(<scope>): Sentry instrumentation` (5 PR) | 🔒 각 리포 Sentry 도입 합의 후 |
+| 15 | P2-* | 도메인별 | AWS SDK / Tiptap / packages / Next16 등 | 각 항목 선행 조건별 |
+
+총 **30+ 개별 PR** 예상 (5 도메인 × 6 Phase 기본 + 도메인별 별도). 단 13-B 는 차단 조건 해제 전까지 작성 보류.
 
 ---
 
