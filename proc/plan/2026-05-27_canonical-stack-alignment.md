@@ -4,7 +4,7 @@
 **작성자**: PM (박승훈) + 컨트롤타워 AI
 **적용 대상**: `pullim-planner` / `pullim-Q` / `pullim-classbot` / `pullim-games` / `pullim-games-arcade`
 **상태**: **PROPOSAL — 합의·게이트 대기 중. 실행 문서 아님.**
-**완료 정의**: §1 목표 충족 후 PM 명시 시점에 archive 이관
+**완료 정의**: §16 인프라 보류로 **2단계 재정의** — §14-A 부분 완료(인프라 비의존, 현재 달성 가능) / §14-B 최종 완료(§16.3 트리거 후) 충족 + PM 명시 시점에 archive 이관. (상세는 §14 참조.)
 
 ---
 
@@ -132,7 +132,7 @@
 - **classbot — drizzle 채택**: 정본 TypeORM 과 ORM 충돌 (가장 큰 단일 이슈)
 - **classbot — bcryptjs ≠ bcrypt**: native bcrypt 로 전환 또는 본 plan 에서 예외 인정 결정 필요
 - **games — Next.js 15**: 정본 16 과 한 단계 lag
-- **games — BE 없음**: 5 중 유일 (BE 신설 vs 영구 SPA 결정 필요)
+- **games — BE 없음**: 5 중 유일. **§16.2 D-GM-BE 에서 자체 NestJS 신설로 결정 완료** (초안의 'SPA 유지 옵션'은 superseded — §15 참조)
 - **TanStack Query 보유는 classbot 만**: 정본 패턴이 아닌 채택임 (FE 데이터 계층 통합 시 일관성 확보 필요)
 
 ---
@@ -384,7 +384,7 @@
 
 §16.2/§16.3 보류가 유지되는 동안의 완료 기준. 인프라(ECS/ECR/RDS)에 의존하지 않는 항목만 포함한다. 본 단계 충족 시 plan 을 **"부분 완료(인프라 대기)" 상태로 표시**하되 archive 이관은 보류한다.
 
-- [ ] 5 도메인 `package.json` 의 `packageManager` 가 `pnpm@10.26.1` (P0-1, G3 승인 후)
+- [ ] 5 도메인 `package.json` 의 `packageManager` 가 `pnpm@10.26.1` — ⚠ **선행 필수**: P0-1 은 G3 승인만으로 부족하다. 각 리포(특히 planner — `proc/plan/2026-05-26_pullim-be-adoption.md` 의 `bun 유지`)의 **기존 채택 plan 을 대체하는 별도 합의 + spec/plan 갱신 + 사용자 명시 확인**(§10 트랙1·§12·§13-A)이 먼저 완료돼야 본 항목을 진행률에 포함한다. 권위 교체 절차 없이 packageManager 만 바꾸면 부분 완료로 간주하지 않는다.
 - [ ] 5 도메인 코드·디렉터리·로컬 툴링이 본체와 동형 — **typecheck/lint/test 게이트만** (인프라 비의존). ⚠ CI **배포** workflow(Vercel→Docker→ECR→ECS, P0-4)는 §10/§16.3 으로 보류되므로 본 항목에서 제외하고 14-B 로 이관한다.
 - [ ] **(권위 문서 갱신 선행 필수)** 5 도메인 모두 `@pullim/design-system` 사용 + `messages/{ko,en}.json` 단일 파일 + TanStack Query QueryClient 활성 — ⚠ planner 의 `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md` 와 `proc/plan/2026-05-26_container-presenter-adoption.md` 는 **현재 `@pullim/design-system`·`next-intl`/`useTranslations()` 도입을 금지·별도 plan 분리**로 두고 있다. 따라서 이 항목은 각 리포의 앱 가이드/spec 을 먼저 갱신해 금지를 해제(G4 승인 + spec 갱신 PR 머지)한 뒤에만 체크 가능하다. 갱신 전에는 본 항목을 진행률에 포함하지 않는다.
 - [ ] **(권위 문서 갱신 선행 필수)** JWT 인증 + Redis 연결의 **코드 레벨** 구현 (로컬 docker 검증) — ⚠ planner 의 `proc/plan/2026-05-26_pullim-be-adoption.md` 는 **Mock auth 유지 + JWT/Redis/BullMQ scope-out** 을 명시한다. 이 항목도 각 리포 spec/plan 갱신으로 scope-out 을 해제한 뒤에만 체크 가능하며, 배포 측면은 14-B 로 이관한다. 갱신 전에는 진행률에 포함하지 않는다.
@@ -494,6 +494,10 @@
 
 ### 16.4 코덱스 review 통과 정책 (확인)
 
-사용자 직접 명시 (2026-05-27): **"코덱스 리뷰는 받아야지"** — close / 강제 머지 / 보류 모두 거부. **PR 머지는 코덱스 APPROVE 후에만**. 룰: `~/.claude/projects/-Users-curea/memory/feedback_codex_review_required.md` 와 일치.
+사용자 직접 명시 (2026-05-27): **"코덱스 리뷰는 받아야지"** — close / 강제 머지 / 보류 모두 거부.
+
+머지 규칙은 **리포 내부 권위 문서를 정본으로 따른다** (리포 밖 로컬 경로 근거 금지 — §0/부록 A 의 '리포 안에서 재현 가능' 원칙):
+- 정본: `proc/plan/2026-05-26_container-presenter-adoption.md` (§"Codex review 통과 필수") + 루트 `CLAUDE.md` §5 Orchestration 체크리스트.
+- 그 정본 규칙: **COMMENT 상태로 그대로 머지 금지** → (i) 지적사항 반영 후 재리뷰하여 통과, **또는** (ii) **사용자 명시 무시(override) 승인 후 진행**. 즉 'APPROVE 후에만'보다 한 단계 완화된 예외(ii)를 권위 문서가 허용하므로, 본 plan 도 그 예외를 지우지 않는다.
 
 → 진행 중 3 alignment PR (#101, #82, #108) 처리는 별 사안 — 코덱스가 매 round 새 지적 발견 패턴이라 *어떤 정상 흐름이 가능한지* 사용자 명확화 필요 (close X · 강제 X · 보류 X 모두 잘못된 선택지로 인식).
