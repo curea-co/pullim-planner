@@ -4,7 +4,11 @@ import { DEFAULT_DATABASE_PORT } from "../common/constants/server.constant";
 
 /**
  * `DATABASE_URL` (`postgres://user:pass@host:port/dbname`) 형식 env를 파싱해
- * 개별 DB 설정 필드로 분해한다. URL 이 없거나 파싱 실패 시 `null` 반환.
+ * 개별 DB 설정 필드로 분해한다.
+ *
+ * - URL 이 설정되어 있지 않으면 `null` 반환 (discrete env vars 로 fallback).
+ * - URL 이 설정되어 있지만 파싱 실패 시 **즉시 throw** — 잘못된 DB 로 묵시적으로
+ *   부팅·마이그레이션되는 사고를 막는다 (codex R5 지적 반영).
  *
  * spec/.env.example 모두 `DATABASE_URL` 단일 변수를 안내하지만 TypeORM 옵션은 host/port/...
  * 형태를 받으므로 본 헬퍼로 분해한다. URL 이 설정되어 있으면 우선 적용하고, 누락 필드는
@@ -20,23 +24,26 @@ function parseDatabaseUrl(): {
 } | null {
   const url = process.env.DATABASE_URL;
   if (!url) return null;
+  let parsed: URL;
   try {
-    const parsed = new URL(url);
-    return {
-      host: parsed.hostname || undefined,
-      port: parsed.port ? parseInt(parsed.port, 10) : undefined,
-      username: parsed.username
-        ? decodeURIComponent(parsed.username)
-        : undefined,
-      password: parsed.password
-        ? decodeURIComponent(parsed.password)
-        : undefined,
-      name: parsed.pathname?.replace(/^\//, "") || undefined,
-      ssl: parsed.searchParams.get("sslmode") === "require",
-    };
-  } catch {
-    return null;
+    parsed = new URL(url);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Failed to parse DATABASE_URL: ${reason}. ` +
+        `Set DATABASE_URL to a valid postgres URL ` +
+        `(e.g. postgres://user:pass@host:5432/dbname) or unset it and ` +
+        `use DATABASE_HOST/PORT/USERNAME/PASSWORD/NAME env vars instead.`,
+    );
   }
+  return {
+    host: parsed.hostname || undefined,
+    port: parsed.port ? parseInt(parsed.port, 10) : undefined,
+    username: parsed.username ? decodeURIComponent(parsed.username) : undefined,
+    password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+    name: parsed.pathname?.replace(/^\//, "") || undefined,
+    ssl: parsed.searchParams.get("sslmode") === "require",
+  };
 }
 
 /**

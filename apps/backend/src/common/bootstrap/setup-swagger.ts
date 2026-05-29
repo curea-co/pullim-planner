@@ -39,5 +39,9 @@ export function setupSwagger(app: INestApplication): void {
     )
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
+  // codex R5 지적 반영: securityScheme 만 등록하면 Swagger UI "Authorize" 가
+  // 실제 try-it-out 요청에 X-User-Id 헤더를 붙이지 않는다. document.security 를
+  // 명시해 모든 operation 에 mock-user 가 전역 적용되도록 한다 (Mock auth phase).
+  document.security = [{ "mock-user": [] }];
   SwaggerModule.setup("api-docs", app, document);
 }
