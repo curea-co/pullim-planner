@@ -20,23 +20,32 @@ function resolveDbConfig() {
   } | null = null;
 
   if (process.env.DATABASE_URL) {
+    let parsed: URL;
     try {
-      const parsed = new URL(process.env.DATABASE_URL);
-      fromUrl = {
-        host: parsed.hostname || undefined,
-        port: parsed.port ? parseInt(parsed.port, 10) : undefined,
-        username: parsed.username
-          ? decodeURIComponent(parsed.username)
-          : undefined,
-        password: parsed.password
-          ? decodeURIComponent(parsed.password)
-          : undefined,
-        name: parsed.pathname?.replace(/^\//, "") || undefined,
-        ssl: parsed.searchParams.get("sslmode") === "require",
-      };
-    } catch {
-      fromUrl = null;
+      parsed = new URL(process.env.DATABASE_URL);
+    } catch (err) {
+      // 앱 런타임(database.config.ts)과 동일하게 fail-fast.
+      // CLI 만 다른 DB 로 migration 이 돌아가는 drift 를 막는다 (codex R6 지적).
+      const reason = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `Failed to parse DATABASE_URL: ${reason}. ` +
+          `Set DATABASE_URL to a valid postgres URL ` +
+          `(e.g. postgres://user:pass@host:5432/dbname) or unset it and ` +
+          `use DATABASE_HOST/PORT/USERNAME/PASSWORD/NAME env vars instead.`,
+      );
     }
+    fromUrl = {
+      host: parsed.hostname || undefined,
+      port: parsed.port ? parseInt(parsed.port, 10) : undefined,
+      username: parsed.username
+        ? decodeURIComponent(parsed.username)
+        : undefined,
+      password: parsed.password
+        ? decodeURIComponent(parsed.password)
+        : undefined,
+      name: parsed.pathname?.replace(/^\//, "") || undefined,
+      ssl: parsed.searchParams.get("sslmode") === "require",
+    };
   }
 
   return {

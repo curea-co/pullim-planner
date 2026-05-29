@@ -49,10 +49,14 @@ export abstract class BaseRepository<
   }
 
   /**
-   * ID로 엔티티를 삭제한다.
+   * ID로 엔티티를 **soft delete** 한다.
+   *
+   * `BaseModel` 이 `@DeleteDateColumn` 을 보유하므로 물리 삭제(`delete`) 대신
+   * `softDelete` 로 `deletedAt` 을 채운다. 삭제 이력 보존·복구·`withDeleted` 조회가
+   * 전제이므로 공통 저장소는 soft delete 로 통일한다 (codex R6 지적).
    * @param id - 삭제할 엔티티의 고유 식별자
    */
   async delete(id: string): Promise<void> {
-    await this.repository.delete(id);
+    await this.repository.softDelete(id);
   }
 }
