@@ -51,7 +51,9 @@ describe("Phase β common 인프라 wiring (integration)", () => {
 
   beforeAll(async () => {
     // DB 비활성 + development(Swagger/dev 라우트 활성) 환경으로 부팅.
-    delete process.env.DATABASE_ENABLED;
+    // app.module 의 dotenv 로드는 이미 set 된 값을 override 하지 않으므로, delete 가 아니라
+    // 명시적으로 "false" 를 설정해 .env 파일 값에 영향받지 않게 고정한다.
+    process.env.DATABASE_ENABLED = "false";
     process.env.NODE_ENV = "development";
 
     // app.module 은 import 시점에 DATABASE_ENABLED 를 읽으므로, 위 env 설정 이후 동적 import.

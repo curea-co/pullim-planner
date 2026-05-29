@@ -1,4 +1,11 @@
-import "dotenv/config";
+// 백엔드 앱 기준 `.env` 를 명시 경로로 로드한다. 루트에서 `bun --filter ... migration:*`
+// 를 실행해도(AGENTS.md 실행 규칙) `apps/backend/.env` 의 DATABASE_URL/HOST 등이 반영되어,
+// 앱 런타임과 CLI 가 서로 다른 DB 를 보는 drift 를 막는다 (codex R13 지적).
+// `__dirname` 은 컴파일 후 `dist/database`, 두 단계 위가 백엔드 앱 루트.
+import { config as loadEnv } from "dotenv";
+import { join } from "node:path";
+loadEnv({ path: join(__dirname, "..", "..", ".env") });
+
 import { DataSource } from "typeorm";
 import { SnakeNamingStrategy } from "typeorm-naming-strategies";
 

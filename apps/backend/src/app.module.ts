@@ -1,7 +1,15 @@
 // `.env` 를 모듈 데코레이터 평가(아래 DATABASE_ENABLED 조건부 import) 전에 로드한다.
 // ConfigModule.forRoot() 는 본 모듈 import 이후에 실행되므로, .env 의 DATABASE_ENABLED
-// 가 조건부 import 시점에 반영되려면 여기서 먼저 dotenv 를 적용해야 한다 (codex R11 지적).
-import "dotenv/config";
+// 가 조건부 import 시점에 반영되려면 여기서 먼저 dotenv 를 적용해야 한다 (codex R11).
+//
+// 경로를 **백엔드 앱 기준으로 명시**한다. 루트 AGENTS.md 는 명령을 저장소 루트에서
+// 실행하도록 고정하므로(`bun --filter`), dotenv 기본 경로(`cwd/.env`)로는 루트 .env 만
+// 탐색해 `apps/backend/.env` 를 놓친다. `__dirname`(컴파일 후 dist, 테스트 시 src) 기준
+// 한 단계 위가 백엔드 앱 루트이며 거기에 .env 가 있다 (codex R13 지적).
+import { config as loadEnv } from "dotenv";
+import { join } from "node:path";
+loadEnv({ path: join(__dirname, "..", ".env") });
+
 import { ClassSerializerInterceptor, Module } from "@nestjs/common";
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ClsModule } from "nestjs-cls";
