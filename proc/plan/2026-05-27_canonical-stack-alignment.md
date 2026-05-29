@@ -15,13 +15,14 @@
 다음 우선순위로 해석한다 (위가 강함):
 
 1. **각 리포 루트 `AGENTS.md` / `CLAUDE.md`** — 현행 운영 규칙. 본 문서가 충돌하는 항목은 항상 패배한다.
-2. **각 리포 `proc/spec/`** — 도메인 SOT. 본 문서는 spec 변경 제안일 뿐, spec 자체가 아니다.
-3. **각 리포 `proc/plan/2026-05-26_pullim-be-adoption.md` / `2026-05-26_container-presenter-adoption.md`** — 이미 채택된 BE/FE 정본 plan. 본 문서가 충돌하는 항목은 패배한다.
-4. **본 문서** — PROPOSAL. §15 게이트(G1/G3/G4) 합의 + 각 리포의 spec 갱신 PR이 머지된 뒤에만 실행 게이트로 승격된다.
+2. **각 리포 앱별 가이드 (예: planner 의 `apps/planner/AGENTS.md` / `apps/planner/CLAUDE.md`)** — 루트 `CLAUDE.md` 가 FE 작업의 상세 규칙(UI 컴포넌트 소스, i18n 미도입, 디렉터리, 코드 패턴, Must/Should Fix 체크리스트)을 이 앱별 문서에 위임한다. 본 문서가 정본 스택으로 적은 항목(예: `@pullim/design-system` / `next-intl` / `@sentry/*`)이라도, 현재 이 문서들이 금지·미도입으로 명시한 것을 본 plan 근거로 도입해서는 안 된다.
+3. **각 리포 `proc/spec/`** — 도메인 SOT. 본 문서는 spec 변경 제안일 뿐, spec 자체가 아니다.
+4. **각 리포 `proc/plan/2026-05-26_pullim-be-adoption.md` / `2026-05-26_container-presenter-adoption.md`** — 이미 채택된 BE/FE 정본 plan. 본 문서가 충돌하는 항목은 패배한다.
+5. **본 문서** — PROPOSAL. §15 게이트(G1/G3/G4) 합의 + 각 리포의 spec 갱신 PR이 머지된 뒤에만 실행 게이트로 승격된다.
 
 **구체 패배 사례** (현재 권위 우선 항목 — 본 문서가 다르게 적었더라도 무시):
 
-- planner 의 `bun` 워크스페이스 결정 (현행) vs 본 문서의 `pnpm` 제안 — planner 는 **계속 bun**, pnpm 전환은 G4 (인프라 결정) 게이트 통과 후에만.
+- planner 의 `bun` 워크스페이스 결정 (현행) vs 본 문서의 `pnpm` 제안 — planner 는 **계속 bun**, pnpm 전환(P0-1)은 **G3 (BE·인프라 게이트)** 통과 후에만. (pnpm 전환은 lockfile·Dockerfile·CI 워크플로 동시 갱신으로 인프라/툴링 사안이므로 FE 전용 G4 가 아니라 G3 가 승인한다. §12·N5 와 동일하게 G3 로 단일 고정.)
 - planner / Q / classbot 의 현행 scope-out (JWT / Redis / BullMQ / Design System / i18n / Sentry) — 본 문서가 정본 스택으로 적었더라도, 채택은 각 리포의 별도 spec 갱신 PR을 통해서만. 본 문서 자체로 채택 효력 없음.
 - classbot 의 Drizzle 기반 현행 BE 로드맵 — 본 문서의 TypeORM 정본 항목은 G4 통과 후 별도 마이그레이션 plan 으로 처리. 즉시 전환 아님.
 - games 의 `proc/spec/01~10` 독립 거버넌스 / "다른 풀림 프로젝트 코드 참조 금지" 규칙 — 본 문서로 무효화되지 않는다. games 의 본 문서 채택은 games 의 spec 갱신을 통해서만.
@@ -46,9 +47,14 @@
 
 ---
 
-## 2. 정본 스택 — 본체 의존성 매트릭스 (확인 기준)
+## 2. 정본 스택 — 두 출처를 분리
 
-본체 리포(`curea-co/pullim`)의 `package.json`, `apps/web/package.json`, `apps/backend/package.json` 을 본 문서 작성 시점(2026-05-27)에 정독한 관찰값이다. 후속 PR 은 해당 본체의 *최신* commit 을 다시 확인해야 한다.
+본 §2 는 **두 종류의 출처를 명확히 구분**한다. 후속 마이그레이션이 "본체 정합인가, 별도 정책 제안인가" 를 혼동하지 않도록 표를 분리한다 (codex 지적 반영).
+
+- **§2-A — 본체 리포 검증값**: 루트 `AGENTS.md` 가 권위로 지정한 `curea-co/pullim` 패턴. GitHub UI 또는 동일 checkout 으로 **재현·감사 가능**. 본 문서 작성 시점(2026-05-27)에 정독한 관찰값이며, 후속 PR 은 해당 본체의 *최신* commit 을 다시 확인해야 한다.
+- **§2-B — 별도 정책 제안 (repo 비검증)**: `curea-co/pullim` 저장소에 **그대로 존재하지 않거나** 코드로 확인 불가능한 항목. 작성자 운영 의도("사용자 정본 표")에서 온 제안이며, 본체 패턴 자체가 아니다. 채택은 각 리포의 별도 spec 갱신 + 게이트 합의를 통해서만.
+
+### 2-A. 본체 리포 검증값 (`curea-co/pullim` — 감사 가능)
 
 | 영역 | 정본 값 | 본체 출처 |
 |---|---|---|
@@ -65,7 +71,7 @@
 | BE 프레임워크 | **NestJS 11** (common 11.0.1 + core + platform-express) + TypeScript | apps/backend |
 | BE ORM | **TypeORM 0.3.28** + typeorm-naming-strategies + @nestjs/typeorm 11.0.0 | apps/backend |
 | BE DB | **PostgreSQL** (pg 8.20.0) | apps/backend |
-| BE 캐시/큐 | **ioredis 5.10.0** + BullMQ (BE 의존성 — pullim 본체에 BullMQ 가 직접 없으나 정본 표 명시) | apps/backend + 사용자 정본 표 |
+| BE 캐시 | **ioredis 5.10.0** | apps/backend |
 | BE 인증 | **@nestjs/passport 11.0.5** + **@nestjs/jwt 11.0.2** + passport 0.7.0 + passport-jwt 4.0.1 + bcrypt 6.0.0 | apps/backend |
 | BE Swagger | **@nestjs/swagger 11.2.6** | apps/backend |
 | BE 스케줄 | @nestjs/schedule 6.1.1 | apps/backend |
@@ -75,13 +81,21 @@
 | BE 검증 | class-validator 0.15.1 + class-transformer 0.5.1 + joi 18.0.2 | apps/backend |
 | BE 시간 | luxon 3.7.2 | apps/backend |
 | BE HTTP | @nestjs/axios 4.0.1 + axios 1.15.0 | apps/backend |
-| 배포 | **AWS ECS Fargate + ECR + Secrets Manager + CloudWatch Logs + RDS + S3 + SES** | 사용자 정본 표 |
-| CI/CD | GitHub Actions → Docker build → ECR push → ECS service update | 사용자 정본 표 |
-| dev ECS 서비스명 패턴 | `pullim-web-dev` / `pullim-backend-dev` | 사용자 정본 표 |
-| AWS 리전 | **ap-northeast-2** | 사용자 정본 표 |
 | 패키지 빌드 정책 | `pnpm.onlyBuiltDependencies: ["@pullim/design-system", "bcrypt"]` | root package.json |
 
-본 표가 5 도메인 정합의 기준선. 갱신은 본체 PR 머지 시점에 본 plan 의 §2 를 먼저 정정한 뒤 5 도메인에 전파한다.
+### 2-B. 별도 정책 제안 (repo 비검증 — 작성자 운영 의도)
+
+> 아래 항목은 `curea-co/pullim` 저장소 코드로 직접 확인되지 않는다. 본체 패턴이 아니라 **5 도메인 운영 정책 제안**이며, 게이트 합의 전까지는 "정본"이 아니다. 마이그레이션 PR 은 본체 정합이 아니라 이 별도 정책을 근거로 삼는다는 점을 명시해야 한다.
+
+| 영역 | 제안 값 | 출처 | repo 검증 여부 |
+|---|---|---|---|
+| BE 큐 (BullMQ) | BullMQ (도메인 작업 큐) | 작성자 운영 의도 | ❌ `curea-co/pullim` 본체에 BullMQ **직접 의존성 없음** — repo 미검증 |
+| 배포 | AWS ECS Fargate + ECR + Secrets Manager + CloudWatch Logs + RDS + S3 + SES | 작성자 운영 의도 | ❌ 인프라 토폴로지는 코드 외 결정 (§8/§16 보류) |
+| CI/CD | GitHub Actions → Docker build → ECR push → ECS service update | 작성자 운영 의도 | ❌ 배포 결정에 종속 (§16 보류) |
+| dev ECS 서비스명 패턴 | `pullim-web-dev` / `pullim-backend-dev` | 작성자 운영 의도 | ❌ 인프라 확정 후 명명 |
+| AWS 리전 | ap-northeast-2 | 작성자 운영 의도 | ❌ 인프라 확정 후 |
+
+§2-A 가 5 도메인 정합의 **감사 가능한 기준선**이고, §2-B 는 별도 합의 트랙(특히 §16 인프라 보류)에 종속된 제안이다. §2-A 갱신은 본체 PR 머지 시점에 본 plan 을 먼저 정정한 뒤 5 도메인에 전파한다.
 
 ---
 
@@ -109,7 +123,7 @@
 | **인증** | Mock | Mock | (보안 구현 미정 — bcryptjs 부재) | (없음) | bcryptjs 3.0.3 (정본 ≠ bcrypt) |
 | **배포** | Vercel manual | Vercel manual | Vercel manual | Vercel manual | Vercel manual |
 | **포트 dev** | 3030 | 3031 | 3032 | 3033 | 3040 |
-| **권위 문서** | `input/docs-archive/08_플래너_핸드오프.md` | `input/docs-archive/*` | `input/docs-archive/07_클래스봇_핸드오프.md` | **`proc/spec/01~10`** (독립) | `proc/spec/` (작성 중) |
+| **권위 문서** | `input/docs-archive/08_풀림_플래너_핸드오프.md` (+ 루트 `CLAUDE.md` → `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md` 위임) | `input/docs-archive/*` | `input/docs-archive/07_클래스봇_핸드오프.md` | **`proc/spec/01~10`** (독립) | `proc/spec/` (작성 중) |
 | **proc 5번째** | knowhow | knowhow | knowhow | **audit** (독립) | knowhow |
 | **현재 진행** | Phase β PR #36 | D-Lite 머지 | D-Lite 진행 | alignment plan PR #108 | Phase 1 PR #2 머지 |
 
@@ -266,9 +280,15 @@
 | **B** | 1 도메인 끝까지 (P0~P2 전부) → 다음 도메인 | 한 도메인의 회고로 다음 도메인 개선. 리소스 집중 | 5 도메인 합류 시점 컨벤션 표류 위험 |
 | **C** | 우선 도메인(planner) 선행 → 회고 후 4 도메인 병렬 | 1 도메인 학습 + 4 도메인 병렬의 절충 | 1 도메인이 끝나는 데까지 4 도메인 대기 |
 
-**권장 (PM 의견)**: 옵션 C. planner 는 이미 Phase β 진행 중 → 자연스러운 1 선행. P1-1 머지 후 4 도메인 일제 P0 시작.
-**결정자**: G1 (대표 — 일정 사안).
-**결정 시점**: 본 plan 합의 시점.
+**권장 (PM 의견)**: 옵션 C 의 *학습-선행* 골격(planner 1 선행 → 회고 → 나머지 병렬)은 유지하되, **§16 보류 결정에 맞춰 P0 진입 시점을 다시 적는다**.
+
+> ⚠ **§16 정합 — 인프라 의존 P0 는 현재 진입 불가**: §16.2/§16.3 는 병합 토폴로지 확정 전까지 **P0-2(ECS)/P0-3(RDS)/P0-4(CI/CD) 진입 자체를 보류**한다. 따라서 "P1-1 머지 후 4 도메인 일제 P0 시작" 같은 실행 시퀀스는 현재 **성립하지 않는다**. 시퀀싱은 다음 두 트랙으로 분리한다:
+>
+> - **트랙 1 — 지금 진행 가능 (인프라 비의존)**: P0-1(pnpm, G3 승인) 만 5 도메인 학습-선행(옵션 C 골격: planner 선행 → 회고 → 4 도메인) 으로 굴린다. 코드·디렉터리·CI 툴링 구조 동형화는 인프라 결정과 무관하므로 §16 보류와 충돌하지 않는다.
+> - **트랙 2 — 보류 (인프라 의존)**: P0-2/3/4/5 및 그에 종속된 P1-1(JWT)·P1-2(Redis/BullMQ) 의 *배포 측면*은 §16.3 트리거((a) 병합 안 함 확정 또는 (b) 토폴로지 확정) 충족 시에만 진입. 진입 순서는 그 시점에 옵션 C 골격으로 재확정한다.
+
+**결정자**: G1(일정) — 단, 트랙 2 진입 자체는 §16.3 트리거 + G3 가 선행.
+**결정 시점**: 트랙 1 은 본 plan 합의 + G3 승인 시점. 트랙 2 는 §16.3 트리거 충족 시점.
 
 ---
 
@@ -299,8 +319,10 @@
 | Gate | 합의 시점 | 합의 대상 |
 |---|---|---|
 | **G1** | 본 plan 통과 + §8/§9/§10 결정 | 5 도메인 동시 마이그레이션 정책, 비용 |
-| **G3** (BE) | P0-2/3 결정 + P1-1·P1-2 시작 | AWS 토폴로지, RDS 옵션, JWT 흐름 설계, Redis/BullMQ |
+| **G3** (BE·인프라) | **P0-1 (pnpm 전환)** + P0-2/3 결정 + P1-1·P1-2 시작 | **pnpm 전환 (lockfile/Dockerfile/CI 툴링)**, AWS 토폴로지, RDS 옵션, JWT 흐름 설계, Redis/BullMQ |
 | **G4** (FE) | P1-3·P1-4·P1-5 시작 | DS 마이그레이션 베이스라인 (특히 games 시각 회귀), i18n 추출 정책, TanStack Query 컨벤션 |
+
+> **승인 라우팅 단일 고정**: P0-1 (bun → pnpm) 의 승인 게이트는 **G3** 하나다 (§0 패배 사례·N5 와 동일). FE 전용 G4 또는 일정 사안 G1 이 아니다. 후속 PR 은 G3 승인자를 태운다.
 
 각 Phase 시작 PR 에 합의 게이트키퍼 명시.
 
@@ -332,15 +354,28 @@
 
 ## 14. 본 plan 완료 정의
 
-다음 모두 충족 시 `archive/` 이관 — PM 명시 시점에:
+§16 의 인프라 무기한 보류 때문에, 단일 완료 정의(ECS/ECR/RDS 파이프라인 운영 요구)는 현재 **달성 불가능**하다 — 그대로 두면 archive 조건이 영원히 충족되지 않는다. 따라서 완료 정의를 **두 단계로 분리**한다 (codex 지적 반영).
 
-- [ ] 5 도메인 `package.json` 의 `packageManager` 가 `pnpm@10.26.1`
-- [ ] 5 도메인 모두 ECS Fargate 에서 dev 서비스 운영 (`pullim-<domain>-{web,backend}-dev` 패턴)
+### 14-A. 부분 완료 — 인프라 보류 전제 (현재 달성 가능)
+
+§16.2/§16.3 보류가 유지되는 동안의 완료 기준. 인프라(ECS/ECR/RDS)에 의존하지 않는 항목만 포함한다. 본 단계 충족 시 plan 을 **"부분 완료(인프라 대기)" 상태로 표시**하되 archive 이관은 보류한다.
+
+- [ ] 5 도메인 `package.json` 의 `packageManager` 가 `pnpm@10.26.1` (P0-1, G3 승인 후)
+- [ ] 5 도메인 코드·디렉터리·CI **툴링** 구조가 본체와 동형 (pnpm workflow, typecheck/lint/test 게이트)
+- [ ] 5 도메인 모두 `@pullim/design-system` 사용 + `messages/{ko,en}.json` 단일 파일 + TanStack Query QueryClient 활성 (FE — 인프라 비의존, G4 승인 후 + 각 리포 spec 갱신)
+- [ ] JWT 인증 + Redis 연결의 **코드 레벨** 구현 (로컬 docker 검증) — 배포 측면은 14-B 로 이관
+- [ ] §11 의 인프라 비의존 H 리스크(R-AUT, R-DS, R-I18N, R-DS-EXT, R-DRIZ) mitigation 적용 또는 별 plan 이관
+
+### 14-B. 최종 완료 — 병합 토폴로지 확정 후 (§16.3 트리거 충족 시)
+
+§16.3 트리거((a) 병합 안 함 확정 또는 (b) 토폴로지 확정) 가 충족되어 인프라 보류가 해제된 뒤의 완료 기준. 본 단계까지 충족해야 **`archive/` 이관** — PM 명시 시점에:
+
+- [ ] 14-A 전 항목 충족
+- [ ] 확정된 토폴로지 기준으로 5 도메인 ECS Fargate dev 서비스 운영
 - [ ] 5 도메인 모두 GitHub Actions → ECR → ECS 파이프라인 통과
-- [ ] 5 도메인 모두 JWT 인증 + Redis 연결 + Sentry DSN 활성
-- [ ] 5 도메인 모두 `@pullim/design-system` 사용 + `messages/{ko,en}.json` 단일 파일 + TanStack Query QueryClient 활성
-- [ ] §8/§9/§10 결정 사항이 본 plan 본문에 반영 + DECISIONS.md 결정 이력 누적
-- [ ] §11 모든 H 리스크 mitigation 적용 완료 또는 잔여 리스크 별 plan 으로 이관
+- [ ] 5 도메인 모두 JWT 인증 + Redis 연결 + Sentry DSN **배포 환경** 활성
+- [ ] §8/§9/§10 + §16.2 D-CLU/D-RDS/D-SEQ/D-COST 결정 사항이 본 plan 본문에 반영 + DECISIONS.md 결정 이력 누적
+- [ ] §11 의 인프라 의존 H 리스크(R-VRC, R-AWS-COST 등) mitigation 적용 완료 또는 잔여 리스크 별 plan 으로 이관
 
 ---
 
