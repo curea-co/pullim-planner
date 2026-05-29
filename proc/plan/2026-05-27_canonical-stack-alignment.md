@@ -130,7 +130,7 @@
 핵심 갭 (분류는 §4):
 - **5 도메인 전체 — pnpm/i18n/Sentry/Redis/BullMQ/AWS SDK 0%**
 - **classbot — drizzle 채택**: 정본 TypeORM 과 ORM 충돌 (가장 큰 단일 이슈)
-- **classbot — bcryptjs ≠ bcrypt**: native bcrypt 로 전환 또는 본 plan 에서 예외 인정 결정 필요
+- **classbot — 보안 구현 미정(bcryptjs 부재)**: §3 매트릭스(인증 열)대로 classbot 은 bcryptjs 자체가 없다(인증 보안 구현 미정). P1-1 에서 bcrypt 신규 도입 대상. (bcryptjs→bcrypt *전환*이 필요한 것은 arcade — `bcryptjs 3.0.3`. classbot 과 혼동 금지.)
 - **games — Next.js 15**: 정본 16 과 한 단계 lag
 - **games — BE 없음**: 5 중 유일. **§16.2 D-GM-BE 에서 자체 NestJS 신설로 결정 완료** (초안의 'SPA 유지 옵션'은 superseded — §15 참조)
 - **TanStack Query 보유는 classbot 만**: 정본 패턴이 아닌 채택임 (FE 데이터 계층 통합 시 일관성 확보 필요)
@@ -196,7 +196,7 @@
 
 | Phase | 이름 | 대상 | 산출물 |
 |---|---|---|---|
-| **P1-1** | Passport/JWT 인증 도입 | 5 도메인 | MockAuth → @nestjs/passport + @nestjs/jwt, refresh token rotation, bcrypt password hashing. classbot·arcade 의 bcryptjs → bcrypt 전환 |
+| **P1-1** | Passport/JWT 인증 도입 | 5 도메인 | MockAuth → @nestjs/passport + @nestjs/jwt, refresh token rotation, bcrypt password hashing. **classbot 은 bcrypt 신규 도입(bcryptjs 부재)**, **arcade 는 bcryptjs → bcrypt 전환** |
 | **P1-2** | Redis + BullMQ 도입 (BE) | 5 도메인 | ioredis connection, BullMQ queue 셋업, ElastiCache 또는 Redis container 모두 |
 | **P1-3** | shadcn/ui(+Base UI) 로컬 → @pullim/design-system 마이그레이션 (FE) | 5 도메인 | Button/Card/Dialog/Input/Tabs/Heading/Text/toast import 전환. ⚠ **`lucide-react`→DS/icons, `sonner`→DS 전환은 본체 DS 가 실제 그 export 를 제공하는지 근거 고정 후에만** — planner `apps/planner/CLAUDE.md` 는 `lucide-react`/`sonner` 를 **"DS 재export 없음 — 직접 import 허용"** 으로 명시하므로, 본체에서 해당 export 존재가 확인되지 않으면 직접 import 를 유지한다(없는 import 경로 추적 금지). **planner 는 `@base-ui/react` 의존 복합 컴포넌트도 범위 포함**(권위: `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md`). 도메인별 GitHub Action으로 release tag 핀 |
 | **P1-4** | next-intl 도입 (i18n) | 5 도메인 | `messages/{ko,en}.json` 단일 파일, `useTranslations()` / `getTranslations()` 적용, 하드코딩 텍스트 전수 추출. mock 데이터의 한글은 예외 |
@@ -227,7 +227,7 @@
 | P0-3 RDS | 기존 docker compose → RDS | 기존 docker compose → RDS | drizzle 분리 결정 + RDS | 신규 (BE 신설 시) | 기존 docker compose → RDS |
 | P0-4 CI/CD | Vercel workflow 폐기 | Vercel workflow 폐기 | Vercel workflow 폐기 | Vercel workflow 폐기 + codex-review.yml 유지 | Vercel workflow 폐기 |
 | P0-5 Secrets·Logs·S3·SES | 신규 적용 | 신규 적용 | 신규 적용 | 신규 적용 | 신규 적용 |
-| P1-1 JWT | Phase γ 의 BE 도입 시점 | BE 본격 시점 | bcryptjs → bcrypt + JWT | BE 신설 시 신규 | bcryptjs → bcrypt + JWT |
+| P1-1 JWT | Phase γ 의 BE 도입 시점 | BE 본격 시점 | bcrypt 신규(bcryptjs 부재) + JWT | BE 신설 시 신규 | bcryptjs → bcrypt + JWT |
 | P1-2 Redis·BullMQ | BE 신규 | BE 신규 | BE 신규 + drizzle 호환성 검토 | BE 신설 시 | BE 신규 |
 | P1-3 DS | shadcn/ui 28+ **+ Base UI(`@base-ui/react`)** 컴포넌트 마이그레이션 — Base UI 의존 복합 컴포넌트도 범위 포함 | shadcn 마이그레이션 | shadcn 마이그레이션 + sonner | shadcn (new-york/slate) → DS (시각 회귀 위험 — `bun run ui:audit` 4 viewport 필수) | shadcn 마이그레이션 |
 | P1-4 i18n | hard-coded 한글 추출 (planner-home/reports/manage/onboarding 28+ 컴포넌트) | hard-coded 한글 추출 (q/{infinity,talk,analysis,review}) | hard-coded 한글 추출 (classbot/builder 13 파일) | hard-coded 한글 추출 (21 게임 + 셸 + 메커니즘) — **mock 한글 데이터는 예외 컨벤션 적용** | placeholder 라 비용 작음 |
@@ -304,7 +304,7 @@
 |---|---|---|---|---|
 | R-PM | P0-1 | bun → pnpm 전환: lockfile/Dockerfile/CI 동시 갱신 누락 시 dev 환경 폭발 | M | 1 PR 에 lockfile·Dockerfile·workflow 모두 묶기. checklist PR template |
 | R-VRC | P0-4 | Vercel → ECS: 도메인 cutover 시 DNS·SSL·모니터링 재구성 | H | maintenance window 사전 공지. Route53 alias TTL 단축 → ALB 전환 → TTL 복구 |
-| R-AUT | P1-1 | Mock → JWT: 토큰 발행/검증/refresh 흐름 신설, 기존 mock user 일관성 깨짐 | H | MockAuthProvider 인터페이스 유지 → JwtAuthProvider 구현으로 교체. `IAuthProvider` 추상화는 planner 가 packages/auth 에 이미 placeholder |
+| R-AUT | P1-1 | Mock → JWT: 토큰 발행/검증/refresh 흐름 신설, 기존 mock user 일관성 깨짐 | H | 목표 패턴: `IAuthProvider` 추상화 + MockAuthProvider → JwtAuthProvider 교체. ⚠ **단, planner `packages/auth` 는 현재 빈 placeholder(`src/index.ts` 가 TODO 주석 + `export {}` 뿐, `IAuthProvider`/MockAuthProvider 미구현)** — '패키지 자리만 확보' 수준이다. 따라서 **추상화 구현 자체가 P1-1 의 선행 작업**이며, 이를 '이미 있는 것'으로 보고 JWT 전환 난이도를 과소평가하지 말 것 |
 | R-DS | P1-3 | shadcn → DS: UI 시각 회귀 (특히 games 의 toolset/spacing/border-radius 룰) | H | games 는 `bun run ui:audit` 4 viewport (320/390/768/1280) 머지 전 필수. critical overflow 0 까지 fix |
 | R-I18N | P1-4 | i18n 추출: 모든 텍스트 마이그레이션 — 시간 큼 (planner 28+, games 21 게임 + 셸) | H | 도메인별 별 PR. mock 데이터 한글 예외 컨벤션 (본체 `curea-co/pullim` 의 `apps/web/CLAUDE.md` 패턴 — 각 도메인은 자기 로컬 가이드에 동일 컨벤션을 명시해야 함). `useTranslations` 검사 lint rule 도입 |
 | R-TQ | P1-5 | TanStack Query: 데이터 패칭 일괄 전환. classbot 만 보유 → version drift | M | classbot 5.100.1 → 정본 5.90.21 호환성 확인. queryKey 컨벤션 5 도메인 통일 |
@@ -389,8 +389,9 @@
 §16.2/§16.3 보류가 유지되는 동안의 완료 기준. 인프라(ECS/ECR/RDS)에 의존하지 않는 항목만 포함한다. 본 단계 충족 시 plan 을 **"부분 완료(인프라 대기)" 상태로 표시**하되 archive 이관은 보류한다.
 
 - [ ] 5 도메인 `package.json` 의 `packageManager` 가 `pnpm@10.26.1` — ⚠ **선행 필수**: P0-1 은 G3 승인만으로 부족하다. 각 리포(특히 planner — `proc/plan/2026-05-26_pullim-be-adoption.md` 의 `bun 유지`)의 **기존 채택 plan 을 대체하는 별도 합의 + spec/plan 갱신 + 사용자 명시 확인**(§10 트랙1·§12·§13-A)이 먼저 완료돼야 본 항목을 진행률에 포함한다. 권위 교체 절차 없이 packageManager 만 바꾸면 부분 완료로 간주하지 않는다.
-- [ ] 5 도메인 코드·디렉터리·로컬 툴링이 본체와 동형 — **typecheck/lint/test 게이트만** (인프라 비의존). ⚠ CI **배포** workflow(Vercel→Docker→ECR→ECS, P0-4)는 §10/§16.3 으로 보류되므로 본 항목에서 제외하고 14-B 로 이관한다.
-- [ ] **(권위 문서 갱신 선행 필수)** 5 도메인 모두 `@pullim/design-system` 사용 + `messages/{ko,en}.json` 단일 파일 + TanStack Query QueryClient 활성 — ⚠ planner 의 `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md` 와 `proc/plan/2026-05-26_container-presenter-adoption.md` 는 **현재 `@pullim/design-system`·`next-intl`/`useTranslations()` 도입을 금지·별도 plan 분리**로 두고 있다. 따라서 이 항목은 각 리포의 앱 가이드/spec 을 먼저 갱신해 금지를 해제(G4 승인 + spec 갱신 PR 머지)한 뒤에만 체크 가능하다. 갱신 전에는 본 항목을 진행률에 포함하지 않는다.
+- [ ] 5 도메인 코드·디렉터리·로컬 툴링이 본체와 동형 — **typecheck/lint/test/`build` 게이트** (인프라 비의존). planner 앱 가이드의 자동 검증 명령이 `build` 까지 포함하므로, 툴체인 전환(P0-1)·의존성/프레임워크 변경 후 build 가 깨지면 부분 완료로 보지 않는다. ⚠ CI **배포** workflow(Vercel→Docker→ECR→ECS, P0-4)는 §10/§16.3 으로 보류되므로 본 항목에서 제외하고 14-B 로 이관한다.
+- [ ] **(권위 문서 갱신 선행 필수 — DS·i18n 한정)** 5 도메인 모두 `@pullim/design-system` 사용 + `messages/{ko,en}.json` 단일 파일 활성 — ⚠ planner 의 `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md` 와 `proc/plan/2026-05-26_container-presenter-adoption.md` 는 **현재 `@pullim/design-system`·`next-intl`/`useTranslations()` 도입을 금지·별도 plan 분리**로 둔다. 이 두 항목(DS·i18n)은 각 리포 앱 가이드/spec 을 먼저 갱신해 금지를 해제(G4 승인 + spec 갱신 PR 머지)한 뒤에만 체크 가능하다.
+- [ ] **(권위 문서 금지 아님 — 선행 갱신 불필요)** 5 도메인 모두 TanStack Query QueryClient 활성 — planner 앱 가이드는 TanStack Query 를 금지하지 않으므로(DS·i18n 과 달리) 권위 문서 갱신 대기 없이 G4 컨벤션 합의만으로 진행 가능. DS/i18n 과 묶지 않는다 (허용된 작업을 불필요하게 보류 트랙으로 밀지 않기 위함).
 - [ ] **(권위 문서 갱신 선행 필수)** JWT 인증 + Redis 연결의 **코드 레벨** 구현 (로컬 docker 검증) — ⚠ planner 의 `proc/plan/2026-05-26_pullim-be-adoption.md` 는 **Mock auth 유지 + JWT/Redis/BullMQ scope-out** 을 명시한다. 이 항목도 각 리포 spec/plan 갱신으로 scope-out 을 해제한 뒤에만 체크 가능하며, 배포 측면은 14-B 로 이관한다. 갱신 전에는 진행률에 포함하지 않는다.
 - [ ] §11 의 인프라 비의존 H 리스크(R-AUT, R-DS, R-I18N, R-DS-EXT, R-DRIZ) mitigation 적용 또는 별 plan 이관
 
