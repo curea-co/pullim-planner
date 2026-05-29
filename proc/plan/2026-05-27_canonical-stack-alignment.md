@@ -108,8 +108,8 @@
 | **레포** | `curea-co/pullim-planner` | `curea-co/pullim-Q` | `curea-co/pullim-classbot` | `curea-co/pullim-games` | `curea-co/pullim-arcade` |
 | **모노레포** | ✅ bun workspace + Turborepo | ✅ bun workspace + Turborepo | ❌ 단일 앱 (D-Lite 진행) | ❌ 단일 앱 (alignment PR #108 작성) | ✅ Turborepo 없음, 단일 앱 (D-Lite 머지) |
 | **패키지 매니저** | bun 1.3.12 | bun 1.3.12 | bun | bun | bun |
-| **Next.js** | 16 (apps/planner) | 16 (apps/q) | 16 | **15** (정본 ≠, major lag) | **16.2.4** (정본 16.1.2 ≠, minor drift) |
-| **React** | 19 | 19 | 19 | 19 | **19.2.4** (정본 19.2.3 ≠, patch drift) |
+| **Next.js** | **16.2.4** (정본 16.1.2 ≠, minor drift) | 16 (apps/q — exact 핀 확인 필요) | 16 | **15** (정본 ≠, major lag) | **16.2.4** (정본 16.1.2 ≠, minor drift) |
+| **React** | **19.2.4** (정본 19.2.3 ≠, patch drift) | 19 (exact 핀 확인 필요) | 19 | 19 | **19.2.4** (정본 19.2.3 ≠, patch drift) |
 | **BE** | NestJS 11 skeleton (common 인프라 차용은 Phase β PR #36 별도 트랙 — 본 docs 브랜치엔 미반영. 현재 `nestjs-cls` 의존성·CLS wiring 부재) | NestJS 11 skeleton | skeleton | (없음) | skeleton |
 | **DB** | Postgres 16 docker-compose | Postgres 16 docker-compose | Postgres + **drizzle-orm 0.36.4** (정본 ≠ TypeORM) | (없음) | Postgres docker-compose (host 5435) |
 | **ORM** | TypeORM 예정 | TypeORM 예정 | **drizzle** (정본 ≠) | (없음) | (드라이버 pg 만) |
@@ -133,7 +133,7 @@
 - **classbot — 보안 구현 미정(bcryptjs 부재)**: §3 매트릭스(인증 열)대로 classbot 은 bcryptjs 자체가 없다(인증 보안 구현 미정). P1-1 에서 bcrypt 신규 도입 대상. (bcryptjs→bcrypt *전환*이 필요한 것은 arcade — `bcryptjs 3.0.3`. classbot 과 혼동 금지.)
 - **버전 정렬 기준 = exact**: §2-A 정본이 정확한 버전(Next 16.1.2 / React 19.2.3)이므로 정렬 목표도 exact 다. major 만 맞으면 되는 게 아니다.
 - **games — Next.js 15**: 정본 16 과 한 단계 major lag
-- **arcade — Next 16.2.4 / React 19.2.4**: 정본 16.1.2 / 19.2.3 과 minor/patch drift (exact 기준 mismatch — 정렬 대상. major-only 가 아님)
+- **planner·arcade — Next 16.2.4 / React 19.2.4**: 정본 16.1.2 / 19.2.3 과 minor/patch drift (exact 기준 mismatch — 둘 다 정렬 대상. major-only 가 아님). Q 는 정확 패치값 재확인 필요
 - **games — BE 없음**: 5 중 유일. **§16.2 D-GM-BE 에서 자체 NestJS 신설로 결정 완료** (초안의 'SPA 유지 옵션'은 superseded — §15 참조)
 - **TanStack Query 보유는 classbot 만**: 정본 패턴이 아닌 채택임 (FE 데이터 계층 통합 시 일관성 확보 필요)
 
@@ -145,7 +145,7 @@
 |---|---|---|---|---|---|
 | G1 | 패키지 매니저 | pnpm 10.26.1 | bun 1.3.12 | **L** (lockfile/Dockerfile/workflow 동시 갱신) | 5 도메인 동일 — 5건 일괄 |
 | G2 | 모노레포 | Turborepo + apps/{web,backend} + packages/* | planner/Q/arcade 일부 / classbot·games 미완 | **M** | classbot/games 가 모노레포 전환 선행 필요 |
-| G3 | Next.js / React | Next 16.1.2 / React 19.2.3 (**exact 정렬 목표**) | games Next 15(major lag), arcade Next 16.2.4·React 19.2.4(minor/patch drift), planner/Q 16/19 | **S~M** | games — Next 15→16(major), **arcade — 16.2.4→16.1.2·19.2.4→19.2.3 정렬**, planner/Q — exact 핀 확인 |
+| G3 | Next.js / React | Next 16.1.2 / React 19.2.3 (**exact 정렬 목표**) | games Next 15(major lag); planner·arcade Next 16.2.4·React 19.2.4(minor/patch drift); Q 패치값 재확인 | **S~M** | games — Next 15→16(major); **planner·arcade — 16.2.4→16.1.2·19.2.4→19.2.3 정렬**; Q — exact 핀 확인 |
 | G4 | BE 프레임워크 | NestJS 11 (common·config·database 표준 모듈) | planner/Q/classbot/arcade skeleton, games 부재 | **L** | games — BE 신설 결정 필요 |
 | G5 | ORM | TypeORM 0.3.28 + naming-strategies | classbot drizzle, 나머지 미적용 | **L** | classbot — drizzle → TypeORM 마이그레이션 |
 | G6 | 인증 | Passport/JWT + bcrypt | Mock 4건, arcade bcryptjs, games 없음 | **L** | 5건 모두 JWT 도입 |
@@ -157,7 +157,7 @@
 | G12 | AWS SDK | client-s3 + client-ses + s3-presigned | 0건 | **M** | 사용처별 — 5 도메인 모두 즉시 필요한지 평가 후 |
 | G13 | 배포 | AWS ECS Fargate + ECR + Secrets Manager + CW Logs | Vercel manual 5건 | **XL** (DNS/SSL/모니터링 재구성) | 5건 모두 전환, AWS cluster 결정 §8 |
 | G14 | CI/CD | GitHub Actions → Docker → ECR → ECS update | Vercel 자동 비활성, manual | **L** | 5건 모두 신규 작성 |
-| G15 | 패키지 분리 | packages/{types,api-client,auth} + (본체엔 analytics/config/logging/remote-config/ui) | placeholder 3건 (planner/Q), classbot·games 부재 | **M** | 5건 모두 packages 6개로 정렬 |
+| G15 | 패키지 분리 | **총 6개** = 기존 3 (`types`/`api-client`/`auth`) + 신규 3 (`config`/`logging`/`ui`). (본체엔 `analytics`/`remote-config`/`utils` 등 추가 패키지도 있으나 본 plan 정렬 대상은 6개로 고정 — 그 외는 P2-4 범위 밖 별도 후보) | placeholder 3건 (planner/Q), classbot·games 부재 | **M** | 5건 모두 **packages 6개(3+3)** 로 정렬 |
 
 총 12+ 영역 갭. P0/P1/P2 분류는 §6.
 
@@ -211,7 +211,7 @@
 | **P2-1** | Sentry 도입 | 5 도메인 | `instrumentation.ts` + sentry.client/server/edge.config.ts, DSN Secret 관리 |
 | **P2-2** | AWS SDK (S3 / SES) 도입 | 사용처별 (classbot 봇 미디어, planner 리포트 PDF, Q 학습 자료 등) | presigned URL 패턴, SES verified sender |
 | **P2-3** | Tiptap 도입 | classbot builder, planner 메모 (필요 도메인만) | @tiptap/react + extensions |
-| **P2-4** | packages 6개 정렬 (analytics/config/logging/remote-config/ui/utils) | 5 도메인 각자 | placeholder → 실제 구현, types/api-client/auth 기존 3 + 신규 3 |
+| **P2-4** | packages **6개(3+3)** 정렬 — 기존 3 `types`/`api-client`/`auth` + 신규 3 `config`/`logging`/`ui` (§4 G15 와 동일 고정) | 5 도메인 각자 | placeholder 3 → 실제 구현 + 신규 3 추가. (본체의 `analytics`/`remote-config`/`utils` 는 범위 밖 별도 후보) |
 | **P2-5** | Next.js 15 → 16 (games 한정) | games | next major bump, app router 검증, 21 게임 회귀 |
 
 **총 Phase 수**: P0=5, P1=5, P2=5 → **15 Phase**
