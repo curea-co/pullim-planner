@@ -110,7 +110,7 @@
 | **패키지 매니저** | bun 1.3.12 | bun 1.3.12 | bun | bun | bun |
 | **Next.js** | 16 (apps/planner) | 16 (apps/q) | 16 | **15** (정본 ≠) | 16.2.4 |
 | **React** | 19 | 19 | 19 | 19 | 19.2.4 |
-| **BE** | NestJS 11 (common 차용, Cls만 진행 중) | NestJS 11 skeleton | skeleton | (없음) | skeleton |
+| **BE** | NestJS 11 skeleton (common 인프라 차용은 Phase β PR #36 별도 트랙 — 본 docs 브랜치엔 미반영. 현재 `nestjs-cls` 의존성·CLS wiring 부재) | NestJS 11 skeleton | skeleton | (없음) | skeleton |
 | **DB** | Postgres 16 docker-compose | Postgres 16 docker-compose | Postgres + **drizzle-orm 0.36.4** (정본 ≠ TypeORM) | (없음) | Postgres docker-compose (host 5435) |
 | **ORM** | TypeORM 예정 | TypeORM 예정 | **drizzle** (정본 ≠) | (없음) | (드라이버 pg 만) |
 | **i18n** | (없음) | (없음) | (없음) | (없음) | (없음) |
@@ -306,7 +306,7 @@
 | R-VRC | P0-4 | Vercel → ECS: 도메인 cutover 시 DNS·SSL·모니터링 재구성 | H | maintenance window 사전 공지. Route53 alias TTL 단축 → ALB 전환 → TTL 복구 |
 | R-AUT | P1-1 | Mock → JWT: 토큰 발행/검증/refresh 흐름 신설, 기존 mock user 일관성 깨짐 | H | MockAuthProvider 인터페이스 유지 → JwtAuthProvider 구현으로 교체. `IAuthProvider` 추상화는 planner 가 packages/auth 에 이미 placeholder |
 | R-DS | P1-3 | shadcn → DS: UI 시각 회귀 (특히 games 의 toolset/spacing/border-radius 룰) | H | games 는 `bun run ui:audit` 4 viewport (320/390/768/1280) 머지 전 필수. critical overflow 0 까지 fix |
-| R-I18N | P1-4 | i18n 추출: 모든 텍스트 마이그레이션 — 시간 큼 (planner 28+, games 21 게임 + 셸) | H | 도메인별 별 PR. mock 데이터 한글 예외 컨벤션 (apps/web/CLAUDE.md 명시). `useTranslations` 검사 lint rule 도입 |
+| R-I18N | P1-4 | i18n 추출: 모든 텍스트 마이그레이션 — 시간 큼 (planner 28+, games 21 게임 + 셸) | H | 도메인별 별 PR. mock 데이터 한글 예외 컨벤션 (본체 `curea-co/pullim` 의 `apps/web/CLAUDE.md` 패턴 — 각 도메인은 자기 로컬 가이드에 동일 컨벤션을 명시해야 함). `useTranslations` 검사 lint rule 도입 |
 | R-TQ | P1-5 | TanStack Query: 데이터 패칭 일괄 전환. classbot 만 보유 → version drift | M | classbot 5.100.1 → 정본 5.90.21 호환성 확인. queryKey 컨벤션 5 도메인 통일 |
 | R-DS-EXT | P1-3 | `@pullim/design-system` 외부 노출 정책: 본체팀 발행·버전·breaking change 정책 부재 | H | 본체팀과 별 합의 PR — `@pullim/design-system` GitHub release tag pin 정책 + semver + 5 도메인 향한 deprecation lead time. 본 plan §8/§9 와 동급 미해결 |
 | R-DRIZ | P0-3 | classbot drizzle → TypeORM: schema 재작성. 기존 drizzle migrations 폐기 | H | classbot drizzle 보유분 SQL dump → TypeORM entities 재생성 + migration 첫 generate. data preserving plan 필요 |
@@ -329,7 +329,7 @@
 | **G3** (BE·인프라) | **P0-1 (pnpm 전환)** + (보류 해제 후) P0-2/3 결정 + P1-1·P1-2 시작 | **pnpm 전환 (lockfile/Dockerfile/CI 툴링)**, (§16.3 후) AWS 토폴로지·RDS 옵션·JWT 흐름·Redis/BullMQ |
 | **G4** (FE) | P1-3·P1-4·P1-5 시작 | DS 마이그레이션 베이스라인 (특히 games 시각 회귀), i18n 추출 정책, TanStack Query 컨벤션 |
 
-> **승인 라우팅 단일 고정**: P0-1 (bun → pnpm) 의 승인 게이트는 **G3** 하나다 (§0 패배 사례·N5 와 동일). FE 전용 G4 또는 일정 사안 G1 이 아니다. 후속 PR 은 G3 승인자를 태운다.
+> **승인 라우팅**: P0-1 (bun → pnpm) 의 **기술 게이트는 G3** 하나다 (§0 패배 사례·N5 와 동일 — FE 전용 G4 또는 일정 사안 G1 이 아니다). **단, 기술 게이트와 별개로 `사용자 명시 확인`이 추가로 필요하다**: bun→pnpm 전환은 `package.json`·`turbo.json`·`tsconfig.base.json`·CI 워크플로 등 **루트 전역 파일**을 건드리는 작업이라, planner 등 각 리포 루트 `CLAUDE.md`/`AGENTS.md` 의 루트 전역 변경 규칙상 사용자 확인이 선행되어야 한다. 후속 PR 은 G3 승인 + 사용자 명시 확인 둘 다 태운다.
 
 각 Phase 시작 PR 에 합의 게이트키퍼 명시.
 
@@ -443,6 +443,8 @@
 | 결정 | 답 |
 |---|---|
 | 본 plan 배치 방식 | **옵션 B — 5 도메인 각 `proc/plan/` 에 바이블 배치** (분산 보관, 동기화 부담 인정. 추후 구조 변경 시 바이블로 작업 진행) |
+
+> ⚠ **복제 시 경로 처리 방침**: 본문에는 planner 전용 상대경로(`apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md`, `proc/plan/2026-05-26_pullim-be-adoption.md`·`2026-05-26_container-presenter-adoption.md` 등)가 그대로 포함된다. 이 문서를 다른 리포(`pullim-Q`/`classbot`/`games`/`arcade`)의 `proc/plan/` 으로 복제할 때는 그 경로들이 즉시 깨진다. 따라서 **복제본은 리포별 파생본**으로 관리한다 — 복제 시 (a) planner 전용 경로를 그 리포의 대응 경로로 치환하거나, (b) `{repo}`/`{app}` 같은 템플릿 변수로 두고 리포별로 채운다. 본 planner 사본은 planner 기준 경로를 정본으로 둔다.
 
 ### 16.2 명시적 보류 (사용자 직접 셋업 대기)
 
