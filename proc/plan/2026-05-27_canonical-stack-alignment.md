@@ -32,7 +32,7 @@
 구버전(2026-05-27 초안)에는 작성자 로컬 절대경로 (`/Users/curea/...` 류) 가 §2 / 부록 A 에 다수 잔존했다. R2 정정으로 모두 **리포 식별자 + 리포 내 상대경로** (예: `curea-co/pullim` 의 `apps/web/package.json`) 로 치환했다. 본문에 그런 잔존이 추가로 발견되면 모두 "본 문서 작성 시점의 정본 본체 스냅샷 관찰" 로만 해석하고, 후속 PR 은 commit hash 또는 `proc/spec/` 의 별도 spec 발췌를 통해서만 본체 상태를 인용한다.
 
 **머지 효력**:
-본 문서가 머지되더라도 자동 실행 게이트가 열리지 않는다. 후속 alignment PR / 마이그레이션 PR 은 **본 문서가 아닌 spec 갱신**을 근거로만 진입한다.
+본 문서가 머지되더라도 자동 실행 게이트가 열리지 않는다. 후속 alignment PR / 마이그레이션 PR 은 **본 문서가 아닌 권위 문서 갱신**을 근거로만 진입한다. 여기서 '권위 문서'는 spec 만이 아니라 각 리포의 **핸드오프(`input/docs-archive/08_풀림_플래너_핸드오프.md` 등) + 이미 채택된 `proc/plan/2026-05-26_*` + `proc/spec/`** 를 포괄한다 (planner 의 현행 FE/BE 권위가 이들에 걸쳐 있으므로 spec 갱신만으로는 부족).
 
 ---
 
@@ -51,7 +51,7 @@
 
 본 §2 는 **두 종류의 출처를 명확히 구분**한다. 후속 마이그레이션이 "본체 정합인가, 별도 정책 제안인가" 를 혼동하지 않도록 표를 분리한다 (codex 지적 반영).
 
-- **§2-A — 본체 리포 검증값**: 루트 `AGENTS.md` 가 권위로 지정한 `curea-co/pullim` 패턴. GitHub UI 또는 동일 checkout 으로 **재현·감사 가능**. 본 문서 작성 시점(2026-05-27)에 정독한 관찰값이며, 후속 PR 은 해당 본체의 *최신* commit 을 다시 확인해야 한다.
+- **§2-A — 본체 리포 검증값**: 루트 `AGENTS.md` 가 권위로 지정한 `curea-co/pullim` 패턴. 본 문서 작성 시점(2026-05-27)에 정독한 관찰값이다. ⚠ **감사 가능성 단서**: 아래 표의 버전값(Next 16.1.2, React 19.2.3 등)은 **관찰 당시 본체 commit/tag 가 함께 고정돼야만 재현·감사 가능**하다 — 경로만으로는 upstream 변경 후 같은 경로가 다른 값을 가리킨다. 본 초안은 작성 시점 commit/tag 를 미확보(`TODO: 관찰 commit SHA/tag 기입`)했으므로, 이 표를 실행 근거로 쓰는 후속 PR 은 **그 시점 본체 commit/tag 를 직접 재확인해 기입**한 뒤 인용해야 한다. (commit 고정 전에는 "관찰값"일 뿐 감사된 정본이 아니다.)
 - **§2-B — 별도 정책 제안 (repo 비검증)**: `curea-co/pullim` 저장소에 **그대로 존재하지 않거나** 코드로 확인 불가능한 항목. 작성자 운영 의도("사용자 정본 표")에서 온 제안이며, 본체 패턴 자체가 아니다. 채택은 각 리포의 별도 spec 갱신 + 게이트 합의를 통해서만.
 
 ### 2-A. 본체 리포 검증값 (`curea-co/pullim` — 감사 가능)
@@ -198,7 +198,7 @@
 |---|---|---|---|
 | **P1-1** | Passport/JWT 인증 도입 | 5 도메인 | MockAuth → @nestjs/passport + @nestjs/jwt, refresh token rotation, bcrypt password hashing. classbot·arcade 의 bcryptjs → bcrypt 전환 |
 | **P1-2** | Redis + BullMQ 도입 (BE) | 5 도메인 | ioredis connection, BullMQ queue 셋업, ElastiCache 또는 Redis container 모두 |
-| **P1-3** | shadcn/ui(+Base UI) 로컬 → @pullim/design-system 마이그레이션 (FE) | 5 도메인 | Button/Card/Dialog/Input/Tabs/Heading/Text/toast import 전환, lucide-react → @pullim/design-system/icons, sonner → @pullim/design-system. **planner 는 `@base-ui/react` 의존 복합 컴포넌트도 범위 포함**(권위: `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md`). 도메인별 GitHub Action으로 release tag 핀 |
+| **P1-3** | shadcn/ui(+Base UI) 로컬 → @pullim/design-system 마이그레이션 (FE) | 5 도메인 | Button/Card/Dialog/Input/Tabs/Heading/Text/toast import 전환. ⚠ **`lucide-react`→DS/icons, `sonner`→DS 전환은 본체 DS 가 실제 그 export 를 제공하는지 근거 고정 후에만** — planner `apps/planner/CLAUDE.md` 는 `lucide-react`/`sonner` 를 **"DS 재export 없음 — 직접 import 허용"** 으로 명시하므로, 본체에서 해당 export 존재가 확인되지 않으면 직접 import 를 유지한다(없는 import 경로 추적 금지). **planner 는 `@base-ui/react` 의존 복합 컴포넌트도 범위 포함**(권위: `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md`). 도메인별 GitHub Action으로 release tag 핀 |
 | **P1-4** | next-intl 도입 (i18n) | 5 도메인 | `messages/{ko,en}.json` 단일 파일, `useTranslations()` / `getTranslations()` 적용, 하드코딩 텍스트 전수 추출. mock 데이터의 한글은 예외 |
 | **P1-5** | TanStack Query 도입 (FE 서버 state) | 4 도메인 (classbot 제외 — 이미 보유) | QueryClient provider, hydration boundary, queryKey 컨벤션 |
 
@@ -333,7 +333,11 @@
 
 > **승인 라우팅**: P0-1 (bun → pnpm) 의 **기술 게이트는 게이트키퍼 G3** 하나다 (§0 패배 사례·N5 와 동일 — FE 전용 G4 또는 일정 사안 G1 이 아니다).
 >
-> **`사용자 명시 확인` 공통 조건 (P0-1 한정 아님)**: 기술 게이트(G3/G4)와 **별개로**, 각 리포 루트 `CLAUDE.md`/`AGENTS.md` 가 **글로벌 작업**으로 분류하는 영역 — `package.json`·`turbo.json`·`tsconfig.base.json`·`.github/workflows/**`·`packages/*`·`apps/backend/src/{common,config,database}/*` 등 — 을 건드리는 **모든** PR 은 `사용자 명시 확인`을 선행해야 한다. 따라서 P0-1(pnpm) 뿐 아니라 **P0-4(CI/CD)·P0-5(Secrets/Logs)·P2-4(packages)·P1-1(JWT)·P1-2(Redis/BullMQ)** 등이 그 글로벌 영역을 건드리면 동일하게 `G_ 승인 + 사용자 명시 확인` 둘 다 태운다. "기술 게이트 승인만 받으면 된다"로 오독하지 말 것.
+> **`사용자 명시 확인` 공통 조건 (P0-1 한정 아님)**: 기술 게이트(G3/G4)와 **별개로**, 각 리포 권위 문서가 **글로벌/수정 금지**로 분류하는 영역을 건드리는 **모든** PR 은 `사용자 명시 확인`(또는 해당 앱 가이드 개정)을 선행해야 한다. 대상 영역:
+> - **루트 글로벌**(루트 `CLAUDE.md`/`AGENTS.md`): `package.json`·`turbo.json`·`tsconfig.base.json`·`.github/workflows/**`·`packages/*`·`apps/backend/src/{common,config,database}/*` 등.
+> - **앱 레벨 수정 금지**(예: `apps/planner/CLAUDE.md` §"수정 금지 영역"): `apps/planner/package.json`(의존성 변경 금지)·`apps/planner/next.config.ts`·`apps/planner/tsconfig.json`. **P1-3(DS)·P1-4(i18n)·P2-1(Sentry)** 은 이 파일들(의존성 추가·설정 변경)을 건드릴 공산이 크므로, 앱 가이드의 해당 금지 해제(가이드 개정) 또는 사용자 명시 확인이 선행 조건이다.
+>
+> 따라서 P0-1(pnpm) 뿐 아니라 **P0-4(CI/CD)·P0-5(Secrets/Logs)·P2-4(packages)·P1-1(JWT)·P1-2(Redis/BullMQ)·P1-3·P1-4·P2-1** 등이 위 영역을 건드리면 동일하게 `G_ 승인 + 사용자 명시 확인(또는 가이드 개정)` 을 함께 태운다. "기술 게이트 승인만 받으면 된다"로 오독하지 말 것.
 
 각 Phase 시작 PR 에 합의 게이트키퍼 명시.
 
