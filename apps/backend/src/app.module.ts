@@ -19,10 +19,14 @@ import { AppController } from "./app.controller";
  * pullim 본체 AppModule 패턴 차용 (planner 단일 도메인용으로 축소):
  * - ClsModule 글로벌 (요청 ID 추적)
  * - AppConfigModule 글로벌 (Joi 검증)
- * - DatabaseModule (TypeORM)
+ * - DatabaseModule (TypeORM) — `DATABASE_ENABLED=true` 일 때만 import
  * - 전역 필터: HttpExceptionFilter → QueryFailedExceptionFilter → AllExceptionsFilter (등록 역순 실행)
  * - 전역 가드: MockAuthGuard → RolesGuard
  * - 전역 인터셉터: ClassSerializerInterceptor → ResponseInterceptor (envelope 옵션 A)
+ *
+ * Phase β: common 인프라 스모크 라우트(/api/health, /api/whoami, /_test-throw)는 DB 가
+ * 없어도 부팅·검증돼야 하므로 `DatabaseModule` 을 `DATABASE_ENABLED` env 로 게이트한다
+ * (codex R10 지적). Phase γ entity 도입 시 `DATABASE_ENABLED=true` 로 전환.
  *
  * planner 도메인 모듈은 Phase γ에서 추가.
  */
@@ -34,7 +38,7 @@ import { AppController } from "./app.controller";
       middleware: { mount: true, generateId: true },
     }),
     AppConfigModule,
-    DatabaseModule,
+    ...(process.env.DATABASE_ENABLED === "true" ? [DatabaseModule] : []),
   ],
   providers: [
     // 실행 순서는 등록 역순: HttpException → QueryFailed → All
