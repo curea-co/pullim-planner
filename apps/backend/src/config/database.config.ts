@@ -57,6 +57,22 @@ function parseDatabaseUrl(): {
  * spec §10 / `.env.example` 가 `DATABASE_URL` 단일 변수를 안내하므로 본 config 도 이를 1순위로 둔다.
  */
 export default registerAs("database", () => {
+  // Phase β: `DATABASE_ENABLED` 가 켜져 있지 않으면 DatabaseModule 이 import 되지 않으므로
+  // (app.module 참조) 본 config 값은 사용되지 않는다. 이때는 env 의 DATABASE_URL/PORT 를
+  // 파싱·검증하지 않고 inert 기본값을 돌려준다. 그래야 셸/CI 에 잘못된 DATABASE_URL 이
+  // 남아 있어도 DB 비활성 스모크 서버(/api/health 등)가 부팅된다 (codex R11 지적).
+  if (process.env.DATABASE_ENABLED !== "true") {
+    return {
+      host: "localhost",
+      port: DEFAULT_DATABASE_PORT,
+      username: "pullim",
+      password: "pullim_local",
+      name: "pullim_planner",
+      ssl: false,
+      synchronize: process.env.DATABASE_SYNCHRONIZE !== "false",
+    };
+  }
+
   const fromUrl = parseDatabaseUrl();
 
   return {

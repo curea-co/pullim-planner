@@ -1,3 +1,7 @@
+// `.env` 를 모듈 데코레이터 평가(아래 DATABASE_ENABLED 조건부 import) 전에 로드한다.
+// ConfigModule.forRoot() 는 본 모듈 import 이후에 실행되므로, .env 의 DATABASE_ENABLED
+// 가 조건부 import 시점에 반영되려면 여기서 먼저 dotenv 를 적용해야 한다 (codex R11 지적).
+import "dotenv/config";
 import { ClassSerializerInterceptor, Module } from "@nestjs/common";
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ClsModule } from "nestjs-cls";
