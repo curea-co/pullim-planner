@@ -322,8 +322,9 @@
 
 | Gate | 합의 시점 | 합의 대상 |
 |---|---|---|
-| **G1** | 본 plan 통과 + §8/§9/§10 결정 | 5 도메인 동시 마이그레이션 정책, 비용 |
-| **G3** (BE·인프라) | **P0-1 (pnpm 전환)** + P0-2/3 결정 + P1-1·P1-2 시작 | **pnpm 전환 (lockfile/Dockerfile/CI 툴링)**, AWS 토폴로지, RDS 옵션, JWT 흐름 설계, Redis/BullMQ |
+| **G1** (현재 — 보류 중) | 본 plan 통과 + §10 트랙1 합의 (P0-1 선행) | 트랙1 시퀀스·정책. ⚠ §8/§9/§10 의 인프라 결정(ECS/RDS/시퀀스)은 §16.2/§16.3 으로 **보류**되어 지금 G1 합의 대상이 아니다 |
+| **G1** (보류 해제 후) | §16.3 트리거 충족 후 | 확정 토폴로지 기준 5 도메인 동시 마이그레이션 정책, 비용 (이전 §8/§9/§10 후보안 참고) |
+| **G3** (BE·인프라) | **P0-1 (pnpm 전환)** + (보류 해제 후) P0-2/3 결정 + P1-1·P1-2 시작 | **pnpm 전환 (lockfile/Dockerfile/CI 툴링)**, (§16.3 후) AWS 토폴로지·RDS 옵션·JWT 흐름·Redis/BullMQ |
 | **G4** (FE) | P1-3·P1-4·P1-5 시작 | DS 마이그레이션 베이스라인 (특히 games 시각 회귀), i18n 추출 정책, TanStack Query 컨벤션 |
 
 > **승인 라우팅 단일 고정**: P0-1 (bun → pnpm) 의 승인 게이트는 **G3** 하나다 (§0 패배 사례·N5 와 동일). FE 전용 G4 또는 일정 사안 G1 이 아니다. 후속 PR 은 G3 승인자를 태운다.
@@ -387,23 +388,25 @@
 - [ ] 확정된 토폴로지 기준으로 5 도메인 ECS Fargate dev 서비스 운영
 - [ ] 5 도메인 모두 GitHub Actions → ECR → ECS 파이프라인 통과
 - [ ] 5 도메인 모두 JWT 인증 + Redis 연결 + Sentry DSN **배포 환경** 활성
-- [ ] §8/§9/§10 + §16.2 D-CLU/D-RDS/D-SEQ/D-COST 결정 사항이 본 plan 본문에 반영 + DECISIONS.md 결정 이력 누적
+- [ ] §8/§9/§10 + §16.2 D-CLU/D-RDS/D-SEQ/D-COST 결정 사항이 **본 plan 본문(§16 결정 이력 포함)** 에 반영 — 결정 이력은 본 문서 §16 또는 동일 리포 `proc/` 내 문서에 누적한다. (리포 외부 `.pullim-meta/DECISIONS.md` 는 비권위 메모이므로 완료 조건의 근거로 삼지 않는다 — 본 바이블이 각 리포에 복제되어도 리포 단위로 검증 가능해야 함.)
 - [ ] §11 의 인프라 의존 H 리스크(R-VRC, R-AWS-COST 등) mitigation 적용 완료 또는 잔여 리스크 별 plan 으로 이관
 
 ---
 
-## 15. 즉시 결정 필요 사안
+## 15. 초안 당시 결정 후보 (대부분 §16 에 의해 보류/대체)
 
-| # | 사안 | 결정자 | Phase 영향 | 권장안 |
+> 본 표는 2026-05-27 초안 시점의 '결정 필요 사안' 후보다. **즉시 결정 안건이 아니다** — 아래 `현재 상태` 열을 기준으로 읽을 것. §16.2/§16.3 가 인프라·시퀀스 사안을 보류했으므로, 보류 행은 §16 이 대체(superseded)했다.
+
+| # | 사안 | 결정자 | 현재 상태 | 권장안(보류 해제 후 참고) |
 |---|---|---|---|---|
-| **D-CLU** | AWS ECS cluster 토폴로지 (옵션 A/B/C) | G1 + G3 | P0-2 시작 | **옵션 C** — 신규 공유 cluster `pullim-domains` |
-| **D-RDS** | RDS 운영 방식 (옵션 A/B/C) | G1 + G3 | P0-3 시작 | **옵션 B** — 공유 instance + DB 분리 |
-| **D-SEQ** | 출시 시퀀스 (옵션 A/B/C) | G1 | 본 plan 합의 시 | **옵션 C** — planner 선행 → 4 도메인 병렬 |
-| **D-DS** | `@pullim/design-system` 외부 노출·발행·deprecation 정책 | 본체팀 + G4 | P1-3 시작 | GitHub release tag pin + semver + 5 도메인 deprecation lead time 1 sprint |
-| **D-CB-ORM** | classbot drizzle → TypeORM 전환 방식 (data migration) | G3 | P0-3 시작 | drizzle schema SQL dump → TypeORM entities 재생성 + 첫 migration generate |
-| **D-GM-BE** | (해당 도메인) BE 신설 여부 (5 중 유일 BE 없음) | G1 + G3 | P0-2 정합 | **§16.2 에서 결정 완료 — 본 §15 행은 §16.2 가 대체(superseded)**. §15 초안의 'SPA 유지는 옵션' 은 더 이상 유효하지 않으며, 최신 결정은 §16.2 를 따른다 |
-| **D-GM-N16** | games Next 15 → 16 시점 | G4 + games audit T5 | P2-5 | P1 완료 후 별 PR. 21 게임 회귀 audit 필수 |
-| **D-COST** | 월 AWS 청구 상한선 (CW Logs retention, S3 lifecycle, RDS 인스턴스 사이즈) | G1 | P0-5 | retention 7d, S3 90d → IA → 1y Glacier, RDS db.t4g.small 시작 |
+| **D-CLU** | AWS ECS cluster 토폴로지 (옵션 A/B/C) | G1 + G3 | 🔒 **§16.2 가 대체 — 무기한 보류** | 옵션 C — 신규 공유 cluster `pullim-domains` |
+| **D-RDS** | RDS 운영 방식 (옵션 A/B/C) | G1 + G3 | 🔒 **§16.2 가 대체 — 보류** | 옵션 B — 공유 instance + DB 분리 |
+| **D-SEQ** | 출시 시퀀스 (옵션 A/B/C) | G1 | 🔒 **§16.2 가 대체 — cluster 결정 후** (§10 트랙 분리 참조) | 옵션 C — planner 선행 → 4 도메인 병렬 |
+| **D-DS** | `@pullim/design-system` 외부 노출·발행·deprecation 정책 | 본체팀 + G4 | 보류 — 본체팀 합의 필요 (§16.2) | GitHub release tag pin + semver + deprecation lead time 1 sprint |
+| **D-CB-ORM** | classbot drizzle → TypeORM 전환 방식 (data migration) | G3 | 보류 — Phase γ 진입 시 (§16.2) | drizzle schema SQL dump → TypeORM entities 재생성 + 첫 migration generate |
+| **D-GM-BE** | (해당 도메인) BE 신설 여부 (5 중 유일 BE 없음) | G1 + G3 | **§16.2 에서 결정 완료 (대체)** — 'SPA 유지는 옵션' 무효, 최신 결정은 §16.2 | (자체 NestJS 신설) |
+| **D-GM-N16** | games Next 15 → 16 시점 | G4 + games audit T5 | 보류 — 진행 중 PR 마무리 후 (§16.2) | P1 완료 후 별 PR. 21 게임 회귀 audit 필수 |
+| **D-COST** | 월 AWS 청구 상한선 (CW Logs retention, S3 lifecycle, RDS 인스턴스 사이즈) | G1 | 🔒 **§16.2 가 대체 — AWS 계정 셋업 후** | retention 7d, S3 90d → IA → 1y Glacier, RDS db.t4g.small 시작 |
 
 ---
 
