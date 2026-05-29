@@ -337,7 +337,9 @@
 
 > §16.3(P0-2/3/4 진입 보류)·§14-A 권위 문서 갱신 선행 조건에 맞춰, 아래 표를 **두 트랙으로 구분**한다. `🔒` 표시 PR 은 트리거/선행 합의가 충족되기 전에는 **착수 불가**다 — 일반 실행 순서로 오독하지 말 것 (codex 지적).
 
-### 13-A. 현재 착수 가능 트랙 (인프라 비의존, 단 P0-1 은 §10 트랙1 선행 합의 필요)
+### 13-A. 선행 합의 완료 시 착수 가능 트랙 (인프라 비의존 — 현재는 합의/권위 갱신 대기)
+
+> ⚠ 이 트랙의 PR 도 **지금 바로 열 수 없다**. §10 트랙1 대로 각 리포(특히 planner — `proc/plan/2026-05-26_pullim-be-adoption.md` 의 `bun 유지`)의 **기존 채택 plan 대체 합의 + spec/권위문서 갱신**이 선행되어야 한다. 인프라(§16.3)에는 의존하지 않는다는 점에서만 13-B 와 구분된다.
 
 | PR # | Phase | 도메인 | 제목 (안) | 의존 / 선행 조건 |
 |---|---|---|---|---|
@@ -346,6 +348,8 @@
 | 3 | P0-1 | classbot | `chore(classbot): D-Lite 모노레포 + pnpm 동시 적용` | PR1 회고 + (동일 선행) |
 | 4 | P0-1 | games | `chore: bun → pnpm + alignment 흡수` | PR1 회고 + (동일 선행) |
 | 5 | P0-1 | arcade | `chore: bun → pnpm 10.26.1` | PR1 회고 + (동일 선행) |
+| 9c | P1-1(코드) | 5 도메인 | `feat(<scope>): JWT 인증 **코드 레벨** 구현 (로컬 docker 검증)` | 각 리포 scope-out 해제(§14-A) — 인프라 비의존. **배포 측면(PR9)은 13-B** |
+| 10c | P1-2(코드) | 5 도메인 | `feat(<scope>): Redis/BullMQ **코드 레벨** 구현 (로컬 docker 검증)` | 각 리포 scope-out 해제(§14-A) — 인프라 비의존. **배포 측면(PR10)은 13-B** |
 
 ### 13-B. 보류 트랙 (🔒 §16.3 트리거 또는 권위 문서 갱신 후에만 착수)
 
@@ -354,8 +358,8 @@
 | 6 | P0-2/3 | (인프라) | `infra: ECS cluster + RDS 셋업` | 🔒 **§16.3 트리거(병합 안 함 확정 또는 토폴로지 확정) 충족 후** |
 | 7 | P0-4 | 5 도메인 | `ci(<scope>): Vercel → Docker → ECR → ECS workflow` (5 PR) | 🔒 PR6 (§16.3 트리거 후) |
 | 8 | P0-5 | 5 도메인 | `infra(<scope>): Secrets Manager + CloudWatch + S3 + SES` | 🔒 PR6 (§16.3 트리거 후) |
-| 9 | P1-1 | 5 도메인 | `feat(<scope>): MockAuth → Passport/JWT 인증` (5 PR) | 🔒 PR8 + 각 리포 scope-out 해제(§14-A) — 배포측면은 §16.3 후 |
-| 10 | P1-2 | 5 도메인 | `feat(<scope>): Redis + BullMQ 도입` (5 PR) | 🔒 PR8 + scope-out 해제 — 배포측면은 §16.3 후 |
+| 9 | P1-1 | 5 도메인 | `feat(<scope>): JWT 인증 **배포 측면** (Secrets/ECS env/실인증 연동)` (5 PR) | 🔒 PR8 + §16.3 트리거 후. **코드 레벨은 13-A 의 9c** |
+| 10 | P1-2 | 5 도메인 | `feat(<scope>): Redis/BullMQ **배포 측면** (ElastiCache/연결 인프라)` (5 PR) | 🔒 PR8 + §16.3 트리거 후. **코드 레벨은 13-A 의 10c** |
 | 11 | P1-3 | 5 도메인 | `refactor(<scope>): shadcn(+Base UI) → @pullim/design-system 마이그레이션` (5 PR — games 는 4 viewport audit 첨부) | 🔒 DS 외부 정책 합의 + 각 리포 앱 가이드의 DS 금지 해제(§14-A) |
 | 12 | P1-4 | 5 도메인 | `feat(<scope>): next-intl ko/en 도입 + 텍스트 추출` (5 PR) | 🔒 각 리포 i18n 금지 해제(§14-A) |
 | 13 | P1-5 | 4 도메인 | `feat(<scope>): TanStack Query 도입` (4 PR — classbot 제외) | (FE — 권위 문서 갱신 후 G4) |
@@ -375,7 +379,7 @@
 §16.2/§16.3 보류가 유지되는 동안의 완료 기준. 인프라(ECS/ECR/RDS)에 의존하지 않는 항목만 포함한다. 본 단계 충족 시 plan 을 **"부분 완료(인프라 대기)" 상태로 표시**하되 archive 이관은 보류한다.
 
 - [ ] 5 도메인 `package.json` 의 `packageManager` 가 `pnpm@10.26.1` (P0-1, G3 승인 후)
-- [ ] 5 도메인 코드·디렉터리·CI **툴링** 구조가 본체와 동형 (pnpm workflow, typecheck/lint/test 게이트)
+- [ ] 5 도메인 코드·디렉터리·로컬 툴링이 본체와 동형 — **typecheck/lint/test 게이트만** (인프라 비의존). ⚠ CI **배포** workflow(Vercel→Docker→ECR→ECS, P0-4)는 §10/§16.3 으로 보류되므로 본 항목에서 제외하고 14-B 로 이관한다.
 - [ ] **(권위 문서 갱신 선행 필수)** 5 도메인 모두 `@pullim/design-system` 사용 + `messages/{ko,en}.json` 단일 파일 + TanStack Query QueryClient 활성 — ⚠ planner 의 `apps/planner/AGENTS.md`·`apps/planner/CLAUDE.md` 와 `proc/plan/2026-05-26_container-presenter-adoption.md` 는 **현재 `@pullim/design-system`·`next-intl`/`useTranslations()` 도입을 금지·별도 plan 분리**로 두고 있다. 따라서 이 항목은 각 리포의 앱 가이드/spec 을 먼저 갱신해 금지를 해제(G4 승인 + spec 갱신 PR 머지)한 뒤에만 체크 가능하다. 갱신 전에는 본 항목을 진행률에 포함하지 않는다.
 - [ ] **(권위 문서 갱신 선행 필수)** JWT 인증 + Redis 연결의 **코드 레벨** 구현 (로컬 docker 검증) — ⚠ planner 의 `proc/plan/2026-05-26_pullim-be-adoption.md` 는 **Mock auth 유지 + JWT/Redis/BullMQ scope-out** 을 명시한다. 이 항목도 각 리포 spec/plan 갱신으로 scope-out 을 해제한 뒤에만 체크 가능하며, 배포 측면은 14-B 로 이관한다. 갱신 전에는 진행률에 포함하지 않는다.
 - [ ] §11 의 인프라 비의존 H 리스크(R-AUT, R-DS, R-I18N, R-DS-EXT, R-DRIZ) mitigation 적용 또는 별 plan 이관
@@ -386,7 +390,7 @@
 
 - [ ] 14-A 전 항목 충족
 - [ ] 확정된 토폴로지 기준으로 5 도메인 ECS Fargate dev 서비스 운영
-- [ ] 5 도메인 모두 GitHub Actions → ECR → ECS 파이프라인 통과
+- [ ] 5 도메인 모두 CI **배포** workflow(Vercel→Docker→ECR→ECS, P0-4 — 14-A 에서 이관) 정렬 + GitHub Actions → ECR → ECS 파이프라인 통과
 - [ ] 5 도메인 모두 JWT 인증 + Redis 연결 + Sentry DSN **배포 환경** 활성
 - [ ] §8/§9/§10 + §16.2 D-CLU/D-RDS/D-SEQ/D-COST 결정 사항이 **본 plan 본문(§16 결정 이력 포함)** 에 반영 — 결정 이력은 본 문서 §16 또는 동일 리포 `proc/` 내 문서에 누적한다. (리포 외부 `.pullim-meta/DECISIONS.md` 는 비권위 메모이므로 완료 조건의 근거로 삼지 않는다 — 본 바이블이 각 리포에 복제되어도 리포 단위로 검증 가능해야 함.)
 - [ ] §11 의 인프라 의존 H 리스크(R-VRC, R-AWS-COST 등) mitigation 적용 완료 또는 잔여 리스크 별 plan 으로 이관
