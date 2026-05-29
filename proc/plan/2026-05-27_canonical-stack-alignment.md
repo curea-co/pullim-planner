@@ -24,7 +24,7 @@
 
 - planner 의 `bun` 워크스페이스 결정 (현행) vs 본 문서의 `pnpm` 제안 — planner 는 **계속 bun**, pnpm 전환(P0-1)은 **G3 (BE·인프라 게이트)** 통과 후에만. (pnpm 전환은 lockfile·Dockerfile·CI 워크플로 동시 갱신으로 인프라/툴링 사안이므로 FE 전용 G4 가 아니라 G3 가 승인한다. §12·N5 와 동일하게 G3 로 단일 고정.)
 - planner / Q / classbot 의 현행 scope-out (JWT / Redis / BullMQ / Design System / i18n / Sentry) — 본 문서가 정본 스택으로 적었더라도, 채택은 각 리포의 별도 spec 갱신 PR을 통해서만. 본 문서 자체로 채택 효력 없음.
-- classbot 의 Drizzle 기반 현행 BE 로드맵 — 본 문서의 TypeORM 정본 항목은 G4 통과 후 별도 마이그레이션 plan 으로 처리. 즉시 전환 아님.
+- classbot 의 Drizzle 기반 현행 BE 로드맵 — 본 문서의 TypeORM 정본 항목은 **G3(BE 게이트) 승인 후 별도 마이그레이션 plan** 으로 처리. 즉시 전환 아님. (ORM/JWT/Redis 등 BE 변경의 승인 게이트는 §12·§15 대로 G3 이며 FE 전용 G4 가 아니다.)
 - games 의 `proc/spec/01~10` 독립 거버넌스 / "다른 풀림 프로젝트 코드 참조 금지" 규칙 — 본 문서로 무효화되지 않는다. games 의 본 문서 채택은 games 의 spec 갱신을 통해서만.
 - arcade 의 부트스트랩 단계 — 본 문서의 5 도메인 동기 가정은 arcade 의 Phase 1 (mini-monorepo) 완료 전까지 적용 보류.
 
@@ -190,7 +190,9 @@
 | **P0-4** | CI/CD 재작성 (Vercel 폐기 → Docker → ECR → ECS) | 5 도메인 각자 | `.github/workflows/{ci.yml,deploy.yml}`: actions/setup-pnpm·typecheck·lint·test → docker build → aws-actions/configure-aws-credentials → ECR push → ECS service update |
 | **P0-5** | Secrets Manager + CloudWatch Logs + S3 + SES | 5 도메인 또는 공유 | env 추출·Secrets Manager rotation policy·로그 그룹·S3 버킷 정책·SES verified identity |
 
-### P1 — 코드 마이그레이션 (P0 완료 후)
+### P1 — 코드 마이그레이션 (단계별 진입 조건 상이 — 아래 주의)
+
+> ⚠ **순서 정정**: P1 전체가 "P0 완료 후"는 아니다. §13-A·§14-A 대로 **P1-1(JWT)·P1-2(Redis/BullMQ)의 코드 레벨 작업(9c/10c)** 은 인프라 보류와 분리되어 (각 리포 scope-out 해제 후) **선행 가능**하다. 반면 **인프라 의존 배포 단계(P1-1/P1-2 의 배포 측면, §13-B 9/10)는 P0(특히 §16.3 트리거) 이후**다. P1-3/4/5(FE) 는 G4 + 권위 문서 갱신 후. 아래 표는 산출물 정의이며 진입 순서는 §13/§14 를 따른다.
 
 | Phase | 이름 | 대상 | 산출물 |
 |---|---|---|---|
@@ -429,7 +431,8 @@
 
 ## 부록 B — 변경 이력
 
-- 2026-05-27 신규 작성. 5 도메인 정본 스택 정렬 통합 plan 초안. §8/§9/§10 + 4 D-* 미해결.
+- 2026-05-27 신규 작성. 5 도메인 정본 스택 정렬 통합 plan 초안. §8/§9/§10 + 4 D-* **초안 당시 미해결**.
+- 2026-05-29 정정. §16 사용자 결정 반영: **§8/§9 (AWS/RDS) 및 §15 의 D-CLU/D-RDS/D-SEQ/D-COST 를 §16.2/§16.3 으로 보류·대체(superseded)**. §0 권위 우선순위에 planner 앱 가이드 추가, §2 를 본체 검증값(2-A)/별도 정책 제안(2-B) 분리, P0-1 게이트 G3 단일 고정, §10/§13/§14 를 트랙1(인프라 비의존)/트랙2(보류) 분리, §13-B JWT/Redis 를 코드(9c/10c)/배포(9/10) 분리, planner DS 베이스라인 shadcn/ui+Base UI 반영. **상단 §0~§16 본문이 최신 상태이며, 본 이력 줄만 보고 초안 상태로 오해하지 말 것.**
 
 ---
 
