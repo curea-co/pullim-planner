@@ -26,5 +26,5 @@
 export type { AuthUser, IAuthProvider, SocialProvider } from "./types";
 export { AuthError } from "./types";
 export { authService } from "./service";
-export { MockAuthProvider } from "./providers/mock";
+export { MockAuthProvider, DEFAULT_MOCK_CREDENTIALS } from "./providers/mock";
 export type { MockAuthUser } from "./providers/mock";

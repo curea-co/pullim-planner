@@ -14,8 +14,23 @@ export interface MockAuthUser {
   claims?: Record<string, unknown>;
 }
 
+/**
+ * 기본 mock 계정의 자격 증명.
+ *
+ * `signOut()` 후 facade(`authService.signInWithEmail`)만으로 재로그인할 수 있도록
+ * email/password 를 부여한다. 자격 증명이 없으면 로그아웃이 terminal state 가 되어
+ * (concrete `MockAuthProvider` 인스턴스를 직접 쥐고 `resetToSeed()` 하지 않는 한)
+ * 재로그인 경로가 없다 (codex R9 지적). Phase η 실인증 도입 시 제거.
+ */
+export const DEFAULT_MOCK_CREDENTIALS = {
+  email: "student_001@pullim.local",
+  password: "mock-password",
+} as const;
+
 const DEFAULT_MOCK_USER: MockAuthUser = {
   id: "student_001",
+  email: DEFAULT_MOCK_CREDENTIALS.email,
+  password: DEFAULT_MOCK_CREDENTIALS.password,
   username: "풀림 학생",
 };
 
@@ -81,11 +96,11 @@ export class MockAuthProvider implements IAuthProvider {
   }
 
   /**
-   * mock 전용 헬퍼 — seed 사용자(기본은 첫 번째)로 currentUser를 복구한다.
+   * mock 전용 헬퍼 — seed 사용자(기본은 첫 번째)로 currentUser를 즉시 복구한다.
    *
-   * 기본 mock 사용자는 `email/password`가 없어 `signOut()` 이후 `signInWithEmail`로
-   * 재로그인할 수 없다. 테스트·개발 흐름에서 로그아웃 후 다시 로그인 상태로 되돌릴 때만
-   * 사용한다 (Phase η 실인증 도입 후 제거 예정).
+   * 기본 mock 사용자에는 {@link DEFAULT_MOCK_CREDENTIALS} 가 부여돼 있어 facade
+   * (`authService.signInWithEmail`)만으로도 재로그인할 수 있다. 본 헬퍼는 자격 증명
+   * 입력 없이 곧장 복구하고 싶은 테스트·개발 흐름의 편의 경로다 (Phase η 실인증 도입 후 제거 예정).
    *
    * @param index - 복구할 seed 사용자의 인덱스. 기본 0.
    */

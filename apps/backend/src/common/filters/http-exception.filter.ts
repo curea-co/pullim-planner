@@ -102,6 +102,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       403: ErrorMessages.AUTH_FORBIDDEN,
       404: ErrorMessages.COMMON_NOT_FOUND,
       409: ErrorMessages.COMMON_CONFLICT,
+      // 422 는 본 PR 이 validation 표준으로 채택(spec §3.2, ValidationPipe
+      // errorHttpStatusCode). 컨트롤러/서비스가 422 를 string 메시지로 직접 던져
+      // ValidationPipe 의 배열 경로를 타지 않더라도 `COMMON_VALIDATION_FAILED`
+      // 로 내려가야 FE 에러 분기가 깨지지 않는다 (codex R9 지적).
+      422: ErrorMessages.COMMON_VALIDATION_FAILED,
     };
     return statusMap[status] ?? ErrorMessages.COMMON_UNKNOWN_ERROR;
   }
