@@ -811,85 +811,103 @@ export type Planner = {
   };
 };
 
-/** 시드 3건 — active 1, inactive 1, archived 1 */
-export const planners: Planner[] = [
-  {
-    id: 'pl_001',
-    name: '6월 모의평가',
-    examType: 'mock',
-    examLabel: '6월 모의평가',
-    examStartDate: '2026-06-04',
-    examEndDate: '2026-06-04',
-    target: { kind: 'grade', value: 1 },
-    weekdayHours: { start: 18, end: 23 },
-    weekendHours: { start: 10, end: 22 },
-    subjectUnits: {
-      math: ['미적분', '확률과 통계'],
-      english: ['독해', '수능특강 영어 3강'],
-      science: ['역학과 에너지'],
+/**
+ * 시드 3건 — active 1, inactive 1, archived 1.
+ *
+ * factory 패턴: 매 호출마다 fresh literal 반환. `resetMockState()`가 mutate된
+ * 모듈 상태를 원본 시드로 되돌릴 때 재사용.
+ */
+function buildInitialPlanners(): Planner[] {
+  return [
+    {
+      id: 'pl_001',
+      name: '6월 모의평가',
+      examType: 'mock',
+      examLabel: '6월 모의평가',
+      examStartDate: '2026-06-04',
+      examEndDate: '2026-06-04',
+      target: { kind: 'grade', value: 1 },
+      weekdayHours: { start: 18, end: 23 },
+      weekendHours: { start: 10, end: 22 },
+      subjectUnits: {
+        math: ['미적분', '확률과 통계'],
+        english: ['독해', '수능특강 영어 3강'],
+        science: ['역학과 에너지'],
+      },
+      blockPattern: 'focused',
+      weaknessAutoReflect: true,
+      motivationStyle: 'guided',
+      motto: '영어 빈칸 추론 1등급 사수',
+      active: true,
+      archived: false,
+      createdAt: '2026-04-15T09:00:00',
+      updatedAt: '2026-04-23T20:00:00',
+      customization: { layoutId: 'vertical_timeline', weekLayoutId: 'matrix_by_type', paletteId: 'pullim_blue' },
     },
-    blockPattern: 'focused',
-    weaknessAutoReflect: true,
-    motivationStyle: 'guided',
-    motto: '영어 빈칸 추론 1등급 사수',
-    active: true,
-    archived: false,
-    createdAt: '2026-04-15T09:00:00',
-    updatedAt: '2026-04-23T20:00:00',
-    customization: { layoutId: 'vertical_timeline', weekLayoutId: 'matrix_by_type', paletteId: 'pullim_blue' },
-  },
-  {
-    id: 'pl_002',
-    name: '1학기 기말고사',
-    examType: 'final',
-    examLabel: '1학기 기말고사',
-    examStartDate: '2026-06-27',
-    examEndDate: '2026-07-01',
-    target: { kind: 'score', value: 90 },
-    weekdayHours: { start: 19, end: 22 },
-    weekendHours: { start: 14, end: 20 },
-    subjectUnits: {
-      math: ['미적분 II'],
-      english: ['독해'],
-      korean: ['문학'],
-      science: ['전자기학'],
+    {
+      id: 'pl_002',
+      name: '1학기 기말고사',
+      examType: 'final',
+      examLabel: '1학기 기말고사',
+      examStartDate: '2026-06-27',
+      examEndDate: '2026-07-01',
+      target: { kind: 'score', value: 90 },
+      weekdayHours: { start: 19, end: 22 },
+      weekendHours: { start: 14, end: 20 },
+      subjectUnits: {
+        math: ['미적분 II'],
+        english: ['독해'],
+        korean: ['문학'],
+        science: ['전자기학'],
+      },
+      blockPattern: 'pomodoro',
+      weaknessAutoReflect: true,
+      motivationStyle: 'guided',
+      motto: '내신 1등급',
+      active: false,
+      archived: false,
+      createdAt: '2026-04-20T10:00:00',
+      updatedAt: '2026-04-20T10:00:00',
+      customization: { layoutId: 'block_cards', weekLayoutId: 'school_grid', paletteId: 'forest' },
     },
-    blockPattern: 'pomodoro',
-    weaknessAutoReflect: true,
-    motivationStyle: 'guided',
-    motto: '내신 1등급',
-    active: false,
-    archived: false,
-    createdAt: '2026-04-20T10:00:00',
-    updatedAt: '2026-04-20T10:00:00',
-    customization: { layoutId: 'block_cards', weekLayoutId: 'school_grid', paletteId: 'forest' },
-  },
-  {
-    id: 'pl_003',
-    name: '4월 학력평가',
-    examType: 'mock',
-    examLabel: '4월 학평',
-    examStartDate: '2026-04-15',
-    examEndDate: '2026-04-15',
-    target: { kind: 'grade', value: 2 },
-    weekdayHours: { start: 18, end: 22 },
-    weekendHours: { start: 10, end: 20 },
-    subjectUnits: {
-      math: ['미적분 I'],
-      english: ['독해'],
-      science: ['역학'],
+    {
+      id: 'pl_003',
+      name: '4월 학력평가',
+      examType: 'mock',
+      examLabel: '4월 학평',
+      examStartDate: '2026-04-15',
+      examEndDate: '2026-04-15',
+      target: { kind: 'grade', value: 2 },
+      weekdayHours: { start: 18, end: 22 },
+      weekendHours: { start: 10, end: 20 },
+      subjectUnits: {
+        math: ['미적분 I'],
+        english: ['독해'],
+        science: ['역학'],
+      },
+      blockPattern: 'focused',
+      weaknessAutoReflect: true,
+      motivationStyle: 'autonomous',
+      motto: '',
+      active: false,
+      archived: true,
+      createdAt: '2026-03-25T09:00:00',
+      updatedAt: '2026-04-15T22:00:00',
+      customization: { layoutId: 'pie_list', weekLayoutId: 'heatmap', paletteId: 'sunset' },
     },
-    blockPattern: 'focused',
-    weaknessAutoReflect: true,
-    motivationStyle: 'autonomous',
-    motto: '',
-    active: false,
-    archived: true,
-    createdAt: '2026-03-25T09:00:00',
-    updatedAt: '2026-04-15T22:00:00',
-    customization: { layoutId: 'pie_list', weekLayoutId: 'heatmap', paletteId: 'sunset' },
-  },
-];
+  ];
+}
+
+export const planners: Planner[] = buildInitialPlanners();
+
+/**
+ * mock 모듈 상태를 초기 시드로 되돌린다. 개발자 도구(DevResetButton) 전용.
+ * 현재는 `planners`만 mutate 대상. mutate 가능한 mock이 추가되면 여기에 합쳐 reset.
+ */
+export function resetMockState(): void {
+  planners.length = 0;
+  for (const p of buildInitialPlanners()) planners.push(p);
+}
 
 /** 활성 플래너 — 한 시점에 1개. 못 찾으면 첫 비-archived. */
 export function getActivePlanner(): Planner {
