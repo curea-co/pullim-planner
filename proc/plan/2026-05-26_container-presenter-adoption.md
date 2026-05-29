@@ -149,12 +149,12 @@ feature A의 컴포넌트를 feature B에서 import해도 된다. 단:
 
 ### Phase 4 — 잔여 폴더 통합 + import 경로 일괄 정리 (PR #4)
 
-- [ ] `src/components/builder/*` → `features/planner-builder/components/*`
-- [ ] `src/components/planner-builder/*` → `features/planner-builder/components/*`
-- [ ] 잔여 `src/components/planner/*` (home/views/layouts/reports 외) → `features/planner-home/components/` 또는 적절한 feature
-- [ ] 모든 import 경로 일괄 갱신 (`bunx tsc --noEmit` 로 검증)
-- [ ] 빈 디렉터리 (`src/components/planner/` 등) 제거
-- [ ] `bun run build` 통과
+- [x] `components/builder/*` → `features/planner-builder/components/*` (step-indicator.tsx)
+- [x] `components/planner-builder/*` → `features/planner-builder/components/*` (builder-types.ts, step-content.tsx, unit-editor-modal.tsx)
+- [x] 모든 import 경로 일괄 갱신 (7개 파일) — `bunx tsc --noEmit` app/components/lib 소스 0 error 확인
+- [x] 빈 디렉터리 (`components/builder/`, `components/planner-builder/`) 제거
+- [ ] `bun run build` 통과 — `jest.config.ts @types/jest` 미설치 이슈(upstream #35 pre-existing)로 차단. **별도 수정 필요** (GATED)
+- 브랜치: `feat/fe-container-presenter-phase4`, SHA: `9f7b29a`
 
 ### Phase 5 — 문서 마감 (PR #5)
 
@@ -190,6 +190,7 @@ feature A의 컴포넌트를 feature B에서 import해도 된다. 단:
 | 폴더 이름 | `features/planner-*` 접두 유지 (현 `components/planner-*` 와 일관성) |
 | Phase 0 PR 분리 | **합침** — 컨벤션 문서는 Phase 1 파일럿 코드와 함께 머지 |
 | `setTick` 처리 | Phase 2 진입 전 `investigate` 스킬로 root cause 분석. 단순 cache 무효화면 그대로 보존, 진짜 동기화 문제면 별도 plan으로 분리 |
+| `refactor/d-lite` 처리 방향 | 2026-05-29 기준 `origin/refactor/d-lite` 브랜치 미존재 (로컬·원격 모두). Phase 4 대상 파일 overlap 없음으로 간주 → Phase 4를 **독립 PR**로 진행. 브랜치 push 시 Phase 4 PR 머지 전에 diff 재검토 필요. ([상세 근거](2026-05-29_fe-container-presenter-phase4.md §B)) |
 
 ### 미정 — 추후 결정
 
