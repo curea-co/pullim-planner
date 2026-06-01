@@ -173,6 +173,29 @@ push/PR/merge 금지(로컬 커밋까지). `games`·`games-arcade` 미접근. �
 ## 5. Audit 로그 (각 Phase 후 기록)
 
 > 형식: Phase / 일시 / grep 결과 / 실DB 증거 / typecheck·lint·build / 비고
-```
-(아래 Phase별 추가)
-```
+
+### Phase 0 — auth 구축 · audit PASS (2026-06-01)
+
+- **typecheck / lint / build**: 모두 green. 기존 e2e(`phase-beta-wiring`) + placeholder = 8 tests PASS (회귀 없음).
+- **마이그레이션(실DB 5432 `pullim_planner`)**: `CreateAuthTables1748736000000` 실행 성공.
+  `auth_users`(uuid PK, partial unique `uq_auth_users_email` WHERE deleted_at IS NULL),
+  `auth_user_providers`(FK→auth_users ON DELETE CASCADE), `refresh_token_blacklist`(jti PK) 생성 확인.
+  **Drizzle 시대 도메인 테이블(users/planners/...) 무손상** — `users` 여전히 `student_001` 1행.
+- **curl 실증** (DATABASE_ENABLED=true, 전역 JwtAuthGuard 활성):
+  | # | 시나리오 | 결과 |
+  |---|---|---|
+  | check-email(가입 전/후) | `available:true` → `false` | PASS |
+  | signup | 201 + `{id(uuid),email,role,accessToken,refreshToken}` | PASS |
+  | signup 중복 | 409 `USER_EMAIL_DUPLICATED` | PASS |
+  | signup 약한 비번 | 422 validation (영문/숫자/특수문자·최소8자) | PASS |
+  | login 정상 | 200 + 토큰 쌍 | PASS |
+  | login 오류 비번 | 401 `AUTH_LOGIN_FAILED` (계정열거 방지 통일 메시지) | PASS |
+  | GET /me (access) | 200, password 등 @Exclude 필드 제외 | PASS |
+  | GET /me (무토큰) | 401 `AUTH_UNAUTHORIZED` | PASS |
+  | refresh | 200 + 새 쌍 | PASS |
+  | refresh 재사용(rotation) | 401 `AUTH_TOKEN_BLACKLISTED` | PASS |
+  | logout (access+refresh) | 200, 이후 그 refresh로 refresh → 401 blacklisted | PASS |
+- **DB 비밀번호 저장 검증**: `auth_user_providers.password` = `$2b$12$...` (bcrypt, 60자) — 평문 아님.
+  비번은 `auth_users` 가 아닌 provider 에만 저장. blacklist 행 누적 확인.
+- **비고**: logout 은 `@Public()` 아님(본체/Q 동일) — access token 필수 + body refreshToken. 의도된 설계.
+  `DATABASE_ENABLED=false`(스모크)면 `MockAuthGuard` 유지로 부팅·기존 라우트 동작 보존.

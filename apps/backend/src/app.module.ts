@@ -18,12 +18,25 @@ import { AppConfigModule } from "./common/bootstrap/config.module";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { QueryFailedExceptionFilter } from "./common/filters/query-failed-exception.filter";
+import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { MockAuthGuard } from "./common/guards/mock-auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 import { DatabaseModule } from "./database/database.module";
+import { AuthModule } from "./modules/auth/auth.module";
 
 import { AppController } from "./app.controller";
+
+/**
+ * 인증 활성 여부. `DATABASE_ENABLED=true` 일 때만 auth 가 동작한다 (실DB 필요).
+ *
+ * - 활성(true): `AuthModule` import + 전역 `JwtAuthGuard`(Passport jwt). `@Public()` 면제.
+ * - 비활성(false, Phase β 스모크): `MockAuthGuard` 유지 — DB·Passport 전략 없이도 부팅되며
+ *   기존 스모크 라우트(/api/whoami 등)와 wiring e2e 가 그대로 통과한다.
+ *
+ * 두 가드는 동일하게 `@Public()`/`@CurrentUser()` 시그니처를 만족하므로 라우트 코드는 무변경.
+ */
+const AUTH_ENABLED = process.env.DATABASE_ENABLED === "true";
 
 /**
  * pullim-planner 백엔드 루트 모듈.
@@ -31,16 +44,15 @@ import { AppController } from "./app.controller";
  * pullim 본체 AppModule 패턴 차용 (planner 단일 도메인용으로 축소):
  * - ClsModule 글로벌 (요청 ID 추적)
  * - AppConfigModule 글로벌 (Joi 검증)
- * - DatabaseModule (TypeORM) — `DATABASE_ENABLED=true` 일 때만 import
+ * - DatabaseModule + AuthModule (TypeORM/JWT) — `DATABASE_ENABLED=true` 일 때만 import
  * - 전역 필터: HttpExceptionFilter → QueryFailedExceptionFilter → AllExceptionsFilter (등록 역순 실행)
- * - 전역 가드: MockAuthGuard → RolesGuard
+ * - 전역 가드: (auth 활성) JwtAuthGuard → RolesGuard / (스모크) MockAuthGuard → RolesGuard
  * - 전역 인터셉터: ClassSerializerInterceptor → ResponseInterceptor (envelope 옵션 A)
  *
- * Phase β: common 인프라 스모크 라우트(/api/health, /api/whoami, /_test-throw)는 DB 가
- * 없어도 부팅·검증돼야 하므로 `DatabaseModule` 을 `DATABASE_ENABLED` env 로 게이트한다
- * (codex R10 지적). Phase γ entity 도입 시 `DATABASE_ENABLED=true` 로 전환.
- *
- * planner 도메인 모듈은 Phase γ에서 추가.
+ * `DATABASE_ENABLED=true` 일 때 `DatabaseModule`·`AuthModule` 이 import 되고 전역 가드가
+ * `JwtAuthGuard`(Passport jwt) 로 전환된다. false(Phase β 스모크)면 DB·Passport 전략 없이
+ * 부팅하며 `MockAuthGuard` 가 유지돼 기존 스모크 라우트/wiring e2e 가 그대로 통과한다
+ * (codex R10 게이트 패턴 계승).
  */
 @Module({
   controllers: [AppController],
@@ -50,14 +62,17 @@ import { AppController } from "./app.controller";
       middleware: { mount: true, generateId: true },
     }),
     AppConfigModule,
-    ...(process.env.DATABASE_ENABLED === "true" ? [DatabaseModule] : []),
+    ...(AUTH_ENABLED ? [DatabaseModule, AuthModule] : []),
   ],
   providers: [
     // 실행 순서는 등록 역순: HttpException → QueryFailed → All
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_FILTER, useClass: QueryFailedExceptionFilter },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
-    { provide: APP_GUARD, useClass: MockAuthGuard },
+    {
+      provide: APP_GUARD,
+      useClass: AUTH_ENABLED ? JwtAuthGuard : MockAuthGuard,
+    },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },

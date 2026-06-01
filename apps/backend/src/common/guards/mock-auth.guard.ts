@@ -46,7 +46,10 @@ export class MockAuthGuard implements CanActivate {
           ? rawHeader[0]
           : DEFAULT_MOCK_USER_ID;
 
-    request.user = { id: userId };
+    // 스모크 모드 전용 stand-in. `Express.User` 는 auth 활성 시 `AuthUser` 전체이지만,
+    // DB·엔티티가 없는 Phase β 스모크에서는 `/whoami` 가 id 만 쓰므로 부분 객체를 주입한다.
+    // (auth 활성 경로에서는 JwtStrategy 가 AuthUser 전체를 주입하므로 이 가드는 비활성)
+    request.user = { id: userId } as Express.User;
     return true;
   }
 }
