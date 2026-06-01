@@ -13,6 +13,8 @@ import { AuthUser } from "../../entities/auth-user.entity";
 import { AuthUserProvider } from "../../entities/auth-user-provider.entity";
 import { RefreshTokenBlacklist } from "../../entities/refresh-token-blacklist.entity";
 import { AuthController } from "./controller/auth.controller";
+import { DomainUserProvisioner } from "./identity/domain-user-provisioner";
+import { DomainUser } from "./identity/domain-user.entity";
 import { AuthUserRepository } from "./infrastructure/auth-user.repository";
 import { BlacklistRepository } from "./infrastructure/blacklist.repository";
 import { AuthUserRepositoryInterface } from "./interface/auth-user-repository.interface";
@@ -31,6 +33,9 @@ import { SignupUseCase } from "./use-cases/signup.use-case";
  * DatabaseModule 이 `autoLoadEntities: true` 이므로 `forFeature` 등록 엔티티는 루트
  * 연결에 자동 합류한다. `DATABASE_ENABLED=true` 일 때만 DatabaseModule 이 import 되므로,
  * 본 모듈 역시 app.module 에서 동일 게이트로 import 한다 (DB 없이는 부팅 불가).
+ *
+ * Phase 1: 도메인 `users`(Drizzle 시대 테이블) 를 `DomainUser` 로 매핑해 신원 프로비저닝에
+ * 쓴다. synchronize=false 이므로 이 매핑은 스키마를 변경하지 않는다 (읽기/INSERT 전용).
  */
 @Module({
   imports: [
@@ -46,6 +51,7 @@ import { SignupUseCase } from "./use-cases/signup.use-case";
       AuthUser,
       AuthUserProvider,
       RefreshTokenBlacklist,
+      DomainUser,
     ]),
   ],
   controllers: [AuthController],
@@ -61,6 +67,7 @@ import { SignupUseCase } from "./use-cases/signup.use-case";
     },
     AuthService,
     AuthUserService,
+    DomainUserProvisioner,
     JwtStrategy,
     JwtRefreshStrategy,
     SignupUseCase,

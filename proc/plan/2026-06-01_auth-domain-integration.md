@@ -199,3 +199,27 @@ push/PR/merge 금지(로컬 커밋까지). `games`·`games-arcade` 미접근. �
   비번은 `auth_users` 가 아닌 provider 에만 저장. blacklist 행 누적 확인.
 - **비고**: logout 은 `@Public()` 아님(본체/Q 동일) — access token 필수 + body refreshToken. 의도된 설계.
   `DATABASE_ENABLED=false`(스모크)면 `MockAuthGuard` 유지로 부팅·기존 라우트 동작 보존.
+
+### Phase 1 — 신원 프로비저닝 + getCurrentUserId resolver · audit PASS (2026-06-01)
+
+- **구현**: signup 트랜잭션 내부에 `DomainUserProvisioner.provision({id, name})` 추가 — 도메인 `users`
+  행을 `id = auth_user.id` 로 같은 트랜잭션에서 생성(ON CONFLICT DO NOTHING 멱등). 온보딩 전 NOT NULL
+  필드는 `ONBOARDING_PENDING_DEFAULTS`(미정/0)로 채움. `DomainUser` 엔티티는 기존 Drizzle `users`
+  매핑(읽기/INSERT 전용, synchronize=false 라 스키마 무변경). `getCurrentUserId(req)` resolver 를
+  `common/utils/request.util.ts` 에 신설 (`req.user?.id ?? student_001`).
+- **typecheck / lint / build**: green. 8 tests PASS (스모크 회귀 없음).
+- **실DB 2유저 격리 증거**: bob/carol 가입 → 각기 다른 uuid 발급.
+  `auth_users.id == users.id` 매칭 `id_match=t` 2건 확인. 도메인 `users` = 시드 `student_001` +
+  신규 2행(서로 다른 uuid). 데모 시드 무손상.
+  (alice 는 provisioner 도입 전 Phase 0 에서 가입돼 도메인 행 없음 — 신규 가입은 모두 프로비저닝됨.)
+
+### Phase 2/3 — GATED 확정 (대상 0건)
+
+- **grep audit**: `grep -rn student_001 apps/planner` → 5건 모두 **mock 픽스처/데모**
+  (`lib/mock/persona.ts`, `lib/mock/family.ts`×3, `consent-dialog.tsx` 데모 push).
+  도메인 write 경로 하드코딩 0건 → audit 규칙 `데모/시드 외 잔존 0` **이미 충족**.
+- **BE**: `student_001` 은 `DEFAULT_MOCK_USER_ID` 상수(데모 폴백, resolver 가 단일 소비) + 주석뿐.
+  도메인 write 컨트롤러 없음 → 교체 대상 0건.
+- **결론**: Phase 2(교체)·Phase 3(쓰기 가드)는 BE 도메인 모듈 + FE api-client 전환(be-adoption Phase η)
+  **선행 필수**. 현 시점 대상이 0건이라 코드 변경 없음(데모 픽스처는 의도적으로 보존). 도메인 모듈이
+  들어오면 write 컨트롤러에서 `getCurrentUserId(req)` 채택 + write 라우트 `@Public()` 제거만으로 완료된다.
