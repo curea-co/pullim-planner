@@ -533,6 +533,45 @@ describe("JWT type 클레임 교차 검증", () => {
   });
 });
 
+describe("CreateDomainUsersTable 마이그레이션 — fresh DB 가입 경로", () => {
+  it("up() 이 도메인 users 테이블을 IF NOT EXISTS 로 생성한다 (운영 DB 무손상)", async () => {
+    const { CreateDomainUsersTable1748735000000 } =
+      (await import("../src/database/migrations/1748735000000-CreateDomainUsersTable")) as {
+        CreateDomainUsersTable1748735000000: new () => {
+          up: (qr: { query: (sql: string) => Promise<void> }) => Promise<void>;
+        };
+      };
+
+    const queries: string[] = [];
+    const queryRunner = {
+      query: (sql: string) => {
+        queries.push(sql);
+        return Promise.resolve();
+      },
+    };
+
+    await new CreateDomainUsersTable1748735000000().up(queryRunner);
+
+    const joined = queries.join("\n");
+    // fresh DB 에 users 가 없으면 만들고, 운영 DB(Drizzle 시대)에 있으면 건드리지 않는다.
+    expect(joined).toContain('CREATE TABLE IF NOT EXISTS "users"');
+    // DomainUserProvisioner 가 INSERT 하는 NOT NULL 컬럼이 모두 정의돼 있어야
+    // fresh DB 가입이 롤백되지 않는다 (PR#40 회귀 방지).
+    expect(joined).toContain('"id" text NOT NULL');
+    expect(joined).toContain('PRIMARY KEY ("id")');
+    expect(joined).toContain('"focus_subjects" text[] NOT NULL');
+    expect(joined).toContain('"weekly_hours" integer NOT NULL');
+    expect(joined).toContain('"preferred_study_time" text NOT NULL');
+    // joined_at 은 timezone 없는 timestamp (레거시 컬럼 타입 정합).
+    expect(joined).toMatch(/"joined_at" timestamp NOT NULL/);
+  });
+
+  it("타임스탬프 prefix 가 auth 마이그레이션보다 앞서 users 가 먼저 존재한다", () => {
+    // 1748735000000(users) < 1748736000000(auth) — 가입 경로 전에 users 생성 보장.
+    expect(1748735000000).toBeLessThan(1748736000000);
+  });
+});
+
 describe("CreateAuthTables 마이그레이션 — fresh DB 안전성", () => {
   it("up() 이 gen_random_uuid() 의존을 위해 pgcrypto 확장을 보장한다", async () => {
     const { CreateAuthTables1748736000000 } =
