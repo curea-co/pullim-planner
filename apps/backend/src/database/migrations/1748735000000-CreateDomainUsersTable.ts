@@ -44,9 +44,13 @@ export class CreateDomainUsersTable1748735000000 implements MigrationInterface {
     `);
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    // 본 마이그레이션이 fresh DB 에서 만든 테이블만 되돌린다. 운영 DB 에서 revert 시에도
-    // 도메인 데이터가 없는 fresh 환경을 전제로 한 것이므로 DROP 한다.
-    await queryRunner.query(`DROP TABLE IF EXISTS "users"`);
+  public async down(): Promise<void> {
+    // 의도적 no-op.
+    //
+    // up() 은 `CREATE TABLE IF NOT EXISTS` 라, 이 마이그레이션이 `users` 를 실제로 만들었는지
+    // (fresh DB) 아니면 이미 있던 운영 테이블을 건너뛴 것인지(Drizzle 시대) 구분할 수 없다.
+    // 따라서 revert 에서 DROP 하면 운영 DB 의 진짜 도메인 데이터(`users` 행 + planners/
+    // time_blocks 등이 참조하는 FK 부모)를 파괴할 수 있다. 그 위험을 없애기 위해 down() 은
+    // 아무것도 하지 않는다. fresh DB 를 비우려면 DB 자체를 drop/recreate 하면 된다.
   }
 }
