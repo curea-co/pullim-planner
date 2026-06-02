@@ -3,7 +3,7 @@
 import { Wrench, Save } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { FlywheelNote } from '@/components/shell/flywheel-note';
-import type { PlannerForm } from '@/components/planner-builder/builder-types';
+import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 import { PlannerWizard } from '../components/planner-wizard';
 
 interface NewPlannerPresenterProps {

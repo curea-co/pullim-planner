@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import type { PlannerForm } from '@/components/planner-builder/builder-types';
+import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 
 /**
  * 8단계 위저드 step navigation + form state — new/edit 공유 hook.

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   plannerToForm, formToPlannerPatch,
   type PlannerForm,
-} from '@/components/planner-builder/builder-types';
+} from '@/components/features/planner-builder/components/builder-types';
 import { findPlanner, updatePlanner } from '@/lib/mock';
 import { usePlannerForm } from '../hooks/use-planner-form';
 import EditPlannerPresenter from '../presenters/EditPlannerPresenter';
