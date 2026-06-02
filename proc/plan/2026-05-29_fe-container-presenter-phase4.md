@@ -19,10 +19,10 @@
 
 | 파일 | 상태 | 성격 분류 | 근거 |
 |---|---|---|---|
-| `apps/planner/src/components/shell/dev-reset-button.tsx` | `??` (신규) | **dev 유틸 — 독립 커밋** | 개발자 전용 초기화 버튼. mock state를 초기 시드로 되돌리는 도구. Phase 4 파일 이동 로직과 무관. `app-shell.tsx`에서 참조되므로 같이 커밋해야 typecheck 통과. |
+| `apps/planner/components/shell/dev-reset-button.tsx` | `??` (신규) | **dev 유틸 — 독립 커밋** | 개발자 전용 초기화 버튼. mock state를 초기 시드로 되돌리는 도구. Phase 4 파일 이동 로직과 무관. `app-shell.tsx`에서 참조되므로 같이 커밋해야 typecheck 통과. |
 | `apps/planner/.gitignore` | `??` (신규) | **dev 유틸 — 독립 커밋** | `.vercel` 항목만 포함. 빌드 아티팩트 무시 규칙. Phase 4와 관계 없음. dev-reset-button과 같은 커밋에 묶어도 무방. |
-| `apps/planner/src/components/shell/app-shell.tsx` | `M` (수정) | **dev 유틸 — 독립 커밋** | `DevResetButton` import + 렌더를 추가한 변경. dev-reset-button 신규 파일에 의존. 같은 커밋에 묶여야 typecheck 통과. Phase 4 파일 이동과 섞으면 커밋 목적이 불명확해짐. |
-| `apps/planner/src/lib/mock/planner.ts` | `M` (수정) | **dev 유틸 — 독립 커밋** | `buildInitialPlanners()` factory 패턴 도입 + `resetMockState()` 함수 추가. DevResetButton이 `resetMockState()`를 호출하므로 기능적으로 연결. Phase 4 파일 이동과 무관. |
+| `apps/planner/components/shell/app-shell.tsx` | `M` (수정) | **dev 유틸 — 독립 커밋** | `DevResetButton` import + 렌더를 추가한 변경. dev-reset-button 신규 파일에 의존. 같은 커밋에 묶여야 typecheck 통과. Phase 4 파일 이동과 섞으면 커밋 목적이 불명확해짐. |
+| `apps/planner/lib/mock/planner.ts` | `M` (수정) | **dev 유틸 — 독립 커밋** | `buildInitialPlanners()` factory 패턴 도입 + `resetMockState()` 함수 추가. DevResetButton이 `resetMockState()`를 호출하므로 기능적으로 연결. Phase 4 파일 이동과 무관. |
 
 **결론**: WIP 4개는 "DevResetButton + mock reset factory" 단일 기능 단위. Phase 4 이동 커밋과 **스코프 분리 필수**.
 
@@ -36,10 +36,10 @@
 
 | 원본 경로 | 대상 경로 |
 |---|---|
-| `apps/planner/src/components/builder/step-indicator.tsx` | `apps/planner/src/components/features/planner-builder/components/step-indicator.tsx` |
-| `apps/planner/src/components/planner-builder/builder-types.ts` | `apps/planner/src/components/features/planner-builder/components/builder-types.ts` |
-| `apps/planner/src/components/planner-builder/step-content.tsx` | `apps/planner/src/components/features/planner-builder/components/step-content.tsx` |
-| `apps/planner/src/components/planner-builder/unit-editor-modal.tsx` | `apps/planner/src/components/features/planner-builder/components/unit-editor-modal.tsx` |
+| `apps/planner/components/builder/step-indicator.tsx` | `apps/planner/components/features/planner-builder/components/step-indicator.tsx` |
+| `apps/planner/components/planner-builder/builder-types.ts` | `apps/planner/components/features/planner-builder/components/builder-types.ts` |
+| `apps/planner/components/planner-builder/step-content.tsx` | `apps/planner/components/features/planner-builder/components/step-content.tsx` |
+| `apps/planner/components/planner-builder/unit-editor-modal.tsx` | `apps/planner/components/features/planner-builder/components/unit-editor-modal.tsx` |
 
 ### A-2. import 경로 수정 대상
 
@@ -59,15 +59,15 @@
 
 ### A-3. 이동 후 빈 디렉터리 제거
 
-- `apps/planner/src/components/builder/` — 파일 이동 후 빈 디렉터리 삭제
-- `apps/planner/src/components/planner-builder/` — 파일 이동 후 빈 디렉터리 삭제
+- `apps/planner/components/builder/` — 파일 이동 후 빈 디렉터리 삭제
+- `apps/planner/components/planner-builder/` — 파일 이동 후 빈 디렉터리 삭제
 
 ### A-4. 분류 (개발가능 / GATED)
 
 | 항목 | 분류 | 근거 |
 |---|---|---|
 | WIP 4개 → dev 유틸 독립 커밋 | **개발가능** | G4 협의 불필요. shell/mock은 `apps/planner/` 편집 영역 내 자유 |
-| 4개 파일 git mv + import 경로 수정 | **개발가능** | `apps/planner/src/components/` 내부 재편. Phase 4 plan에 명시된 작업 |
+| 4개 파일 git mv + import 경로 수정 | **개발가능** | `apps/planner/components/` 내부 재편. Phase 4 plan에 명시된 작업 |
 | 빈 디렉터리 제거 | **개발가능** | 파일 이동 후 자동 처리 |
 | `bun run build:planner` 통과 확인 | **개발가능** | 로컬 검증. CI/CD 트리거 없음 |
 | PR 생성 + Codex Review 통과 | **GATED** | 사용자(G1/G3/G4)가 PR 제출·확인. 이 에이전트는 push 금지 |
@@ -111,7 +111,7 @@ Phase 4 대상 4개 파일과 `refactor/d-lite` 간 overlap 여부를 판단할 
 |---|---|---|
 | 타입체크 | `bunx tsc --noEmit` | 0 error |
 | 빌드 | `bun run build:planner` | 0 error |
-| 빈 폴더 확인 | `ls apps/planner/src/components/builder/ apps/planner/src/components/planner-builder/` | "No such file or directory" |
+| 빈 폴더 확인 | `ls apps/planner/components/builder/ apps/planner/components/planner-builder/` | "No such file or directory" |
 
 ---
 
