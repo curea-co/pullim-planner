@@ -45,7 +45,10 @@ export class DomainUser {
   @Column({ type: "text", name: "preferred_study_time" })
   preferredStudyTime: string;
 
-  @Column({ type: "timestamptz", name: "joined_at" })
+  // 레거시 Drizzle 스키마는 `joined_at timestamp NOT NULL` (timezone 없음, 권위 spec
+  // proc/spec/2026-05-18_be-api-design.md 73행). timestamptz 로 매핑하면 실제 컬럼 타입과
+  // 어긋나 INSERT/조회 시 타임존 변환이 틀어진다. 레거시 컬럼 타입에 정확히 맞춘다 (codex #40 R3).
+  @Column({ type: "timestamp", name: "joined_at" })
   joinedAt: Date;
 
   @Column({ type: "int", name: "streak_days", default: 0 })
