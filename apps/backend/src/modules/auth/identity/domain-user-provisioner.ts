@@ -33,6 +33,10 @@ export class DomainUserProvisioner {
         name: params.name,
         grade: ONBOARDING_PENDING_DEFAULTS.grade,
         track: ONBOARDING_PENDING_DEFAULTS.track,
+        // 레거시 Drizzle `users.focus_subjects` 는 NOT NULL 인데, 엔티티 default 는 명시
+        // INSERT 에 값을 채워주지 않고 실 DB default 도 보장되지 않으므로 빈 배열을 명시한다.
+        // 누락 시 가입 트랜잭션이 focus_subjects NOT NULL 위반으로 롤백됐다 (codex #40).
+        focusSubjects: [...ONBOARDING_PENDING_DEFAULTS.focusSubjects],
         weeklyHours: ONBOARDING_PENDING_DEFAULTS.weeklyHours,
         preferredStudyTime: ONBOARDING_PENDING_DEFAULTS.preferredStudyTime,
         joinedAt: new Date(),

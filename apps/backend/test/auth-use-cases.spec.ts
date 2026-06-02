@@ -22,6 +22,7 @@ import { AuthUserService } from "../src/modules/auth/service/auth-user.service";
 import { SignupUseCase } from "../src/modules/auth/use-cases/signup.use-case";
 import { LoginUseCase } from "../src/modules/auth/use-cases/login.use-case";
 import { RefreshUseCase } from "../src/modules/auth/use-cases/refresh.use-case";
+import { LogoutUseCase } from "../src/modules/auth/use-cases/logout.use-case";
 import { CheckEmailUseCase } from "../src/modules/auth/use-cases/check-email.use-case";
 import { UserRole } from "../src/entities/enums/user-role.enum";
 import { AuthProvider } from "../src/entities/enums/auth-provider.enum";
@@ -322,10 +323,49 @@ describe("RefreshUseCase — rotation", () => {
   it("이미 사용된(블랙리스트) refresh 토큰은 UnauthorizedException 으로 거절하고 새 토큰을 발급하지 않는다", async () => {
     blacklistRepository.add.mockResolvedValue(false); // wasNew = false → 재사용
     const user = makeAuthUser();
+    const tokenProvider = (
+      authService as unknown as { tokenProvider: { generateTokens: jest.Mock } }
+    ).tokenProvider;
 
     await expect(useCase.execute(user, oldRefreshToken)).rejects.toThrow(
       UnauthorizedException,
     );
+    // 재사용 토큰은 새 토큰을 발급하지 않아야 한다 (rotation 동시 재사용 차단).
+    expect(tokenProvider.generateTokens).not.toHaveBeenCalled();
+  });
+});
+
+describe("LogoutUseCase — 토큰 무효화", () => {
+  let authService: AuthService;
+  let blacklistRepository: jest.Mocked<BlacklistRepositoryInterface>;
+  let useCase: LogoutUseCase;
+
+  beforeEach(() => {
+    blacklistRepository = {
+      add: jest.fn().mockResolvedValue(true),
+    } as unknown as jest.Mocked<BlacklistRepositoryInterface>;
+
+    authService = new AuthService(
+      makeConfigService(),
+      makeTokenProvider(),
+      blacklistRepository,
+    );
+
+    useCase = new LogoutUseCase(authService);
+  });
+
+  it("refresh 토큰을 블랙리스트에 등록해 무효화한다", async () => {
+    // jti 가 있는 최소 JWT (header.payload.signature) — payload 에 jti·exp 포함.
+    const payload = Buffer.from(
+      JSON.stringify({ jti: "rt-jti-123", exp: 9999999999 }),
+    ).toString("base64url");
+    const refreshToken = `h.${payload}.s`;
+
+    await useCase.execute(refreshToken);
+
+    expect(blacklistRepository.add).toHaveBeenCalledTimes(1);
+    // 추출된 tokenId(jti)로 블랙리스트에 등록돼야 한다.
+    expect(blacklistRepository.add.mock.calls[0][0]).toBe("rt-jti-123");
   });
 });
 

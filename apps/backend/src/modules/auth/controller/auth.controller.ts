@@ -16,7 +16,6 @@ import { JwtRefreshGuard } from "../../../common/guards/jwt-refresh.guard";
 import type { AuthUser } from "../../../entities/auth-user.entity";
 import { CheckEmailQueryDto } from "./dto/check-email-query.dto";
 import { LoginDto } from "./dto/login.dto";
-import { LogoutDto } from "./dto/logout.dto";
 import { MeResponseDto } from "./dto/me-response.dto";
 import { SignupDto } from "./dto/signup.dto";
 import { SignupResponseDto } from "./dto/signup-response.dto";
@@ -78,11 +77,21 @@ export class AuthController {
     return TokenResponseDto.from(tokens);
   }
 
+  @Public()
+  @UseGuards(JwtRefreshGuard)
   @Post("logout")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "로그아웃 (Refresh Token 블랙리스트 등록)" })
-  async logout(@Body() dto: LogoutDto): Promise<void> {
-    await this.logoutUseCase.execute(dto.refreshToken);
+  @ApiOperation({
+    summary:
+      "로그아웃 (Refresh Token 블랙리스트 등록). Authorization: Bearer <refreshToken> 필요",
+  })
+  async logout(
+    @CurrentUser() currentUser: { user: AuthUser; refreshToken: string },
+  ): Promise<void> {
+    // 서명/타입(type=refresh)/사용자 검증을 통과한 토큰만 소비한다 (codex #40).
+    // 과거엔 body 의 임의 문자열을 그대로 블랙리스트에 넣어, access token·잘린 문자열도
+    // 200 으로 성공하고 실제 refresh token 은 살아남는 문제가 있었다.
+    await this.logoutUseCase.execute(currentUser.refreshToken);
   }
 
   @Public()

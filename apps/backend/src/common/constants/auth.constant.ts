@@ -25,6 +25,8 @@ export const DEFAULT_MOCK_USER_ID = "student_001";
 export const ONBOARDING_PENDING_DEFAULTS = {
   grade: "미정",
   track: "미정",
+  // `users.focus_subjects` 는 NOT NULL(text[]) — 온보딩 전엔 빈 배열로 채운다.
+  focusSubjects: [] as readonly string[],
   weeklyHours: 0,
   preferredStudyTime: "미정",
 } as const;
