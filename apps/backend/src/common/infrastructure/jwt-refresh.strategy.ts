@@ -43,7 +43,9 @@ export class JwtRefreshStrategy extends PassportStrategy(
     req: Request,
     payload: { sub: string; type?: string; iat?: number },
   ): Promise<{ user: AuthUser; refreshToken: string }> {
-    if (payload.type && payload.type !== JWT_TYPE_REFRESH) {
+    // type 클레임을 **필수**로 강제한다. 누락/불일치(특히 access 토큰)를 모두 거절해
+    // access 토큰을 refresh 로 오용하는 것을 차단한다 (codex #40 round-2).
+    if (payload.type !== JWT_TYPE_REFRESH) {
       throw new UnauthorizedException(ErrorMessages.AUTH_INVALID_TOKEN);
     }
 

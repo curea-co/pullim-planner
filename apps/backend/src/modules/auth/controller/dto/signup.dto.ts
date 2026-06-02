@@ -9,6 +9,7 @@ import {
   MinLength,
 } from "class-validator";
 
+import { NormalizeEmail } from "../../../../common/decorators/normalize-email.decorator";
 import { MAX_NAME_LENGTH } from "../../../../common/constants/validation.constant";
 import {
   MAX_PASSWORD_LENGTH,
@@ -28,6 +29,7 @@ export class SignupDto {
   @MaxLength(MAX_NAME_LENGTH)
   name: string;
 
+  @NormalizeEmail()
   @IsEmail({}, { message: "올바른 이메일 형식이 아닙니다." })
   email: string;
 

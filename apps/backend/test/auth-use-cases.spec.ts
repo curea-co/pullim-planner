@@ -31,6 +31,18 @@ import type { AuthUserProvider } from "../src/entities/auth-user-provider.entity
 import type { TokenProvider } from "../src/common/interfaces/token-provider.interface";
 import type { BlacklistRepositoryInterface } from "../src/modules/auth/interface/blacklist-repository.interface";
 import type { AuthUserRepositoryInterface } from "../src/modules/auth/interface/auth-user-repository.interface";
+import { plainToInstance } from "class-transformer";
+import type { ConfigType } from "@nestjs/config";
+import { JwtStrategy } from "../src/common/infrastructure/jwt.strategy";
+import { JwtRefreshStrategy } from "../src/common/infrastructure/jwt-refresh.strategy";
+import {
+  JWT_TYPE_ACCESS,
+  JWT_TYPE_REFRESH,
+} from "../src/common/constants/jwt.constant";
+import jwtConfig from "../src/config/jwt.config";
+import { SignupDto } from "../src/modules/auth/controller/dto/signup.dto";
+import { LoginDto } from "../src/modules/auth/controller/dto/login.dto";
+import { CheckEmailQueryDto } from "../src/modules/auth/controller/dto/check-email-query.dto";
 
 /**
  * auth Phase 0+1 UseCase / Service 단위 테스트.
@@ -436,5 +448,116 @@ describe("getCurrentUserId resolver", () => {
     expect(getCurrentUserId({ user: undefined } as never)).toBe(
       DEFAULT_MOCK_USER_ID,
     );
+  });
+});
+
+describe("이메일 정규화 (DTO @NormalizeEmail)", () => {
+  it("signup/login/check-email DTO 모두 trim + lowercase 로 정규화한다", () => {
+    const raw = "  A.User@Example.COM ";
+    const normalized = "a.user@example.com";
+
+    const signup = plainToInstance(SignupDto, {
+      name: "홍길동",
+      email: raw,
+      password: "Sup3r$ecret!",
+      passwordConfirm: "Sup3r$ecret!",
+    });
+    const login = plainToInstance(LoginDto, { email: raw, password: "x" });
+    const check = plainToInstance(CheckEmailQueryDto, { email: raw });
+
+    expect(signup.email).toBe(normalized);
+    expect(login.email).toBe(normalized);
+    expect(check.email).toBe(normalized);
+  });
+
+  it("대소문자만 다른 두 이메일이 같은 값으로 정규화돼 중복 가입을 막는다", () => {
+    const a = plainToInstance(SignupDto, {
+      name: "a",
+      email: "Dup@X.com",
+      password: "Sup3r$ecret!",
+      passwordConfirm: "Sup3r$ecret!",
+    });
+    const b = plainToInstance(LoginDto, { email: "dup@x.COM", password: "x" });
+    expect(a.email).toBe(b.email);
+  });
+});
+
+describe("JWT type 클레임 교차 검증", () => {
+  const jwt = { secret: "test-secret" } as ConfigType<typeof jwtConfig>;
+
+  function makeUserService(): AuthUserService {
+    return {
+      findByIdOrFail: jest.fn().mockResolvedValue(makeAuthUser()),
+    } as unknown as AuthUserService;
+  }
+
+  it("access 전략은 refresh 타입 토큰을 거절한다", async () => {
+    const strategy = new JwtStrategy(jwt, makeUserService());
+    await expect(
+      strategy.validate({ sub: "user-uuid-1", type: JWT_TYPE_REFRESH }),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it("access 전략은 type 클레임이 없는 토큰도 거절한다", async () => {
+    const strategy = new JwtStrategy(jwt, makeUserService());
+    await expect(strategy.validate({ sub: "user-uuid-1" })).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it("access 전략은 정상 access 토큰을 통과시킨다", async () => {
+    const strategy = new JwtStrategy(jwt, makeUserService());
+    await expect(
+      strategy.validate({ sub: "user-uuid-1", type: JWT_TYPE_ACCESS }),
+    ).resolves.toBeDefined();
+  });
+
+  it("refresh 전략은 access 타입 토큰을 거절한다", async () => {
+    const strategy = new JwtRefreshStrategy(jwt, makeUserService());
+    const req = {
+      headers: { authorization: "Bearer h.p.s" },
+    } as never;
+    await expect(
+      strategy.validate(req, { sub: "user-uuid-1", type: JWT_TYPE_ACCESS }),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it("refresh 전략은 type 클레임이 없는 토큰도 거절한다", async () => {
+    const strategy = new JwtRefreshStrategy(jwt, makeUserService());
+    const req = {
+      headers: { authorization: "Bearer h.p.s" },
+    } as never;
+    await expect(
+      strategy.validate(req, { sub: "user-uuid-1" }),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+});
+
+describe("CreateAuthTables 마이그레이션 — fresh DB 안전성", () => {
+  it("up() 이 gen_random_uuid() 의존을 위해 pgcrypto 확장을 보장한다", async () => {
+    const { CreateAuthTables1748736000000 } =
+      (await import("../src/database/migrations/1748736000000-CreateAuthTables")) as {
+        CreateAuthTables1748736000000: new () => {
+          up: (qr: { query: (sql: string) => Promise<void> }) => Promise<void>;
+        };
+      };
+
+    const queries: string[] = [];
+    const queryRunner = {
+      query: (sql: string) => {
+        queries.push(sql);
+        return Promise.resolve();
+      },
+    };
+
+    await new CreateAuthTables1748736000000().up(queryRunner);
+
+    const joined = queries.join("\n");
+    expect(joined).toContain('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
+    // 확장 생성이 gen_random_uuid() 첫 사용보다 먼저 실행돼야 한다.
+    const extIdx = queries.findIndex((q) => q.includes("pgcrypto"));
+    const uuidIdx = queries.findIndex((q) => q.includes("gen_random_uuid"));
+    expect(extIdx).toBeGreaterThanOrEqual(0);
+    expect(extIdx).toBeLessThan(uuidIdx);
   });
 });

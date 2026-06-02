@@ -50,8 +50,10 @@ function parseDatabaseUrl(): {
 /**
  * 데이터베이스 ConfigService 네임스페이스.
  *
- * planner BE 차용 시점에서는 `DATABASE_SYNCHRONIZE=true` 로 운영한다 (pullim 본체 패턴 동일).
- * Phase γ에서 entity 작성 후 마이그레이션 체계 전환은 향후 결정.
+ * auth 도입(Phase 0+1)부터 마이그레이션이 스키마의 단일 진실 원천이다. 또한 레거시
+ * Drizzle `users` 테이블을 TypeORM 이 자동 변경하면 안 되므로 `synchronize` **기본값은
+ * false** 다 (`DATABASE_SYNCHRONIZE=true` 로 명시 opt-in 한 경우에만 동기화). 이렇게 해야
+ * fresh DB 부팅 경로에서 migration 전제와 충돌하지 않는다 (codex #40 round-2).
  *
  * 입력 우선순위: `DATABASE_URL` → discrete env vars (`DATABASE_HOST`/`DATABASE_PORT`/...).
  * spec §10 / `.env.example` 가 `DATABASE_URL` 단일 변수를 안내하므로 본 config 도 이를 1순위로 둔다.
@@ -69,7 +71,7 @@ export default registerAs("database", () => {
       password: "pullim_local",
       name: "pullim_planner",
       ssl: false,
-      synchronize: process.env.DATABASE_SYNCHRONIZE !== "false",
+      synchronize: process.env.DATABASE_SYNCHRONIZE === "true",
     };
   }
 
@@ -89,6 +91,6 @@ export default registerAs("database", () => {
       fromUrl?.password ?? process.env.DATABASE_PASSWORD ?? "pullim_local",
     name: fromUrl?.name ?? process.env.DATABASE_NAME ?? "pullim_planner",
     ssl: fromUrl?.ssl ?? process.env.DATABASE_SSL === "true",
-    synchronize: process.env.DATABASE_SYNCHRONIZE !== "false",
+    synchronize: process.env.DATABASE_SYNCHRONIZE === "true",
   };
 });

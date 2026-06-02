@@ -59,9 +59,11 @@ import databaseConfig from "../../config/database.config";
         DATABASE_PASSWORD: Joi.string().default("pullim_local"),
         DATABASE_NAME: Joi.string().default("pullim_planner"),
         DATABASE_SSL: Joi.string().valid("true", "false").default("false"),
+        // 마이그레이션이 스키마 단일 진실 원천 — 기본 synchronize off.
+        // 레거시 users 테이블 자동 변경 + fresh DB migration 전제 충돌 방지 (codex #40 R2).
         DATABASE_SYNCHRONIZE: Joi.string()
           .valid("true", "false")
-          .default("true"),
+          .default("false"),
       }),
     }),
   ],
