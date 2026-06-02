@@ -59,7 +59,8 @@ apps/backend/src/modules/auth/
 │   ├── auth.controller.ts
 │   ├── dto/
 │   │   ├── login.dto.ts                   # email, password
-│   │   ├── logout.dto.ts                  # refreshToken
+│   │   │   # (logout 은 별도 DTO 없음 — Authorization: Bearer <refreshToken> 를
+│   │   │   #  JwtRefreshGuard 로 검증해 소비한다. codex #40)
 │   │   ├── signup.dto.ts                  # email, password, name, marketingConsent
 │   │   ├── signup-response.dto.ts
 │   │   ├── token-response.dto.ts          # accessToken, refreshToken
