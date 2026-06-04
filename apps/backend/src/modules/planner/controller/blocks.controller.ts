@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 
 import { Public } from "../../../common/decorators/public.decorator";
+import { todayKstIsoDate } from "../../../common/utils/datetime.util";
 import { getCurrentUserId } from "../../../common/utils/request.util";
 import { BlockResponseDto } from "./dto/block-response.dto";
 import { BlocksQueryDto } from "./dto/blocks-query.dto";
@@ -27,7 +28,7 @@ export class BlocksController {
     @Param("id") id: string,
     @Query() query: BlocksQueryDto,
   ): Promise<BlockResponseDto[]> {
-    const date = query.date ?? new Date().toISOString().slice(0, 10);
+    const date = query.date ?? todayKstIsoDate();
     return this.getPlannerBlocksUseCase.execute(
       getCurrentUserId(req),
       id,

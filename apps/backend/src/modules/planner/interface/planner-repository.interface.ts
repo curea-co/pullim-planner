@@ -23,6 +23,9 @@ export interface PlannerRepositoryInterface {
   /** 플래너 1건 (소유권 확인용). */
   findPlannerById(plannerId: string): Promise<Planner | null>;
 
+  /** 사용자의 활성 플래너(active·non-archived 1건). 시험 일정 파생용. */
+  findActivePlanner(userId: string): Promise<Planner | null>;
+
   /** 여러 플래너의 과목 단원 (position 오름차순). */
   findSubjectUnits(plannerIds: string[]): Promise<PlannerSubjectUnit[]>;
 

@@ -47,6 +47,12 @@ export class PlannerRepository implements PlannerRepositoryInterface {
     return this.planners.findOne({ where: { id: plannerId } });
   }
 
+  findActivePlanner(userId: string): Promise<Planner | null> {
+    return this.planners.findOne({
+      where: { userId, active: true, archived: false },
+    });
+  }
+
   findSubjectUnits(plannerIds: string[]): Promise<PlannerSubjectUnit[]> {
     if (plannerIds.length === 0) return Promise.resolve([]);
     return this.subjectUnits.find({

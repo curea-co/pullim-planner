@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 
 import { ErrorMessages } from "../../../common/constants/error-messages.constant";
 import { BlockResponseDto } from "../controller/dto/block-response.dto";
@@ -17,11 +22,12 @@ export class PlannerService {
     private readonly repo: PlannerRepositoryInterface,
   ) {}
 
-  /** 현재 사용자(도메인 users) 1건. 없으면 404. */
+  /** 현재 사용자(도메인 users) + 활성 플래너 시험 정보. 사용자 없으면 404. */
   async getMe(userId: string): Promise<MeResponseDto> {
     const user = await this.repo.findUserById(userId);
     if (!user) throw new NotFoundException(ErrorMessages.USER_NOT_FOUND);
-    return MeResponseDto.from(user);
+    const activePlanner = await this.repo.findActivePlanner(userId);
+    return MeResponseDto.from(user, activePlanner);
   }
 
   /** 사용자의 플래너 목록 + 과목 단원 조립. */
@@ -49,8 +55,8 @@ export class PlannerService {
   }
 
   /**
-   * 플래너의 특정 날짜 블록 + 완료 기록 조립. 플래너가 없거나 요청자 소유가 아니면 404
-   * (존재 노출 방지 — 타인 플래너도 not found 로 통일).
+   * 플래너의 특정 날짜 블록 + 완료 기록 조립. 없으면 404, 타인 소유면 403
+   * (권위 spec §3.2 / archive phase-3 권한 모델: not_found vs forbidden 구분).
    */
   async getBlocks(
     userId: string,
@@ -58,8 +64,11 @@ export class PlannerService {
     date: string,
   ): Promise<BlockResponseDto[]> {
     const planner = await this.repo.findPlannerById(plannerId);
-    if (!planner || planner.userId !== userId) {
+    if (!planner) {
       throw new NotFoundException(ErrorMessages.PLANNER_NOT_FOUND);
+    }
+    if (planner.userId !== userId) {
+      throw new ForbiddenException(ErrorMessages.COMMON_FORBIDDEN);
     }
 
     const blocks = await this.repo.findBlocksByDate(plannerId, date);

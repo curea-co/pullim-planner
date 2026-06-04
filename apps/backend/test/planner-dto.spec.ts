@@ -140,22 +140,38 @@ describe("BlockResponseDto.from", () => {
 });
 
 describe("MeResponseDto.from", () => {
-  it("도메인 user 필드를 매핑한다", () => {
-    const user: DomainUser = {
-      id: "student_001",
-      name: "서연",
-      grade: "고2",
-      track: "이과",
-      school: "풀림고등학교",
-      focusSubjects: ["math", "english", "science"],
-      weeklyHours: 28,
-      preferredStudyTime: "저녁",
-      joinedAt: new Date("2026-01-12T00:00:00.000Z"),
-      streakDays: 17,
-    };
-    const dto = MeResponseDto.from(user);
+  const user: DomainUser = {
+    id: "student_001",
+    name: "서연",
+    grade: "고2",
+    track: "이과",
+    school: "풀림고등학교",
+    focusSubjects: ["math", "english", "science"],
+    weeklyHours: 28,
+    preferredStudyTime: "저녁",
+    // KST 자정(=전날 15:00 UTC) — toKstIsoDate 가 KST 기준 날짜로 되돌리는지 검증.
+    joinedAt: new Date("2026-01-11T15:00:00.000Z"),
+    streakDays: 17,
+  };
+
+  it("user 필드 매핑 + joinedAt 은 KST YYYY-MM-DD", () => {
+    const dto = MeResponseDto.from(user, null);
     expect(dto.id).toBe("student_001");
     expect(dto.focusSubjects).toEqual(["math", "english", "science"]);
-    expect(dto.joinedAt).toBe("2026-01-12T00:00:00.000Z");
+    expect(dto.joinedAt).toBe("2026-01-12");
+  });
+
+  it("활성 플래너에서 examDate/examLabel 파생, 없으면 생략", () => {
+    const withPlanner = MeResponseDto.from(user, {
+      examStartDate: "2026-06-04",
+      examLabel: "6월 모의평가",
+    } as Planner);
+    expect(withPlanner.examDate).toBe("2026-06-04");
+    expect(withPlanner.examLabel).toBe("6월 모의평가");
+
+    const serialized = JSON.parse(
+      JSON.stringify(MeResponseDto.from(user, null)),
+    );
+    expect("examDate" in (serialized as Record<string, unknown>)).toBe(false);
   });
 });
