@@ -52,7 +52,10 @@ const unauthorized = () =>
 export function createAuthClient(config: AuthClientConfig): AuthClient {
   const store = config.store ?? nullTokenStore;
 
-  async function refreshTokens(): Promise<AuthTokens> {
+  // 진행 중인 refresh 를 공유하기 위한 single-flight promise.
+  let refreshInFlight: Promise<AuthTokens> | null = null;
+
+  async function doRefresh(): Promise<AuthTokens> {
     const refreshToken = store.getRefreshToken();
     if (!refreshToken) throw unauthorized();
     try {
@@ -63,11 +66,34 @@ export function createAuthClient(config: AuthClientConfig): AuthClient {
       store.setTokens(tokens);
       return tokens;
     } catch (error) {
-      // refresh 실패 = 세션 종료. 로컬 토큰을 비우고 소비자에게 알린다.
-      store.clear();
-      config.onSessionExpired?.();
+      // 세션 폐기는 refresh token 무효가 **확정된** 경우(401/403)로 한정한다.
+      // 네트워크 단절·타임아웃·일시적 5xx(또는 transport 정규화된 statusCode 0)는 토큰이
+      // 아직 살아있을 수 있으므로 세션을 유지한 채 상위로 전파한다.
+      if (
+        error instanceof ApiError &&
+        (error.statusCode === 401 || error.statusCode === 403)
+      ) {
+        store.clear();
+        config.onSessionExpired?.();
+      }
       throw error;
     }
+  }
+
+  /**
+   * refresh 를 single-flight 로 묶는다.
+   *
+   * 백엔드가 refresh token rotation(1회용)이라, 동시에 401 을 만난 호출들이 각자 refresh 하면
+   * 첫 성공이 토큰을 소비/회전시킨 뒤 도착한 두 번째 refresh 가 401 로 실패하면서 방금 갱신한
+   * 세션까지 폐기한다. 같은 시점의 재시도들이 동일한 refresh 결과를 기다리도록 promise 를 공유한다.
+   */
+  function refreshTokens(): Promise<AuthTokens> {
+    if (!refreshInFlight) {
+      refreshInFlight = doRefresh().finally(() => {
+        refreshInFlight = null;
+      });
+    }
+    return refreshInFlight;
   }
 
   async function withAuth<T>(

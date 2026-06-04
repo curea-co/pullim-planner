@@ -40,14 +40,30 @@ export async function request<T>(
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (opts.bearer) headers.Authorization = `Bearer ${opts.bearer}`;
 
-  const response = await fetchImpl(url.toString(), {
-    method: opts.method ?? "GET",
-    headers,
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-  });
+  let response: Response;
+  let text: string;
+  try {
+    response = await fetchImpl(url.toString(), {
+      method: opts.method ?? "GET",
+      headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    });
+    // 빈 본문(204 등) 방어: 파싱 실패 시 아래에서 빈 객체로 취급한다.
+    text = await response.text();
+  } catch (error) {
+    // transport 실패(네트워크 단절·DNS·abort·타임아웃)를 공통 ApiError 로 정규화한다.
+    // 이렇게 하지 않으면 TypeError/AbortError 가 그대로 새어나가 ApiError(code/statusCode)에
+    // 의존하는 상위 에러 처리 경로가 갈라진다. statusCode 0 = 응답을 받지 못함.
+    throw new ApiError({
+      code: "network_error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "네트워크 오류가 발생했어요. 연결을 확인해주세요.",
+      statusCode: 0,
+    });
+  }
 
-  // 빈 본문(204 등) 방어: 파싱 실패 시 빈 객체로 취급한다.
-  const text = await response.text();
   let payload: unknown = {};
   if (text) {
     try {
