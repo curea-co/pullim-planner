@@ -29,7 +29,12 @@ export async function request<T>(
   opts: RequestOptions = {},
 ): Promise<T> {
   const fetchImpl = config.fetchImpl ?? fetch;
-  const url = new URL(path, config.baseUrl);
+  // baseUrl + path 를 이어붙인다. `new URL(path, base)` 는 절대 경로(`/auth/x`)가 base 의
+  // 경로(예: 글로벌 prefix `/api`)를 통째로 버리므로 쓰지 않는다. prefix 는 baseUrl 에 담는
+  // 배포 설정(예: `http://host/api`)이고, path 는 그 아래 라우트(`/auth/login`)다.
+  const base = config.baseUrl.replace(/\/+$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const url = new URL(`${base}${normalizedPath}`);
   if (opts.query) {
     for (const [key, value] of Object.entries(opts.query)) {
       if (value !== undefined) url.searchParams.set(key, value);
