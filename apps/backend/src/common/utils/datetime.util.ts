@@ -33,3 +33,24 @@ export function dateTimeToIso(params: TransformFnParams): string | null {
 export function nowKst(): DateTime {
   return DateTime.now().setZone(DEFAULT_TIMEZONE);
 }
+
+/**
+ * 오늘 날짜를 KST 기준 `YYYY-MM-DD` 로 반환한다 (UTC 자정 경계 오차 방지).
+ * @returns KST 기준 ISO date 문자열
+ */
+export function todayKstIsoDate(): string {
+  return nowKst().toISODate() ?? "";
+}
+
+/**
+ * JS Date(또는 ISO 문자열)를 KST 기준 `YYYY-MM-DD` 로 변환한다.
+ * @param value - Date 또는 ISO 문자열
+ * @returns KST 기준 ISO date 문자열
+ */
+export function toKstIsoDate(value: Date | string): string {
+  const dt =
+    value instanceof Date
+      ? DateTime.fromJSDate(value, { zone: DEFAULT_TIMEZONE })
+      : DateTime.fromISO(value, { zone: DEFAULT_TIMEZONE });
+  return dt.toISODate() ?? "";
+}
