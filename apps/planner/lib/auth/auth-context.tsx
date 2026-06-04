@@ -90,24 +90,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void loadSession();
   }, [loadSession]);
 
-  const login = useCallback(async (input: LoginRequest) => {
-    await authClient.login(input);
-    const me = await authClient.me();
-    setUser(me);
+  // 토큰 발급(login/signup) 성공 후: 인증 확정 + 프로필 best-effort 로드.
+  // 토큰은 이미 저장됐으므로 곧바로 authenticated 로 둔다. 뒤이은 /auth/me 가 일시 실패해도
+  // 로그인 자체를 실패로 만들지 않는다(토큰 발급 성공 ↔ 프로필 조회 실패 분리). 프로필은
+  // 다음 새로고침/retry 에서 채워진다.
+  const completeAuth = useCallback(async () => {
     setStatus('authenticated');
+    try {
+      setUser(await authClient.me());
+    } catch {
+      setUser(null);
+    }
   }, []);
 
-  const signup = useCallback(async (input: SignupRequest) => {
-    await authClient.signup(input);
-    const me = await authClient.me();
-    setUser(me);
-    setStatus('authenticated');
-  }, []);
+  const login = useCallback(
+    async (input: LoginRequest) => {
+      await authClient.login(input);
+      await completeAuth();
+    },
+    [completeAuth],
+  );
+
+  const signup = useCallback(
+    async (input: SignupRequest) => {
+      await authClient.signup(input);
+      await completeAuth();
+    },
+    [completeAuth],
+  );
 
   const logout = useCallback(async () => {
-    await authClient.logout();
-    setUser(null);
-    setStatus('unauthenticated');
+    // authClient.logout 은 BE 호출 성패와 무관하게 로컬 토큰을 폐기한다(finally). FE 상태도
+    // 동일하게 항상 초기화해 토큰/상태 불일치를 막는다.
+    try {
+      await authClient.logout();
+    } finally {
+      setUser(null);
+      setStatus('unauthenticated');
+    }
   }, []);
 
   const checkEmail = useCallback(
