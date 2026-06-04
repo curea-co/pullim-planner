@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -19,7 +18,12 @@ import type {
 
 import { authClient, onSessionExpired } from './client';
 
-export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+export type AuthStatus =
+  | 'loading'
+  | 'authenticated'
+  | 'unauthenticated'
+  /** 세션 복원이 transport/5xx 로 실패 — 비로그인 확정이 아니므로 /login 으로 보내지 않는다. */
+  | 'error';
 
 export interface AuthContextValue {
   status: AuthStatus;
@@ -28,6 +32,8 @@ export interface AuthContextValue {
   signup: (input: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
   checkEmail: (email: string) => Promise<boolean>;
+  /** 'error' 상태에서 세션 복원을 재시도한다. */
+  retry: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -35,16 +41,40 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 /**
  * 앱 전역 인증 상태 Provider.
  *
- * 마운트 시 저장된 토큰으로 `me()`를 호출해 세션을 복원한다(새로고침 유지). 토큰이 없거나
- * 복원에 실패하면 unauthenticated. refresh 무효로 세션이 끝나면(`onSessionExpired`)
- * unauthenticated 로 전환한다 — 보호 라우트는 `RequireAuth`가 /login 으로 보낸다.
+ * 마운트 시 저장된 토큰으로 `me()`를 호출해 세션을 복원한다(새로고침 유지).
+ * - 성공 → authenticated
+ * - 401/403(토큰 없음·무효; refresh 도 무효) → unauthenticated (`RequireAuth`가 /login)
+ * - transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI). api-client 가
+ *   refresh 401/403 일 때만 토큰을 폐기하는 계약과 정합.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  // StrictMode 이중 마운트에서 me() 부트스트랩이 두 번 돌지 않도록 가드.
-  const bootstrappedRef = useRef(false);
+  // 세션 복원 코어. setState 를 .then 콜백(deferred)에만 두어 마운트 effect 의 동기 setState
+  // 경고를 피한다. 초기 status 는 'loading' 이고, retry 는 호출 전 loading 을 세팅한다.
+  const loadSession = useCallback(
+    () =>
+      authClient.me().then(
+        (me) => {
+          setUser(me);
+          setStatus('authenticated');
+        },
+        (error: unknown) => {
+          setUser(null);
+          // 비로그인 확정(토큰 없음/무효)일 때만 unauthenticated. 그 외(네트워크·5xx)는 error.
+          if (
+            error instanceof ApiError &&
+            (error.statusCode === 401 || error.statusCode === 403)
+          ) {
+            setStatus('unauthenticated');
+          } else {
+            setStatus('error');
+          }
+        },
+      ),
+    [],
+  );
 
   useEffect(() => {
     const unsubscribe = onSessionExpired(() => {
@@ -55,26 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (bootstrappedRef.current) return;
-    bootstrappedRef.current = true;
-
-    let cancelled = false;
-    authClient
-      .me()
-      .then((me) => {
-        if (cancelled) return;
-        setUser(me);
-        setStatus('authenticated');
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setUser(null);
-        setStatus('unauthenticated');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    // 마운트 시 1회 세션 복원. StrictMode 이중 마운트면 me() 가 한 번 더 도는 정도로 무해
+    // (loadSession 은 idempotent). 언마운트 후 setState 는 React 가 무시한다.
+    void loadSession();
+  }, [loadSession]);
 
   const login = useCallback(async (input: LoginRequest) => {
     await authClient.login(input);
@@ -101,9 +115,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // 'error' 상태에서 사용자가 재시도. 클릭 핸들러라 동기 setState 가 안전하다.
+  const retry = useCallback(() => {
+    setStatus('loading');
+    void loadSession();
+  }, [loadSession]);
+
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, login, signup, logout, checkEmail }),
-    [status, user, login, signup, logout, checkEmail],
+    () => ({ status, user, login, signup, logout, checkEmail, retry }),
+    [status, user, login, signup, logout, checkEmail, retry],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

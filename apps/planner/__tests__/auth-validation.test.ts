@@ -36,6 +36,10 @@ describe('validateEmail', () => {
     expect(validateEmail('a@b')).not.toBeNull();
     expect(validateEmail('a b@example.com')).not.toBeNull();
   });
+
+  it('앞뒤 공백은 BE @NormalizeEmail(trim) 정렬 — 정규화 후 유효하면 통과', () => {
+    expect(validateEmail('  you@example.com  ')).toBeNull();
+  });
 });
 
 describe('validatePassword', () => {

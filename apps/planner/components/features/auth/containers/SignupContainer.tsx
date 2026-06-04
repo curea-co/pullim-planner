@@ -81,7 +81,9 @@ export function SignupContainer() {
       });
       router.replace('/');
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'conflict') {
+      // 이메일 중복: BE 는 409 + USER_EMAIL_DUPLICATED 를 내려보낸다(소문자 conflict 아님).
+      // 코드 문자열보다 안정적인 statusCode 409 로 분기한다.
+      if (error instanceof ApiError && error.statusCode === 409) {
         setErrors({ email: '이미 가입된 이메일이에요.' });
       } else if (error instanceof ApiError && error.statusCode === 400) {
         toast.error('입력값을 확인해주세요', { description: error.message });

@@ -25,8 +25,11 @@ export function validateName(name: string): string | null {
 }
 
 export function validateEmail(email: string): string | null {
-  if (!email.trim()) return '이메일을 입력해주세요.';
-  if (!EMAIL_PATTERN.test(email)) return '올바른 이메일 형식이 아니에요.';
+  // BE `@NormalizeEmail`(trim + toLowerCase) 후 IsEmail 을 태우므로, 검증도 정규화된 값
+  // 기준으로 맞춘다. 안 그러면 `" you@example.com "` 를 FE 가 막지만 서버는 통과해 불일치.
+  const normalized = email.trim();
+  if (!normalized) return '이메일을 입력해주세요.';
+  if (!EMAIL_PATTERN.test(normalized)) return '올바른 이메일 형식이 아니에요.';
   return null;
 }
 
