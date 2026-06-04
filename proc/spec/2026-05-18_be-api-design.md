@@ -60,6 +60,17 @@ mock `Planner.customization`은 `layoutId / weekLayoutId / paletteId` 3개의 en
 
 [`src/lib/db/schema.ts`](../../src/lib/db/schema.ts) 참조. 핵심 요약:
 
+> ⚠️ **실제 운영 스키마와의 차이 (2026-06-04, Phase γ 확인)** — 아래 요약은 설계 시점 표기이며
+> 일부가 실제 Drizzle 빌드 결과와 다르다. **권위는 운영 DB(`pullim_planner`) 실 스키마**이고,
+> Phase γ entity·마이그레이션은 거기에 맞춰 `pg_dump --schema-only diff 0` 으로 검증됐다.
+> 실제와 다른 점:
+> - 모든 `created_at`/`updated_at`/`completed_at`/`reported_at`/`computed_at`/`joined_at` 은
+>   `timestamp` 가 아니라 **`timestamptz`(timestamp with time zone)** 다(`information_schema` 확인).
+>   따라서 entity 도 `timestamptz` 로 매핑한다(엔티티 `timestamp` 로 내리면 운영 컬럼과 타임존
+>   해석이 어긋남).
+> - `time_blocks` 에는 아래 요약에 빠진 **`updated_at timestamptz NOT NULL DEFAULT now()`** 가
+>   실재한다(엔티티·마이그레이션 모두 포함). 제거하면 fresh DB 가 운영 DB 와 diff ≠ 0 이 된다.
+
 ```ts
 users (
   id text PK,                    // 'student_001' 같은 외부 id (mock 호환)
