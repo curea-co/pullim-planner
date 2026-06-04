@@ -24,6 +24,7 @@ import { RolesGuard } from "./common/guards/roles.guard";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 import { DatabaseModule } from "./database/database.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { PlannerModule } from "./modules/planner/planner.module";
 
 import { AppController } from "./app.controller";
 
@@ -62,7 +63,7 @@ const AUTH_ENABLED = process.env.DATABASE_ENABLED === "true";
       middleware: { mount: true, generateId: true },
     }),
     AppConfigModule,
-    ...(AUTH_ENABLED ? [DatabaseModule, AuthModule] : []),
+    ...(AUTH_ENABLED ? [DatabaseModule, AuthModule, PlannerModule] : []),
   ],
   providers: [
     // 실행 순서는 등록 역순: HttpException → QueryFailed → All
