@@ -8,9 +8,9 @@
  * 멱등: 모든 INSERT 가 `ON CONFLICT DO NOTHING` — 운영 DB(이미 데이터 보유)나 재실행에서
  * 기존 행을 건드리지 않는다. `bun --filter @pullim-planner/backend seed` 로 실행.
  *
- * 범위 메모: curriculum_nodes 시딩은 Phase ζ 소관이라 여기선 비운다. mock 블록이 참조하는
- * 일부 노드 id 는 ad-hoc(curriculum.ts 에 없음)이므로 time_blocks.curriculum_node_id 는 NULL 로
- * 둔다(FK 충족). ζ 에서 커리큘럼 트리 + 블록 노드 연결을 채운다.
+ * 범위 메모: 전체 curriculum 트리(부모 연결 포함)는 Phase ζ 소관. 여기선 mock todayBlocks 가
+ * 참조하는 노드만 평면(parent_id NULL)으로 심어 블록↔노드 연결을 보존한다 — Phase δ
+ * `/api/planners/:id/blocks` 응답이 기존 mock shape(curriculumNodeId 포함)와 일치하도록.
  */
 import AppDataSource from "../data-source";
 
@@ -355,6 +355,48 @@ const BURNOUT_FACTORS = [
   { label: '"쉴래요" 사용', value: 1, unit: "회", weight: 0.1, status: "good" },
 ];
 
+// time_blocks 가 참조하는 curriculum 노드 — mock todayBlocks 의 curriculumNodeId 보존용.
+// 전체 커리큘럼 트리는 Phase ζ 소관이라 여기선 참조 노드만 평면(parent_id NULL)으로 심는다
+// (블록 ↔ 노드 연결은 보존, 트리 구조는 ζ 에서 부모 연결).
+const CURRICULUM_NODES: ReadonlyArray<{
+  id: string;
+  subject: string;
+  level: number;
+  label: string;
+}> = [
+  { id: "math.calc", subject: "math", level: 2, label: "미적분" },
+  {
+    id: "math.calc_diff.application",
+    subject: "math",
+    level: 3,
+    label: "도함수의 활용",
+  },
+  {
+    id: "eng.vocab.high",
+    subject: "english",
+    level: 3,
+    label: "수능 빈출 어휘",
+  },
+  { id: "eng.blank.unit", subject: "english", level: 3, label: "빈칸 추론" },
+  {
+    id: "sci.phy.mechanics.newton",
+    subject: "science",
+    level: 3,
+    label: "뉴턴 운동 법칙",
+  },
+];
+
+// 블록 id → curriculum 노드 id (mock todayBlocks 연결). 없는 블록(휴식)은 NULL.
+const BLOCK_CURRICULUM: Record<string, string> = {
+  b0: "eng.vocab.high",
+  b1: "math.calc_diff.application",
+  b3: "math.calc_diff.application",
+  b4: "eng.blank.unit",
+  b5: "eng.vocab.high",
+  b6: "sci.phy.mechanics.newton",
+  b7: "math.calc",
+};
+
 async function seed(): Promise<void> {
   const ds = await AppDataSource.initialize();
   // 타입 래퍼 — DataSource.query 는 Promise<any> 라 strict-eslint 가 unsafe 로 잡는다.
@@ -367,6 +409,15 @@ async function seed(): Promise<void> {
         `INSERT INTO "pedagogy_engines" ("id","label","principle","example")
          VALUES ($1,$2,$3,$4) ON CONFLICT ("id") DO NOTHING`,
         [id, label, principle, example],
+      );
+    }
+
+    // 1.5) curriculum_nodes — 블록이 참조하는 노드(평면, parent_id NULL). 트리는 Phase ζ.
+    for (const node of CURRICULUM_NODES) {
+      await q(
+        `INSERT INTO "curriculum_nodes" ("id","parent_id","subject","level","label","position")
+         VALUES ($1, NULL, $2, $3, $4, 0) ON CONFLICT ("id") DO NOTHING`,
+        [node.id, node.subject, node.level, node.label],
       );
     }
 
@@ -391,14 +442,26 @@ async function seed(): Promise<void> {
 
     // 3) planners + 4) planner_subject_units
     for (const p of PLANNERS) {
+      // INSERT...SELECT...WHERE NOT EXISTS — id 충돌뿐 아니라 partial unique index
+      // `planners_user_active_uniq`(user 당 active·non-archived 1행)도 회피한다.
+      // 이미 같은 id 가 있거나(재실행), active 플래너를 넣으려는데 user 에 이미 active 가
+      // 있으면(다른 active 존재) 삽입을 건너뛴다 — ON CONFLICT("id") 만으로는 index 충돌을
+      // 못 잡아 실패하던 문제 수정(codex #45).
       await q(
         `INSERT INTO "planners"
            ("id","user_id","name","exam_type","exam_label","exam_start_date","exam_end_date",
             "target_kind","target_value","weekday_start","weekday_end","weekend_start","weekend_end",
             "block_pattern","weakness_auto_reflect","motivation_style","motto","active","archived",
             "customization","created_at","updated_at")
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
-         ON CONFLICT ("id") DO NOTHING`,
+         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22
+         WHERE NOT EXISTS (SELECT 1 FROM "planners" WHERE "id" = $1)
+           AND (
+             $18::boolean = false
+             OR NOT EXISTS (
+               SELECT 1 FROM "planners"
+               WHERE "user_id" = $2 AND "active" = true AND "archived" = false
+             )
+           )`,
         [
           p.id,
           USER_ID,
@@ -428,9 +491,13 @@ async function seed(): Promise<void> {
       for (const subject of subjects) {
         const units = p.subjectUnits[subject];
         for (let position = 0; position < units.length; position++) {
+          // 부모 planner 가 실제로 삽입됐을 때만(WHERE EXISTS) 자식을 넣는다 — 위 planner
+          // insert 가 partial-unique 가드로 스킵된 경우 FK 위반을 막는다.
           await q(
             `INSERT INTO "planner_subject_units" ("planner_id","subject","unit_label","position")
-             VALUES ($1,$2,$3,$4) ON CONFLICT ("planner_id","subject","position") DO NOTHING`,
+             SELECT $1,$2,$3,$4
+             WHERE EXISTS (SELECT 1 FROM "planners" WHERE "id" = $1)
+             ON CONFLICT ("planner_id","subject","position") DO NOTHING`,
             [p.id, subject, units[position], position],
           );
         }
@@ -444,7 +511,8 @@ async function seed(): Promise<void> {
            ("id","planner_id","date","start_time","end_time","subject","type","title",
             "linked_feature_slug","curriculum_node_id","engines","status","progress",
             "expected_minutes","reasoning")
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
+         WHERE EXISTS (SELECT 1 FROM "planners" WHERE "id" = $2)
          ON CONFLICT ("id") DO NOTHING`,
         [
           b.id,
@@ -456,7 +524,7 @@ async function seed(): Promise<void> {
           b.type,
           b.title,
           b.linkedFeatureSlug,
-          null, // curriculum_node_id — Phase ζ
+          BLOCK_CURRICULUM[b.id] ?? null, // 블록↔노드 연결(mock 보존). 트리 전체는 Phase ζ.
           b.engines,
           b.status,
           b.progress,
@@ -470,7 +538,9 @@ async function seed(): Promise<void> {
     for (const c of COMPLETIONS) {
       await q(
         `INSERT INTO "block_completions" ("block_id","completed_at","accuracy","emotion","notes")
-         VALUES ($1,$2,$3,$4,$5) ON CONFLICT ("block_id") DO NOTHING`,
+         SELECT $1,$2,$3,$4,$5
+         WHERE EXISTS (SELECT 1 FROM "time_blocks" WHERE "id" = $1)
+         ON CONFLICT ("block_id") DO NOTHING`,
         [c.blockId, c.completedAt, c.accuracy, c.emotion, null],
       );
     }

@@ -1,10 +1,16 @@
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
-/** 번아웃 요인 (jsonb `factors` 배열 원소). */
+/**
+ * 번아웃 요인 (jsonb `factors` 배열 원소).
+ * FE mock `BurnoutFactor`(`apps/planner/lib/mock/planner.ts`)와 동일 shape.
+ */
 export interface BurnoutFactor {
   label: string;
+  value: number;
+  /** 표시 단위. */
+  unit: "h" | "%" | "/5" | "회";
   weight: number;
-  detail?: string;
+  status: "good" | "warn" | "bad";
 }
 
 /**
