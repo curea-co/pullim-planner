@@ -171,7 +171,7 @@ describe("MeResponseDto.from", () => {
 
     const serialized = JSON.parse(
       JSON.stringify(MeResponseDto.from(user, null)),
-    );
-    expect("examDate" in (serialized as Record<string, unknown>)).toBe(false);
+    ) as Record<string, unknown>;
+    expect("examDate" in serialized).toBe(false);
   });
 });
