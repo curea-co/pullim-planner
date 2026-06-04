@@ -12,10 +12,13 @@
  * 참조하는 노드만 평면(parent_id NULL)으로 심어 블록↔노드 연결을 보존한다 — Phase δ
  * `/api/planners/:id/blocks` 응답이 기존 mock shape(curriculumNodeId 포함)와 일치하도록.
  */
+import { todayKstIsoDate } from "../../common/utils/datetime.util";
 import AppDataSource from "../data-source";
 
-// 데모 "오늘" — mock todayBlocks/컨디션/번아웃의 기준일(persona 6월 모의평가일).
-const SEED_DATE = "2026-06-04";
+// 데모 "오늘" — 오늘의 블록/컨디션/번아웃 기준일. 고정일이면 날짜가 지나는 순간 기본
+// `GET /api/planners/:id/blocks`(date 미지정=KST 오늘)가 빈 배열이 되므로 시드 시점의 KST
+// 오늘로 잡는다(fresh DB 데모가 당일 동작). 시험 일정(examStartDate 등)은 별도 고정값.
+const SEED_DATE = todayKstIsoDate();
 
 const PEDAGOGY_ENGINES: ReadonlyArray<[string, string, string, string]> = [
   [

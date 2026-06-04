@@ -30,15 +30,9 @@ export class PlannerService {
     return MeResponseDto.from(user, activePlanner);
   }
 
-  /** 사용자의 플래너 목록 + 과목 단원 조립. */
-  async getPlanners(
-    userId: string,
-    includeArchived: boolean,
-  ): Promise<PlannerResponseDto[]> {
-    const planners = await this.repo.findPlannersByUser(
-      userId,
-      includeArchived,
-    );
+  /** 사용자의 플래너 목록(active/inactive/archived 함께) + 과목 단원 조립. */
+  async getPlanners(userId: string): Promise<PlannerResponseDto[]> {
+    const planners = await this.repo.findPlannersByUser(userId);
     if (planners.length === 0) return [];
 
     const units = await this.repo.findSubjectUnits(planners.map((p) => p.id));

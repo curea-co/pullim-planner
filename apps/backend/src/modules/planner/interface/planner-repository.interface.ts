@@ -14,11 +14,8 @@ export interface PlannerRepositoryInterface {
   /** 도메인 사용자(users) 1건. */
   findUserById(userId: string): Promise<DomainUser | null>;
 
-  /** 사용자의 플래너 목록. `includeArchived=false` 면 archived 제외(mock getPlanners 기본). */
-  findPlannersByUser(
-    userId: string,
-    includeArchived: boolean,
-  ): Promise<Planner[]>;
+  /** 사용자의 플래너 목록 — active/inactive/archived 함께(spec §3). active 우선 정렬. */
+  findPlannersByUser(userId: string): Promise<Planner[]>;
 
   /** 플래너 1건 (소유권 확인용). */
   findPlannerById(plannerId: string): Promise<Planner | null>;

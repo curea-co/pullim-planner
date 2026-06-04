@@ -31,14 +31,10 @@ export class PlannerRepository implements PlannerRepositoryInterface {
     return this.users.findOne({ where: { id: userId } });
   }
 
-  findPlannersByUser(
-    userId: string,
-    includeArchived: boolean,
-  ): Promise<Planner[]> {
-    const where = includeArchived ? { userId } : { userId, archived: false };
-    // active 먼저, 그다음 최신 수정순 — 카드 그리드 표시 순서.
+  findPlannersByUser(userId: string): Promise<Planner[]> {
+    // active/inactive/archived 함께(spec §3). active 먼저, 그다음 최신 수정순.
     return this.planners.find({
-      where,
+      where: { userId },
       order: { active: "DESC", updatedAt: "DESC" },
     });
   }

@@ -8,10 +8,7 @@ import { PlannerService } from "../service/planner.service";
 export class GetPlannersUseCase {
   constructor(private readonly plannerService: PlannerService) {}
 
-  execute(
-    userId: string,
-    includeArchived: boolean,
-  ): Promise<PlannerResponseDto[]> {
-    return this.plannerService.getPlanners(userId, includeArchived);
+  execute(userId: string): Promise<PlannerResponseDto[]> {
+    return this.plannerService.getPlanners(userId);
   }
 }
