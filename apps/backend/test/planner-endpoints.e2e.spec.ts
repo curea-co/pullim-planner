@@ -210,4 +210,11 @@ describe("planner read endpoints (Phase δ)", () => {
     const res = await fetch(`${baseUrl}/planners/pl_001/blocks?date=2026-6-4`);
     expect(res.status).toBe(422);
   });
+
+  it("존재하지 않는 달력 날짜 → 422 validation", async () => {
+    for (const bad of ["2026-13-01", "2026-02-31"]) {
+      const res = await fetch(`${baseUrl}/planners/pl_001/blocks?date=${bad}`);
+      expect(res.status).toBe(422);
+    }
+  });
 });
