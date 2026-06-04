@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, Search, Flame, User as UserIcon, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Bell, Search, Flame, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth/auth-context';
 import { PullimLogo } from '@/components/brand/logo';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -75,16 +77,22 @@ export function AppHeader({ role }: { role: Role }) {
 }
 
 function ProfileMenu() {
-  const profile = {
-    name: currentPersona.name,
-    sub: `${currentPersona.grade} · ${currentPersona.school}`,
-  };
+  const router = useRouter();
+  const { user, logout } = useAuth();
 
-  function handleLogout() {
-    toast.info('로그아웃 (데모)', {
-      description: '데모 환경이라 실제 로그아웃은 동작하지 않아요.',
-      duration: 3000,
-    });
+  // 헤더 프로필은 실 인증 사용자(/auth/me). 본문 도메인 데이터는 아직 mock(GATED).
+  const name = user?.name ?? '';
+  const sub = user?.email ?? '';
+
+  async function handleLogout() {
+    try {
+      await logout();
+      router.replace('/login');
+    } catch {
+      toast.error('로그아웃에 실패했어요', {
+        description: '잠시 후 다시 시도해주세요.',
+      });
+    }
   }
 
   return (
@@ -93,13 +101,13 @@ function ProfileMenu() {
         aria-label="프로필 메뉴 열기"
         className="bg-pullim-blue-600 hover:bg-pullim-blue-700 hover:ring-pullim-blue-200 ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white transition-all hover:ring-2 focus-visible:ring-pullim-blue-300 focus-visible:ring-2 outline-none"
       >
-        {profile.name[0]}
+        {name ? name[0] : '?'}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="px-2 py-1.5">
-            <div className="text-pullim-slate-900 text-sm font-bold">{profile.name}</div>
-            <div className="text-pullim-slate-500 text-[11px] font-normal">{profile.sub}</div>
+            <div className="text-pullim-slate-900 text-sm font-bold">{name}</div>
+            <div className="text-pullim-slate-500 text-[11px] font-normal">{sub}</div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

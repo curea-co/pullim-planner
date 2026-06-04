@@ -1,0 +1,170 @@
+'use client';
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { ApiError } from '@pullim-planner/api-client';
+import type {
+  AuthUser,
+  LoginRequest,
+  SignupRequest,
+} from '@pullim-planner/types';
+
+import { authClient, onSessionExpired } from './client';
+
+export type AuthStatus =
+  | 'loading'
+  | 'authenticated'
+  | 'unauthenticated'
+  /** 세션 복원이 transport/5xx 로 실패 — 비로그인 확정이 아니므로 /login 으로 보내지 않는다. */
+  | 'error';
+
+export interface AuthContextValue {
+  status: AuthStatus;
+  user: AuthUser | null;
+  login: (input: LoginRequest) => Promise<void>;
+  signup: (input: SignupRequest) => Promise<void>;
+  logout: () => Promise<void>;
+  checkEmail: (email: string) => Promise<boolean>;
+  /** 'error' 상태에서 세션 복원을 재시도한다. */
+  retry: () => void;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+/**
+ * 앱 전역 인증 상태 Provider.
+ *
+ * 마운트 시 저장된 토큰으로 `me()`를 호출해 세션을 복원한다(새로고침 유지).
+ * - 성공 → authenticated
+ * - 401/403(토큰 없음·무효; refresh 도 무효) → unauthenticated (`RequireAuth`가 /login)
+ * - transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI). api-client 가
+ *   refresh 401/403 일 때만 토큰을 폐기하는 계약과 정합.
+ */
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [status, setStatus] = useState<AuthStatus>('loading');
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  // me() 로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
+  // 그 외(네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만 두어 마운트 effect 의
+  // 동기 setState 경고를 피한다.
+  // - 부트스트랩/재시도: fallback='error' (토큰 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
+  // - login/signup 직후: fallback='authenticated' (토큰 방금 발급 — 프로필만 best-effort)
+  const resolveSession = useCallback(
+    (fallbackStatus: AuthStatus) =>
+      authClient.me().then(
+        (me) => {
+          setUser(me);
+          setStatus('authenticated');
+        },
+        (error: unknown) => {
+          setUser(null);
+          if (
+            error instanceof ApiError &&
+            (error.statusCode === 401 || error.statusCode === 403)
+          ) {
+            setStatus('unauthenticated');
+          } else {
+            setStatus(fallbackStatus);
+          }
+        },
+      ),
+    [],
+  );
+
+  // 부트스트랩/재시도용 — 세션 확정 불가 시 'error'.
+  const loadSession = useCallback(
+    () => resolveSession('error'),
+    [resolveSession],
+  );
+
+  useEffect(() => {
+    const unsubscribe = onSessionExpired(() => {
+      setUser(null);
+      setStatus('unauthenticated');
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    // 마운트 시 1회 세션 복원. StrictMode 이중 마운트면 me() 가 한 번 더 도는 정도로 무해
+    // (loadSession 은 idempotent). 언마운트 후 setState 는 React 가 무시한다.
+    void loadSession();
+  }, [loadSession]);
+
+  // 토큰 발급(login/signup) 성공 후 프로필 조회. 토큰은 방금 발급됐으므로 me() 가 네트워크/5xx
+  // 로 일시 실패해도 로그인 성공으로 둔다(fallback='authenticated', 프로필은 보류). 단 me() 가
+  // 401/403 이면 세션 무효 확정이므로 unauthenticated 로 되돌린다(resolveSession 내부 처리).
+  const completeAuth = useCallback(
+    () => resolveSession('authenticated'),
+    [resolveSession],
+  );
+
+  const login = useCallback(
+    async (input: LoginRequest) => {
+      await authClient.login(input);
+      await completeAuth();
+    },
+    [completeAuth],
+  );
+
+  const signup = useCallback(
+    async (input: SignupRequest) => {
+      await authClient.signup(input);
+      await completeAuth();
+    },
+    [completeAuth],
+  );
+
+  const logout = useCallback(async () => {
+    // authClient.logout 은 BE 호출 성패와 무관하게 로컬 토큰을 폐기한다(finally). FE 상태도
+    // 동일하게 항상 초기화해 토큰/상태 불일치를 막는다.
+    try {
+      await authClient.logout();
+    } finally {
+      setUser(null);
+      setStatus('unauthenticated');
+    }
+  }, []);
+
+  const checkEmail = useCallback(
+    (email: string) => authClient.checkEmail(email),
+    [],
+  );
+
+  // 'error' 상태에서 사용자가 재시도. 클릭 핸들러라 동기 setState 가 안전하다.
+  const retry = useCallback(() => {
+    setStatus('loading');
+    void loadSession();
+  }, [loadSession]);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({ status, user, login, signup, logout, checkEmail, retry }),
+    [status, user, login, signup, logout, checkEmail, retry],
+  );
+
+  return <AuthContext value={value}>{children}</AuthContext>;
+}
+
+/** 인증 상태/액션 훅. `AuthProvider` 하위에서만 사용. */
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within <AuthProvider>');
+  }
+  return ctx;
+}
+
+/** ApiError 코드를 사용자용 한국어 메시지로 변환한다. */
+export function authErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    return error.message || fallback;
+  }
+  return fallback;
+}

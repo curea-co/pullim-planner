@@ -3,6 +3,7 @@ import { Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider } from '@/lib/auth/auth-context';
 import './globals.css';
 
 // Pretendard는 globals.css의 CDN @import로 로드 (한글 가변폰트).
@@ -71,7 +72,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="bg-background text-foreground min-h-full font-sans">
-        <TooltipProvider delay={120}>{children}</TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider delay={120}>{children}</TooltipProvider>
+        </AuthProvider>
         <Toaster position="top-center" closeButton richColors />
         <Analytics />
       </body>
