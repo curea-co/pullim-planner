@@ -22,7 +22,8 @@ export class PlannerResponseDto {
   blockPattern: string;
   weaknessAutoReflect: boolean;
   motivationStyle: string;
-  motto: string | null;
+  // FE mock Planner.motto 는 string(빈 값은 '') — DB nullable 을 빈 문자열로 정렬.
+  motto: string;
   active: boolean;
   archived: boolean;
   customization: Record<string, unknown> | null;
@@ -62,7 +63,7 @@ export class PlannerResponseDto {
     dto.blockPattern = planner.blockPattern;
     dto.weaknessAutoReflect = planner.weaknessAutoReflect;
     dto.motivationStyle = planner.motivationStyle;
-    dto.motto = planner.motto;
+    dto.motto = planner.motto ?? "";
     dto.active = planner.active;
     dto.archived = planner.archived;
     dto.customization = planner.customization;
