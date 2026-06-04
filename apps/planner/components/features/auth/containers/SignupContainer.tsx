@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@pullim-planner/api-client';
@@ -30,21 +30,27 @@ export function SignupContainer() {
   const [errors, setErrors] = useState<SignupErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // 가장 최근 이메일 입력값 — checkEmail blur 응답이 늦게 도착했을 때 stale 여부 판정용.
+  const latestEmailRef = useRef('');
+
   useEffect(() => {
     if (status === 'authenticated') router.replace('/');
   }, [status, router]);
 
   function handleChange<K extends keyof SignupFields>(field: K, value: string) {
+    if (field === 'email') latestEmailRef.current = value;
     setValues((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 
   // 이메일 blur 시 중복 확인 — 형식이 유효할 때만. 확정은 submit conflict 가 담당.
   async function handleEmailBlur() {
-    const formatError = validateEmail(values.email);
-    if (formatError) return;
+    const email = values.email;
+    if (validateEmail(email)) return;
     try {
-      const available = await checkEmail(values.email);
+      const available = await checkEmail(email);
+      // 응답이 도착하기 전 사용자가 이메일을 바꿨으면 stale 결과 — 버린다(잘못된 에러 덮어쓰기 방지).
+      if (latestEmailRef.current !== email) return;
       if (!available) {
         setErrors((prev) => ({ ...prev, email: '이미 가입된 이메일이에요.' }));
       }

@@ -51,10 +51,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  // 세션 복원 코어. setState 를 .then 콜백(deferred)에만 두어 마운트 effect 의 동기 setState
-  // 경고를 피한다. 초기 status 는 'loading' 이고, retry 는 호출 전 loading 을 세팅한다.
-  const loadSession = useCallback(
-    () =>
+  // me() 로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
+  // 그 외(네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만 두어 마운트 effect 의
+  // 동기 setState 경고를 피한다.
+  // - 부트스트랩/재시도: fallback='error' (토큰 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
+  // - login/signup 직후: fallback='authenticated' (토큰 방금 발급 — 프로필만 best-effort)
+  const resolveSession = useCallback(
+    (fallbackStatus: AuthStatus) =>
       authClient.me().then(
         (me) => {
           setUser(me);
@@ -62,18 +65,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         (error: unknown) => {
           setUser(null);
-          // 비로그인 확정(토큰 없음/무효)일 때만 unauthenticated. 그 외(네트워크·5xx)는 error.
           if (
             error instanceof ApiError &&
             (error.statusCode === 401 || error.statusCode === 403)
           ) {
             setStatus('unauthenticated');
           } else {
-            setStatus('error');
+            setStatus(fallbackStatus);
           }
         },
       ),
     [],
+  );
+
+  // 부트스트랩/재시도용 — 세션 확정 불가 시 'error'.
+  const loadSession = useCallback(
+    () => resolveSession('error'),
+    [resolveSession],
   );
 
   useEffect(() => {
@@ -90,18 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void loadSession();
   }, [loadSession]);
 
-  // 토큰 발급(login/signup) 성공 후: 인증 확정 + 프로필 best-effort 로드.
-  // 토큰은 이미 저장됐으므로 곧바로 authenticated 로 둔다. 뒤이은 /auth/me 가 일시 실패해도
-  // 로그인 자체를 실패로 만들지 않는다(토큰 발급 성공 ↔ 프로필 조회 실패 분리). 프로필은
-  // 다음 새로고침/retry 에서 채워진다.
-  const completeAuth = useCallback(async () => {
-    setStatus('authenticated');
-    try {
-      setUser(await authClient.me());
-    } catch {
-      setUser(null);
-    }
-  }, []);
+  // 토큰 발급(login/signup) 성공 후 프로필 조회. 토큰은 방금 발급됐으므로 me() 가 네트워크/5xx
+  // 로 일시 실패해도 로그인 성공으로 둔다(fallback='authenticated', 프로필은 보류). 단 me() 가
+  // 401/403 이면 세션 무효 확정이므로 unauthenticated 로 되돌린다(resolveSession 내부 처리).
+  const completeAuth = useCallback(
+    () => resolveSession('authenticated'),
+    [resolveSession],
+  );
 
   const login = useCallback(
     async (input: LoginRequest) => {
