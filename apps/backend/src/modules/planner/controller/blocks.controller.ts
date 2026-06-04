@@ -10,8 +10,11 @@ import { BlocksQueryDto } from "./dto/blocks-query.dto";
 import { GetPlannerBlocksUseCase } from "../use-cases/get-planner-blocks.use-case";
 
 /**
- * 플래너의 날짜별 학습 블록 조회. `@Public()` + getCurrentUserId 데모 폴백(Phase δ).
- * date 미지정 시 오늘.
+ * 플래너의 날짜별 학습 블록 조회. date 미지정 시 KST 오늘.
+ *
+ * Phase δ 는 `@Public()` 라 항상 데모 사용자(student_001)로 평가된다(토큰 미검증) — 따라서
+ * 소유권 검사도 데모 사용자 기준이다. 토큰 기반 per-user 식별·다계정 소유권은 Phase 3(GATED)
+ * 에서 `@Public()` 제거 시 활성화된다.
  */
 @ApiTags("planner")
 @Controller("planners")

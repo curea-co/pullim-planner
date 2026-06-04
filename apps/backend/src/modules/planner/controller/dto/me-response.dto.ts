@@ -15,7 +15,8 @@ export class MeResponseDto {
   name: string;
   grade: string;
   track: string;
-  school: string | null;
+  // FE mock Persona.school 은 string — 온보딩 전 null 이면 빈 문자열로 내려 계약을 맞춘다.
+  school: string;
   examDate?: string;
   examLabel?: string;
   focusSubjects: string[];
@@ -34,7 +35,10 @@ export class MeResponseDto {
     dto.name = user.name;
     dto.grade = user.grade;
     dto.track = user.track;
-    dto.school = user.school;
+    dto.school = user.school ?? "";
+    // examDate/examLabel 은 활성 플래너에서 파생(가장 가까운 시험). 활성 플래너가 없으면
+    // 생략한다 — 시험일을 임의로 날조하지 않는다. 데모 사용자(student_001)는 항상 활성
+    // 플래너가 있어 채워지며, 활성 플래너 없는 실사용자의 nullable 처리는 Phase η(FE 계약 이주).
     if (activePlanner) {
       dto.examDate = activePlanner.examStartDate;
       dto.examLabel = activePlanner.examLabel;
