@@ -10,10 +10,9 @@
 import { useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Palette as PaletteIcon, Sparkles, RotateCcw, Save, CheckCircle2, Archive } from 'lucide-react';
 import { toast } from 'sonner';
+import { ApiError } from '@pullim-planner/api-client';
 import {
-  findPlanner,
   todayBlocks,
-  updatePlannerCustomization,
   palettes,
   paletteOrder,
   layoutTemplates,
@@ -25,6 +24,7 @@ import {
   type LayoutTemplateId,
   type WeekLayoutId,
 } from '@/lib/mock';
+import { plannerClient } from '@/lib/planner/client';
 import { getCustomization } from '@/lib/hooks/use-planner-customization';
 import { ActiveDayLayout } from '@/components/features/planner-home/components/layouts/active-day-layout';
 import { ActiveWeekLayout } from '@/components/features/planner-home/components/layouts/active-week-layout';
@@ -62,8 +62,8 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
     }), []);
 
     const selectedPlanner = useMemo(
-      () => findPlanner(selectedId) ?? null,
-      [selectedId],
+      () => planners.find(p => p.id === selectedId) ?? null,
+      [planners, selectedId],
     );
     const saved = useMemo(
       () => getCustomization(selectedPlanner),
@@ -96,18 +96,22 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
       setDraftPalette(saved.paletteId);
     }
 
-    function save() {
+    async function save() {
       if (!selectedPlanner) return;
-      updatePlannerCustomization(selectedPlanner.id, {
-        layoutId: draftLayout,
-        weekLayoutId: draftWeekLayout,
-        paletteId: draftPalette,
-      });
-      toast.success('🎨 시간표 꾸미기 저장됨', {
-        description: `${selectedPlanner.name} — 일간 ${layoutTemplates[draftLayout].label} · 주간 ${weekLayouts[draftWeekLayout].label} · ${palettes[draftPalette].label}`,
-        duration: 2500,
-      });
-      onSaved?.(selectedPlanner.id);
+      try {
+        await plannerClient.updateCustomization(selectedPlanner.id, {
+          layoutId: draftLayout,
+          weekLayoutId: draftWeekLayout,
+          paletteId: draftPalette,
+        });
+        toast.success('🎨 시간표 꾸미기 저장됨', {
+          description: `${selectedPlanner.name} — 일간 ${layoutTemplates[draftLayout].label} · 주간 ${weekLayouts[draftWeekLayout].label} · ${palettes[draftPalette].label}`,
+          duration: 2500,
+        });
+        onSaved?.(selectedPlanner.id);
+      } catch (e) {
+        toast.error(e instanceof ApiError ? e.message : '꾸미기 저장 실패');
+      }
     }
 
     if (!selectedPlanner) {
