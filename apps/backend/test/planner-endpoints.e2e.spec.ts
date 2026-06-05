@@ -1,9 +1,22 @@
 import "reflect-metadata";
 import type { AddressInfo } from "node:net";
 
-import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
+import {
+  type CanActivate,
+  type ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
+import {
+  APP_FILTER,
+  APP_GUARD,
+  APP_INTERCEPTOR,
+  Reflector,
+} from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { Test } from "@nestjs/testing";
+
+import { IS_PUBLIC_KEY } from "../src/common/decorators/public.decorator";
 
 import { HttpExceptionFilter } from "../src/common/filters/http-exception.filter";
 import { ResponseInterceptor } from "../src/common/interceptors/response.interceptor";
@@ -612,5 +625,110 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
     const body = (await res.json()) as JsonResult;
     expect(res.status).toBe(404);
     expect(body.error?.code).toBe("PLANNER_NOT_FOUND");
+  });
+});
+
+/**
+ * per-user 가드 회귀 — 실제 앱은 전역 가드(JwtAuthGuard)로 인증을 강제한다. 위 describe 는
+ * 가드 미등록(contract 테스트)이라 401 회귀를 못 잡으므로, 여기서 실 가드 계약을 흉내내는
+ * stub 가드(`@Public()` 존중 + 헤더 없으면 401)를 전역 등록해 "mutation 라우트가 보호됨"을
+ * 고정한다 — 누군가 mutation 컨트롤러에 `@Public()` 을 붙이면 이 테스트가 깨진다 (codex R4).
+ */
+@Injectable()
+class StubAuthGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+  canActivate(context: ExecutionContext): boolean {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+    const req = context.switchToHttp().getRequest<{
+      headers: Record<string, string | string[] | undefined>;
+      user?: { id: string };
+    }>();
+    const uid = req.headers["x-test-user"];
+    if (!uid) throw new UnauthorizedException();
+    req.user = { id: typeof uid === "string" ? uid : uid[0] };
+    return true;
+  }
+}
+
+describe("planner mutation — per-user 가드 적용 시 인증 강제", () => {
+  let app: NestExpressApplication;
+  let baseUrl: string;
+
+  const validBody = {
+    name: "가드 테스트",
+    examType: "mock",
+    examLabel: "가드",
+    examStartDate: "2026-09-03",
+    examEndDate: "2026-09-03",
+    target: { kind: "grade", value: 1 },
+    weekdayHours: { start: 18, end: 22 },
+    weekendHours: { start: 10, end: 20 },
+    subjectUnits: { math: ["미적분"] },
+    blockPattern: "focused",
+    weaknessAutoReflect: true,
+    motivationStyle: "guided",
+    motto: "",
+  };
+
+  beforeAll(async () => {
+    const store = new Map<string, Record<string, unknown>>();
+    const repo = {
+      insertPlanner: (planner: Record<string, unknown>) => {
+        store.set(planner.id as string, planner);
+        return Promise.resolve();
+      },
+      findPlannerById: (id: string) => Promise.resolve(store.get(id) ?? null),
+      findSubjectUnits: () => Promise.resolve([]),
+    } as unknown as PlannerRepositoryInterface;
+
+    const moduleRef = await Test.createTestingModule({
+      controllers: [PlannerMutationController],
+      providers: [
+        CreatePlannerUseCase,
+        UpdatePlannerUseCase,
+        DeletePlannerUseCase,
+        ActivatePlannerUseCase,
+        ArchivePlannerUseCase,
+        DuplicatePlannerUseCase,
+        UpdateCustomizationUseCase,
+        PlannerService,
+        { provide: PlannerRepositoryInterface, useValue: repo },
+        { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+        { provide: APP_FILTER, useClass: HttpExceptionFilter },
+        { provide: APP_GUARD, useClass: StubAuthGuard },
+      ],
+    }).compile();
+
+    app = moduleRef.createNestApplication<NestExpressApplication>();
+    setupGlobal(app);
+    await app.listen(0);
+    const { port } = app.getHttpServer().address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}/api`;
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it("POST /api/planners — 토큰(헤더) 없으면 401", async () => {
+    const res = await fetch(`${baseUrl}/planners`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(validBody),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/planners — 인증되면 201 (per-user 생성)", async () => {
+    const res = await fetch(`${baseUrl}/planners`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-user": "u_123" },
+      body: JSON.stringify(validBody),
+    });
+    expect(res.status).toBe(201);
   });
 });
