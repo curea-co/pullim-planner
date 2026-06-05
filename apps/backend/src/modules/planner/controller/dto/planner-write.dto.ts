@@ -15,6 +15,8 @@ import {
   type ValidationOptions,
 } from "class-validator";
 
+import { IsPlainObject } from "./is-plain-object.validator";
+
 /**
  * 시간표(플래너) 생성/수정 요청 DTO — FE mock `Planner` 의 중첩 입력 shape
  * (`formToPlannerPatch` 반환 = `Omit<Planner, 'id'|'active'|'archived'|'createdAt'|'updatedAt'>`)
@@ -85,19 +87,22 @@ export class PlannerWriteDto {
   })
   examEndDate: string;
 
-  // `@IsDefined()` 로 객체 자체의 존재성도 검증한다 — `@ValidateNested()` 만으로는
-  // 필드를 통째로 누락하면 통과돼 service 의 `dto.target.kind` 접근에서 500 이 난다 (codex).
+  // `@IsDefined()` 존재성 + `@IsPlainObject()` 로 배열/원시값 거부 — `@ValidateNested()` 만으론
+  // 필드 누락이나 `target: []` 가 통과돼 service 의 `dto.target.kind` 접근에서 500 이 난다 (codex).
   @IsDefined({ message: "target 을 입력해주세요." })
+  @IsPlainObject({ message: "target 은 객체여야 합니다." })
   @ValidateNested()
   @Type(() => TargetInputDto)
   target: TargetInputDto;
 
   @IsDefined({ message: "weekdayHours 를 입력해주세요." })
+  @IsPlainObject({ message: "weekdayHours 는 객체여야 합니다." })
   @ValidateNested()
   @Type(() => HoursInputDto)
   weekdayHours: HoursInputDto;
 
   @IsDefined({ message: "weekendHours 를 입력해주세요." })
+  @IsPlainObject({ message: "weekendHours 는 객체여야 합니다." })
   @ValidateNested()
   @Type(() => HoursInputDto)
   weekendHours: HoursInputDto;

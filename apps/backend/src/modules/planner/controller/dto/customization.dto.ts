@@ -6,6 +6,7 @@ import {
   PALETTE_IDS,
   WEEK_LAYOUT_IDS,
 } from "./customization-options.constant";
+import { IsPlainObject } from "./is-plain-object.validator";
 
 /** `customization: { layoutId, weekLayoutId?, paletteId }` 본문. */
 class CustomizationBody {
@@ -26,6 +27,7 @@ export class CustomizationDto {
   // `@IsDefined()` 로 객체 누락 시 422 보장 — `{}` 가 통과해 컨트롤러에서 undefined 가
   // 캐스팅돼 내려가는 것을 막는다 (codex).
   @IsDefined({ message: "customization 을 입력해주세요." })
+  @IsPlainObject({ message: "customization 은 객체여야 합니다." })
   @ValidateNested()
   @Type(() => CustomizationBody)
   customization: CustomizationBody;

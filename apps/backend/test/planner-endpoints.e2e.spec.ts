@@ -459,6 +459,31 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
     }
   });
 
+  it("POST /api/planners — 중첩 필드가 배열/원시값이면 422(500 아님)", async () => {
+    // @IsPlainObject — target:[] 같은 배열이 @ValidateNested 를 우회해 500 나던 것 차단 (codex R6).
+    for (const bad of [
+      { target: [] },
+      { weekdayHours: [] },
+      { weekendHours: "nope" },
+    ]) {
+      const res = await fetch(`${baseUrl}/planners`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validWriteBody(bad)),
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it("PUT /api/planners/:id/customization — 배열이면 422", async () => {
+    const res = await fetch(`${baseUrl}/planners/pl_001/customization`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ customization: [] }),
+    });
+    expect(res.status).toBe(422);
+  });
+
   it("POST /api/planners — target.value 가 kind 와 불일치 시 422", async () => {
     for (const bad of [
       { target: { kind: "grade", value: "A+" } }, // grade 인데 문자열
