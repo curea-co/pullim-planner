@@ -109,14 +109,10 @@ function EditPlannerForm({
 
   async function handleSave(submitted: PlannerForm) {
     try {
-      const writeInput = toWriteInput(formToPlannerPatch(submitted));
-      // 설정 탭은 customization 을 편집하지 않는다(꾸미기 탭 API 전환은 후속 PR). update 는
-      // PUT 전체교체라, 폼에 customization 이 없으면 기존 꾸미기가 NULL 로 날아간다 — 로드된
-      // planner 의 customization 을 실어 보존한다 (codex).
-      if (writeInput.customization === undefined && planner?.customization) {
-        writeInput.customization = planner.customization;
-      }
-      await plannerClient.update(id, writeInput);
+      // customization 은 PUT /planners 가 갱신하지 않는다(전용 엔드포인트 소유, BE 보존).
+      // 따라서 폼 결과를 그대로 보낸다 — 굳이 customization 을 실으면 꾸미기 탭에서 방금 저장한
+      // 값과 stale 충돌만 생긴다 (codex R4). toWriteInput 결과에 customization 이 있어도 BE 무시.
+      await plannerClient.update(id, toWriteInput(formToPlannerPatch(submitted)));
       toast.success('✓ 변경 사항 저장 완료', {
         description: `${submitted.examName} — 다음 활성화 시 반영됩니다`,
         duration: 3000,
