@@ -83,10 +83,14 @@ function EditPlannerForm({
 
   async function handleSave(submitted: PlannerForm) {
     try {
-      await plannerClient.update(
-        id,
-        toWriteInput(formToPlannerPatch(submitted)),
-      );
+      const writeInput = toWriteInput(formToPlannerPatch(submitted));
+      // 설정 탭은 customization 을 편집하지 않는다(꾸미기 탭 API 전환은 후속 PR). update 는
+      // PUT 전체교체라, 폼에 customization 이 없으면 기존 꾸미기가 NULL 로 날아간다 — 로드된
+      // planner 의 customization 을 실어 보존한다 (codex).
+      if (writeInput.customization === undefined && planner?.customization) {
+        writeInput.customization = planner.customization;
+      }
+      await plannerClient.update(id, writeInput);
       toast.success('✓ 변경 사항 저장 완료', {
         description: `${submitted.examName} — 다음 활성화 시 반영됩니다`,
         duration: 3000,
