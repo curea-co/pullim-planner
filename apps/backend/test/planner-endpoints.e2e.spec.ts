@@ -473,17 +473,20 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
     }
   });
 
-  it("POST /api/planners — customization 잘못된 id 422", async () => {
+  it("POST /api/planners — customization 은 본문에서 무시(전용 엔드포인트 전담)", async () => {
+    // PlannerWriteDto 가 customization 을 받지 않으므로 whitelist 가 떼어낸다 → 신규는 null.
     const res = await fetch(`${baseUrl}/planners`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
         validWriteBody({
-          customization: { layoutId: "block_cards", paletteId: "INVALID" },
+          customization: { layoutId: "block_cards", paletteId: "forest" },
         }),
       ),
     });
-    expect(res.status).toBe(422);
+    const body = (await res.json()) as JsonResult;
+    expect(res.status).toBe(201);
+    expect((body.data as Record<string, unknown>).customization).toBeNull();
   });
 
   it("PUT /api/planners/:id/customization — 잘못된 paletteId 422", async () => {
@@ -683,10 +686,11 @@ describe("planner mutation — per-user 가드 적용 시 인증 강제", () => 
       },
       findPlannerById: (id: string) => Promise.resolve(store.get(id) ?? null),
       findSubjectUnits: () => Promise.resolve([]),
+      findPlannersByUser: () => Promise.resolve([]),
     } as unknown as PlannerRepositoryInterface;
 
     const moduleRef = await Test.createTestingModule({
-      controllers: [PlannerMutationController],
+      controllers: [PlannerMutationController, PlannerController],
       providers: [
         CreatePlannerUseCase,
         UpdatePlannerUseCase,
@@ -695,6 +699,7 @@ describe("planner mutation — per-user 가드 적용 시 인증 강제", () => 
         ArchivePlannerUseCase,
         DuplicatePlannerUseCase,
         UpdateCustomizationUseCase,
+        GetPlannersUseCase,
         PlannerService,
         { provide: PlannerRepositoryInterface, useValue: repo },
         { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
@@ -730,5 +735,15 @@ describe("planner mutation — per-user 가드 적용 시 인증 강제", () => 
       body: JSON.stringify(validBody),
     });
     expect(res.status).toBe(201);
+  });
+
+  it("GET /api/planners (read) — 토큰 없으면 401 / 있으면 200", async () => {
+    // read 컨트롤러도 @Public() 제거됐으므로 인증 강제 (codex R5).
+    const noAuth = await fetch(`${baseUrl}/planners`);
+    expect(noAuth.status).toBe(401);
+    const withAuth = await fetch(`${baseUrl}/planners`, {
+      headers: { "x-test-user": "u_123" },
+    });
+    expect(withAuth.status).toBe(200);
   });
 });

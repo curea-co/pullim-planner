@@ -6,7 +6,6 @@ import {
   IsInt,
   IsNotEmpty,
   IsObject,
-  IsOptional,
   IsString,
   Max,
   Min,
@@ -15,12 +14,6 @@ import {
   type ValidationArguments,
   type ValidationOptions,
 } from "class-validator";
-
-import {
-  LAYOUT_IDS,
-  PALETTE_IDS,
-  WEEK_LAYOUT_IDS,
-} from "./customization-options.constant";
 
 /**
  * 시간표(플래너) 생성/수정 요청 DTO — FE mock `Planner` 의 중첩 입력 shape
@@ -62,20 +55,6 @@ class HoursInputDto {
     message: "학습 시간대의 end 는 start 보다 커야 합니다.",
   })
   end: number;
-}
-
-/** `customization: { layoutId, weekLayoutId?, paletteId }` — 시간표 꾸미기(옵셔널). */
-class CustomizationInputDto {
-  // 허용 ID 만 — 잘못된 값이 FE 렌더 경로에서 undefined 접근 크래시를 내는 것 방지 (codex).
-  @IsIn(LAYOUT_IDS, { message: "layoutId 가 허용된 값이 아닙니다." })
-  layoutId: string;
-
-  @IsOptional()
-  @IsIn(WEEK_LAYOUT_IDS, { message: "weekLayoutId 가 허용된 값이 아닙니다." })
-  weekLayoutId?: string;
-
-  @IsIn(PALETTE_IDS, { message: "paletteId 가 허용된 값이 아닙니다." })
-  paletteId: string;
 }
 
 export class PlannerWriteDto {
@@ -147,10 +126,10 @@ export class PlannerWriteDto {
   @IsString()
   motto: string;
 
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => CustomizationInputDto)
-  customization?: CustomizationInputDto;
+  // customization 은 생성/수정 본문에서 받지 않는다 — 전용 엔드포인트
+  // (PUT /planners/:id/customization) 전담. 신규 플래너는 customization=null 로 시작하고
+  // FE 가 기본값을 적용한다. (codex R5: PUT 이 customization 을 받고 조용히 버리던 스키마
+  // 불일치 제거 — 스키마가 더 이상 이 필드를 광고하지 않는다.)
 }
 
 // ── 커스텀 검증 데코레이터 ─────────────────────────────────────────────────

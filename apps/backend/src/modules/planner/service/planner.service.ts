@@ -279,7 +279,9 @@ export class PlannerService {
     planner.weaknessAutoReflect = dto.weaknessAutoReflect;
     planner.motivationStyle = dto.motivationStyle;
     planner.motto = dto.motto === "" ? null : dto.motto;
-    planner.customization = dto.customization ? { ...dto.customization } : null;
+    // customization 은 본문에서 받지 않는다 — 신규는 null 로 시작, 전용 엔드포인트가 설정.
+    // (update 경로의 customization 은 replacePlanner 가 어차피 보존하므로 무관)
+    planner.customization = null;
     planner.active = state.active;
     planner.archived = state.archived;
     planner.createdAt = state.createdAt;
