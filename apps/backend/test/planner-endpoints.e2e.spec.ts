@@ -253,9 +253,12 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
         return Promise.resolve();
       },
       deletePlanner: (id) => {
+        // 조건부(active=false) 미러 — 활성이면 0건.
+        const p = planners.get(id);
+        if (!p || p.active) return Promise.resolve(0);
         planners.delete(id);
         units.delete(id);
-        return Promise.resolve();
+        return Promise.resolve(1);
       },
       setActivePlanner: (userId, id) => {
         for (const p of planners.values()) {
@@ -265,8 +268,11 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
         return Promise.resolve();
       },
       setArchived: (id, archived) => {
-        planners.get(id)!.archived = archived;
-        return Promise.resolve();
+        const p = planners.get(id);
+        if (!p) return Promise.resolve(0);
+        if (archived && p.active) return Promise.resolve(0); // 조건부 미러
+        p.archived = archived;
+        return Promise.resolve(1);
       },
       updateCustomization: (id, customization) => {
         planners.get(id)!.customization = customization;
@@ -465,6 +471,36 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
       { target: [] },
       { weekdayHours: [] },
       { weekendHours: "nope" },
+    ]) {
+      const res = await fetch(`${baseUrl}/planners`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validWriteBody(bad)),
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it("POST /api/planners — examType↔target.kind 불일치 422", async () => {
+    // mock→grade, midterm→score, other→free 규칙 위반 (codex R8).
+    for (const bad of [
+      { examType: "mock", target: { kind: "free", value: "자유" } },
+      { examType: "midterm", target: { kind: "grade", value: 1 } },
+      { examType: "other", target: { kind: "score", value: 90 } },
+    ]) {
+      const res = await fetch(`${baseUrl}/planners`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validWriteBody(bad)),
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it("POST /api/planners — subjectUnits 빈 맵·허용 외 키 422", async () => {
+    for (const bad of [
+      { subjectUnits: {} }, // 최소 1과목 위반
+      { subjectUnits: { biology: ["세포"] } }, // 허용 외 SubjectKey
     ]) {
       const res = await fetch(`${baseUrl}/planners`, {
         method: "POST",

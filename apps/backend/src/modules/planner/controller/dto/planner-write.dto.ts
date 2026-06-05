@@ -16,6 +16,29 @@ import {
 
 import { IsPlainObject } from "./is-plain-object.validator";
 
+/** 허용 과목 키 — mock `SubjectKey`(persona.ts) 와 1:1. */
+const SUBJECT_KEYS = [
+  "korean",
+  "math",
+  "english",
+  "science",
+  "social",
+  "history",
+] as const;
+
+/**
+ * examType → target.kind 결정 규칙 — FE `examTypeMeta`(builder-types.ts) 와 정합.
+ * FE 가 `formToPlannerPatch` 에서 `examTypeMeta[examType].targetKind` 로 kind 를 파생하므로,
+ * 서버도 같은 조합만 허용해야 수정 화면 round-trip 이 깨지지 않는다 (codex).
+ */
+const EXAM_TYPE_TARGET_KIND: Record<string, string> = {
+  mock: "grade",
+  suneung: "grade",
+  midterm: "score",
+  final: "score",
+  other: "free",
+};
+
 /**
  * 시간표(플래너) 생성/수정 요청 DTO — FE mock `Planner` 의 중첩 입력 shape
  * (`formToPlannerPatch` 반환 = `Omit<Planner, 'id'|'active'|'archived'|'createdAt'|'updatedAt'>`)
@@ -90,6 +113,9 @@ export class PlannerWriteDto {
   // 필드 누락이나 `target: []` 가 통과돼 service 의 `dto.target.kind` 접근에서 500 이 난다 (codex).
   @IsDefined({ message: "target 을 입력해주세요." })
   @IsPlainObject({ message: "target 은 객체여야 합니다." })
+  @IsTargetKindMatchingExamType({
+    message: "target.kind 가 examType 과 맞지 않습니다.",
+  })
   @ValidateNested()
   @Type(() => TargetInputDto)
   target: TargetInputDto;
@@ -165,6 +191,31 @@ function IsValidTargetValue(options?: ValidationOptions) {
   };
 }
 
+/** target.kind 가 examType 의 규칙(EXAM_TYPE_TARGET_KIND)과 일치하는지 검증 (cross-field). */
+function IsTargetKindMatchingExamType(options?: ValidationOptions) {
+  return function (object: object, propertyName: string): void {
+    registerDecorator({
+      name: "isTargetKindMatchingExamType",
+      target: object.constructor,
+      propertyName,
+      options,
+      validator: {
+        validate(value: unknown, args: ValidationArguments): boolean {
+          const examType = (args.object as Record<string, unknown>).examType;
+          if (typeof examType !== "string") return true; // examType 검증은 @IsIn 담당
+          const expected = EXAM_TYPE_TARGET_KIND[examType];
+          if (!expected) return true;
+          const kind =
+            value && typeof value === "object"
+              ? (value as Record<string, unknown>).kind
+              : undefined;
+          return kind === expected;
+        },
+      },
+    });
+  };
+}
+
 /** 같은 객체의 다른 number 필드보다 큰지 검증 (cross-field). */
 function IsGreaterThanField(otherField: string, options?: ValidationOptions) {
   return function (object: object, propertyName: string): void {
@@ -224,9 +275,14 @@ function IsSubjectUnitsMap(options?: ValidationOptions) {
         validate(value: unknown): boolean {
           if (value === null || typeof value !== "object") return false;
           if (Array.isArray(value)) return false;
-          return Object.values(value as Record<string, unknown>).every(
-            (v) =>
-              Array.isArray(v) && v.every((label) => typeof label === "string"),
+          const entries = Object.entries(value as Record<string, unknown>);
+          // 최소 1과목(FE usePlannerForm 강제) + 허용 SubjectKey 키만 + 값은 문자열 배열.
+          if (entries.length === 0) return false;
+          return entries.every(
+            ([subject, v]) =>
+              (SUBJECT_KEYS as readonly string[]).includes(subject) &&
+              Array.isArray(v) &&
+              v.every((label) => typeof label === "string"),
           );
         },
       },

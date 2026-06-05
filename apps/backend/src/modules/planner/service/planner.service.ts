@@ -132,7 +132,13 @@ export class PlannerService {
         ErrorMessages.PLANNER_ACTIVE_DELETE_FORBIDDEN,
       );
     }
-    await this.repo.deletePlanner(plannerId);
+    // 조건부 삭제(active=false) — 0건이면 read 이후 활성화 race → 활성 삭제 금지로 처리.
+    const affected = await this.repo.deletePlanner(plannerId);
+    if (affected === 0) {
+      throw new ConflictException(
+        ErrorMessages.PLANNER_ACTIVE_DELETE_FORBIDDEN,
+      );
+    }
   }
 
   /** 활성 플래너 전환 — 다른 플래너는 모두 비활성. 아카이브된 건 활성화 불가(409). */
@@ -157,7 +163,11 @@ export class PlannerService {
     if (planner.active) {
       throw new ConflictException(ErrorMessages.PLANNER_ACTIVE_CONFLICT);
     }
-    await this.repo.setArchived(plannerId, true);
+    // 조건부 아카이브(active=false) — 0건이면 read 이후 활성화 race → 활성 아카이브 금지.
+    const affected = await this.repo.setArchived(plannerId, true);
+    if (affected === 0) {
+      throw new ConflictException(ErrorMessages.PLANNER_ACTIVE_CONFLICT);
+    }
     return this.buildPlannerDto(plannerId);
   }
 

@@ -123,8 +123,10 @@ export class PlannerRepository implements PlannerRepositoryInterface {
     });
   }
 
-  async deletePlanner(plannerId: string): Promise<void> {
-    await this.planners.delete({ id: plannerId });
+  async deletePlanner(plannerId: string): Promise<number> {
+    // active=false 조건부 — read-then-write 사이 활성화 race 에도 활성 플래너를 지우지 않는다.
+    const res = await this.planners.delete({ id: plannerId, active: false });
+    return res.affected ?? 0;
   }
 
   async setActivePlanner(userId: string, plannerId: string): Promise<void> {
@@ -144,11 +146,17 @@ export class PlannerRepository implements PlannerRepositoryInterface {
     });
   }
 
-  async setArchived(plannerId: string, archived: boolean): Promise<void> {
-    await this.planners.update(
-      { id: plannerId },
-      { archived, updatedAt: new Date() },
-    );
+  async setArchived(plannerId: string, archived: boolean): Promise<number> {
+    // archive(true) 는 active=false 조건부 — 활성 플래너 아카이브 race 차단.
+    // unarchive(false) 는 활성 제약 없음(애초에 archived=true 행만 대상).
+    const where = archived
+      ? { id: plannerId, active: false }
+      : { id: plannerId };
+    const res = await this.planners.update(where, {
+      archived,
+      updatedAt: new Date(),
+    });
+    return res.affected ?? 0;
   }
 
   async updateCustomization(
