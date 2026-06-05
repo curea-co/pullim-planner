@@ -92,25 +92,31 @@ export class PlannerRepository implements PlannerRepositoryInterface {
   ): Promise<void> {
     await this.dataSource.transaction(async (m) => {
       // id·userId·active·archived·createdAt 은 보존 — 편집 가능 필드만 갱신.
-      await m.update(Planner, { id: planner.id }, {
-        name: planner.name,
-        examType: planner.examType,
-        examLabel: planner.examLabel,
-        examStartDate: planner.examStartDate,
-        examEndDate: planner.examEndDate,
-        targetKind: planner.targetKind,
-        targetValue: planner.targetValue,
-        weekdayStart: planner.weekdayStart,
-        weekdayEnd: planner.weekdayEnd,
-        weekendStart: planner.weekendStart,
-        weekendEnd: planner.weekendEnd,
-        blockPattern: planner.blockPattern,
-        weaknessAutoReflect: planner.weaknessAutoReflect,
-        motivationStyle: planner.motivationStyle,
-        motto: planner.motto,
-        customization: planner.customization,
-        updatedAt: planner.updatedAt,
-      } as QueryDeepPartialEntity<Planner>);
+      await m.update(
+        Planner,
+        { id: planner.id },
+        {
+          name: planner.name,
+          examType: planner.examType,
+          examLabel: planner.examLabel,
+          examStartDate: planner.examStartDate,
+          examEndDate: planner.examEndDate,
+          targetKind: planner.targetKind,
+          targetValue: planner.targetValue,
+          weekdayStart: planner.weekdayStart,
+          weekdayEnd: planner.weekdayEnd,
+          weekendStart: planner.weekendStart,
+          weekendEnd: planner.weekendEnd,
+          blockPattern: planner.blockPattern,
+          weaknessAutoReflect: planner.weaknessAutoReflect,
+          motivationStyle: planner.motivationStyle,
+          motto: planner.motto,
+          // customization 은 의도적으로 갱신하지 않는다 — 전용 엔드포인트
+          // (PUT /planners/:id/customization) 소유라, 플래너 수정(PUT)이 omit 시 기존 값을
+          // 덮어쓰면 꾸미기가 유실된다 (codex). 생성은 insertPlanner 가 설정한다.
+          updatedAt: planner.updatedAt,
+        },
+      );
       // 과목 단원은 복합 PK 라 부분 갱신이 까다로워 delete 후 재삽입으로 교체.
       await m.delete(PlannerSubjectUnit, { plannerId: planner.id });
       if (units.length > 0) await m.insert(PlannerSubjectUnit, units);

@@ -2,6 +2,7 @@ import { Type } from "class-transformer";
 import {
   IsBoolean,
   IsDefined,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -27,8 +28,9 @@ import {
 
 /** `target: { kind, value }` — value 는 grade/score 면 number, free 면 string. */
 class TargetInputDto {
-  @IsString()
-  @IsNotEmpty({ message: "target.kind 를 입력해주세요." })
+  @IsIn(["grade", "score", "free"], {
+    message: "target.kind 는 grade/score/free 중 하나여야 합니다.",
+  })
   kind: string;
 
   /** number | string 유니온 — class-validator 단일 데코레이터로 표현 불가하므로 커스텀 검증. */
@@ -46,6 +48,10 @@ class HoursInputDto {
   @IsInt()
   @Min(0)
   @Max(24)
+  // end 는 start 보다 커야 한다 — 역전/0길이 시간대 차단 (codex cross-field).
+  @IsGreaterThanField("start", {
+    message: "학습 시간대의 end 는 start 보다 커야 합니다.",
+  })
   end: number;
 }
 
@@ -69,8 +75,9 @@ export class PlannerWriteDto {
   @IsNotEmpty({ message: "플래너 이름을 입력해주세요." })
   name: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsIn(["mock", "suneung", "midterm", "final", "other"], {
+    message: "examType 이 허용된 값이 아닙니다.",
+  })
   examType: string;
 
   @IsString()
@@ -84,6 +91,10 @@ export class PlannerWriteDto {
 
   @IsIsoCalendarDate({
     message: "examEndDate 는 유효한 YYYY-MM-DD 여야 합니다.",
+  })
+  // examEndDate 는 examStartDate 이전일 수 없다 — 역전된 시험 범위 차단 (codex cross-field).
+  @IsIsoDateNotBeforeField("examStartDate", {
+    message: "examEndDate 는 examStartDate 보다 이전일 수 없습니다.",
   })
   examEndDate: string;
 
@@ -111,15 +122,17 @@ export class PlannerWriteDto {
   })
   subjectUnits: Record<string, string[]>;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsIn(["pomodoro", "focused", "deep"], {
+    message: "blockPattern 이 허용된 값이 아닙니다.",
+  })
   blockPattern: string;
 
   @IsBoolean()
   weaknessAutoReflect: boolean;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsIn(["autonomous", "guided", "spartan"], {
+    message: "motivationStyle 이 허용된 값이 아닙니다.",
+  })
   motivationStyle: string;
 
   /** mock Planner.motto 는 string(빈 값 ''). 빈 문자열 허용. */
@@ -146,6 +159,53 @@ function IsStringOrNumber(options?: ValidationOptions) {
         validate(value: unknown): boolean {
           if (typeof value === "string") return true;
           return typeof value === "number" && Number.isFinite(value);
+        },
+      },
+    });
+  };
+}
+
+/** 같은 객체의 다른 number 필드보다 큰지 검증 (cross-field). */
+function IsGreaterThanField(otherField: string, options?: ValidationOptions) {
+  return function (object: object, propertyName: string): void {
+    registerDecorator({
+      name: "isGreaterThanField",
+      target: object.constructor,
+      propertyName,
+      options,
+      validator: {
+        validate(value: unknown, args: ValidationArguments): boolean {
+          const other = (args.object as Record<string, unknown>)[otherField];
+          if (typeof value !== "number" || typeof other !== "number") {
+            // 타입 검증은 다른 데코레이터(@IsInt) 담당 — 여기선 통과시켜 중복 에러 방지.
+            return true;
+          }
+          return value > other;
+        },
+      },
+    });
+  };
+}
+
+/** 같은 객체의 다른 ISO 날짜 필드보다 이전이 아닌지 검증 (cross-field). */
+function IsIsoDateNotBeforeField(
+  otherField: string,
+  options?: ValidationOptions,
+) {
+  return function (object: object, propertyName: string): void {
+    registerDecorator({
+      name: "isIsoDateNotBeforeField",
+      target: object.constructor,
+      propertyName,
+      options,
+      validator: {
+        validate(value: unknown, args: ValidationArguments): boolean {
+          const other = (args.object as Record<string, unknown>)[otherField];
+          if (typeof value !== "string" || typeof other !== "string") {
+            return true;
+          }
+          // YYYY-MM-DD 는 사전식 비교가 시간순과 일치.
+          return value >= other;
         },
       },
     });

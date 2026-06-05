@@ -230,10 +230,11 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
         const next = planner;
         planners.set(planner.id, {
           ...next,
-          // 보존 필드.
+          // 보존 필드 (실 repo 정합) — customization 은 전용 엔드포인트 소유라 update 시 보존.
           active: existing.active,
           archived: existing.archived,
           createdAt: existing.createdAt,
+          customization: existing.customization,
         });
         units.set(planner.id, unitRows);
         return Promise.resolve();
@@ -411,6 +412,57 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(422);
+  });
+
+  it("POST /api/planners — cross-field 역전(시험범위·시간대) 422", async () => {
+    const cases = [
+      { examStartDate: "2026-09-10", examEndDate: "2026-09-03" }, // 종료 < 시작
+      { weekdayHours: { start: 22, end: 18 } }, // start >= end
+      { weekendHours: { start: 20, end: 20 } }, // 0 길이
+    ];
+    for (const bad of cases) {
+      const res = await fetch(`${baseUrl}/planners`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validWriteBody(bad)),
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it("POST /api/planners — enum 위반(examType 등) 422", async () => {
+    for (const bad of [
+      { examType: "INVALID" },
+      { blockPattern: "INVALID" },
+      { motivationStyle: "INVALID" },
+      { target: { kind: "INVALID", value: 1 } },
+    ]) {
+      const res = await fetch(`${baseUrl}/planners`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validWriteBody(bad)),
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it("PUT /api/planners/:id — customization 미포함 수정은 기존 꾸미기 보존", async () => {
+    // pl_001 에 customization 설정 후, customization 없는 PUT 수정 → 보존돼야 한다 (codex).
+    planners.get("pl_001")!.customization = {
+      layoutId: "block_cards",
+      paletteId: "forest",
+    };
+    const res = await fetch(`${baseUrl}/planners/pl_001`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(validWriteBody({ name: "수정됨" })),
+    });
+    const body = (await res.json()) as JsonResult;
+    expect(res.status).toBe(200);
+    expect((body.data as Record<string, unknown>).customization).toEqual({
+      layoutId: "block_cards",
+      paletteId: "forest",
+    });
   });
 
   it("PUT /api/planners/:id — 수정 200 + 필드 반영", async () => {
