@@ -52,9 +52,10 @@ export interface PlannerRepositoryInterface {
   /**
    * 활성 플래너 전환 — 한 트랜잭션으로 사용자의 기존 active 를 모두 끄고 대상만 켠다.
    * partial unique index(`planners_user_active_uniq`) 위반을 피하려면 같은 tx 안에서
-   * 비활성화가 먼저 일어나야 한다.
+   * 비활성화가 먼저 일어나야 한다. 대상이 archived 면(race 포함) 아무것도 바꾸지 않고 0 반환
+   * (`active=true && archived=true` 불변식 위반 방지). 전환 성공 시 1.
    */
-  setActivePlanner(userId: string, plannerId: string): Promise<void>;
+  setActivePlanner(userId: string, plannerId: string): Promise<number>;
 
   /**
    * 아카이브 상태 토글 + updatedAt 갱신. archive(true) 는 활성 플래너에 적용하지 않는다

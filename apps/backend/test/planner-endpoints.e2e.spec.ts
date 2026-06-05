@@ -261,11 +261,13 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
         return Promise.resolve(1);
       },
       setActivePlanner: (userId, id) => {
+        const target = planners.get(id);
+        if (!target || target.archived) return Promise.resolve(0); // 조건부 미러
         for (const p of planners.values()) {
           if (p.userId === userId) p.active = false;
         }
-        planners.get(id)!.active = true;
-        return Promise.resolve();
+        target.active = true;
+        return Promise.resolve(1);
       },
       setArchived: (id, archived) => {
         const p = planners.get(id);
@@ -497,10 +499,11 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
     }
   });
 
-  it("POST /api/planners — subjectUnits 빈 맵·허용 외 키 422", async () => {
+  it("POST /api/planners — subjectUnits 빈 맵·허용 외 키·빈 단원 422", async () => {
     for (const bad of [
       { subjectUnits: {} }, // 최소 1과목 위반
       { subjectUnits: { biology: ["세포"] } }, // 허용 외 SubjectKey
+      { subjectUnits: { math: [] } }, // 과목당 최소 1단원 위반 (round-trip 손실 방지)
     ]) {
       const res = await fetch(`${baseUrl}/planners`, {
         method: "POST",

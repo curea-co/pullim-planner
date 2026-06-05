@@ -129,8 +129,16 @@ export class PlannerRepository implements PlannerRepositoryInterface {
     return res.affected ?? 0;
   }
 
-  async setActivePlanner(userId: string, plannerId: string): Promise<void> {
-    await this.dataSource.transaction(async (m) => {
+  async setActivePlanner(userId: string, plannerId: string): Promise<number> {
+    return this.dataSource.transaction(async (m) => {
+      // 대상 행을 잠그고 archived 를 재확인한다 — race 로 archived 가 된 플래너를 활성화해
+      // `active=true && archived=true` 불변식을 깨는 것을 막는다 (codex). archived 면 아무것도
+      // 바꾸지 않고 0 반환.
+      const target = await m.findOne(Planner, {
+        where: { id: plannerId, archived: false },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!target) return 0;
       // 같은 tx 안에서 기존 active 를 먼저 끈 뒤 대상을 켠다
       // (partial unique index `planners_user_active_uniq` 위반 방지).
       await m.update(
@@ -143,6 +151,7 @@ export class PlannerRepository implements PlannerRepositoryInterface {
         { id: plannerId },
         { active: true, updatedAt: new Date() },
       );
+      return 1;
     });
   }
 

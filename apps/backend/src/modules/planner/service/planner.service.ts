@@ -150,7 +150,11 @@ export class PlannerService {
     if (planner.archived) {
       throw new ConflictException(ErrorMessages.PLANNER_ACTIVE_CONFLICT);
     }
-    await this.repo.setActivePlanner(userId, plannerId);
+    // 조건부 활성화(archived=false) — 0건이면 read 이후 아카이브 race → 활성화 불가.
+    const affected = await this.repo.setActivePlanner(userId, plannerId);
+    if (affected === 0) {
+      throw new ConflictException(ErrorMessages.PLANNER_ACTIVE_CONFLICT);
+    }
     return this.buildPlannerDto(plannerId);
   }
 

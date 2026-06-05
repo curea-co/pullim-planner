@@ -276,13 +276,17 @@ function IsSubjectUnitsMap(options?: ValidationOptions) {
           if (value === null || typeof value !== "object") return false;
           if (Array.isArray(value)) return false;
           const entries = Object.entries(value as Record<string, unknown>);
-          // 최소 1과목(FE usePlannerForm 강제) + 허용 SubjectKey 키만 + 값은 문자열 배열.
+          // 최소 1과목(FE usePlannerForm 강제) + 허용 SubjectKey 키만 + 각 과목 최소 1단원
+          // (빈 배열은 저장 시 행 0개 → 응답에서 과목이 통째로 사라지는 round-trip 손실, codex R9).
           if (entries.length === 0) return false;
           return entries.every(
             ([subject, v]) =>
               (SUBJECT_KEYS as readonly string[]).includes(subject) &&
               Array.isArray(v) &&
-              v.every((label) => typeof label === "string"),
+              v.length > 0 &&
+              v.every(
+                (label) => typeof label === "string" && label.trim().length > 0,
+              ),
           );
         },
       },
