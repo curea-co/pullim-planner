@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsBoolean,
+  IsDefined,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -86,14 +87,19 @@ export class PlannerWriteDto {
   })
   examEndDate: string;
 
+  // `@IsDefined()` 로 객체 자체의 존재성도 검증한다 — `@ValidateNested()` 만으로는
+  // 필드를 통째로 누락하면 통과돼 service 의 `dto.target.kind` 접근에서 500 이 난다 (codex).
+  @IsDefined({ message: "target 을 입력해주세요." })
   @ValidateNested()
   @Type(() => TargetInputDto)
   target: TargetInputDto;
 
+  @IsDefined({ message: "weekdayHours 를 입력해주세요." })
   @ValidateNested()
   @Type(() => HoursInputDto)
   weekdayHours: HoursInputDto;
 
+  @IsDefined({ message: "weekendHours 를 입력해주세요." })
   @ValidateNested()
   @Type(() => HoursInputDto)
   weekendHours: HoursInputDto;

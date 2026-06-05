@@ -390,6 +390,29 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
     expect(res.status).toBe(422);
   });
 
+  it("POST /api/planners — 필수 중첩 객체(target 등) 누락 시 500 아닌 422", async () => {
+    // @IsDefined() 회귀 — 중첩 필수 객체를 통째로 빼면 service 500 이 아니라 422 로 막혀야 한다 (codex).
+    for (const missing of ["target", "weekdayHours", "weekendHours"]) {
+      const body = validWriteBody();
+      delete (body as Record<string, unknown>)[missing];
+      const res = await fetch(`${baseUrl}/planners`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it("PUT /api/planners/:id/customization — customization 누락 시 422", async () => {
+    const res = await fetch(`${baseUrl}/planners/pl_001/customization`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(422);
+  });
+
   it("PUT /api/planners/:id — 수정 200 + 필드 반영", async () => {
     const res = await fetch(`${baseUrl}/planners/pl_001`, {
       method: "PUT",
