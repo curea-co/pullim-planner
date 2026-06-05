@@ -5,7 +5,6 @@ import {
   IsIn,
   IsInt,
   IsNotEmpty,
-  IsObject,
   IsString,
   Max,
   Min,
@@ -108,7 +107,9 @@ export class PlannerWriteDto {
   weekendHours: HoursInputDto;
 
   /** `Record<subject, string[]>` — 과목별 단원 라벨 목록. */
-  @IsObject()
+  // @IsPlainObject — 배열(`[["수열"]]`)이 통과해 toUnits 가 "0"/"1" 을 과목명으로 저장하는
+  // 조용한 데이터 오염 차단 (codex R7).
+  @IsPlainObject({ message: "subjectUnits 는 객체여야 합니다." })
   @IsSubjectUnitsMap({
     message: "subjectUnits 는 과목별 문자열 배열 맵이어야 합니다.",
   })
@@ -222,6 +223,7 @@ function IsSubjectUnitsMap(options?: ValidationOptions) {
       validator: {
         validate(value: unknown): boolean {
           if (value === null || typeof value !== "object") return false;
+          if (Array.isArray(value)) return false;
           return Object.values(value as Record<string, unknown>).every(
             (v) =>
               Array.isArray(v) && v.every((label) => typeof label === "string"),

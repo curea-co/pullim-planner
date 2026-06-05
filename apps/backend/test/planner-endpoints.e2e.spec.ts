@@ -475,6 +475,17 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
     }
   });
 
+  it("POST /api/planners — subjectUnits 가 배열이면 422(데이터 오염 방지)", async () => {
+    const res = await fetch(`${baseUrl}/planners`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        validWriteBody({ subjectUnits: [["수열"], ["독해"]] }),
+      ),
+    });
+    expect(res.status).toBe(422);
+  });
+
   it("PUT /api/planners/:id/customization — 배열이면 422", async () => {
     const res = await fetch(`${baseUrl}/planners/pl_001/customization`, {
       method: "PUT",
