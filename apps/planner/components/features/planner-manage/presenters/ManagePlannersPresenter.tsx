@@ -12,6 +12,9 @@ import { cn } from '@/lib/utils';
 
 interface ManagePlannersPresenterProps {
   tick: number;
+  loading?: boolean;
+  loadError?: boolean;
+  onRetry?: () => void;
   active: Planner | null;
   inactive: Planner[];
   archivedList: Planner[];
@@ -32,6 +35,9 @@ interface ManagePlannersPresenterProps {
 
 export default function ManagePlannersPresenter({
   tick,
+  loading,
+  loadError,
+  onRetry,
   active,
   inactive,
   archivedList,
@@ -77,7 +83,35 @@ export default function ManagePlannersPresenter({
         }
       />
 
-      {isEmpty ? (
+      {loading ? (
+        // 로딩 스켈레톤 — 첫 렌더에 EmptyState 가 깜빡이는 것 방지 (codex).
+        <div
+          aria-busy="true"
+          aria-label="시간표 불러오는 중"
+          className="grid grid-cols-1 gap-4 lg:grid-cols-2"
+        >
+          {[0, 1].map(i => (
+            <div
+              key={i}
+              className="h-40 animate-pulse rounded-2xl border bg-pullim-slate-100"
+            />
+          ))}
+        </div>
+      ) : loadError ? (
+        // 불러오기 실패 — "비어 있음"과 구분해 재시도 제공 (codex).
+        <div className="bg-card flex flex-col items-center gap-3 rounded-2xl border p-8 text-center">
+          <p className="text-pullim-slate-600 text-sm font-semibold">
+            시간표를 불러오지 못했어요
+          </p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="bg-pullim-blue-600 hover:bg-pullim-blue-700 rounded-lg px-3.5 py-2 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+          >
+            다시 시도
+          </button>
+        </div>
+      ) : isEmpty ? (
         <EmptyState />
       ) : (
         <div className="space-y-5">

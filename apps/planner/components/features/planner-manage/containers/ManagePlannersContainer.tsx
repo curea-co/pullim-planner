@@ -20,21 +20,30 @@ export default function ManagePlannersContainer() {
   const [activateTarget, setActivateTarget] = useState<Planner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Planner | null>(null);
   const [allPlanners, setAllPlanners] = useState<Planner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
 
   // 마운트 + tick(mutation 후 refresh) 마다 본인 시간표 목록을 다시 읽는다.
+  // loading/loadError 를 분리해 "정말 비어 있음"과 "불러오기 실패"를 구분한다 (codex).
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
         const list = await plannerClient.list();
-        if (!cancelled) setAllPlanners(list.map(apiToPlanner));
+        if (!cancelled) {
+          setAllPlanners(list.map(apiToPlanner));
+          setLoadError(false);
+        }
       } catch (e) {
         if (!cancelled) {
+          setLoadError(true);
           toast.error(
             e instanceof ApiError ? e.message : '시간표를 불러오지 못했어요',
           );
         }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
@@ -133,6 +142,9 @@ export default function ManagePlannersContainer() {
   return (
     <ManagePlannersPresenter
       tick={tick}
+      loading={loading}
+      loadError={loadError}
+      onRetry={refresh}
       active={active}
       inactive={inactive}
       archivedList={archivedList}

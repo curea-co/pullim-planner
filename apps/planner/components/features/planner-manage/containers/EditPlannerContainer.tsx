@@ -32,17 +32,26 @@ export default function EditPlannerContainer({
   const { id } = use(params);
   const [planner, setPlanner] = useState<Planner | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      if (!cancelled) setLoaded(false);
       try {
         const list = await plannerClient.list();
         const found =
           list.map(apiToPlanner).find((p) => p.id === id) ?? null;
-        if (!cancelled) setPlanner(found);
-      } catch (e) {
         if (!cancelled) {
+          setPlanner(found);
+          setLoadError(false);
+        }
+      } catch (e) {
+        // fetch 실패와 not-found(planner=null)를 구분한다 — 합치면 인증 만료/일시 장애에도
+        // 사용자가 "시간표가 삭제됐다"고 오해한다 (codex).
+        if (!cancelled) {
+          setLoadError(true);
           toast.error(
             e instanceof ApiError ? e.message : '시간표를 불러오지 못했어요',
           );
@@ -54,10 +63,27 @@ export default function EditPlannerContainer({
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, tick]);
 
   // 로딩 중에는 빌더를 마운트하지 않는다 (폼 초기값을 데이터 준비 후 한 번에 잡기 위함).
   if (!loaded) return null;
+  // 불러오기 실패 — not-found 와 구분해 재시도 제공.
+  if (loadError) {
+    return (
+      <div className="bg-card flex flex-col items-center gap-3 rounded-2xl border p-8 text-center">
+        <p className="text-pullim-slate-600 text-sm font-semibold">
+          시간표를 불러오지 못했어요
+        </p>
+        <button
+          type="button"
+          onClick={() => setTick(t => t + 1)}
+          className="bg-pullim-blue-600 hover:bg-pullim-blue-700 rounded-lg px-3.5 py-2 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
   return <EditPlannerForm id={id} planner={planner} />;
 }
 
