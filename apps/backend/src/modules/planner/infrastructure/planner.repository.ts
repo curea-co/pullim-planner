@@ -131,6 +131,12 @@ export class PlannerRepository implements PlannerRepositoryInterface {
 
   async setActivePlanner(userId: string, plannerId: string): Promise<number> {
     return this.dataSource.transaction(async (m) => {
+      // 사용자 단위 직렬화 — 같은 유저가 서로 다른 플래너를 동시 activate 하면 각자 다른 target
+      // row 만 잠근 채 진행해 두 번째가 partial unique index(`planners_user_active_uniq`) DB
+      // 충돌(500)로 빠진다. tx advisory lock 으로 유저별 활성 전환을 직렬화한다 (codex R10).
+      await m.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+        `planner_active:${userId}`,
+      ]);
       // 대상 행을 잠그고 archived 를 재확인한다 — race 로 archived 가 된 플래너를 활성화해
       // `active=true && archived=true` 불변식을 깨는 것을 막는다 (codex). archived 면 아무것도
       // 바꾸지 않고 0 반환.
