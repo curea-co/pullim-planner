@@ -1,90 +1,109 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import {
-  getPlanners, activatePlanner, deletePlanner,
-  archivePlanner, duplicatePlanner, findPlanner,
-  type Planner,
-} from '@/lib/mock';
+import { ApiError } from '@pullim-planner/api-client';
+import type { Planner } from '@/lib/mock';
+import { apiToPlanner, plannerClient } from '@/lib/planner/client';
 import ManagePlannersPresenter from '../presenters/ManagePlannersPresenter';
 
 /**
  * 시간표 관리 Container — N개 플래너 카드 그리드 + CRUD.
  *
- * tick 패턴: getPlanners()가 mock 모듈 내부 상태를 반환하는 외부 store 성격이라,
- * mutation(activate/delete/archive/duplicate) 후 React에 명시적 "다시 읽어라" 신호로 사용.
- * Phase η(api-client 전환)에서 react-query 캐시 무효화로 자연 대체됨.
+ * 실 BE planner API(per-user) 연동: 마운트 시 list() 로드, mutation 후 다시 list() 로
+ * 갱신한다 (tick 대신 명시 refetch). 모든 호출은 authClient.withAuth 로 인증된다.
  */
 export default function ManagePlannersContainer() {
   const router = useRouter();
   const [showArchived, setShowArchived] = useState(false);
   const [activateTarget, setActivateTarget] = useState<Planner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Planner | null>(null);
+  const [allPlanners, setAllPlanners] = useState<Planner[]>([]);
   const [tick, setTick] = useState(0);
 
-  const allPlanners = useMemo(
-    () => getPlanners({ includeArchived: true }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tick],
-  );
+  // 마운트 + tick(mutation 후 refresh) 마다 본인 시간표 목록을 다시 읽는다.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const list = await plannerClient.list();
+        if (!cancelled) setAllPlanners(list.map(apiToPlanner));
+      } catch (e) {
+        if (!cancelled) {
+          toast.error(
+            e instanceof ApiError ? e.message : '시간표를 불러오지 못했어요',
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tick]);
+
   const active = useMemo(
-    () => allPlanners.find(p => p.active && !p.archived) ?? null,
+    () => allPlanners.find((p) => p.active && !p.archived) ?? null,
     [allPlanners],
   );
-  const inactive = allPlanners.filter(p => !p.active && !p.archived);
-  const archivedList = allPlanners.filter(p => p.archived);
+  const inactive = allPlanners.filter((p) => !p.active && !p.archived);
+  const archivedList = allPlanners.filter((p) => p.archived);
 
-  function refresh() { setTick(t => t + 1); }
+  function refresh() {
+    setTick((t) => t + 1);
+  }
 
   function onActivateRequest(id: string) {
-    const target = findPlanner(id);
+    const target = allPlanners.find((p) => p.id === id);
     if (!target) return;
     setActivateTarget(target);
   }
-  function confirmActivate() {
+  async function confirmActivate() {
     if (!activateTarget) return;
     try {
-      activatePlanner(activateTarget.id);
+      await plannerClient.activate(activateTarget.id);
       toast.success('✓ 활성 시간표 변경', {
         description: `${activateTarget.name} — 홈 시간표가 갱신됩니다`,
         duration: 3000,
       });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : '활성화 실패');
+      toast.error(e instanceof ApiError ? e.message : '활성화 실패');
     }
     setActivateTarget(null);
     refresh();
   }
 
-  function onDuplicate(id: string) {
+  async function onDuplicate(id: string) {
     try {
-      const dup = duplicatePlanner(id);
-      toast.success('✓ 복사본 만들어짐', { description: dup.name, duration: 2500 });
+      const dup = await plannerClient.duplicate(id);
+      toast.success('✓ 복사본 만들어짐', {
+        description: dup.name,
+        duration: 2500,
+      });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : '복제 실패');
+      toast.error(e instanceof ApiError ? e.message : '복제 실패');
     }
     refresh();
   }
 
-  function onArchive(id: string) {
-    const target = findPlanner(id);
+  async function onArchive(id: string) {
+    const target = allPlanners.find((p) => p.id === id);
     if (!target) return;
     try {
-      archivePlanner(id);
+      await plannerClient.archive(id);
       toast(`📦 ${target.name} — 아카이브`, {
-        description: '회고용으로 보존됩니다. 지난 시간표 토글로 다시 볼 수 있어요.',
+        description:
+          '회고용으로 보존됩니다. 지난 시간표 토글로 다시 볼 수 있어요.',
         duration: 3000,
       });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : '아카이브 실패');
+      toast.error(e instanceof ApiError ? e.message : '아카이브 실패');
     }
     refresh();
   }
 
   function onDeleteRequest(id: string) {
-    const target = findPlanner(id);
+    const target = allPlanners.find((p) => p.id === id);
     if (!target) return;
     if (target.active) {
       toast.error('활성 플래너는 삭제할 수 없어요', {
@@ -94,13 +113,13 @@ export default function ManagePlannersContainer() {
     }
     setDeleteTarget(target);
   }
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-      deletePlanner(deleteTarget.id);
+      await plannerClient.remove(deleteTarget.id);
       toast(`🗑 ${deleteTarget.name} — 삭제됨`, { duration: 2500 });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : '삭제 실패');
+      toast.error(e instanceof ApiError ? e.message : '삭제 실패');
     }
     setDeleteTarget(null);
     refresh();
@@ -120,14 +139,18 @@ export default function ManagePlannersContainer() {
       showArchived={showArchived}
       activateTarget={activateTarget}
       deleteTarget={deleteTarget}
-      onToggleArchived={() => setShowArchived(s => !s)}
+      onToggleArchived={() => setShowArchived((s) => !s)}
       onActivateRequest={onActivateRequest}
-      onActivateOpenChange={(o) => { if (!o) setActivateTarget(null); }}
+      onActivateOpenChange={(o) => {
+        if (!o) setActivateTarget(null);
+      }}
       onActivateConfirm={confirmActivate}
       onDuplicate={onDuplicate}
       onArchive={onArchive}
       onDeleteRequest={onDeleteRequest}
-      onDeleteOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+      onDeleteOpenChange={(o) => {
+        if (!o) setDeleteTarget(null);
+      }}
       onDeleteConfirm={confirmDelete}
       onDecorate={onDecorate}
     />
