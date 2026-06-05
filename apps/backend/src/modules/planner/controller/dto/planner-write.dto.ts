@@ -16,6 +16,12 @@ import {
   type ValidationOptions,
 } from "class-validator";
 
+import {
+  LAYOUT_IDS,
+  PALETTE_IDS,
+  WEEK_LAYOUT_IDS,
+} from "./customization-options.constant";
+
 /**
  * 시간표(플래너) 생성/수정 요청 DTO — FE mock `Planner` 의 중첩 입력 shape
  * (`formToPlannerPatch` 반환 = `Omit<Planner, 'id'|'active'|'archived'|'createdAt'|'updatedAt'>`)
@@ -33,8 +39,11 @@ class TargetInputDto {
   })
   kind: string;
 
-  /** number | string 유니온 — class-validator 단일 데코레이터로 표현 불가하므로 커스텀 검증. */
-  @IsStringOrNumber({ message: "target.value 는 문자열 또는 숫자여야 합니다." })
+  /**
+   * kind 에 따라 타입 교차검증 — grade/score 는 number, free 는 string.
+   * (grade/score 에 문자열이 오면 PlannerResponseDto.from 의 Number() 변환이 NaN 이 됨, codex)
+   */
+  @IsValidTargetValue({ message: "target.value 가 kind 와 맞지 않습니다." })
   value: string | number;
 }
 
@@ -57,16 +66,15 @@ class HoursInputDto {
 
 /** `customization: { layoutId, weekLayoutId?, paletteId }` — 시간표 꾸미기(옵셔널). */
 class CustomizationInputDto {
-  @IsString()
-  @IsNotEmpty()
+  // 허용 ID 만 — 잘못된 값이 FE 렌더 경로에서 undefined 접근 크래시를 내는 것 방지 (codex).
+  @IsIn(LAYOUT_IDS, { message: "layoutId 가 허용된 값이 아닙니다." })
   layoutId: string;
 
   @IsOptional()
-  @IsString()
+  @IsIn(WEEK_LAYOUT_IDS, { message: "weekLayoutId 가 허용된 값이 아닙니다." })
   weekLayoutId?: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsIn(PALETTE_IDS, { message: "paletteId 가 허용된 값이 아닙니다." })
   paletteId: string;
 }
 
@@ -147,18 +155,25 @@ export class PlannerWriteDto {
 
 // ── 커스텀 검증 데코레이터 ─────────────────────────────────────────────────
 
-/** value 가 string 또는 (NaN 아닌) number 인지 검증. */
-function IsStringOrNumber(options?: ValidationOptions) {
+/** target.value 가 kind 와 정합한지 검증 — grade/score=유한 number, free=비빈 string. */
+function IsValidTargetValue(options?: ValidationOptions) {
   return function (object: object, propertyName: string): void {
     registerDecorator({
-      name: "isStringOrNumber",
+      name: "isValidTargetValue",
       target: object.constructor,
       propertyName,
       options,
       validator: {
-        validate(value: unknown): boolean {
-          if (typeof value === "string") return true;
-          return typeof value === "number" && Number.isFinite(value);
+        validate(value: unknown, args: ValidationArguments): boolean {
+          const kind = (args.object as Record<string, unknown>).kind;
+          if (kind === "free") {
+            return typeof value === "string" && value.trim().length > 0;
+          }
+          if (kind === "grade" || kind === "score") {
+            return typeof value === "number" && Number.isFinite(value);
+          }
+          // kind 자체가 invalid 면 @IsIn 이 잡으므로 여기선 통과.
+          return true;
         },
       },
     });

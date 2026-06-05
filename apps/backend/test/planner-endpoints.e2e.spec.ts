@@ -446,6 +446,44 @@ describe("planner endpoints (Phase δ read + Phase ε mutation)", () => {
     }
   });
 
+  it("POST /api/planners — target.value 가 kind 와 불일치 시 422", async () => {
+    for (const bad of [
+      { target: { kind: "grade", value: "A+" } }, // grade 인데 문자열
+      { target: { kind: "free", value: 3 } }, // free 인데 숫자
+    ]) {
+      const res = await fetch(`${baseUrl}/planners`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validWriteBody(bad)),
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  it("POST /api/planners — customization 잘못된 id 422", async () => {
+    const res = await fetch(`${baseUrl}/planners`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(
+        validWriteBody({
+          customization: { layoutId: "block_cards", paletteId: "INVALID" },
+        }),
+      ),
+    });
+    expect(res.status).toBe(422);
+  });
+
+  it("PUT /api/planners/:id/customization — 잘못된 paletteId 422", async () => {
+    const res = await fetch(`${baseUrl}/planners/pl_001/customization`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        customization: { layoutId: "block_cards", paletteId: "NOPE" },
+      }),
+    });
+    expect(res.status).toBe(422);
+  });
+
   it("PUT /api/planners/:id — customization 미포함 수정은 기존 꾸미기 보존", async () => {
     // pl_001 에 customization 설정 후, customization 없는 PUT 수정 → 보존돼야 한다 (codex).
     planners.get("pl_001")!.customization = {

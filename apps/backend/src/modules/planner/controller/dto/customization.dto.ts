@@ -1,24 +1,23 @@
 import { Type } from "class-transformer";
+import { IsDefined, IsIn, IsOptional, ValidateNested } from "class-validator";
+
 import {
-  IsDefined,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from "class-validator";
+  LAYOUT_IDS,
+  PALETTE_IDS,
+  WEEK_LAYOUT_IDS,
+} from "./customization-options.constant";
 
 /** `customization: { layoutId, weekLayoutId?, paletteId }` 본문. */
 class CustomizationBody {
-  @IsString()
-  @IsNotEmpty()
+  // 허용 ID 만 — 잘못된 값이 FE 렌더 경로에서 undefined 접근 크래시를 내는 것 방지 (codex).
+  @IsIn(LAYOUT_IDS, { message: "layoutId 가 허용된 값이 아닙니다." })
   layoutId: string;
 
   @IsOptional()
-  @IsString()
+  @IsIn(WEEK_LAYOUT_IDS, { message: "weekLayoutId 가 허용된 값이 아닙니다." })
   weekLayoutId?: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsIn(PALETTE_IDS, { message: "paletteId 가 허용된 값이 아닙니다." })
   paletteId: string;
 }
 
