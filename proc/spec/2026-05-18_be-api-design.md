@@ -192,12 +192,13 @@ pedagogy_engines (
 | `GET /api/planners` | 시간표 목록 (active/inactive/archived 함께) | `getPlanners` |
 | `POST /api/planners` | 빌더 결과로 새 시간표 생성 | (builder commit) |
 | `GET /api/planners/{id}` | 시간표 1건 | `findPlanner` |
-| `PATCH /api/planners/{id}` | 시간표 수정 (모든 필드 partial) | (builder edit) |
+| `PUT /api/planners/{id}` | 시간표 수정 (편집 필드 전체 교체) | (builder edit) |
 | `DELETE /api/planners/{id}` | 시간표 삭제 (active 차단) | `deletePlanner` |
 | `POST /api/planners/{id}/activate` | 활성화 (다른 active=false 트랜잭션) | `activatePlanner` |
 | `POST /api/planners/{id}/archive` | 아카이브 | `archivePlanner` |
 | `POST /api/planners/{id}/unarchive` | 복원 | (미구현 mock) |
 | `POST /api/planners/{id}/duplicate` | 복사본 생성 | `duplicatePlanner` |
+| `PUT /api/planners/{id}/customization` | 시간표 꾸미기(레이아웃·팔레트) 저장 | `updatePlannerCustomization` |
 | `GET /api/planners/{id}/blocks?date=YYYY-MM-DD` | 해당 날짜 블록 (오늘 default) | `todayBlocks` |
 | `GET /api/planners/{id}/blocks?from=...&to=...` | 주간·월간 조회 | `weekView`, `monthView` |
 | `POST /api/planners/{id}/blocks` | 블록 추가 (재계획·이월 등) | (mock skip) |
@@ -213,6 +214,13 @@ pedagogy_engines (
 | `POST /api/reports/parent` | 부모 보고 전송 (동의 후) | `ConsentDialog` 제출 |
 | `GET /api/curriculum?subject=math` | 과목별 단원 트리 | `getCurriculum` |
 | `GET /api/pedagogy-engines` | 7대 엔진 메타 (정적) | `pedagogyEngineMeta` |
+
+> **2026-06-05 갱신 (Phase ε 구현 결정)** — 시간표 수정을 `PATCH`(partial) 가 아니라
+> **`PUT`(편집 필드 전체 교체)** 로 확정한다. FE 빌더가 편집 시 항상 전체 폼을 로드→제출하므로
+> partial-merge 의 모호성(어떤 필드가 의도적 삭제인지 vs 미전송인지)이 없고, 서버 시멘틱이
+> 단순해진다. 꾸미기(customization)는 수정 payload 에 섞지 않고 **전용 엔드포인트
+> `PUT /api/planners/{id}/customization`** 로 분리한다 — FE 의 꾸미기 탭이 설정 수정과 독립된
+> UX 흐름이기 때문. (원안의 `PATCH /planners/{id}` partial + customization 포함 설계를 대체.)
 
 ### 3.1 응답 표준
 
@@ -293,7 +301,7 @@ bun run db:seed                 # mock data → DB seed (선택)
 | β | pullim common 패턴 차용 | `apps/backend/src/common/{bootstrap,filters,guards,interceptors,decorators}`, MockAuthGuard, `ErrorMessages` 상수 |
 | γ | planner entity + 마이그레이션 + seed | `apps/backend/src/entities/*.entity.ts`, TypeORM 마이그레이션 1개(기존 Drizzle 스키마와 pg_dump diff 0), seed |
 | δ | read endpoint 3건 이식 | `/api/me`, `/api/planners`, `/api/planners/{id}/blocks` (Ph3 산출물 재현, 응답은 envelope shape) |
-| ε | mutation endpoint 6건 이식 | POST/PATCH/DELETE/activate/archive/unarchive/duplicate (Ph4 산출물 재현) |
+| ε | mutation endpoint 이식 | POST/PUT/DELETE/activate/archive/unarchive/duplicate + PUT customization (PUT 전체교체 확정, §3 표 참조) — PR #47 |
 | ζ | planner mock 잔여 시그니처 이식 | DailyCondition, BurnoutSnapshot, curriculum, subjectUnits 등 + 관련 read endpoint |
 | η | FE → BE 호출 전환 | `@pullim-planner/api-client` 함수 추가 + `apps/planner` 측 mock import 제거 |
 
