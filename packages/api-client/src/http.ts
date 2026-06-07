@@ -10,7 +10,7 @@ export interface HttpConfig {
 }
 
 export interface RequestOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   /** 첨부할 Bearer 토큰 (access 또는 refresh). */
   bearer?: string | null;
