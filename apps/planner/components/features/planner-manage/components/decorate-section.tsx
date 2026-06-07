@@ -10,10 +10,9 @@
 import { useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Palette as PaletteIcon, Sparkles, RotateCcw, Save, CheckCircle2, Archive } from 'lucide-react';
 import { toast } from 'sonner';
+import { ApiError } from '@pullim-planner/api-client';
 import {
-  findPlanner,
   todayBlocks,
-  updatePlannerCustomization,
   palettes,
   paletteOrder,
   layoutTemplates,
@@ -25,7 +24,11 @@ import {
   type LayoutTemplateId,
   type WeekLayoutId,
 } from '@/lib/mock';
-import { getCustomization } from '@/lib/hooks/use-planner-customization';
+import { plannerClient } from '@/lib/planner/client';
+import {
+  getCustomization,
+  type Customization,
+} from '@/lib/hooks/use-planner-customization';
 import { ActiveDayLayout } from '@/components/features/planner-home/components/layouts/active-day-layout';
 import { ActiveWeekLayout } from '@/components/features/planner-home/components/layouts/active-week-layout';
 import { cn } from '@/lib/utils';
@@ -62,13 +65,19 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
     }), []);
 
     const selectedPlanner = useMemo(
-      () => findPlanner(selectedId) ?? null,
-      [selectedId],
+      () => planners.find(p => p.id === selectedId) ?? null,
+      [planners, selectedId],
     );
-    const saved = useMemo(
+    // 저장 baseline. API 저장 후 selectedPlanner prop 은 갱신되지 않으므로(부모가 refetch 안 함),
+    // 저장 성공 시 override 로 baseline 을 끌어올려 isDirty 가 false 가 되게 한다 (codex).
+    const [savedOverride, setSavedOverride] = useState<Customization | null>(
+      null,
+    );
+    const plannerSaved = useMemo(
       () => getCustomization(selectedPlanner),
       [selectedPlanner],
     );
+    const saved = savedOverride ?? plannerSaved;
 
     // 드래프트 — 저장값을 초기값으로
     const [draftLayout, setDraftLayout] = useState<LayoutTemplateId>(saved.layoutId);
@@ -76,13 +85,14 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
     const [draftPalette, setDraftPalette] = useState<PaletteId>(saved.paletteId);
     const [previewTab, setPreviewTab] = useState<PreviewTab>('day');
 
-    // 플래너 전환 시 draft를 새 플래너의 저장값으로 리셋 (Adjusting state on prop changes 패턴)
+    // 플래너 전환 시 draft·override 를 새 플래너의 저장값으로 리셋 (Adjusting state on prop changes 패턴)
     const [prevSelectedId, setPrevSelectedId] = useState(selectedId);
     if (selectedId !== prevSelectedId) {
       setPrevSelectedId(selectedId);
-      setDraftLayout(saved.layoutId);
-      setDraftWeekLayout(saved.weekLayoutId);
-      setDraftPalette(saved.paletteId);
+      setSavedOverride(null);
+      setDraftLayout(plannerSaved.layoutId);
+      setDraftWeekLayout(plannerSaved.weekLayoutId);
+      setDraftPalette(plannerSaved.paletteId);
     }
 
     const isDirty =
@@ -96,18 +106,28 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
       setDraftPalette(saved.paletteId);
     }
 
-    function save() {
+    async function save() {
       if (!selectedPlanner) return;
-      updatePlannerCustomization(selectedPlanner.id, {
-        layoutId: draftLayout,
-        weekLayoutId: draftWeekLayout,
-        paletteId: draftPalette,
-      });
-      toast.success('🎨 시간표 꾸미기 저장됨', {
-        description: `${selectedPlanner.name} — 일간 ${layoutTemplates[draftLayout].label} · 주간 ${weekLayouts[draftWeekLayout].label} · ${palettes[draftPalette].label}`,
-        duration: 2500,
-      });
-      onSaved?.(selectedPlanner.id);
+      try {
+        await plannerClient.updateCustomization(selectedPlanner.id, {
+          layoutId: draftLayout,
+          weekLayoutId: draftWeekLayout,
+          paletteId: draftPalette,
+        });
+        // 저장 성공 → baseline 끌어올림 (isDirty=false, 저장 버튼 비활성·되돌리기 정합).
+        setSavedOverride({
+          layoutId: draftLayout,
+          weekLayoutId: draftWeekLayout,
+          paletteId: draftPalette,
+        });
+        toast.success('🎨 시간표 꾸미기 저장됨', {
+          description: `${selectedPlanner.name} — 일간 ${layoutTemplates[draftLayout].label} · 주간 ${weekLayouts[draftWeekLayout].label} · ${palettes[draftPalette].label}`,
+          duration: 2500,
+        });
+        onSaved?.(selectedPlanner.id);
+      } catch (e) {
+        toast.error(e instanceof ApiError ? e.message : '꾸미기 저장 실패');
+      }
     }
 
     if (!selectedPlanner) {
