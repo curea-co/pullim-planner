@@ -19,6 +19,11 @@ COPY apps/planner/package.json ./apps/planner/
 COPY packages ./packages
 RUN bun install --frozen-lockfile --filter @pullim-planner/backend
 
+# 모노레포 공용 base tsconfig — 현재 apps/backend/tsconfig.json 은 self-contained 라
+# extends 하지 않지만, 향후 base 확장 시 빌드가 깨지지 않도록 방어적으로 포함한다
+# (빌드 입력 완결성). codex 지적 반영.
+COPY tsconfig.base.json ./
+
 # 소스 복사 후 nest build (→ apps/backend/dist)
 COPY apps/backend ./apps/backend
 RUN bun --filter @pullim-planner/backend build
