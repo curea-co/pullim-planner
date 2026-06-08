@@ -3,7 +3,6 @@ import { AppHeader } from './app-header';
 import { AppSidebar } from './app-sidebar';
 import { BottomNav } from './bottom-nav';
 import { Breadcrumb } from './breadcrumb';
-import { DevResetButton } from './dev-reset-button';
 import type { Role } from './nav-config';
 
 type Props = {
@@ -46,7 +45,6 @@ export function AppShell({ role, children }: Props) {
       </div>
 
       <BottomNav />
-      <DevResetButton />
     </div>
   );
 }
