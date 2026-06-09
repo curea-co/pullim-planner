@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/lib/auth/auth-context';
+import { DevResetButton } from '@/components/shell/dev-reset-button';
 import './globals.css';
 
 // Pretendard는 globals.css의 CDN @import로 로드 (한글 가변폰트).
@@ -74,6 +75,8 @@ export default function RootLayout({
       <body className="bg-background text-foreground min-h-full font-sans">
         <AuthProvider>
           <TooltipProvider delay={120}>{children}</TooltipProvider>
+          {/* dev 전용 — 첫 접근(로그인→온보딩) 시연 리셋. 로그인 화면에서도 보이도록 전역 마운트 */}
+          <DevResetButton />
         </AuthProvider>
         <Toaster position="top-center" closeButton richColors />
         <Analytics />
