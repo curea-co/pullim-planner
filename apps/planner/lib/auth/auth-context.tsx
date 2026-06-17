@@ -9,14 +9,11 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { ApiError } from '@pullim-planner/api-client';
-import type {
-  AuthUser,
-  LoginRequest,
-  SignupRequest,
-} from '@pullim-planner/types';
+import { ApiError, type PullimMeProfile } from '@pullim-planner/api-client';
+import type { LoginRequest, SignupRequest } from '@pullim-planner/types';
 
 import { authClient, onSessionExpired } from './client';
+import { pullimSession } from './pullim-session-client';
 
 export type AuthStatus =
   | 'loading'
@@ -27,7 +24,8 @@ export type AuthStatus =
 
 export interface AuthContextValue {
   status: AuthStatus;
-  user: AuthUser | null;
+  /** pullim-api 세션 프로필(`GET /planner/me`). 흡수 전환 §10 — 자체 BE `AuthUser` 대체. */
+  user: PullimMeProfile | null;
   login: (input: LoginRequest) => Promise<void>;
   signup: (input: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
@@ -49,7 +47,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<PullimMeProfile | null>(null);
 
   // me() 로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
   // 그 외(네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만 두어 마운트 effect 의
@@ -58,9 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // - login/signup 직후: fallback='authenticated' (토큰 방금 발급 — 프로필만 best-effort)
   const resolveSession = useCallback(
     (fallbackStatus: AuthStatus) =>
-      authClient.me().then(
-        (me) => {
-          setUser(me);
+      // pullim-api 세션 확인 = GET /planner/me (쿠키 인증). 401/403 → 비로그인 확정.
+      pullimSession.session().then(
+        (profile) => {
+          setUser(profile);
           setStatus('authenticated');
         },
         (error: unknown) => {
@@ -108,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (input: LoginRequest) => {
-      await authClient.login(input);
+      await pullimSession.login(input);
       await completeAuth();
     },
     [completeAuth],
@@ -123,10 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    // authClient.logout 은 BE 호출 성패와 무관하게 로컬 토큰을 폐기한다(finally). FE 상태도
-    // 동일하게 항상 초기화해 토큰/상태 불일치를 막는다.
+    // pullimSession.logout 은 서버가 쿠키를 무효화한다. BE 호출 성패와 무관하게 FE 상태는
+    // 항상 초기화해 세션/상태 불일치를 막는다.
     try {
-      await authClient.logout();
+      await pullimSession.logout();
     } finally {
       setUser(null);
       setStatus('unauthenticated');
