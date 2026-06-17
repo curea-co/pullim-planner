@@ -11,5 +11,8 @@ export type { PlannerClient } from "./planner";
 export { ApiError } from "./errors";
 export { request } from "./http";
 export type { HttpConfig, RequestOptions } from "./http";
+// pullim-api(통합 IdP) 전용 쿠키/CSRF 전송 — 흡수 전환 §10. 자체 BE 호출과 분리(additive).
+export { cookieRequest, bootstrapCsrf, readCsrfCookie } from "./cookie-http";
+export type { CookieHttpConfig, CookieRequestOptions } from "./cookie-http";
 export { nullTokenStore } from "./token-store";
 export type { TokenStore } from "./token-store";
