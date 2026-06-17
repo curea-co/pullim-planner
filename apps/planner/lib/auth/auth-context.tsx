@@ -39,21 +39,21 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 /**
  * 앱 전역 인증 상태 Provider.
  *
- * 마운트 시 저장된 토큰으로 `me()`를 호출해 세션을 복원한다(새로고침 유지).
+ * 마운트 시 쿠키 세션으로 `session()`(GET /planner/me)을 호출해 세션을 복원한다(새로고침 유지).
+ * 토큰은 HttpOnly 쿠키라 클라가 보관하지 않고 브라우저가 자동 첨부한다.
  * - 성공 → authenticated
- * - 401/403(토큰 없음·무효; refresh 도 무효) → unauthenticated (`RequireAuth`가 /login)
- * - transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI). api-client 가
- *   refresh 401/403 일 때만 토큰을 폐기하는 계약과 정합.
+ * - 401/403(세션 없음·무효 또는 엔타이틀먼트 미보유) → unauthenticated (`RequireAuth`가 /login)
+ * - transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI).
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<PullimMeProfile | null>(null);
 
-  // me() 로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
+  // session() 으로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
   // 그 외(네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만 두어 마운트 effect 의
   // 동기 setState 경고를 피한다.
-  // - 부트스트랩/재시도: fallback='error' (토큰 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
-  // - login/signup 직후: fallback='authenticated' (토큰 방금 발급 — 프로필만 best-effort)
+  // - 부트스트랩/재시도: fallback='error' (세션 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
+  // - login 직후: fallback='authenticated' (쿠키 방금 발급 — 프로필만 best-effort)
   const resolveSession = useCallback(
     (fallbackStatus: AuthStatus) =>
       // pullim-api 세션 확인 = GET /planner/me (쿠키 인증). 401/403 → 비로그인 확정.
