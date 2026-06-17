@@ -1,4 +1,8 @@
 import { ApiError } from "./errors";
+import { buildUrl } from "./url";
+
+/** CSRF 면제(안전) HTTP 메서드 — double-submit 토큰 불요. */
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 /**
  * pullim-api(통합 모놀리식 IdP) 전용 쿠키/CSRF 전송 계층.
@@ -20,6 +24,12 @@ export interface CookieHttpConfig {
   baseUrl: string;
   /** 테스트·SSR 에서 fetch 구현 주입 (기본: 전역 fetch). */
   fetchImpl?: typeof fetch;
+  /**
+   * non-HttpOnly CSRF 쿠키 이름(env별: `local-pullim-csrf`/`dev-pullim-csrf`/`prod-pullim-csrf`).
+   * 지정 시 상태변경 요청에서 `csrfToken` 미주입이면 이 쿠키에서 자동 회수해 `X-CSRF-Token` 으로
+   * 동봉한다(브라우저 한정). cutover 시 호출부마다 토큰을 손수 넘기는 부담을 없앤다.
+   */
+  csrfCookieName?: string;
 }
 
 export interface CookieRequestOptions {
@@ -55,7 +65,8 @@ function toApiError(body: unknown, status: number): ApiError {
 /**
  * pullim-api 를 호출한다. 쿠키 자동 첨부 + (옵션) CSRF 헤더 동봉.
  *
- * - 2xx → 응답 본문(JSON)을 그대로 반환. 빈 본문(204 등)은 `undefined`.
+ * - 2xx → 응답 본문(JSON)을 그대로 반환. 빈 본문(204 등)은 `undefined` 이므로, 본문이 없는
+ *   엔드포인트(예: logout)는 `cookieRequest<void>(...)` 로 호출해 타입을 좁혀라.
  * - 비 2xx → `ApiError` throw (NestJS 에러 본문 정규화).
  * - transport 실패 → `ApiError(code: "network_error", statusCode: 0)`.
  */
@@ -65,25 +76,26 @@ export async function cookieRequest<T>(
   opts: CookieRequestOptions = {},
 ): Promise<T> {
   const fetchImpl = config.fetchImpl ?? fetch;
-  // baseUrl + path 연결. `new URL(path, base)` 는 절대 경로가 base 경로를 버리므로 쓰지 않는다.
-  const base = config.baseUrl.replace(/\/+$/, "");
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const url = new URL(`${base}${normalizedPath}`);
-  if (opts.query) {
-    for (const [key, value] of Object.entries(opts.query)) {
-      if (value !== undefined) url.searchParams.set(key, value);
-    }
-  }
+  const method = opts.method ?? "GET";
+  const url = buildUrl(config.baseUrl, path, opts.query);
 
   const headers: Record<string, string> = { ...opts.headers };
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
-  if (opts.csrfToken) headers["X-CSRF-Token"] = opts.csrfToken;
+  // 상태변경 요청에만 CSRF 토큰을 동봉한다(안전 메서드는 면제). 명시 토큰이 없고
+  // `csrfCookieName` 이 지정됐으면 쿠키에서 자동 회수(브라우저 한정).
+  const csrfToken = SAFE_METHODS.has(method)
+    ? undefined
+    : (opts.csrfToken ??
+      (config.csrfCookieName
+        ? (readCsrfCookie(config.csrfCookieName) ?? undefined)
+        : undefined));
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
 
   let response: Response;
   let text: string;
   try {
     response = await fetchImpl(url.toString(), {
-      method: opts.method ?? "GET",
+      method,
       headers,
       // 핵심: 쿠키(access/refresh/csrf) 자동 첨부. cross-origin 에선 CORS 가
       // Allow-Credentials: true + 명시 Origin 을 반환해야 브라우저가 쿠키를 보낸다.
