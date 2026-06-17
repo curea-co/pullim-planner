@@ -80,9 +80,20 @@ export interface PullimSessionClient {
   session(): Promise<PullimMeProfile>;
 }
 
-/** 상태변경 시 CSRF 403(토큰 회전·만료)이면 1회 재부트스트랩 후 재시도하기 위한 판정. */
+/**
+ * CSRF 거부(토큰 회전·만료) 판정 — 403 **전체가 아니라 CSRF 마커**로 좁힌다.
+ *
+ * pullim-api 의 CSRF 거부는 `ForbiddenException(CsrfErrors.*)` 로, 메시지가 `CSRF:` 로 시작한다
+ * (`CSRF: Origin 검증 실패.`·`CSRF: double-submit 토큰 불일치.`). 자격증명 실패는 generic **401**
+ * 이라 여기 안 걸리지만, 미래에 추가될 비-CSRF 403(인가·잠금 등)을 CSRF 회전으로 오인해
+ * mutation 을 중복 발사하지 않도록 마커로 한정한다.
+ */
 function isCsrfRejection(error: unknown): boolean {
-  return error instanceof ApiError && error.statusCode === 403;
+  return (
+    error instanceof ApiError &&
+    error.statusCode === 403 &&
+    /^csrf/i.test(error.message)
+  );
 }
 
 /**
@@ -93,11 +104,23 @@ export function createPullimSessionClient(
 ): PullimSessionClient {
   // double-submit CSRF 토큰 메모리 캐시. 부트스트랩/회전 시 갱신.
   let csrfToken: string | null = null;
+  // 진행 중인 부트스트랩 공유(single-flight) — 동시 호출이 각자 GET /auth/csrf 를 쏴서
+  // 토큰을 서로 덮어쓰는 race 를 막는다(auth.ts refresh single-flight 와 동형).
+  let csrfInFlight: Promise<string> | null = null;
 
   async function ensureCsrf(): Promise<string> {
     if (csrfToken) return csrfToken;
-    csrfToken = await bootstrapCsrf(config);
-    return csrfToken;
+    if (!csrfInFlight) {
+      csrfInFlight = bootstrapCsrf(config)
+        .then((token) => {
+          csrfToken = token;
+          return token;
+        })
+        .finally(() => {
+          csrfInFlight = null;
+        });
+    }
+    return csrfInFlight;
   }
 
   /** 상태변경 요청을 CSRF 동봉으로 보낸다. 403(토큰 무효)이면 1회 재부트스트랩 후 재시도. */
