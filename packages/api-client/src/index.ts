@@ -14,5 +14,14 @@ export type { HttpConfig, RequestOptions } from "./http";
 // pullim-api(통합 IdP) 전용 쿠키/CSRF 전송 — 흡수 전환 §10. 자체 BE 호출과 분리(additive).
 export { cookieRequest, bootstrapCsrf, readCsrfCookie } from "./cookie-http";
 export type { CookieHttpConfig, CookieRequestOptions } from "./cookie-http";
+// pullim-api 세션/auth 클라이언트 (cookie-http 위 래퍼) — 흡수 전환 §10 cutover 용.
+export { createPullimSessionClient } from "./pullim-session";
+export type {
+  PullimSessionClient,
+  PullimSessionClientConfig,
+  PullimLoginRequest,
+  PullimSessionResponse,
+  PullimMeProfile,
+} from "./pullim-session";
 export { nullTokenStore } from "./token-store";
 export type { TokenStore } from "./token-store";
