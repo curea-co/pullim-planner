@@ -44,21 +44,48 @@ export interface CookieRequestOptions {
 
 /** NestJS 기본 에러 응답 형태. message 는 validation 시 배열일 수 있다. */
 interface PullimApiErrorBody {
+  /** 구조화 도메인 에러 코드(pullim-api 가 `{ code, message }` 로 내려줄 때). 있으면 보존. */
+  code?: string;
   message?: string | string[];
   error?: string;
   statusCode?: number;
 }
 
+/**
+ * HTTP status → 자체 BE 표준 `ErrorMessages` 도메인 code.
+ *
+ * 자체 BE(`http.ts`)는 `HttpExceptionFilter.resolveFromStatus` 가 만든 envelope code 를
+ * 그대로 노출한다. cookie-http 도 **동일한 code** 를 내야 FE 의 에러 분기(`ApiError.code`)가
+ * 두 전송 계층에서 일관된다(흡수 전환 §10). 권위:
+ * `apps/backend/src/common/filters/http-exception.filter.ts` + `error-messages.constant.ts`.
+ */
+const STATUS_TO_CODE: Record<number, string> = {
+  400: "COMMON_BAD_REQUEST",
+  401: "AUTH_UNAUTHORIZED",
+  403: "AUTH_FORBIDDEN",
+  404: "COMMON_NOT_FOUND",
+  409: "COMMON_CONFLICT",
+  422: "COMMON_VALIDATION_FAILED",
+};
+
 /** pullim-api 에러 본문을 ApiError 의 `{ code, message, statusCode }` 로 정규화. */
 function toApiError(body: unknown, status: number): ApiError {
   const e = (body ?? {}) as PullimApiErrorBody;
+  // ValidationPipe 는 message 를 배열로 내려준다(자체 BE 필터의 validation 판별과 동일).
+  const isValidation = Array.isArray(e.message);
   const message = Array.isArray(e.message)
-    ? e.message.join(" ")
+    ? e.message.join(", ")
     : (e.message ?? `요청에 실패했어요 (${status})`);
-  // `error`("Unauthorized"·"Forbidden"·"Not Found"…)를 snake_case code 로 환산.
-  const code = e.error
-    ? e.error.toLowerCase().replace(/\s+/g, "_")
-    : `http_${status}`;
+  // 자체 BE 와 동일한 도메인 code 로 정규화한다:
+  //   1) pullim-api 가 구조화 `code` 를 주면 보존,
+  //   2) 검증 실패(배열 message)면 `COMMON_VALIDATION_FAILED`(← Nest 기본 `error:"Bad Request"`
+  //      를 `bad_request` 로 떨구지 않는다. 그래야 FE 의 validation 분기가 유지된다),
+  //   3) 그 외엔 status → ErrorMessages 매핑(미러링), 미지정 status 는 `COMMON_UNKNOWN_ERROR`.
+  const code =
+    e.code ??
+    (isValidation
+      ? "COMMON_VALIDATION_FAILED"
+      : (STATUS_TO_CODE[status] ?? "COMMON_UNKNOWN_ERROR"));
   return new ApiError({ code, message, statusCode: e.statusCode ?? status });
 }
 
