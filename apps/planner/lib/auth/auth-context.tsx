@@ -9,11 +9,14 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { ApiError, type PullimMeProfile } from '@pullim-planner/api-client';
-import type { LoginRequest, SignupRequest } from '@pullim-planner/types';
+import { ApiError } from '@pullim-planner/api-client';
+import type {
+  AuthUser,
+  LoginRequest,
+  SignupRequest,
+} from '@pullim-planner/types';
 
 import { authClient, onSessionExpired } from './client';
-import { pullimSession } from './pullim-session-client';
 
 export type AuthStatus =
   | 'loading'
@@ -24,8 +27,7 @@ export type AuthStatus =
 
 export interface AuthContextValue {
   status: AuthStatus;
-  /** pullim-api 세션 프로필(`GET /planner/me`). 흡수 전환 §10 — 자체 BE `AuthUser` 대체. */
-  user: PullimMeProfile | null;
+  user: AuthUser | null;
   login: (input: LoginRequest) => Promise<void>;
   signup: (input: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
@@ -39,27 +41,26 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 /**
  * 앱 전역 인증 상태 Provider.
  *
- * 마운트 시 쿠키 세션으로 `session()`(GET /planner/me)을 호출해 세션을 복원한다(새로고침 유지).
- * 토큰은 HttpOnly 쿠키라 클라가 보관하지 않고 브라우저가 자동 첨부한다.
+ * 마운트 시 저장된 토큰으로 `me()`를 호출해 세션을 복원한다(새로고침 유지).
  * - 성공 → authenticated
- * - 401/403(세션 없음·무효 또는 엔타이틀먼트 미보유) → unauthenticated (`RequireAuth`가 /login)
- * - transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI).
+ * - 401/403(토큰 없음·무효; refresh 도 무효) → unauthenticated (`RequireAuth`가 /login)
+ * - transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI). api-client 가
+ *   refresh 401/403 일 때만 토큰을 폐기하는 계약과 정합.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
-  const [user, setUser] = useState<PullimMeProfile | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
-  // session() 으로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
+  // me() 로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
   // 그 외(네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만 두어 마운트 effect 의
   // 동기 setState 경고를 피한다.
-  // - 부트스트랩/재시도: fallback='error' (세션 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
-  // - login 직후: fallback='authenticated' (쿠키 방금 발급 — 프로필만 best-effort)
+  // - 부트스트랩/재시도: fallback='error' (토큰 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
+  // - login/signup 직후: fallback='authenticated' (토큰 방금 발급 — 프로필만 best-effort)
   const resolveSession = useCallback(
     (fallbackStatus: AuthStatus) =>
-      // pullim-api 세션 확인 = GET /planner/me (쿠키 인증). 401/403 → 비로그인 확정.
-      pullimSession.session().then(
-        (profile) => {
-          setUser(profile);
+      authClient.me().then(
+        (me) => {
+          setUser(me);
           setStatus('authenticated');
         },
         (error: unknown) => {
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (input: LoginRequest) => {
-      await pullimSession.login(input);
+      await authClient.login(input);
       await completeAuth();
     },
     [completeAuth],
@@ -122,10 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    // pullimSession.logout 은 서버가 쿠키를 무효화한다. BE 호출 성패와 무관하게 FE 상태는
-    // 항상 초기화해 세션/상태 불일치를 막는다.
+    // authClient.logout 은 BE 호출 성패와 무관하게 로컬 토큰을 폐기한다(finally). FE 상태도
+    // 동일하게 항상 초기화해 토큰/상태 불일치를 막는다.
     try {
-      await pullimSession.logout();
+      await authClient.logout();
     } finally {
       setUser(null);
       setStatus('unauthenticated');
