@@ -148,12 +148,22 @@ export function createPullimSessionClient(
   return {
     ensureCsrf,
 
-    login(input) {
-      return mutate<PullimSessionResponse>("/auth/login", input);
+    // login/logout 은 세션 쿠키를 바꾸고 서버가 **CSRF 토큰을 회전**시킨다(새 csrf 쿠키 발급).
+    // 성공 후 메모리 캐시(csrfToken)를 무효화해야, 다음 상태변경 요청이 stale 토큰으로 한 번
+    // 403 → 재부트스트랩 하는 회귀를 피하고 ensureCsrf 가 곧장 회전된 토큰을 받는다.
+    async login(input) {
+      const res = await mutate<PullimSessionResponse>("/auth/login", input);
+      csrfToken = null;
+      return res;
     },
 
-    logout() {
-      return mutate<void>("/auth/logout");
+    async logout() {
+      try {
+        await mutate<void>("/auth/logout");
+      } finally {
+        // BE 호출 성패와 무관하게 캐시를 비운다(세션/CSRF 상태 불일치 방지).
+        csrfToken = null;
+      }
     },
 
     session() {
