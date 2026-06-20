@@ -9,14 +9,11 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { ApiError } from '@pullim-planner/api-client';
-import type {
-  AuthUser,
-  LoginRequest,
-  SignupRequest,
-} from '@pullim-planner/types';
+import { ApiError, type PullimMeProfile } from '@pullim-planner/api-client';
+import type { LoginRequest, SignupRequest } from '@pullim-planner/types';
 
 import { authClient, onSessionExpired } from './client';
+import { pullimSession } from './pullim-session-client';
 
 export type AuthStatus =
   | 'loading'
@@ -27,7 +24,8 @@ export type AuthStatus =
 
 export interface AuthContextValue {
   status: AuthStatus;
-  user: AuthUser | null;
+  /** pullim-api 세션 프로필(`GET /planner/me`). 흡수 전환 §10 — 자체 BE `AuthUser` 대체. */
+  user: PullimMeProfile | null;
   login: (input: LoginRequest) => Promise<void>;
   signup: (input: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
@@ -39,40 +37,48 @@ export interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
- * 앱 전역 인증 상태 Provider.
+ * 앱 전역 인증 상태 Provider (흡수 전환 §10 — pullim 쿠키 SSO).
  *
- * 마운트 시 저장된 토큰으로 `me()`를 호출해 세션을 복원한다(새로고침 유지).
+ * 마운트 시 쿠키 세션으로 `session()`(GET /planner/me)을 호출해 세션을 복원한다(새로고침 유지).
+ * 토큰은 HttpOnly 쿠키라 클라가 보관하지 않고 브라우저가 자동 첨부한다.
  * - 성공 → authenticated
- * - 401/403(토큰 없음·무효; refresh 도 무효) → unauthenticated (`RequireAuth`가 /login)
- * - transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI). api-client 가
- *   refresh 401/403 일 때만 토큰을 폐기하는 계약과 정합.
+ * - 401/403(세션 없음·무효 또는 엔타이틀먼트 미보유) → unauthenticated (`RequireAuth`가 /login)
+ * - 404(인증됐으나 학습 프로필 미생성 = 온보딩 미완) → authenticated (온보딩 라우팅이 처리)
+ * - transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI).
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<PullimMeProfile | null>(null);
 
-  // me() 로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
-  // 그 외(네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만 두어 마운트 effect 의
-  // 동기 setState 경고를 피한다.
-  // - 부트스트랩/재시도: fallback='error' (토큰 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
-  // - login/signup 직후: fallback='authenticated' (토큰 방금 발급 — 프로필만 best-effort)
+  // session() 으로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
+  // 404(온보딩 미완)→authenticated, 그 외(네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만
+  // 두어 마운트 effect 의 동기 setState 경고를 피한다.
+  // - 부트스트랩/재시도: fallback='error' (세션 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
+  // - login 직후: fallback='authenticated' (쿠키 방금 발급 — 프로필만 best-effort)
   const resolveSession = useCallback(
     (fallbackStatus: AuthStatus) =>
-      authClient.me().then(
-        (me) => {
-          setUser(me);
+      // pullim-api 세션 확인 = GET /planner/me (쿠키 인증).
+      pullimSession.session().then(
+        (profile) => {
+          setUser(profile);
           setStatus('authenticated');
         },
         (error: unknown) => {
           setUser(null);
-          if (
-            error instanceof ApiError &&
-            (error.statusCode === 401 || error.statusCode === 403)
-          ) {
-            setStatus('unauthenticated');
-          } else {
-            setStatus(fallbackStatus);
+          if (error instanceof ApiError) {
+            if (error.statusCode === 401 || error.statusCode === 403) {
+              // 세션 없음·무효 또는 엔타이틀먼트 미보유 → 비로그인 확정.
+              setStatus('unauthenticated');
+              return;
+            }
+            if (error.statusCode === 404) {
+              // 인증은 됐으나 planner 학습 프로필 미생성(온보딩 미완). 비로그인이 아니므로
+              // authenticated 로 통과시키고 온보딩 라우팅(첫 방문 가드)이 프로필 생성으로 잇는다.
+              setStatus('authenticated');
+              return;
+            }
           }
+          setStatus(fallbackStatus);
         },
       ),
     [],
@@ -93,14 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // 마운트 시 1회 세션 복원. StrictMode 이중 마운트면 me() 가 한 번 더 도는 정도로 무해
+    // 마운트 시 1회 세션 복원. StrictMode 이중 마운트면 session() 이 한 번 더 도는 정도로 무해
     // (loadSession 은 idempotent). 언마운트 후 setState 는 React 가 무시한다.
     void loadSession();
   }, [loadSession]);
 
-  // 토큰 발급(login/signup) 성공 후 프로필 조회. 토큰은 방금 발급됐으므로 me() 가 네트워크/5xx
-  // 로 일시 실패해도 로그인 성공으로 둔다(fallback='authenticated', 프로필은 보류). 단 me() 가
-  // 401/403 이면 세션 무효 확정이므로 unauthenticated 로 되돌린다(resolveSession 내부 처리).
+  // login 성공(쿠키 발급) 후 프로필 조회. 쿠키는 방금 발급됐으므로 session() 이 네트워크/5xx 로
+  // 일시 실패해도 로그인 성공으로 둔다(fallback='authenticated', 프로필은 보류). 단 401/403 이면
+  // 세션 무효 확정이므로 unauthenticated 로 되돌린다(resolveSession 내부 처리).
   const completeAuth = useCallback(
     () => resolveSession('authenticated'),
     [resolveSession],
@@ -108,25 +114,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (input: LoginRequest) => {
-      await authClient.login(input);
+      await pullimSession.login(input);
       await completeAuth();
     },
     [completeAuth],
   );
 
   const signup = useCallback(
+    // 흡수 §10: 가입 권위는 **중앙**(pullim-api `/auth/signup`, KCB 본인인증)이다. dev 는 KCB 강제라
+    // 합성 가입이 불가하고(테스트 계정은 `seed-member`), 자체 BE 가입은 pullim 쿠키 세션과 신원
+    // 저장소가 분리돼 있다. 그래서 가입 직후 pullim 세션 확정(`completeAuth`)을 **하지 않는다**
+    // (없는 쿠키로 401 튕김 방지). 호출부가 가입 성공 후 /login 으로 안내한다. 신원 통합 전 한시적.
     async (input: SignupRequest) => {
       await authClient.signup(input);
-      await completeAuth();
     },
-    [completeAuth],
+    [],
   );
 
   const logout = useCallback(async () => {
-    // authClient.logout 은 BE 호출 성패와 무관하게 로컬 토큰을 폐기한다(finally). FE 상태도
-    // 동일하게 항상 초기화해 토큰/상태 불일치를 막는다.
+    // pullimSession.logout 은 서버가 쿠키를 무효화한다. BE 호출 성패와 무관하게 FE 상태는 항상
+    // 초기화해 세션/상태 불일치를 막는다.
     try {
-      await authClient.logout();
+      await pullimSession.logout();
     } finally {
       setUser(null);
       setStatus('unauthenticated');
@@ -134,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkEmail = useCallback(
+    // 이메일 중복 확인은 가입 플로우 보조 — 중앙 가입 배선 전까지 자체 BE 유지(한시적).
     (email: string) => authClient.checkEmail(email),
     [],
   );

@@ -80,9 +80,10 @@ function ProfileMenu() {
   const router = useRouter();
   const { user, logout } = useAuth();
 
-  // 헤더 프로필은 실 인증 사용자(/auth/me). 본문 도메인 데이터는 아직 mock(GATED).
+  // 헤더 프로필은 실 인증 사용자(pullim-api /planner/me). 본문 도메인 데이터는 아직 mock(GATED).
   const name = user?.name ?? '';
-  const sub = user?.email ?? '';
+  // MeProfile 엔 email 없음(auth 소유) — 학년을 보조 표기로 사용.
+  const sub = user?.grade ?? '';
 
   async function handleLogout() {
     try {
