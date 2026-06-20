@@ -111,7 +111,14 @@ export interface PullimPlannerWrite {
   motto: string;
 }
 
-/** 시간표 블록 (`BlockResponseDto`). */
+/**
+ * 시간표 블록 (`BlockResponseDto`).
+ *
+ * ⚠️ **완료 메타(`accuracy`/`emotion`) 미포함** — pullim-api `BlockResponseDto` 는 TimeBlock 필드만
+ * 매핑하고 `block_completions`(accuracy/emotion/notes)를 내려주지 않는다. 자체 BE 블록 UI(카드·리포트)가
+ * 쓰던 정확도·감정 지표는 현 pullim-api 계약엔 없다(BE 갭 — pullim-api blocks 응답에 완료 메타 추가 필요,
+ * 별도 핸드오프). 이 타입은 **실 응답에 충실히** 두어 없는 필드를 거짓으로 노출하지 않는다.
+ */
 export interface PullimBlock {
   id: string;
   /** HH:MM. */
@@ -187,7 +194,20 @@ function isCsrfRejection(error: unknown): boolean {
 export function createPullimPlannerClient(
   config: PullimPlannerClientConfig,
 ): PullimPlannerClient {
-  /** 상태변경 요청. CSRF 쿠키 자동 동봉 → 토큰 회전 1회 거부 시 재부트스트랩 후 1회 재시도. */
+  // 진행 중인 CSRF 재부트스트랩 공유(single-flight) — 병렬 mutation 이 동시에 CSRF 거부를 만나
+  // 각자 `GET /auth/csrf` 를 쏘면 토큰을 서로 덮어써 일부가 계속 403 으로 실패한다(회전 race).
+  // 하나의 재부트스트랩 결과를 공유해 막는다(pullim-session ensureCsrf 와 동형).
+  let csrfRefreshInFlight: Promise<string> | null = null;
+  function refreshCsrf(): Promise<string> {
+    if (!csrfRefreshInFlight) {
+      csrfRefreshInFlight = bootstrapCsrf(config).finally(() => {
+        csrfRefreshInFlight = null;
+      });
+    }
+    return csrfRefreshInFlight;
+  }
+
+  /** 상태변경 요청. CSRF 쿠키 자동 동봉 → 토큰 회전 1회 거부 시 재부트스트랩(single-flight) 후 1회 재시도. */
   async function mutate<T>(
     path: string,
     method: "POST" | "PATCH" | "DELETE",
@@ -197,8 +217,8 @@ export function createPullimPlannerClient(
       return await cookieRequest<T>(config, path, { method, body });
     } catch (error) {
       if (!isCsrfRejection(error)) throw error;
-      // 캐시/쿠키 토큰이 회전·만료됐을 수 있으므로 새로 받고 1회 재시도.
-      const fresh = await bootstrapCsrf(config);
+      // 쿠키 토큰이 회전·만료됐을 수 있으므로 single-flight 로 새로 받고 1회 재시도.
+      const fresh = await refreshCsrf();
       return await cookieRequest<T>(config, path, {
         method,
         body,
