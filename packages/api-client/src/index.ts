@@ -34,6 +34,12 @@ export type {
   PullimPlannerHours,
   PullimPlannerCustomization,
   PullimBlock,
+  PullimExamType,
+  PullimBlockPattern,
+  PullimMotivationStyle,
+  PullimLayoutId,
+  PullimWeekLayoutId,
+  PullimPaletteId,
 } from "./pullim-planner";
 export { nullTokenStore } from "./token-store";
 export type { TokenStore } from "./token-store";

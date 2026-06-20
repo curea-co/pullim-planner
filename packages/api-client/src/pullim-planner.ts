@@ -18,6 +18,35 @@ import { ApiError } from "./errors";
  * 권위: pullim-api `src/planner/modules/<feature>/controller/` (controller + dto).
  */
 
+// 서버 계약 enum(권위: pullim-api PlannerWriteDto `@IsIn(...)` + customization-options.constant).
+// 입력은 이 union 으로 좁혀 잘못된 값을 컴파일 타임에 막는다. 응답도 동일 도메인이라 공유한다.
+export type PullimExamType =
+  | "mock"
+  | "suneung"
+  | "midterm"
+  | "final"
+  | "other";
+export type PullimBlockPattern = "pomodoro" | "focused" | "deep";
+export type PullimMotivationStyle = "autonomous" | "guided" | "spartan";
+export type PullimLayoutId =
+  | "vertical_timeline"
+  | "checklist"
+  | "block_cards"
+  | "pie_list";
+export type PullimWeekLayoutId =
+  | "matrix_by_type"
+  | "school_grid"
+  | "bar_week"
+  | "heatmap";
+export type PullimPaletteId =
+  | "pullim_blue"
+  | "forest"
+  | "sunset"
+  | "pastel"
+  | "mono"
+  | "mint"
+  | "rose";
+
 /** 목표 — value 는 grade/score 면 number, free 면 string. */
 export interface PullimPlannerTarget {
   kind: "grade" | "score" | "free";
@@ -32,17 +61,16 @@ export interface PullimPlannerHours {
 
 /** 꾸미기 `{ layoutId, weekLayoutId?, paletteId }`. */
 export interface PullimPlannerCustomization {
-  layoutId: string;
-  weekLayoutId?: string;
-  paletteId: string;
+  layoutId: PullimLayoutId;
+  weekLayoutId?: PullimWeekLayoutId;
+  paletteId: PullimPaletteId;
 }
 
 /** 플래너 (`PlannerResponseDto`). */
 export interface PullimPlanner {
   id: string;
   name: string;
-  /** 'mock' | 'suneung' | 'midterm' | 'final' | 'other'. */
-  examType: string;
+  examType: PullimExamType;
   examLabel: string;
   /** YYYY-MM-DD. */
   examStartDate: string;
@@ -52,9 +80,9 @@ export interface PullimPlanner {
   weekendHours: PullimPlannerHours;
   /** 과목별 단원 라벨 맵. */
   subjectUnits: Record<string, string[]>;
-  blockPattern: string;
+  blockPattern: PullimBlockPattern;
   weaknessAutoReflect: boolean;
-  motivationStyle: string;
+  motivationStyle: PullimMotivationStyle;
   /** 빈 문자열 가능. */
   motto: string;
   active: boolean;
@@ -69,7 +97,7 @@ export interface PullimPlanner {
 /** 생성/수정 입력 (`PlannerWriteDto`). */
 export interface PullimPlannerWrite {
   name: string;
-  examType: string;
+  examType: PullimExamType;
   examLabel: string;
   examStartDate: string;
   examEndDate: string;
@@ -77,9 +105,9 @@ export interface PullimPlannerWrite {
   weekdayHours: PullimPlannerHours;
   weekendHours: PullimPlannerHours;
   subjectUnits: Record<string, string[]>;
-  blockPattern: string;
+  blockPattern: PullimBlockPattern;
   weaknessAutoReflect: boolean;
-  motivationStyle: string;
+  motivationStyle: PullimMotivationStyle;
   motto: string;
 }
 
