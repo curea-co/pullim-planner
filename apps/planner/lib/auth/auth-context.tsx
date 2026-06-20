@@ -18,6 +18,9 @@ import { pullimSession } from './pullim-session-client';
 export type AuthStatus =
   | 'loading'
   | 'authenticated'
+  /** 인증됐으나 planner 학습 프로필 미생성(온보딩 미완, /planner/me 404). `RequireAuth`가
+   * /planner/onboarding 으로 보낸다 — 보호 라우트(데이터 비어있음)에 가두지 않는다. */
+  | 'onboarding'
   | 'unauthenticated'
   /** 세션 복원이 transport/5xx 로 실패 — 비로그인 확정이 아니므로 /login 으로 보내지 않는다. */
   | 'error';
@@ -72,9 +75,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               return;
             }
             if (error.statusCode === 404) {
-              // 인증은 됐으나 planner 학습 프로필 미생성(온보딩 미완). 비로그인이 아니므로
-              // authenticated 로 통과시키고 온보딩 라우팅(첫 방문 가드)이 프로필 생성으로 잇는다.
-              setStatus('authenticated');
+              // 인증은 됐으나 planner 학습 프로필(user_profile) 미생성 = 온보딩 미완. 비로그인이
+              // 아니므로 'onboarding' 으로 두고 RequireAuth 가 /planner/onboarding 으로 보낸다(데이터가
+              // 빈 보호 라우트에 가두지 않음). ⚠️ 프로필 생성은 정상 endpoint 부재(pullim-api 갭,
+              // dev 는 /planner/dev/seed-profile) — 온보딩 완료 배선은 BE endpoint 후속.
+              setStatus('onboarding');
               return;
             }
           }
