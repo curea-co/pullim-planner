@@ -97,10 +97,12 @@ export interface PullimBlock {
   progress: number;
   status: string;
   expectedMinutes: number;
-  /** null 이면 생략. */
-  linkedFeatureSlug?: string;
-  curriculumNodeId?: string;
-  reasoning?: string;
+  // raw passthrough — BE(`BlockResponseDto.from`)는 현재 null 이면 생략(undefined)하지만,
+  // 클라이언트가 BE 의 omit-vs-null 직렬화 동작을 가정하지 않도록 `string | null` 로 넓혀
+  // downstream 이 null·undefined 둘 다 처리하게 한다(원본 DTO nullable 컬럼 정합).
+  linkedFeatureSlug?: string | null;
+  curriculumNodeId?: string | null;
+  reasoning?: string | null;
 }
 
 export type PullimPlannerClientConfig = CookieHttpConfig;
