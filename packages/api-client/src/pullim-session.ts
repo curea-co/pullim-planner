@@ -61,6 +61,19 @@ export interface PullimMeProfile {
   dday?: number;
 }
 
+/**
+ * 학습 프로필 upsert 입력 (`PATCH /planner/me` = `UpsertMeDto`). 온보딩 입력. 전 필드 **선택**:
+ * 행 없으면 생성(서버가 joinedAt/streakDays 채움), 있으면 제공한 필드만 덮어쓴다(부분 PATCH).
+ */
+export interface PullimProfileUpsert {
+  grade?: string;
+  track?: string;
+  school?: string;
+  focusSubjects?: string[];
+  weeklyHours?: number;
+  preferredStudyTime?: string;
+}
+
 export interface PullimSessionClientConfig extends CookieHttpConfig {
   /**
    * non-HttpOnly CSRF 쿠키 이름(env별). `cookie-http` 자동보강에도 쓰이고, 부트스트랩 토큰을
@@ -78,6 +91,11 @@ export interface PullimSessionClient {
   logout(): Promise<void>;
   /** planner 세션 확인 — 200 프로필 / 401 미인증 / 403 엔타이틀먼트 미보유 / 404 온보딩 미완. */
   session(): Promise<PullimMeProfile>;
+  /**
+   * 학습 프로필 멱등 upsert (`PATCH /planner/me`) — 온보딩 완료. CSRF 동봉 PATCH.
+   * 성공 시 갱신된 프로필(=`session()` shape). 이후 `session()` 200(404 limbo 해소).
+   */
+  updateProfile(input: PullimProfileUpsert): Promise<PullimMeProfile>;
 }
 
 /**
@@ -124,11 +142,15 @@ export function createPullimSessionClient(
   }
 
   /** 상태변경 요청을 CSRF 동봉으로 보낸다. 403(토큰 무효)이면 1회 재부트스트랩 후 재시도. */
-  async function mutate<T>(path: string, body?: unknown): Promise<T> {
+  async function mutate<T>(
+    path: string,
+    body?: unknown,
+    method: "POST" | "PATCH" = "POST",
+  ): Promise<T> {
     const token = await ensureCsrf();
     try {
       return await cookieRequest<T>(config, path, {
-        method: "POST",
+        method,
         body,
         csrfToken: token,
       });
@@ -138,7 +160,7 @@ export function createPullimSessionClient(
       csrfToken = null;
       const fresh = await ensureCsrf();
       return await cookieRequest<T>(config, path, {
-        method: "POST",
+        method,
         body,
         csrfToken: fresh,
       });
@@ -169,6 +191,11 @@ export function createPullimSessionClient(
     session() {
       // GET — CSRF 면제. 쿠키(access)로 인증.
       return cookieRequest<PullimMeProfile>(config, "/planner/me");
+    },
+
+    updateProfile(input) {
+      // 온보딩 프로필 멱등 upsert — CSRF 동봉 PATCH /planner/me(레포 규약상 PUT 아님).
+      return mutate<PullimMeProfile>("/planner/me", input, "PATCH");
     },
   };
 }
