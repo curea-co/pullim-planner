@@ -59,8 +59,8 @@ export interface PullimPlanner {
   motto: string;
   active: boolean;
   archived: boolean;
-  /** jsonb — 없으면 null. */
-  customization: Record<string, unknown> | null;
+  /** 꾸미기(jsonb) — 미설정이면 null. 설정 시 `updateCustomization` 이 저장한 형태. */
+  customization: PullimPlannerCustomization | null;
   /** ISO. */
   createdAt: string;
   updatedAt: string;
@@ -110,7 +110,11 @@ export type PullimPlannerClientConfig = CookieHttpConfig;
 export interface PullimPlannerClient {
   /** 내 플래너 목록(active/inactive/archived). `GET /planner/planners`. */
   list(): Promise<PullimPlanner[]>;
-  /** 날짜별 시간표 블록. `GET /planner/planners/:id/blocks?date=YYYY-MM-DD`. */
+  /**
+   * 날짜별 시간표 블록. `GET /planner/planners/:id/blocks?date=YYYY-MM-DD`.
+   * `date` 는 **선택** — 생략 시 BE 가 KST 오늘로 기본 처리한다
+   * (`BlocksQueryDto @IsOptional` + 핸들러 `query.date ?? todayKstIsoDate()`).
+   */
   blocks(plannerId: string, date?: string): Promise<PullimBlock[]>;
   /** 생성(비활성). `POST /planner/planners`. */
   create(input: PullimPlannerWrite): Promise<PullimPlanner>;
