@@ -47,11 +47,13 @@ export type PullimPaletteId =
   | "mint"
   | "rose";
 
-/** 목표 — value 는 grade/score 면 number, free 면 string. */
-export interface PullimPlannerTarget {
-  kind: "grade" | "score" | "free";
-  value: number | string;
-}
+/**
+ * 목표 — kind 와 value 를 묶은 discriminated union 으로 잘못된 조합을 컴파일 타임에 차단한다.
+ * grade/score → number, free → string (pullim-api `@IsValidTargetValue`).
+ */
+export type PullimPlannerTarget =
+  | { kind: "grade" | "score"; value: number }
+  | { kind: "free"; value: string };
 
 /** 학습 시간대 — 0~24 시(時). */
 export interface PullimPlannerHours {
@@ -194,31 +196,44 @@ function isCsrfRejection(error: unknown): boolean {
 export function createPullimPlannerClient(
   config: PullimPlannerClientConfig,
 ): PullimPlannerClient {
-  // 진행 중인 CSRF 재부트스트랩 공유(single-flight) — 병렬 mutation 이 동시에 CSRF 거부를 만나
-  // 각자 `GET /auth/csrf` 를 쏘면 토큰을 서로 덮어써 일부가 계속 403 으로 실패한다(회전 race).
-  // 하나의 재부트스트랩 결과를 공유해 막는다(pullim-session ensureCsrf 와 동형).
-  let csrfRefreshInFlight: Promise<string> | null = null;
-  function refreshCsrf(): Promise<string> {
-    if (!csrfRefreshInFlight) {
-      csrfRefreshInFlight = bootstrapCsrf(config).finally(() => {
-        csrfRefreshInFlight = null;
-      });
+  // CSRF double-submit 토큰 관리 — 메모리 캐시 + single-flight(pullim-session ensureCsrf 동형).
+  // 토큰을 부트스트랩해 **명시 동봉**하므로 SSR/test(브라우저 `document.cookie` 부재)에서도 동작하고,
+  // 매 mutation 마다 일부러 403 을 한 번 맞고 재시도하는 구조를 피한다. cookie 자동회수에 의존하지 않음.
+  // single-flight 라 병렬 mutation 이 부트스트랩을 공유해 토큰 회전 race 도 막는다.
+  let csrfToken: string | null = null;
+  let csrfInFlight: Promise<string> | null = null;
+  async function ensureCsrf(): Promise<string> {
+    if (csrfToken) return csrfToken;
+    if (!csrfInFlight) {
+      csrfInFlight = bootstrapCsrf(config)
+        .then((token) => {
+          csrfToken = token;
+          return token;
+        })
+        .finally(() => {
+          csrfInFlight = null;
+        });
     }
-    return csrfRefreshInFlight;
+    return csrfInFlight;
   }
 
-  /** 상태변경 요청. CSRF 쿠키 자동 동봉 → 토큰 회전 1회 거부 시 재부트스트랩(single-flight) 후 1회 재시도. */
+  /** 상태변경 요청. CSRF 토큰 동봉 → 회전·만료로 1회 거부되면 캐시 무효화 후 재부트스트랩·1회 재시도. */
   async function mutate<T>(
     path: string,
     method: "POST" | "PATCH" | "DELETE",
     body?: unknown,
   ): Promise<T> {
+    const token = await ensureCsrf();
     try {
-      return await cookieRequest<T>(config, path, { method, body });
+      return await cookieRequest<T>(config, path, {
+        method,
+        body,
+        csrfToken: token,
+      });
     } catch (error) {
       if (!isCsrfRejection(error)) throw error;
-      // 쿠키 토큰이 회전·만료됐을 수 있으므로 single-flight 로 새로 받고 1회 재시도.
-      const fresh = await refreshCsrf();
+      csrfToken = null;
+      const fresh = await ensureCsrf();
       return await cookieRequest<T>(config, path, {
         method,
         body,
