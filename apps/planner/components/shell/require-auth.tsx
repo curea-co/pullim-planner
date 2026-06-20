@@ -43,6 +43,19 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     );
   }
 
+  if (status === 'forbidden') {
+    return (
+      <div className="bg-pullim-slate-50 flex h-screen flex-col items-center justify-center gap-3 px-4 text-center">
+        <p className="text-pullim-slate-700 text-sm">
+          플래너 이용 권한이 없어요. 플래너 패키지가 있어야 이용할 수 있어요.
+        </p>
+        <Button variant="outline" size="sm" onClick={() => retry()}>
+          다시 확인
+        </Button>
+      </div>
+    );
+  }
+
   // authenticated, 또는 온보딩 사용자가 온보딩 화면에 있을 때만 본문을 렌더한다.
   const canRender =
     status === 'authenticated' || (status === 'onboarding' && onOnboarding);

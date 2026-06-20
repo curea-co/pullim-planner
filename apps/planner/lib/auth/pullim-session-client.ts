@@ -29,3 +29,25 @@ export const pullimSession: PullimSessionClient = createPullimSessionClient({
   baseUrl: PULLIM_API_URL,
   csrfCookieName: CSRF_COOKIE_NAME,
 });
+
+// ── pullim 쿠키 세션 만료(401) 전역 전파 ──────────────────────────────────
+// 자체 BE 클라(`./client`)의 `onSessionExpired`(refresh 401 → 전역 logout) 대체. pullim 은 쿠키
+// 세션이라 데이터/세션 호출이 401 을 받으면(만료·무효) 여기로 통지해 auth-context 가 상태를
+// unauthenticated 로 내린다. 데이터 클라(`@/lib/planner/pullim-client`)가 401 에서 fire 한다.
+type SessionExpiredListener = () => void;
+const sessionExpiredListeners = new Set<SessionExpiredListener>();
+
+/** pullim 세션 만료 전역 구독. 반환 함수로 해제. */
+export function onPullimSessionExpired(
+  listener: SessionExpiredListener,
+): () => void {
+  sessionExpiredListeners.add(listener);
+  return () => {
+    sessionExpiredListeners.delete(listener);
+  };
+}
+
+/** pullim 401 감지 시 호출 — 구독자에게 세션 만료를 통지한다. */
+export function notifyPullimSessionExpired(): void {
+  for (const listener of sessionExpiredListeners) listener();
+}

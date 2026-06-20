@@ -12,8 +12,8 @@ import {
 import { ApiError, type PullimMeProfile } from '@pullim-planner/api-client';
 import type { LoginRequest, SignupRequest } from '@pullim-planner/types';
 
-import { authClient, onSessionExpired } from './client';
-import { pullimSession } from './pullim-session-client';
+import { authClient } from './client';
+import { onPullimSessionExpired, pullimSession } from './pullim-session-client';
 
 export type AuthStatus =
   | 'loading'
@@ -21,6 +21,9 @@ export type AuthStatus =
   /** 인증됐으나 planner 학습 프로필 미생성(온보딩 미완, /planner/me 404). `RequireAuth`가
    * /planner/onboarding 으로 보낸다 — 보호 라우트(데이터 비어있음)에 가두지 않는다. */
   | 'onboarding'
+  /** 인증은 됐으나 planner 엔타이틀먼트(`flags.planner`) 미보유(403). 비로그인이 아니므로 /login 으로
+   * 보내지 않고 '이용 권한 없음' 안내를 보여준다. */
+  | 'forbidden'
   | 'unauthenticated'
   /** 세션 복원이 transport/5xx 로 실패 — 비로그인 확정이 아니므로 /login 으로 보내지 않는다. */
   | 'error';
@@ -69,9 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (error: unknown) => {
           setUser(null);
           if (error instanceof ApiError) {
-            if (error.statusCode === 401 || error.statusCode === 403) {
-              // 세션 없음·무효 또는 엔타이틀먼트 미보유 → 비로그인 확정.
+            if (error.statusCode === 401) {
+              // 세션 없음·무효 → 비로그인 확정.
               setStatus('unauthenticated');
+              return;
+            }
+            if (error.statusCode === 403) {
+              // 로그인은 됐으나 planner 엔타이틀먼트 미보유 — /login 으로 보내지 않고 안내.
+              setStatus('forbidden');
               return;
             }
             if (error.statusCode === 404) {
@@ -96,7 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    const unsubscribe = onSessionExpired(() => {
+    // pullim 쿠키 세션 만료(데이터/세션 401) 전역 전파 → 비로그인. (자체 BE onSessionExpired 대체)
+    const unsubscribe = onPullimSessionExpired(() => {
       setUser(null);
       setStatus('unauthenticated');
     });

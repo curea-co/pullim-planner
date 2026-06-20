@@ -1,10 +1,12 @@
 import {
+  ApiError,
   createPullimPlannerClient,
   type PullimPlanner,
   type PullimPlannerClient,
   type PullimPlannerWrite,
 } from '@pullim-planner/api-client';
 
+import { notifyPullimSessionExpired } from '@/lib/auth/pullim-session-client';
 import type { Planner } from '@/lib/mock';
 
 /**
@@ -17,18 +19,50 @@ const PULLIM_API_URL =
 const CSRF_COOKIE_NAME =
   process.env.NEXT_PUBLIC_PULLIM_CSRF_COOKIE ?? 'local-pullim-csrf';
 
+const rawPullimPlannerClient = createPullimPlannerClient({
+  baseUrl: PULLIM_API_URL,
+  csrfCookieName: CSRF_COOKIE_NAME,
+});
+
+/**
+ * 401(쿠키 세션 만료·무효) 시 전역 세션 만료를 통지하도록 클라 메서드를 감싼다 — 흡수 §10.
+ * 자체 BE 클라의 onSessionExpired(전역 전파)를 데이터 호출에서도 복원한다. auth-context 가
+ * `onPullimSessionExpired` 로 구독해 상태를 unauthenticated 로 내린다.
+ */
+function on401<A extends unknown[], R>(
+  fn: (...args: A) => Promise<R>,
+): (...args: A) => Promise<R> {
+  return async (...args: A) => {
+    try {
+      return await fn(...args);
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 401) {
+        notifyPullimSessionExpired();
+      }
+      throw error;
+    }
+  };
+}
+
 /**
  * 앱 전역 pullim-api planner 데이터 클라이언트 싱글톤 — 흡수 전환 §10 cutover.
  *
  * 자체 BE planner 클라(`./client.ts` 의 레거시 구현, Bearer + 엔벨로프)를 대체한다. 인증은 쿠키
  * SSO(브라우저 자동 첨부)라 토큰을 클라가 들지 않고, 상태변경은 CSRF double-submit
- * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩).
+ * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 401 에서 세션 만료를 통지한다.
  */
-export const pullimPlannerClient: PullimPlannerClient =
-  createPullimPlannerClient({
-    baseUrl: PULLIM_API_URL,
-    csrfCookieName: CSRF_COOKIE_NAME,
-  });
+export const pullimPlannerClient: PullimPlannerClient = {
+  list: on401(rawPullimPlannerClient.list),
+  blocks: on401(rawPullimPlannerClient.blocks),
+  create: on401(rawPullimPlannerClient.create),
+  update: on401(rawPullimPlannerClient.update),
+  remove: on401(rawPullimPlannerClient.remove),
+  activate: on401(rawPullimPlannerClient.activate),
+  archive: on401(rawPullimPlannerClient.archive),
+  unarchive: on401(rawPullimPlannerClient.unarchive),
+  duplicate: on401(rawPullimPlannerClient.duplicate),
+  updateCustomization: on401(rawPullimPlannerClient.updateCustomization),
+};
 
 /**
  * pullim-api 응답(`PullimPlanner`) → FE mock `Planner` 뷰 어댑터.
