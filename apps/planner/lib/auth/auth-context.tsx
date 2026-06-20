@@ -121,12 +121,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signup = useCallback(
-    // 흡수 §10: 가입 권위는 **중앙**(pullim-api `/auth/signup`, KCB 본인인증)이다. dev 는 KCB 강제라
-    // 합성 가입이 불가하고(테스트 계정은 `seed-member`), 자체 BE 가입은 pullim 쿠키 세션과 신원
-    // 저장소가 분리돼 있다. 그래서 가입 직후 pullim 세션 확정(`completeAuth`)을 **하지 않는다**
-    // (없는 쿠키로 401 튕김 방지). 호출부가 가입 성공 후 /login 으로 안내한다. 신원 통합 전 한시적.
-    async (input: SignupRequest) => {
-      await authClient.signup(input);
+    // 흡수 §10: **자체 회원가입 폐기.** 가입 권위는 중앙(pullim-api `/auth/signup`, KCB 본인인증)이다.
+    // 자체 BE 가입은 pullim 쿠키 세션과 신원 저장소가 갈려 로그인이 성립하지 않으므로 제거했다.
+    // `/signup` 라우트는 `/login` 으로 리다이렉트하므로 이 경로는 도달하지 않는다(혹시 호출되면 명시
+    // 차단 — 중앙 가입 배선 후 대체). dev 테스트 계정은 `seed-member {flags:{planner:1}}`.
+    async () => {
+      throw new ApiError({
+        code: 'SIGNUP_DISABLED',
+        message: '회원가입은 중앙 로그인에서 진행됩니다.',
+        statusCode: 501,
+      });
     },
     [],
   );
