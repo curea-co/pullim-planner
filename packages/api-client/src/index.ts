@@ -23,5 +23,17 @@ export type {
   PullimSessionResponse,
   PullimMeProfile,
 } from "./pullim-session";
+// pullim-api planner 도메인 데이터 클라이언트 (cookie-http 위 래퍼) — 흡수 전환 §10 cutover 용.
+export { createPullimPlannerClient } from "./pullim-planner";
+export type {
+  PullimPlannerClient,
+  PullimPlannerClientConfig,
+  PullimPlanner,
+  PullimPlannerWrite,
+  PullimPlannerTarget,
+  PullimPlannerHours,
+  PullimPlannerCustomization,
+  PullimBlock,
+} from "./pullim-planner";
 export { nullTokenStore } from "./token-store";
 export type { TokenStore } from "./token-store";
