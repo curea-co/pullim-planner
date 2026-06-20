@@ -20,7 +20,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 export function RequireAuth({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { status, retry } = useAuth();
+  const { status, retry, logout } = useAuth();
   // 온보딩 사용자는 온보딩 화면에선 렌더(리다이렉트 루프 방지), 그 외 보호 라우트에선 온보딩으로.
   const onOnboarding = pathname?.startsWith('/planner/onboarding') ?? false;
 
@@ -49,9 +49,14 @@ export function RequireAuth({ children }: { children: ReactNode }) {
         <p className="text-pullim-slate-700 text-sm">
           플래너 이용 권한이 없어요. 플래너 패키지가 있어야 이용할 수 있어요.
         </p>
-        <Button variant="outline" size="sm" onClick={() => retry()}>
-          다시 확인
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => retry()}>
+            다시 확인
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => void logout()}>
+            다른 계정으로 로그인
+          </Button>
+        </div>
       </div>
     );
   }
