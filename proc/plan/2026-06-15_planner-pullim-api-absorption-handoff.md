@@ -116,8 +116,12 @@ planner 리포의 기존 컨트롤러(`apps/backend/src/modules/planner/controll
     온보딩으로 라우팅.
   - `onboardedAt != null` → 온보딩 완료(홈 진입). `onboarded_at` 는 온보딩 **명시 완료 액션**에서만
     set(자동생성 시엔 NULL 유지) — 이로써 자동생성과 완료가 분리된다.
-  - (현 FE 는 진입 시 빈-body 자동생성+즉시 완료 취급 → 이 게이트 도입 시 "완료 액션에서 onboarded_at
-    set" 로 정합. go-live 핸드오프의 "온보딩 프로필 수집 폼" 후속과 연동.)
+  - **완료 처리 계약(확정)**: 완료 액션 = **`PATCH /planner/me` body 에 `onboarded: true`** 를 포함한
+    호출. 서버는 이 플래그를 받으면 `onboarded_at` 이 NULL 일 때만 `now()` 로 stamp(이미 set 이면
+    무시 — idempotent). 그 외 일반 프로필 수정 PATCH(플래그 없음)는 `onboarded_at` 를 건드리지 않는다.
+    별도 완료 엔드포인트는 만들지 않는다(프로필 upsert 와 일원화). (현 FE 는 빈-body 자동생성+즉시
+    완료 취급 → 이 계약 도입 시 완료 단계에서 `onboarded:true` 전송으로 정합 — go-live 핸드오프의
+    "온보딩 프로필 수집 폼" 후속과 연동.)
   - **응답 계약(필수)**: `GET /planner/me` 200 payload 는 **`onboardedAt`(string|null)** 를 반드시
     포함한다(+ 프로필 필드·활성 플래너·컨디션/번아웃 요약). FE 라우팅이 이 필드에 의존하므로,
     누락 시 온보딩 판별이 불가능해진다(권위 타입 = api-client `PullimMeProfile`).
@@ -289,14 +293,18 @@ CREATE TABLE planner.pedagogy_engines (
 위 §6 은 컬럼 스케치라 **상태 불변식과 FK 가 빠져 있다.** 구현 마이그레이션은 아래를 DB 레벨로
 강제해야 한다(권위 = `pullim-planner/apps/backend/src/entities/*` 주석 + 마이그레이션).
 
-**(a) 활성 플래너 불변식 — user 당 활성·비보관 1행**
+**(a) 활성 플래너 불변식 — user 당 활성·비보관 1행 (DB 레벨 완결: partial unique + CHECK)**
 ```sql
 -- planner.entity.ts: planners_user_active_uniq (active=true·archived=false 1행). partial 조건은
 -- TypeORM 데코레이터로 표현 불가 → 마이그레이션이 소유한다.
 CREATE UNIQUE INDEX planners_user_active_uniq
   ON planner.planners(user_id) WHERE active AND NOT archived;
+-- 보관된 플래너는 활성일 수 없다(active+archived 동시 true 금지) — 상태 모순 차단.
+ALTER TABLE planner.planners
+  ADD CONSTRAINT planners_active_not_archived_chk CHECK (NOT (active AND archived));
 ```
-(activate/archive/unarchive 라우트는 이 불변식 안에서만 active 를 토글한다.)
+(activate/archive/unarchive 라우트는 이 두 제약 안에서만 active/archived 를 토글한다 — 앱 검증이
+아니라 **DB 가 불변식을 완결 강제**한다.)
 
 **(b) planner 스키마 내부 FK — planners 가 aggregate root**
 ```sql
@@ -317,19 +325,19 @@ self-FK 를 걸지 결정 — 걸면 `ADD FOREIGN KEY (parent_id) REFERENCES pla
 ON DELETE SET NULL`(또는 RESTRICT). 안 걸면 고아 `parent_id`(존재하지 않는 부모) 가 가능하므로
 시드/이식 시 무결성을 앱에서 보장해야 한다.
 
-**(c) user 스코프 테이블의 신원 참조** — `user_profile`·`daily_conditions`·`burnout_snapshots`·
-`planners.user_id` 는 `auth.users(id)` 를 가리킨다. **스키마 경계를 넘는 cross-schema FK 를 실제로
-걸지(물리 FK) 논리 참조만 둘지는 §7(신원/프로필 경계, ADR-011) 결정에 위임**한다.
-⚠️ 단 **`user_id` 의 타입을 `auth.users.id` 와 정합**시켜 두어야 그 선택이 열린다 — 현 §6 DDL 은
-`user_id text` 인데 `auth.users.id` 가 `uuid` 면 타입 불일치로 cross-schema FK/`ON DELETE CASCADE`
-를 **나중에 못 건다**(되돌리려면 데이터 마이그레이션 필요). 착수 전 `auth.users.id` 타입을 확인해
-`user_id` 를 맞추거나(uuid↔uuid), `text` 고정의 트레이드오프(물리 FK 영구 포기)를 명시 수용한다.
+**(c) user 스코프 테이블의 신원 참조 — 결정(확정, 위임 아님)**: `user_profile`·`daily_conditions`·
+`burnout_snapshots`·`planners.user_id` 는 `auth.users(id)` 를 가리킨다. **결정: 물리 cross-schema
+FK 를 걸지 않고 앱레벨 참조로 둔다**(§3.3·ADR-005 와 일치 — 스키마 분리는 보안경계 아님, 물리
+cross-schema FK 는 강한 결합·마이그레이션 부담만 늘림). **`user_id` 타입 = `auth.users.id` 와 동일
+타입으로 정한다**(레거시 domain-user 는 string/text PK 라 §6 DDL `text` 는 그 표기 — **흡수처
+pullim-api 의 `auth.users.id` 가 `uuid` 면 `uuid` 로 치환**; 물리 FK 를 안 걸므로 타입은 조인/정합용일
+뿐 마이그레이션을 막지 않는다). 즉 "text 고정" 이 아니라 "auth.users.id 에 맞춤" 이 규칙.
 
-**(d) auth 사용자 삭제 시 planner 데이터 정리 전략 (착수 전 확정)** — (c) 가 **물리 FK 가 아닌
-앱레벨 참조**면 `auth.users` 삭제가 planner 데이터를 자동 정리하지 않는다. ⇒ 정리 전략을 확정해야
-한다: 사용자 삭제 이벤트에 `planner.{user_profile, planners(+자식 FK cascade), daily_conditions,
-burnout_snapshots}` 를 앱레벨/이벤트로 purge 하거나, cross-schema `ON DELETE CASCADE` 채택(§7/
-ADR-011 결정과 연동). **미확정 시 고아 데이터·개인정보 삭제 누락(탈퇴 시 잔존) 위험.**
+**(d) auth 사용자 삭제 시 planner 데이터 정리 — 결정(확정)**: (c) 가 앱레벨 참조라 `auth.users`
+삭제가 planner 데이터를 자동 정리하지 않는다. **결정: 사용자 삭제 이벤트(또는 배치)에서 앱레벨로
+`planner.{user_profile, planners(+자식 time_blocks/block_completions/subject_units 는 FK CASCADE),
+daily_conditions, burnout_snapshots}` 를 purge** 한다(물리 cross-schema CASCADE 미사용 — (c) 와 일관).
+구현은 pullim-api 의 사용자-삭제 훅에 planner purge 핸들러를 등록. (개인정보 탈퇴 잔존 방지 필수.)
 
 ---
 
