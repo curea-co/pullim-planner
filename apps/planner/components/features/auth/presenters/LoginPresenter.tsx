@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -38,15 +37,10 @@ export function LoginPresenter({
       title="로그인"
       subtitle="풀림 플래너에 오신 걸 환영해요"
       footer={
-        <>
-          아직 계정이 없으신가요?{' '}
-          <Link
-            href="/signup"
-            className="text-pullim-blue-600 font-semibold hover:underline"
-          >
-            회원가입
-          </Link>
-        </>
+        // 흡수 §10: 자체 회원가입 폐기 — 가입은 중앙 로그인(KCB)으로 통합 예정.
+        <span className="text-pullim-slate-500">
+          가입은 중앙 로그인으로 통합될 예정이에요.
+        </span>
       }
     >
       <form onSubmit={handleSubmit} className="grid gap-4" noValidate>

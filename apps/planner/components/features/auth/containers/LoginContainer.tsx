@@ -23,9 +23,16 @@ export function LoginContainer() {
   const [errors, setErrors] = useState<LoginErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
-  // 이미 로그인된 상태로 /login 진입 시 홈으로 돌려보낸다 (로그인 월 정합).
+  // 이미 로그인된(또는 부분 인증: onboarding/forbidden) 상태로 /login 진입 시 앱으로 돌려보낸다.
+  // RequireAuth 가 onboarding → /planner/onboarding, forbidden → 안내 화면으로 처리한다.
   useEffect(() => {
-    if (status === 'authenticated') router.replace('/');
+    if (
+      status === 'authenticated' ||
+      status === 'onboarding' ||
+      status === 'forbidden'
+    ) {
+      router.replace('/');
+    }
   }, [status, router]);
 
   function handleChange<K extends keyof LoginFields>(field: K, value: string) {
