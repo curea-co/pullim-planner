@@ -94,6 +94,16 @@ planner 리포의 기존 컨트롤러(`apps/backend/src/modules/planner/controll
   `PATCH /planner/me`(부분 upsert, 온보딩이 이걸로 프로필 생성). **일일 컨디션 리포트(쓰기)·번아웃
   계산 트리거 라우트는 아직 없음** → 구현 시 `POST /planner/conditions`(또는 `/me/condition`) 등으로
   정의 필요. dev 한정 `POST /planner/dev/seed-profile`(프로필 시드, prod 비노출) 존재.
+- **`GET /planner/me` 상태코드 계약 고정(세션 판별과 겸용 주의)**: FE 는 이 라우트를 **홈 집계 +
+  세션 판별**에 겸용한다. 따라서 코드 의미를 모호함 없이 못박는다 — **`404` 는 "인증됨 + `user_profile`
+  행 부재(=온보딩 미완)" 전용** 신호다. 활성 플래너 없음·컨디션 없음 등 "데이터 없음"은 **`200` +
+  빈/널 필드**로 반환하고 `404` 를 쓰지 않는다(아니면 FE 가 정상 사용자를 온보딩으로 오라우팅).
+  `401`=비인증, `403`=엔타이틀먼트(`flags.planner`) 미보유.
+- **`PATCH /planner/me` 부분 upsert × NOT NULL 컬럼 계약**: 온보딩이 **빈 body 로 최초 생성**하므로,
+  `user_profile` 의 모든 NOT NULL 컬럼은 **서버 기본값으로 채워질 수 있어야** 한다(예 `joined_at=now()`,
+  `focus_subjects='{}'`, `streak_days=0`). 기본값 없는 NOT NULL(예 `grade`/`track`/`weekly_hours`/
+  `preferred_study_time`)은 (i) 서버 기본값을 부여하거나 (ii) 온보딩 폼이 필수 입력으로 수집하도록
+  **착수 전 확정**한다. 미확정 시 빈-body 생성이 NOT NULL 위반으로 실패한다.
 
 ### 3.3 `data-model.md` — `planner` 스키마 (도메인 8테이블 + user_profile)
 PK 는 text(UUID 문자열) 유지(기존 정합). FK 는 같은 RDS 라 `planner.*.user_id → auth.users.id`
@@ -156,14 +166,17 @@ PK 는 text(UUID 문자열) 유지(기존 정합). FK 는 같은 RDS 라 `planne
 CREATE SCHEMA IF NOT EXISTS planner;
 
 CREATE TABLE planner.user_profile (
-  user_id text PRIMARY KEY,           -- = auth.users.id
-  grade text NOT NULL,
-  track text NOT NULL,
+  user_id text PRIMARY KEY,           -- = auth.users.id (타입은 §6.1(c) — auth.users.id 와 정합)
+  -- NOT NULL 이면서 기본값 없는 컬럼(grade/track/weekly_hours/preferred_study_time)은
+  -- PATCH /planner/me 빈-body 최초생성(온보딩)을 위해 §3.2 계약대로 서버 기본값 부여 또는
+  -- 온보딩 필수입력으로 확정해야 한다. 아래는 합리적 기본값 예시(착수 시 확정).
+  grade text NOT NULL DEFAULT '미정',
+  track text NOT NULL DEFAULT '미정',
   school text,
   focus_subjects text[] NOT NULL DEFAULT '{}',
-  weekly_hours int NOT NULL,
-  preferred_study_time text NOT NULL,
-  joined_at timestamptz NOT NULL,
+  weekly_hours int NOT NULL DEFAULT 0,
+  preferred_study_time text NOT NULL DEFAULT '미정',
+  joined_at timestamptz NOT NULL DEFAULT now(),
   streak_days int NOT NULL DEFAULT 0
 );
 
