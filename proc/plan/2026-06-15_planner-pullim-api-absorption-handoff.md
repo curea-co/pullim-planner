@@ -5,8 +5,12 @@
 > design-first(6뷰 SoT) 프로세스이므로, 착수 시 §3 설계 산출물을 먼저 올리고 §4~§6 으로
 > 코드·스키마를 배선한다. 결정은 모두 확정 상태(§1).
 >
-> **권위 소스**: planner 도메인 스키마 정의 = `pullim-planner/apps/backend/src/entities/*`.
-> pullim-api 패턴 = `pullim-api/src/q/*`(q 서비스, 작동 템플릿) + `docs/design/_platform/*`.
+> **권위 소스**: planner **도메인** 스키마(planner·time_block·block_completion·subject_unit·
+> daily_condition·burnout_snapshot·curriculum_node·pedagogy_engine) = `pullim-planner/apps/backend/
+> src/entities/*`. ⚠️ **단 `user_profile`(학습 프로필)은 백엔드 엔티티가 없다**(`apps/backend/src/
+> entities/` 에는 `auth-user.entity.ts`(인증 신원)만 있고 학습 프로필 엔티티는 없음) — 그 스키마
+> 권위는 **본 문서 §6 DDL + api-client 타입 `PullimMeProfile`/`PullimProfileUpsert`**(흡수 cutover
+> 산출물)다. pullim-api 패턴 = `pullim-api/src/q/*`(q 서비스, 작동 템플릿) + `docs/design/_platform/*`.
 
 ## 목표
 
@@ -112,6 +116,9 @@ planner 리포의 기존 컨트롤러(`apps/backend/src/modules/planner/controll
     set(자동생성 시엔 NULL 유지) — 이로써 자동생성과 완료가 분리된다.
   - (현 FE 는 진입 시 빈-body 자동생성+즉시 완료 취급 → 이 게이트 도입 시 "완료 액션에서 onboarded_at
     set" 로 정합. go-live 핸드오프의 "온보딩 프로필 수집 폼" 후속과 연동.)
+  - **응답 계약(필수)**: `GET /planner/me` 200 payload 는 **`onboardedAt`(string|null)** 를 반드시
+    포함한다(+ 프로필 필드·활성 플래너·컨디션/번아웃 요약). FE 라우팅이 이 필드에 의존하므로,
+    누락 시 온보딩 판별이 불가능해진다(권위 타입 = api-client `PullimMeProfile`).
 - **`PATCH /planner/me` 부분 upsert × NOT NULL 컬럼 계약**: 온보딩이 **빈 body 로 최초 생성**하므로,
   `user_profile` 의 모든 NOT NULL 컬럼은 **서버 기본값으로 채워질 수 있어야** 한다(예 `joined_at=now()`,
   `focus_subjects='{}'`, `streak_days=0`). 기본값 없는 NOT NULL(예 `grade`/`track`/`weekly_hours`/
@@ -130,7 +137,7 @@ PK 는 text(UUID 문자열) 유지(기존 정합). FK 는 같은 RDS 라 `planne
 - **burnout_snapshots**: 복합 PK `(user_id, date)`, `score(smallint)`, `trend`, `recommend_break(bool)`, `factors(jsonb)` (= `{label,value,unit('h'|'%'|'/5'|'회'),weight,status('good'|'warn'|'bad')}[]`), `computed_at`
 - **curriculum_nodes** (글로벌 참조): `id(pk)`, `parent_id(null)`, `subject`, `level(smallint)`, `label`, `position(int)`
 - **pedagogy_engines** (글로벌 참조): `id(pk)`, `label`, `principle`, `example`
-- **user_profile** (구 `users`/DomainUser, 학습 프로필): `user_id(pk → auth.users.id)`, `grade`, `track`, `school(null)`, `focus_subjects(text[])`, `weekly_hours(int)`, `preferred_study_time`, `joined_at`, `streak_days(int)`, **`onboarded_at(timestamptz null)`** — **`name` 제거**(auth.users 소유, ProfileProjection 으로 조회). ⭐ **`onboarded_at` 이 온보딩 완료의 canonical 권위**(NULL=미완): 온보딩 상태는 행 존재가 아니라 이 필드로 판별(§3.2 상태머신과 단일 계약).
+- **user_profile** (구 `users`/DomainUser, 학습 프로필): `user_id(pk → auth.users.id)`, `grade`, `track`, `school(null)`, `focus_subjects(text[])`, `weekly_hours(int)`, `preferred_study_time`, `joined_at(timestamptz)`, `streak_days(int)`, **`onboarded_at(timestamptz null)`** — **`name` 제거**(auth.users 소유, ProfileProjection 으로 조회). ⭐ **`onboarded_at` 이 온보딩 완료의 canonical 권위**(NULL=미완): 온보딩 상태는 행 존재가 아니라 이 필드로 판별(§3.2 상태머신과 단일 계약).
 
 ### 3.4 `authz.md`
 - **L0(서비스 진입)**: `flags['planner'] ≥ 1` (EntitlementGuard). 미포함(0/없음) → 403.
@@ -189,7 +196,8 @@ CREATE TABLE planner.user_profile (
   focus_subjects text[] NOT NULL DEFAULT '{}',
   weekly_hours int NOT NULL DEFAULT 0,
   preferred_study_time text NOT NULL DEFAULT '미정',
-  joined_at timestamptz NOT NULL DEFAULT now(),
+  joined_at timestamptz NOT NULL DEFAULT now(),  -- 가입(프로필 생성) 시각. 타입 변경 아님: 레거시
+                                                 -- DomainUser.joinedAt(timestamp) 와 동일 의미, DEFAULT now() 만 추가(빈-body 생성용)
   streak_days int NOT NULL DEFAULT 0,
   onboarded_at timestamptz            -- nullable: 온보딩 완료 시각. NULL=진행중(§3.2 게이트 권위)
 );
