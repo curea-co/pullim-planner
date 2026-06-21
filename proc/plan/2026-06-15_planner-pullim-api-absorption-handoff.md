@@ -272,6 +272,10 @@ ALTER TABLE planner.planner_subject_units
 **(c) user 스코프 테이블의 신원 참조** — `user_profile`·`daily_conditions`·`burnout_snapshots`·
 `planners.user_id` 는 `auth.users(id)` 를 가리킨다. **스키마 경계를 넘는 cross-schema FK 를 실제로
 걸지(물리 FK) 논리 참조만 둘지는 §7(신원/프로필 경계, ADR-011) 결정에 위임**한다.
+⚠️ 단 **`user_id` 의 타입을 `auth.users.id` 와 정합**시켜 두어야 그 선택이 열린다 — 현 §6 DDL 은
+`user_id text` 인데 `auth.users.id` 가 `uuid` 면 타입 불일치로 cross-schema FK/`ON DELETE CASCADE`
+를 **나중에 못 건다**(되돌리려면 데이터 마이그레이션 필요). 착수 전 `auth.users.id` 타입을 확인해
+`user_id` 를 맞추거나(uuid↔uuid), `text` 고정의 트레이드오프(물리 FK 영구 포기)를 명시 수용한다.
 
 **(d) auth 사용자 삭제 시 planner 데이터 정리 전략 (착수 전 확정)** — (c) 가 **물리 FK 가 아닌
 앱레벨 참조**면 `auth.users` 삭제가 planner 데이터를 자동 정리하지 않는다. ⇒ 정리 전략을 확정해야
@@ -343,7 +347,13 @@ ADR-011 결정과 연동). **미확정 시 고아 데이터·개인정보 삭제
 2. **쿠키 기반 세션** — pullim-api 회원 토큰은 **HttpOnly 쿠키**(`.pullim.ai`, ADR-010)다.
    현재 planner 의 **localStorage 토큰 + `Authorization: Bearer` 방식 폐기**, `fetch(..., {credentials:'include'})`
    로 전환(회원 토큰을 bearer 로 보내면 pullim-api 가 거부 — §검증 커널).
-3. **api-client base** → `https://api.pullim.ai`, 라우트 `/planner/*`, 세션확인 `/auth/me`.
+   - **CSRF double-submit (쓰기 요청 필수 — §4-9 BE 계약과 짝)** — 쿠키 세션이라 BE 가 CSRF 를
+     요구한다. FE 는 (a) 앱 부트스트랩 시 `GET /auth/csrf` 로 CSRF 쿠키(`*-pullim-csrf`)를 받고
+     (토큰 캐시 + single-flight), (b) **모든 변경 요청(POST/PUT/PATCH/DELETE)에 그 토큰을
+     `X-CSRF-Token` 헤더로 전파**한다. 누락 시 세션 전환 후 쓰기(`PATCH /planner/me` 온보딩
+     프로필 생성 포함)가 403 으로 실패한다. ⇒ api-client 래퍼에 부트스트랩+헤더 주입을 내장.
+3. **api-client base** → `https://api.pullim.ai`, 라우트 `/planner/*`, 세션확인 `/planner/me`
+   (200=인증, 401=비인증, 403=엔타이틀먼트 미보유, 404=온보딩 미완).
 4. ⚠️ **FE 도메인** — 공통 쿠키(`.pullim.ai`) SSO 가 동작하려면 planner FE 가
    **`*.pullim.ai` 서브도메인**(예: `planner.pullim.ai`)에서 서빙돼야 함. 현 `pullim-planner.vercel.app`
    은 쿠키 도메인 밖 → 도메인 연결 필요(인프라 항목).
