@@ -54,6 +54,21 @@ cutover 골자:
   본전환 시점에 `git.deploymentEnabled.main=false` 가드(브랜치
   `ci/vercel-dev-branch-autodeploy` 에 `apps/planner/vercel.json` 초안 존재) 도입 여부 재검토.
 
+### 3.1 ⚠️ 재발 조건·가드 (후속 작업자 필독 — 오판 금지)
+
+prod 가 **비동작인 채로 main 자동배포가 열려 있는** 현 상태는 두 가지 조용한 함정을 동반한다.
+prod 를 만지기 전 반드시 인지할 것:
+
+1. **main 머지 = prod 자동 덮어쓰기.** main→prod 자동배포가 켜져 있으므로, prod 본전환 전까지
+   **main 에 머지하는 모든 변경이 즉시 prod(planner.pullim.ai)로 반영**된다. prod 가 깨진 현
+   상태가 main 머지마다 재생산된다. ⇒ prod 본전환 전이라면 (a) main 머지 시 prod 영향을 매번
+   인지하거나, (b) `git.deploymentEnabled.main=false` 가드를 먼저 도입해 자동배포를 끊는다.
+2. **env 누락 = 빌드 에러 없는 런타임 전멸.** production 스코프에 `NEXT_PUBLIC_PULLIM_API_URL`
+   / `NEXT_PUBLIC_PULLIM_CSRF_COOKIE` 가 없으면 빌드는 **성공**하고 코드가 조용히
+   `http://localhost:3000` / `local-pullim-csrf` 로 폴백한다 — 페이지는 200 으로 뜨지만 API·SSO·
+   데이터가 런타임에만 전멸한다(현 prod 가 바로 이 상태). ⇒ prod 본전환 시 **production env 를
+   먼저 주입한 뒤 배포**하고, 배포 후 **번들에 `localhost:3000` 이 없는지** 반드시 확인한다.
+
 ## 4. 남은 작업 (후속 트랙)
 
 1. **prod cutover 본전환** — pullim-api **prod** 생성 시: production env(prod API url +
