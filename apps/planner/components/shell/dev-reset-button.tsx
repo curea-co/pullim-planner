@@ -3,14 +3,15 @@
 import { RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { resetMockState } from '@/lib/mock';
-import { authClient } from '@/lib/auth/client';
+import { pullimSession } from '@/lib/auth/pullim-session-client';
 
 /**
  * 개발자 — 사용자의 "가장 처음 사이트 접근" 상태로 리셋.
  *
  * 신규 사용자의 첫 접근 여정(로그인/가입 랜딩 → 온보딩)을 반복 시연하기 위한 dev 전용 버튼.
  * 클릭 시:
- * - BE 세션 로그아웃(best-effort) + localStorage 토큰 제거 → 비로그인 확정
+ * - pullim 쿠키 세션 로그아웃(`pullimSession.logout` — 서버가 HttpOnly 쿠키 무효화) + 잔여 자체 BE
+ *   localStorage 토큰 제거 → 비로그인 확정 (흡수 §10: 세션은 쿠키라 JS 로 못 지우고 서버 로그아웃 필요)
  * - localStorage 'pullim:visited' 제거 → 로그인 후 onboarding redirect 가드 재발동
  * - planner 시드 복원 (resetMockState)
  * - /login 으로 hard reload → AuthProvider 재부팅, 모든 모듈 인스턴스 fresh
@@ -48,9 +49,10 @@ export function DevResetButton() {
       action: {
         label: '처음부터',
         onClick: () => {
-          // BE 세션도 best-effort 로 정리 (도달 실패해도 아래에서 로컬을 비운다).
-          void authClient.logout().catch(() => {
-            // 네트워크/미배포 BE — 무시. 로컬 토큰 제거로 비로그인 확정.
+          // pullim 쿠키 세션을 서버에서 무효화한다(HttpOnly 라 JS 로 못 지움 — 로그아웃 필수).
+          // best-effort: 도달 실패해도 visited/시드 리셋은 진행. (자체 BE 토큰은 아래 localStorage 제거)
+          void pullimSession.logout().catch(() => {
+            // 네트워크/미배포 — 무시. 쿠키가 남아도 hard reload 후 재로그인 흐름으로 안내.
           });
           try {
             localStorage.removeItem(ACCESS_KEY);

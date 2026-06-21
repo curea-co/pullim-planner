@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import OnboardingPresenter from '../presenters/OnboardingPresenter';
 
 export default function OnboardingContainer() {
-  const { status, completeOnboarding } = useAuth();
+  const { status, completeOnboarding, logout } = useAuth();
   const [failed, setFailed] = useState(false);
   const dday = getDday(currentPersona);
   const ddayLabel =
@@ -35,9 +35,14 @@ export default function OnboardingContainer() {
         <p className="text-pullim-slate-700 text-sm">
           프로필을 준비하는 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.
         </p>
-        <Button variant="outline" size="sm" onClick={retry}>
-          다시 시도
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={retry}>
+            다시 시도
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => void logout()}>
+            로그아웃
+          </Button>
+        </div>
       </div>
     );
   }
