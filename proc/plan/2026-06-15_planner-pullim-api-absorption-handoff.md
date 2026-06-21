@@ -99,9 +99,19 @@ planner 리포의 기존 컨트롤러(`apps/backend/src/modules/planner/controll
   dev 한정 `POST /planner/dev/seed-profile`(프로필 시드, prod 비노출) 존재.
 - **`GET /planner/me` 상태코드 계약 고정(세션 판별과 겸용 주의)**: FE 는 이 라우트를 **홈 집계 +
   세션 판별**에 겸용한다. 따라서 코드 의미를 모호함 없이 못박는다 — **`404` 는 "인증됨 + `user_profile`
-  행 부재(=온보딩 미완)" 전용** 신호다. 활성 플래너 없음·컨디션 없음 등 "데이터 없음"은 **`200` +
+  행 부재(=온보딩 미시작)" 전용** 신호다. 활성 플래너 없음·컨디션 없음 등 "데이터 없음"은 **`200` +
   빈/널 필드**로 반환하고 `404` 를 쓰지 않는다(아니면 FE 가 정상 사용자를 온보딩으로 오라우팅).
   `401`=비인증, `403`=엔타이틀먼트(`flags.planner`) 미보유.
+- **온보딩 상태머신 — 행 존재만으로 판별하지 말 것(자동생성 붕괴 방지)**: `PATCH /planner/me`
+  빈-body 자동생성이 곧바로 행을 만들어 "행 존재=온보딩 완료" 게이트는 **즉시 무너진다**(정상
+  사용자가 온보딩을 못 빠져나옴/실데이터 미수집). ⇒ 온보딩 완료 권위는 **`user_profile.onboarded_at`
+  (nullable)** 로 둔다:
+  - `GET /planner/me` 404(행 없음) **또는** payload `onboardedAt == null` → **온보딩 미완** → FE 가
+    온보딩으로 라우팅.
+  - `onboardedAt != null` → 온보딩 완료(홈 진입). `onboarded_at` 는 온보딩 **명시 완료 액션**에서만
+    set(자동생성 시엔 NULL 유지) — 이로써 자동생성과 완료가 분리된다.
+  - (현 FE 는 진입 시 빈-body 자동생성+즉시 완료 취급 → 이 게이트 도입 시 "완료 액션에서 onboarded_at
+    set" 로 정합. go-live 핸드오프의 "온보딩 프로필 수집 폼" 후속과 연동.)
 - **`PATCH /planner/me` 부분 upsert × NOT NULL 컬럼 계약**: 온보딩이 **빈 body 로 최초 생성**하므로,
   `user_profile` 의 모든 NOT NULL 컬럼은 **서버 기본값으로 채워질 수 있어야** 한다(예 `joined_at=now()`,
   `focus_subjects='{}'`, `streak_days=0`). 기본값 없는 NOT NULL(예 `grade`/`track`/`weekly_hours`/
@@ -180,7 +190,8 @@ CREATE TABLE planner.user_profile (
   weekly_hours int NOT NULL DEFAULT 0,
   preferred_study_time text NOT NULL DEFAULT '미정',
   joined_at timestamptz NOT NULL DEFAULT now(),
-  streak_days int NOT NULL DEFAULT 0
+  streak_days int NOT NULL DEFAULT 0,
+  onboarded_at timestamptz            -- nullable: 온보딩 완료 시각. NULL=진행중(§3.2 게이트 권위)
 );
 
 CREATE TABLE planner.planners (
@@ -257,6 +268,10 @@ CREATE TABLE planner.pedagogy_engines (
 
 > snake_case 는 pullim-api naming strategy 와 정합. text PK 유지(기존 시드/ID 정합). uuid 타입
 > 전환은 선택(기존 ID 보존 필요 없으니 가능하지만, 변경 이득 작음).
+
+> ⛔ **위 `CREATE TABLE` 들만으로는 스키마가 불완전하다.** 활성 플래너 불변식·스키마 내 FK 는
+> 아래 **§6.1 이 동일 마이그레이션의 필수 구성**이다 — §6.1 을 빠뜨리면 도메인 불변식이 DB 에서
+> 강제되지 않는다(앱 레벨 검증만으로는 동시성 하에 깨진다).
 
 ### 6.1 불변식·참조 무결성 (DDL 에 반드시 포함 — 위 스케치에서 누락 금지)
 
@@ -344,9 +359,10 @@ ADR-011 결정과 연동). **미확정 시 고아 데이터·개인정보 삭제
 2. `src/planner/modules/<feature>/{controller,service,use-cases,infrastructure,interface}/` —
    기존 planner 리포의 controller/use-case/service/repository 로직 이식(소유권 검증 포함).
 3. 컨트롤러 + prefix: **리소스별 컨트롤러를 그대로 유지**한다 — `@Controller('me')`·
-   `@Controller('planners')`(기존 planner 리포와 동일). `/planner` 는 **컨트롤러명에 넣지 않고
-   모듈 마운트 레벨에서 부여**한다(`RouterModule.register([{ path: 'planner', module: PlannerModule }])`
-   또는 동등). ⇒ 최종 경로 `/planner/me`·`/planner/planners/*`(§3.2 와 일치).
+   `@Controller('planners')`(기존 planner 리포와 동일) + 신규 `@Controller('conditions')`
+   (§3.2 `POST /planner/conditions`). `/planner` 는 **컨트롤러명에 넣지 않고 모듈 마운트 레벨에서
+   부여**한다(`RouterModule.register([{ path: 'planner', module: PlannerModule }])` 또는 동등).
+   ⇒ 최종 경로 `/planner/me`·`/planner/planners/*`·`/planner/conditions`(§3.2 와 일치).
    ⚠️ `@Controller('planner')`(단수 단일 컨트롤러)로 바꾸면 §3.2 의 리소스 경로와 어긋나고
    `/planner/planner` 식 중복/누락이 생기므로 **금지**. 가드는 각 컨트롤러에
    `@UseGuards(JwtVerifyGuard, EntitlementGuard('planner', {action}))` + `@CurrentUser() user: VerifiedUser`.
