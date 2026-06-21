@@ -130,7 +130,7 @@ PK 는 text(UUID 문자열) 유지(기존 정합). FK 는 같은 RDS 라 `planne
 - **burnout_snapshots**: 복합 PK `(user_id, date)`, `score(smallint)`, `trend`, `recommend_break(bool)`, `factors(jsonb)` (= `{label,value,unit('h'|'%'|'/5'|'회'),weight,status('good'|'warn'|'bad')}[]`), `computed_at`
 - **curriculum_nodes** (글로벌 참조): `id(pk)`, `parent_id(null)`, `subject`, `level(smallint)`, `label`, `position(int)`
 - **pedagogy_engines** (글로벌 참조): `id(pk)`, `label`, `principle`, `example`
-- **user_profile** (구 `users`/DomainUser, 학습 프로필): `user_id(pk → auth.users.id)`, `grade`, `track`, `school(null)`, `focus_subjects(text[])`, `weekly_hours(int)`, `preferred_study_time`, `joined_at`, `streak_days(int)` — **`name` 제거**(auth.users 소유, ProfileProjection 으로 조회)
+- **user_profile** (구 `users`/DomainUser, 학습 프로필): `user_id(pk → auth.users.id)`, `grade`, `track`, `school(null)`, `focus_subjects(text[])`, `weekly_hours(int)`, `preferred_study_time`, `joined_at`, `streak_days(int)`, **`onboarded_at(timestamptz null)`** — **`name` 제거**(auth.users 소유, ProfileProjection 으로 조회). ⭐ **`onboarded_at` 이 온보딩 완료의 canonical 권위**(NULL=미완): 온보딩 상태는 행 존재가 아니라 이 필드로 판별(§3.2 상태머신과 단일 계약).
 
 ### 3.4 `authz.md`
 - **L0(서비스 진입)**: `flags['planner'] ≥ 1` (EntitlementGuard). 미포함(0/없음) → 403.
@@ -391,7 +391,8 @@ ADR-011 결정과 연동). **미확정 시 고아 데이터·개인정보 삭제
      `X-CSRF-Token` 헤더로 전파**한다. 누락 시 세션 전환 후 쓰기(`PATCH /planner/me` 온보딩
      프로필 생성 포함)가 403 으로 실패한다. ⇒ api-client 래퍼에 부트스트랩+헤더 주입을 내장.
 3. **api-client base** → `https://api.pullim.ai`, 라우트 `/planner/*`, 세션확인 `/planner/me`
-   (200=인증, 401=비인증, 403=엔타이틀먼트 미보유, 404=온보딩 미완).
+   (200=인증, 401=비인증, 403=엔타이틀먼트 미보유, 404=온보딩 미시작). **온보딩 완료 판별은
+   §3.2 단일 계약을 따른다 — 404(행 없음) 또는 `onboardedAt==null` → 온보딩**(404 만으로 판별 금지).
 4. ⚠️ **FE 도메인** — 공통 쿠키(`.pullim.ai`) SSO 가 동작하려면 planner FE 가
    **`*.pullim.ai` 서브도메인**(예: `planner.pullim.ai`)에서 서빙돼야 함. 현 `pullim-planner.vercel.app`
    은 쿠키 도메인 밖 → 도메인 연결 필요(인프라 항목).
