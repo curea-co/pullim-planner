@@ -8,15 +8,15 @@ import { pullimSession } from '@/lib/auth/pullim-session-client';
 /**
  * 개발자 — 사용자의 "가장 처음 사이트 접근" 상태로 리셋.
  *
- * 신규 사용자의 첫 접근 여정(로그인/가입 랜딩 → 온보딩)을 반복 시연하기 위한 dev 전용 버튼.
+ * 신규 사용자의 첫 접근 여정(로그인 랜딩 → 온보딩)을 반복 시연하기 위한 dev 전용 버튼.
  * 클릭 시:
  * - pullim 쿠키 세션 로그아웃(`pullimSession.logout` — 서버가 HttpOnly 쿠키 무효화) + 잔여 자체 BE
  *   localStorage 토큰 제거 → 비로그인 확정 (흡수 §10: 세션은 쿠키라 JS 로 못 지우고 서버 로그아웃 필요)
- * - localStorage 'pullim:visited' 제거 → 로그인 후 onboarding redirect 가드 재발동
  * - planner 시드 복원 (resetMockState)
  * - /login 으로 hard reload → AuthProvider 재부팅, 모든 모듈 인스턴스 fresh
  *
- * 그 결과: 로그인(랜딩)부터 시작 → 로그인/가입 → 첫 진입 시 온보딩까지 "첫 접근" 전 구간 시연.
+ * 그 결과: 로그인(랜딩)부터 다시 시작. 온보딩 노출 여부는 재로그인한 계정의 서버 프로필 상태가
+ * 결정한다(/planner/me 404 → 온보딩). dev 에서 온보딩을 반복 시연하려면 프로필 없는 시드 계정 사용.
  *
  * 노출 가드 (codex review #39):
  * - 기본은 비-production 환경에서만 노출 → 실서비스에서 실수 클릭으로 세션이
@@ -31,11 +31,10 @@ const DEV_RESET_ENABLED =
   process.env.NODE_ENV !== 'production' ||
   process.env.NEXT_PUBLIC_ENABLE_DEV_RESET === 'true';
 
-// lib/auth/client.ts 의 TokenStore 키와 동일.
-// dev 리셋은 BE 도달 여부와 무관하게 로컬 세션을 확실히 비워야 하므로 직접 제거한다.
+// 잔여 자체 BE 토큰 키(lib/auth/client.ts TokenStore). pullim 세션은 쿠키라 여기 없지만,
+// 가입 보조 등으로 남았을 수 있는 자체 BE 토큰을 확실히 비운다.
 const ACCESS_KEY = 'pullim.accessToken';
 const REFRESH_KEY = 'pullim.refreshToken';
-const VISITED_KEY = 'pullim:visited';
 
 export function DevResetButton() {
   if (!DEV_RESET_ENABLED) {
@@ -44,7 +43,7 @@ export function DevResetButton() {
 
   function handleClick() {
     toast('첫 접근 상태로 되돌릴까요?', {
-      description: '로그아웃 + 방문 기록 삭제 + 시드 복원 → 로그인 화면부터 다시',
+      description: '로그아웃 + 시드 복원 → 로그인 화면부터 다시',
       duration: 6000,
       action: {
         label: '처음부터',
@@ -60,7 +59,6 @@ export function DevResetButton() {
           try {
             localStorage.removeItem(ACCESS_KEY);
             localStorage.removeItem(REFRESH_KEY);
-            localStorage.removeItem(VISITED_KEY);
           } catch {
             // localStorage 비활성 브라우저 — 무시
           }

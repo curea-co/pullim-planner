@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { CalendarView } from '../components/calendar-shell';
 import {
@@ -16,8 +16,10 @@ const VALID_VIEWS: CalendarView[] = ['day', 'week', 'month'];
 /**
  * 풀림 플래너 홈 Container — 활성 플래너 시간표 (일/주/월).
  *
- * redirect 가드: 첫 방문(localStorage에 'pullim:visited' 없음) + view 파라미터 없음 시 onboarding 우회.
- * deep link(view 파라미터 있음)는 스킵.
+ * 온보딩 라우팅은 서버 세션 상태가 권위다: `/planner/me` 404 → auth 'onboarding' 상태 →
+ * `RequireAuth` 가 `/planner/onboarding` 으로 보낸다. 프로필이 있으면 'authenticated' 라 홈을
+ * 그대로 보여준다. (이전의 localStorage 'pullim:visited' 첫 방문 가드는 서버 상태와 어긋나
+ * — 프로필이 있어도 방문 플래그가 없으면 온보딩으로 튕김 — 제거했다. 흡수 §10.)
  */
 export default function HomeContainer() {
   const router = useRouter();
@@ -26,17 +28,6 @@ export default function HomeContainer() {
   const view: CalendarView = (VALID_VIEWS as string[]).includes(raw ?? '')
     ? (raw as CalendarView)
     : 'day';
-
-  useEffect(() => {
-    if (raw) return;
-    try {
-      if (localStorage.getItem('pullim:visited')) return;
-      localStorage.setItem('pullim:visited', '1');
-      router.replace('/planner/onboarding?firstVisit=1');
-    } catch {
-      // localStorage 비활성 브라우저 — 매 방문 redirect 방지를 위해 무시
-    }
-  }, [raw, router]);
 
   const onChangeView = useCallback(
     (next: CalendarView) => {

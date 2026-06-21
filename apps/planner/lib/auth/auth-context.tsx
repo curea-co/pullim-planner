@@ -181,14 +181,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 학년/계열 등 수집 폼은 후속(부분 upsert 라 이후 보강 가능).
     async (input: PullimProfileUpsert = {}) => {
       try {
+        // 프로필이 생기면 다음 session() 부터 /planner/me 가 200 → 서버상태 단독으로 'authenticated'.
+        // (localStorage 방문 플래그로 보정하지 않는다 — 서버상태가 온보딩 완료의 단일 권위.)
         const profile = await pullimSession.updateProfile(input);
         setUser(profile);
         setStatus('authenticated');
-        // 홈의 first-visit 가드(`HomeContainer` 'pullim:visited')가 완료 후 /planner 에서 다시
-        // 온보딩으로 튕기지 않도록 방문 표시(온보딩을 막 마쳤으므로).
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem('pullim:visited', '1');
-        }
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
           // 세션 만료 — 재시도가 아니라 /login 으로 회복한다. 호출부가 재시도 UI 를 안 띄우게 swallow.
