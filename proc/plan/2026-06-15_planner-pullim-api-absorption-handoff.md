@@ -230,6 +230,37 @@ CREATE TABLE planner.pedagogy_engines (
 > snake_case 는 pullim-api naming strategy 와 정합. text PK 유지(기존 시드/ID 정합). uuid 타입
 > 전환은 선택(기존 ID 보존 필요 없으니 가능하지만, 변경 이득 작음).
 
+### 6.1 불변식·참조 무결성 (DDL 에 반드시 포함 — 위 스케치에서 누락 금지)
+
+위 §6 은 컬럼 스케치라 **상태 불변식과 FK 가 빠져 있다.** 구현 마이그레이션은 아래를 DB 레벨로
+강제해야 한다(권위 = `pullim-planner/apps/backend/src/entities/*` 주석 + 마이그레이션).
+
+**(a) 활성 플래너 불변식 — user 당 활성·비보관 1행**
+```sql
+-- planner.entity.ts: planners_user_active_uniq (active=true·archived=false 1행). partial 조건은
+-- TypeORM 데코레이터로 표현 불가 → 마이그레이션이 소유한다.
+CREATE UNIQUE INDEX planners_user_active_uniq
+  ON planner.planners(user_id) WHERE active AND NOT archived;
+```
+(activate/archive/unarchive 라우트는 이 불변식 안에서만 active 를 토글한다.)
+
+**(b) planner 스키마 내부 FK — planners 가 aggregate root**
+```sql
+ALTER TABLE planner.time_blocks
+  ADD FOREIGN KEY (planner_id) REFERENCES planner.planners(id) ON DELETE CASCADE,
+  ADD FOREIGN KEY (curriculum_node_id) REFERENCES planner.curriculum_nodes(id) ON DELETE SET NULL;
+ALTER TABLE planner.block_completions
+  ADD FOREIGN KEY (block_id) REFERENCES planner.time_blocks(id) ON DELETE CASCADE;
+ALTER TABLE planner.planner_subject_units
+  ADD FOREIGN KEY (planner_id) REFERENCES planner.planners(id) ON DELETE CASCADE;
+```
+(소유 자식 테이블은 `ON DELETE CASCADE`, nullable 참조는 `SET NULL` 이 기본. 정확한 정책은
+마이그레이션 소유 — 위는 권장 기본값.)
+
+**(c) user 스코프 테이블의 신원 참조** — `user_profile`·`daily_conditions`·`burnout_snapshots`·
+`planners.user_id` 는 `auth.users(id)` 를 가리킨다. **스키마 경계를 넘는 cross-schema FK 를 실제로
+걸지(물리 FK) 논리 참조만 둘지는 §7(신원/프로필 경계, ADR-011) 결정에 위임**한다.
+
 ---
 
 ## 7. 신원/프로필 경계 (ADR-011)
