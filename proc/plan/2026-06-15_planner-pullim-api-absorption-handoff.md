@@ -7,10 +7,11 @@
 >
 > **권위 소스**: planner **도메인** 스키마(planner·time_block·block_completion·subject_unit·
 > daily_condition·burnout_snapshot·curriculum_node·pedagogy_engine) = `pullim-planner/apps/backend/
-> src/entities/*`. ⚠️ **단 `user_profile`(학습 프로필)은 백엔드 엔티티가 없다**(`apps/backend/src/
-> entities/` 에는 `auth-user.entity.ts`(인증 신원)만 있고 학습 프로필 엔티티는 없음) — 그 스키마
-> 권위는 **본 문서 §6 DDL + api-client 타입 `PullimMeProfile`/`PullimProfileUpsert`**(흡수 cutover
-> 산출물)다. pullim-api 패턴 = `pullim-api/src/q/*`(q 서비스, 작동 템플릿) + `docs/design/_platform/*`.
+> src/entities/*`. **`user_profile`(학습 프로필 = 구 `users`/DomainUser) 권위 =
+> `apps/backend/src/modules/auth/identity/domain-user.entity.ts`(DomainUser entity)** — `src/entities/`
+> 가 아니라 auth identity 하위에 있으니 주의(`src/entities/` 의 `auth-user.entity.ts` 는 인증 신원으로
+> 별개). 흡수 후 응답 형상은 api-client `PullimMeProfile`/`PullimProfileUpsert` 가 짝. pullim-api
+> 패턴 = `pullim-api/src/q/*`(q 서비스, 작동 템플릿) + `docs/design/_platform/*`.
 
 ## 목표
 
@@ -100,7 +101,8 @@ planner 리포의 기존 컨트롤러(`apps/backend/src/modules/planner/controll
   `POST /planner/conditions`** 로 고정 — body `{ date: 'YYYY-MM-DD', level: 1..5 }`, `(user_id,date)`
   upsert(중복일 갱신), guard write. **번아웃은 서버가 계산하는 파생값이라 쓰기 라우트 없음** —
   `GET /planner/me` 집계의 번아웃 요약으로만 노출(재계산은 컨디션/블록 변경 시 서버 내부 트리거).
-  dev 한정 `POST /planner/dev/seed-profile`(프로필 시드, prod 비노출) 존재.
+  ⚠️ `POST /planner/dev/seed-profile`(프로필 시드, prod 비노출)는 **이 리포(레거시) 백엔드엔 없고**
+  pullim-api(흡수처) 측 dev 엔드포인트다(dev-api 에서 관측됨) — 이식 대상이 아니라 흡수처 dev 편의.
 - **`GET /planner/me` 상태코드 계약 고정(세션 판별과 겸용 주의)**: FE 는 이 라우트를 **홈 집계 +
   세션 판별**에 겸용한다. 따라서 코드 의미를 모호함 없이 못박는다 — **`404` 는 "인증됨 + `user_profile`
   행 부재(=온보딩 미시작)" 전용** 신호다. 활성 플래너 없음·컨디션 없음 등 "데이터 없음"은 **`200` +
@@ -137,7 +139,7 @@ PK 는 text(UUID 문자열) 유지(기존 정합). FK 는 같은 RDS 라 `planne
 - **burnout_snapshots**: 복합 PK `(user_id, date)`, `score(smallint)`, `trend`, `recommend_break(bool)`, `factors(jsonb)` (= `{label,value,unit('h'|'%'|'/5'|'회'),weight,status('good'|'warn'|'bad')}[]`), `computed_at`
 - **curriculum_nodes** (글로벌 참조): `id(pk)`, `parent_id(null)`, `subject`, `level(smallint)`, `label`, `position(int)`
 - **pedagogy_engines** (글로벌 참조): `id(pk)`, `label`, `principle`, `example`
-- **user_profile** (구 `users`/DomainUser, 학습 프로필): `user_id(pk → auth.users.id)`, `grade`, `track`, `school(null)`, `focus_subjects(text[])`, `weekly_hours(int)`, `preferred_study_time`, `joined_at(timestamptz)`, `streak_days(int)`, **`onboarded_at(timestamptz null)`** — **`name` 제거**(auth.users 소유, ProfileProjection 으로 조회). ⭐ **`onboarded_at` 이 온보딩 완료의 canonical 권위**(NULL=미완): 온보딩 상태는 행 존재가 아니라 이 필드로 판별(§3.2 상태머신과 단일 계약).
+- **user_profile** (구 `users`/DomainUser, 학습 프로필): `user_id(pk → auth.users.id)`, `grade`, `track`, `school(null)`, `focus_subjects(text[])`, `weekly_hours(int)`, `preferred_study_time`, `joined_at(timestamp, no tz — 레거시 일치)`, `streak_days(int)`, **`onboarded_at(timestamptz null)`** — **`name` 제거**(auth.users 소유, ProfileProjection 으로 조회). ⭐ **`onboarded_at` 이 온보딩 완료의 canonical 권위**(NULL=미완): 온보딩 상태는 행 존재가 아니라 이 필드로 판별(§3.2 상태머신과 단일 계약).
 
 ### 3.4 `authz.md`
 - **L0(서비스 진입)**: `flags['planner'] ≥ 1` (EntitlementGuard). 미포함(0/없음) → 403.
@@ -196,8 +198,9 @@ CREATE TABLE planner.user_profile (
   focus_subjects text[] NOT NULL DEFAULT '{}',
   weekly_hours int NOT NULL DEFAULT 0,
   preferred_study_time text NOT NULL DEFAULT '미정',
-  joined_at timestamptz NOT NULL DEFAULT now(),  -- 가입(프로필 생성) 시각. 타입 변경 아님: 레거시
-                                                 -- DomainUser.joinedAt(timestamp) 와 동일 의미, DEFAULT now() 만 추가(빈-body 생성용)
+  joined_at timestamp NOT NULL DEFAULT now(),    -- ⚠️ timezone 없는 timestamp (레거시 domain-user.entity
+                                                 -- @Column({type:'timestamp'}) / 마이그레이션 `joined_at timestamp` 와 일치, codex #40 R3).
+                                                 -- timestamptz 아님. DEFAULT now() 만 추가(빈-body 생성용). API 응답은 KST `YYYY-MM-DD` 직렬화(me-response.dto).
   streak_days int NOT NULL DEFAULT 0,
   onboarded_at timestamptz            -- nullable: 온보딩 완료 시각. NULL=진행중(§3.2 게이트 권위)
 );
@@ -307,6 +310,12 @@ ALTER TABLE planner.planner_subject_units
 ```
 (소유 자식 테이블은 `ON DELETE CASCADE`, nullable 참조는 `SET NULL` 이 기본. 정확한 정책은
 마이그레이션 소유 — 위는 권장 기본값.)
+
+**자기참조 트리(`curriculum_nodes.parent_id`)** — 레거시 `curriculum-node.entity.ts` 는 트리를
+`parentId` **컬럼으로만** 보유한다(`@Tree`/`@ManyToOne` 미사용, 물리 self-FK 없음). 흡수 시
+self-FK 를 걸지 결정 — 걸면 `ADD FOREIGN KEY (parent_id) REFERENCES planner.curriculum_nodes(id)
+ON DELETE SET NULL`(또는 RESTRICT). 안 걸면 고아 `parent_id`(존재하지 않는 부모) 가 가능하므로
+시드/이식 시 무결성을 앱에서 보장해야 한다.
 
 **(c) user 스코프 테이블의 신원 참조** — `user_profile`·`daily_conditions`·`burnout_snapshots`·
 `planners.user_id` 는 `auth.users(id)` 를 가리킨다. **스키마 경계를 넘는 cross-schema FK 를 실제로
