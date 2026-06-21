@@ -116,10 +116,9 @@ export interface PullimPlannerWrite {
 /**
  * 시간표 블록 (`BlockResponseDto`).
  *
- * ⚠️ **완료 메타(`accuracy`/`emotion`) 미포함** — pullim-api `BlockResponseDto` 는 TimeBlock 필드만
- * 매핑하고 `block_completions`(accuracy/emotion/notes)를 내려주지 않는다. 자체 BE 블록 UI(카드·리포트)가
- * 쓰던 정확도·감정 지표는 현 pullim-api 계약엔 없다(BE 갭 — pullim-api blocks 응답에 완료 메타 추가 필요,
- * 별도 핸드오프). 이 타입은 **실 응답에 충실히** 두어 없는 필드를 거짓으로 노출하지 않는다.
+ * 완료 메타(`completed` + accuracy/emotion/notes/completedAt)는 `block_completions` LEFT JOIN
+ * 결과다(pullim-api #162). 완료 기록이 있을 때만 `completed:true` + 비-null 메타를 싣고, 없으면
+ * `completed:false` + 메타 키 생략(null 날조 안 함)이라 optional 로 둔다.
  */
 export interface PullimBlock {
   id: string;
@@ -140,6 +139,15 @@ export interface PullimBlock {
   linkedFeatureSlug?: string | null;
   curriculumNodeId?: string | null;
   reasoning?: string | null;
+  /** 완료 기록 존재 여부(`block_completions`). false 면 아래 완료 메타는 생략된다. */
+  completed: boolean;
+  /** 완료 + 값 있을 때만(0~100). */
+  accuracy?: number;
+  /** 완료 + 값 있을 때만(감정 점수). */
+  emotion?: number;
+  notes?: string;
+  /** 완료 시각(ISO). */
+  completedAt?: string;
 }
 
 export type PullimPlannerClientConfig = CookieHttpConfig;
