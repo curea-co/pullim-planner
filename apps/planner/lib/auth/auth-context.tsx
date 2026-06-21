@@ -180,9 +180,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 'onboarding' limbo 해소. 현재 온보딩은 소개 위주라 입력 없이(서버 기본값) 생성하며,
     // 학년/계열 등 수집 폼은 후속(부분 upsert 라 이후 보강 가능).
     async (input: PullimProfileUpsert = {}) => {
-      const profile = await pullimSession.updateProfile(input);
-      setUser(profile);
-      setStatus('authenticated');
+      try {
+        const profile = await pullimSession.updateProfile(input);
+        setUser(profile);
+        setStatus('authenticated');
+        // 홈의 first-visit 가드(`HomeContainer` 'pullim:visited')가 완료 후 /planner 에서 다시
+        // 온보딩으로 튕기지 않도록 방문 표시(온보딩을 막 마쳤으므로).
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('pullim:visited', '1');
+        }
+      } catch (error) {
+        if (error instanceof ApiError && error.statusCode === 401) {
+          // 세션 만료 — 재시도가 아니라 /login 으로 회복한다. 호출부가 재시도 UI 를 안 띄우게 swallow.
+          setUser(null);
+          setStatus('unauthenticated');
+          return;
+        }
+        throw error; // 일시 오류 — 호출부(OnboardingContainer)가 재시도 UI 를 보인다.
+      }
     },
     [],
   );
