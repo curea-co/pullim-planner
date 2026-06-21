@@ -75,7 +75,8 @@ planner 리포의 기존 컨트롤러(`apps/backend/src/modules/planner/controll
 
 | Method · Path | 설명 | 가드 |
 |---|---|---|
-| `GET /planner/me` | 현재 사용자 + 활성 플래너 | `JwtVerifyGuard` + `EntitlementGuard('planner',{action:'read'})` |
+| `GET /planner/me` | 현재 사용자 + 활성 플래너 + 컨디션/번아웃 요약(홈 집계) | `JwtVerifyGuard` + `EntitlementGuard('planner',{action:'read'})` |
+| `PATCH /planner/me` | 학습 프로필 upsert(온보딩/수정, 부분) | 〃 write |
 | `GET /planner/planners` | 내 플래너 목록(active/inactive/archived) | 〃 read |
 | `GET /planner/planners/:id/blocks` | 날짜별 블록 | 〃 read + 소유권 |
 | `POST /planner/planners` | 생성 | 〃 write |
@@ -88,6 +89,11 @@ planner 리포의 기존 컨트롤러(`apps/backend/src/modules/planner/controll
 
 - **소유권**: 핸들러에서 `planner.userId === user.sub` 확인(아니면 403). 기존 `ownedOrThrow` 로직 그대로.
 - **userId 소스**: `@CurrentUser() user: VerifiedUser` 의 `user.sub`(= `auth.users.id`). 기존 `getCurrentUserId(req)`(mock x-user-id) 폐기.
+- **프로필/컨디션 계층(미정 갭 — 구현 전 확정)**: 현 컨트롤러는 `me`·`planners`·`blocks` 만 보유.
+  `GET /planner/me` 는 프로필+활성 플래너+컨디션/번아웃 요약을 한 번에 반환하고, 프로필 쓰기는
+  `PATCH /planner/me`(부분 upsert, 온보딩이 이걸로 프로필 생성). **일일 컨디션 리포트(쓰기)·번아웃
+  계산 트리거 라우트는 아직 없음** → 구현 시 `POST /planner/conditions`(또는 `/me/condition`) 등으로
+  정의 필요. dev 한정 `POST /planner/dev/seed-profile`(프로필 시드, prod 비노출) 존재.
 
 ### 3.3 `data-model.md` — `planner` 스키마 (도메인 8테이블 + user_profile)
 PK 는 text(UUID 문자열) 유지(기존 정합). FK 는 같은 RDS 라 `planner.*.user_id → auth.users.id`
@@ -123,6 +129,12 @@ PK 는 text(UUID 문자열) 유지(기존 정합). FK 는 같은 RDS 라 `planne
 6. **마이그레이션** — `planner` 스키마 생성. `InitSchemas` 가 스냅샷 패턴이므로 **신규 마이그레이션**으로 `CREATE SCHEMA planner` + 도메인 테이블(§6).
 7. **`src/main.ts`(prod 외 Swagger)** — planner 스펙 노출(q 패턴 따름, 선택).
 8. **`docs/design/README.md`** 서비스 표에 planner 행.
+9. **credentialed CORS + CSRF (쿠키 SSO 필수 — 누락 시 FE 로그인 전멸)** — planner FE 는 쿠키
+   인증(`Domain=.pullim.ai`)이라 BE 가 (a) **credentialed CORS**: 허용 origin 을 와일드카드(`*`)가
+   아닌 명시 목록(`https://planner.pullim.ai`, `https://dev-planner.pullim.ai`, 로컬 dev)으로 두고
+   `Access-Control-Allow-Credentials: true`, (b) **CSRF double-submit**: 쿠키 `*-pullim-csrf` +
+   `X-CSRF-Token` 헤더 검증 + `GET /auth/csrf` 부트스트랩 — 을 제공해야 한다. FE cutover 가 이미
+   이 계약에 의존하며, 별도 CORS 핸드오프를 pullim-api 에 전달함.
 
 ---
 
@@ -260,6 +272,12 @@ ALTER TABLE planner.planner_subject_units
 **(c) user 스코프 테이블의 신원 참조** — `user_profile`·`daily_conditions`·`burnout_snapshots`·
 `planners.user_id` 는 `auth.users(id)` 를 가리킨다. **스키마 경계를 넘는 cross-schema FK 를 실제로
 걸지(물리 FK) 논리 참조만 둘지는 §7(신원/프로필 경계, ADR-011) 결정에 위임**한다.
+
+**(d) auth 사용자 삭제 시 planner 데이터 정리 전략 (착수 전 확정)** — (c) 가 **물리 FK 가 아닌
+앱레벨 참조**면 `auth.users` 삭제가 planner 데이터를 자동 정리하지 않는다. ⇒ 정리 전략을 확정해야
+한다: 사용자 삭제 이벤트에 `planner.{user_profile, planners(+자식 FK cascade), daily_conditions,
+burnout_snapshots}` 를 앱레벨/이벤트로 purge 하거나, cross-schema `ON DELETE CASCADE` 채택(§7/
+ADR-011 결정과 연동). **미확정 시 고아 데이터·개인정보 삭제 누락(탈퇴 시 잔존) 위험.**
 
 ---
 
