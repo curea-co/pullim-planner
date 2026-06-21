@@ -86,14 +86,17 @@ planner 리포의 기존 컨트롤러(`apps/backend/src/modules/planner/controll
 | `POST /planner/planners/:id/archive` · `/unarchive` | 보관/해제 | 〃 write |
 | `POST /planner/planners/:id/duplicate` | 복제 | 〃 write |
 | `PUT /planner/planners/:id/customization` | 레이아웃/팔레트 저장 | 〃 write |
+| `POST /planner/conditions` (신규) | 일일 컨디션 리포트 — upsert `(user_id,date)` | 〃 write |
 
 - **소유권**: 핸들러에서 `planner.userId === user.sub` 확인(아니면 403). 기존 `ownedOrThrow` 로직 그대로.
 - **userId 소스**: `@CurrentUser() user: VerifiedUser` 의 `user.sub`(= `auth.users.id`). 기존 `getCurrentUserId(req)`(mock x-user-id) 폐기.
 - **프로필/컨디션 계층(미정 갭 — 구현 전 확정)**: 현 컨트롤러는 `me`·`planners`·`blocks` 만 보유.
   `GET /planner/me` 는 프로필+활성 플래너+컨디션/번아웃 요약을 한 번에 반환하고, 프로필 쓰기는
-  `PATCH /planner/me`(부분 upsert, 온보딩이 이걸로 프로필 생성). **일일 컨디션 리포트(쓰기)·번아웃
-  계산 트리거 라우트는 아직 없음** → 구현 시 `POST /planner/conditions`(또는 `/me/condition`) 등으로
-  정의 필요. dev 한정 `POST /planner/dev/seed-profile`(프로필 시드, prod 비노출) 존재.
+  `PATCH /planner/me`(부분 upsert, 온보딩이 이걸로 프로필 생성). **일일 컨디션 리포트는 신규
+  `POST /planner/conditions`** 로 고정 — body `{ date: 'YYYY-MM-DD', level: 1..5 }`, `(user_id,date)`
+  upsert(중복일 갱신), guard write. **번아웃은 서버가 계산하는 파생값이라 쓰기 라우트 없음** —
+  `GET /planner/me` 집계의 번아웃 요약으로만 노출(재계산은 컨디션/블록 변경 시 서버 내부 트리거).
+  dev 한정 `POST /planner/dev/seed-profile`(프로필 시드, prod 비노출) 존재.
 - **`GET /planner/me` 상태코드 계약 고정(세션 판별과 겸용 주의)**: FE 는 이 라우트를 **홈 집계 +
   세션 판별**에 겸용한다. 따라서 코드 의미를 모호함 없이 못박는다 — **`404` 는 "인증됨 + `user_profile`
   행 부재(=온보딩 미완)" 전용** 신호다. 활성 플래너 없음·컨디션 없음 등 "데이터 없음"은 **`200` +
@@ -340,7 +343,13 @@ ADR-011 결정과 연동). **미확정 시 고아 데이터·개인정보 삭제
 1. `src/planner/planner.module.ts` — feature 모듈 import 만(빈 모듈 사전생성 금지).
 2. `src/planner/modules/<feature>/{controller,service,use-cases,infrastructure,interface}/` —
    기존 planner 리포의 controller/use-case/service/repository 로직 이식(소유권 검증 포함).
-3. 컨트롤러: `@Controller('planner')` + `@UseGuards(JwtVerifyGuard, EntitlementGuard('planner', {action}))` + `@CurrentUser() user: VerifiedUser`.
+3. 컨트롤러 + prefix: **리소스별 컨트롤러를 그대로 유지**한다 — `@Controller('me')`·
+   `@Controller('planners')`(기존 planner 리포와 동일). `/planner` 는 **컨트롤러명에 넣지 않고
+   모듈 마운트 레벨에서 부여**한다(`RouterModule.register([{ path: 'planner', module: PlannerModule }])`
+   또는 동등). ⇒ 최종 경로 `/planner/me`·`/planner/planners/*`(§3.2 와 일치).
+   ⚠️ `@Controller('planner')`(단수 단일 컨트롤러)로 바꾸면 §3.2 의 리소스 경로와 어긋나고
+   `/planner/planner` 식 중복/누락이 생기므로 **금지**. 가드는 각 컨트롤러에
+   `@UseGuards(JwtVerifyGuard, EntitlementGuard('planner', {action}))` + `@CurrentUser() user: VerifiedUser`.
 4. `src/planner/entities/*.entity.ts` — `@Entity({ schema: 'planner', name: '...' })`.
 5. 글로벌 `DatabaseModule` 사용(별도 DataSource 불필요 — q 와 다른 점).
 6. 신규 마이그레이션(§6) `src/common/database/migrations/`.
