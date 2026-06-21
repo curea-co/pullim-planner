@@ -48,12 +48,15 @@ export function DevResetButton() {
       duration: 6000,
       action: {
         label: '처음부터',
-        onClick: () => {
-          // pullim 쿠키 세션을 서버에서 무효화한다(HttpOnly 라 JS 로 못 지움 — 로그아웃 필수).
-          // best-effort: 도달 실패해도 visited/시드 리셋은 진행. (자체 BE 토큰은 아래 localStorage 제거)
-          void pullimSession.logout().catch(() => {
-            // 네트워크/미배포 — 무시. 쿠키가 남아도 hard reload 후 재로그인 흐름으로 안내.
-          });
+        onClick: async () => {
+          // pullim 쿠키 세션을 서버에서 무효화한 뒤 **await 하고** 리로드한다. HttpOnly 라 JS 로 못
+          // 지우므로 서버 로그아웃이 유일한 클리어 경로인데, await 하지 않고 이동하면 Set-Cookie 가
+          // 반영되기 전에 리로드돼 세션이 그대로 복원된다(첫 접근 리셋 계약 위반).
+          try {
+            await pullimSession.logout();
+          } catch {
+            // 네트워크/미배포 — 무시(쿠키가 남을 수 있으나 best-effort).
+          }
           try {
             localStorage.removeItem(ACCESS_KEY);
             localStorage.removeItem(REFRESH_KEY);
