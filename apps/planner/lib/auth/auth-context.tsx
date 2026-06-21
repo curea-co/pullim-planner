@@ -9,7 +9,11 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { ApiError, type PullimMeProfile } from '@pullim-planner/api-client';
+import {
+  ApiError,
+  type PullimMeProfile,
+  type PullimProfileUpsert,
+} from '@pullim-planner/api-client';
 import type { LoginRequest, SignupRequest } from '@pullim-planner/types';
 
 import { authClient } from './client';
@@ -36,6 +40,11 @@ export interface AuthContextValue {
   signup: (input: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
   checkEmail: (email: string) => Promise<boolean>;
+  /**
+   * 온보딩 완료 — 학습 프로필 upsert(`PATCH /planner/me`) 후 authenticated 로 전환.
+   * 'onboarding' 상태(프로필 미생성)를 해소한다. 미입력 필드는 서버 기본값(부분 upsert).
+   */
+  completeOnboarding: (input?: PullimProfileUpsert) => Promise<void>;
   /** 'error' 상태에서 세션 복원을 재시도한다. */
   retry: () => void;
 }
@@ -166,6 +175,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const completeOnboarding = useCallback(
+    // 온보딩 입력으로 프로필 upsert(PATCH /planner/me) → 갱신 프로필로 authenticated 전환.
+    // 'onboarding' limbo 해소. 현재 온보딩은 소개 위주라 입력 없이(서버 기본값) 생성하며,
+    // 학년/계열 등 수집 폼은 후속(부분 upsert 라 이후 보강 가능).
+    async (input: PullimProfileUpsert = {}) => {
+      const profile = await pullimSession.updateProfile(input);
+      setUser(profile);
+      setStatus('authenticated');
+    },
+    [],
+  );
+
   // 'error' 상태에서 사용자가 재시도. 클릭 핸들러라 동기 setState 가 안전하다.
   const retry = useCallback(() => {
     setStatus('loading');
@@ -173,8 +194,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadSession]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, login, signup, logout, checkEmail, retry }),
-    [status, user, login, signup, logout, checkEmail, retry],
+    () => ({
+      status,
+      user,
+      login,
+      signup,
+      logout,
+      checkEmail,
+      completeOnboarding,
+      retry,
+    }),
+    [
+      status,
+      user,
+      login,
+      signup,
+      logout,
+      checkEmail,
+      completeOnboarding,
+      retry,
+    ],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;
