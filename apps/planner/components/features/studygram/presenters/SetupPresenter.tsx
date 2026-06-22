@@ -204,7 +204,7 @@ export default function SetupPresenter({
             disabled={step === 'topic' && topicLine.trim().length === 0}
             className="flex-1 rounded-xl bg-pullim-blue-600 py-3 text-sm font-bold text-white shadow-pullim-sm hover:bg-pullim-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 disabled:opacity-40"
           >
-            {isLast ? '저장하고 시작하기 🎯' : '다음'}
+            {isLast ? '저장하고 시작하기' : '다음'}
           </button>
         </div>
       </div>

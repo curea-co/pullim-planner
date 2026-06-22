@@ -98,8 +98,8 @@ export function ProofCard({ proof, ownerName, variant = 'grid', onClick }: Proof
             <span className="text-xs text-muted-foreground">{ownerName}</span>
           )}
           {proof.reactionCount > 0 && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              🔥 {proof.reactionCount}
+            <span className="ml-auto text-xs text-muted-foreground" aria-label={`반응 ${proof.reactionCount}개`}>
+              반응 {proof.reactionCount}
             </span>
           )}
         </div>
