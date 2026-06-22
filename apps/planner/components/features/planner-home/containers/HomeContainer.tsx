@@ -51,9 +51,14 @@ export default function HomeContainer() {
     sessionStorage.setItem(WELCOME_STORAGE_KEY, '1');
     setWelcomeOpen(false);
     if (helpParam) {
-      router.replace('/planner', { scroll: false });
+      // help 만 제거하고 나머지 search param(view 등)은 보존 — 도움말만 닫아도
+      // 보던 뷰(/planner?view=week)가 day 로 리셋되는 회귀 방지 (codex).
+      const next = new URLSearchParams(params);
+      next.delete('help');
+      const qs = next.toString();
+      router.replace(`/planner${qs ? `?${qs}` : ''}`, { scroll: false });
     }
-  }, [helpParam, router]);
+  }, [helpParam, params, router]);
 
   const onChangeView = useCallback(
     (next: CalendarView) => {
