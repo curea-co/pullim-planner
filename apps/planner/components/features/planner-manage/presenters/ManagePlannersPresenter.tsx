@@ -71,7 +71,7 @@ export default function ManagePlannersPresenter({
       <PageHeader
         eyebrow={{ icon: Wrench, text: '시간표 관리' }}
         title="내 시간표"
-        description={`활성 ${active ? 1 : 0}개 + 다른 ${inactive.length}개${archivedList.length > 0 ? ` · 지난 시간표 ${archivedList.length}개 보관` : ''}`}
+        description={`활성 ${active ? 1 : 0} · 대기 ${inactive.length}${archivedList.length > 0 ? ` · 보관 ${archivedList.length}` : ''}`}
         action={
           <Link
             href="/planner/manage/new"

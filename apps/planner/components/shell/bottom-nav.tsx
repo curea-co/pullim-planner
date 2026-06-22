@@ -45,14 +45,14 @@ export function BottomNav() {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors',
+                  'flex flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors',
                   active
                     ? 'text-pullim-blue-600'
                     : 'text-pullim-slate-500 hover:text-pullim-slate-800',
                 )}
               >
                 <Icon className={cn('h-5 w-5', active && 'stroke-[2.4]')} />
-                <span>{item.label}</span>
+                <span className="truncate max-w-full">{item.label}</span>
               </Link>
             </li>
           );
