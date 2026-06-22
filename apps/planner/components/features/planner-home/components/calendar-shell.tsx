@@ -82,7 +82,7 @@ export function CalendarShell({
             onClick={onPrev}
             disabled={!onPrev}
             aria-label={prevLabel ?? `이전 ${meta.navUnit}`}
-            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
+            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold"
           >
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">{prevLabel ?? `이전 ${meta.navUnit}`}</span>
@@ -91,7 +91,7 @@ export function CalendarShell({
             {navLabel}
             {isDemoNav && (
               <span
-                className="text-pullim-slate-500 ml-1 font-mono text-xs font-semibold"
+                className="text-pullim-slate-500 ml-1 font-mono text-[10px] font-semibold"
                 title="시간 이동은 데모 단계에서는 비활성 — 이번 주 데이터만 채워져 있어요"
               >
                 (데모)
@@ -103,7 +103,7 @@ export function CalendarShell({
             onClick={onNext}
             disabled={!onNext}
             aria-label={nextLabel ?? `다음 ${meta.navUnit}`}
-            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
+            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold"
           >
             <span className="hidden sm:inline">{nextLabel ?? `다음 ${meta.navUnit}`}</span>
             <ChevronRight className="h-4 w-4" />
@@ -131,7 +131,7 @@ function ViewToggle({ view, onChange }: { view: CalendarView; onChange: (v: Cale
             aria-selected={selected}
             onClick={() => onChange(v)}
             className={cn(
-              'inline-flex items-center gap-1 rounded-md px-2.5 py-2 text-xs font-bold transition-colors',
+              'inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors',
               selected
                 ? 'bg-card text-pullim-blue-700 shadow-pullim-sm'
                 : 'text-pullim-slate-500 hover:text-pullim-slate-700',

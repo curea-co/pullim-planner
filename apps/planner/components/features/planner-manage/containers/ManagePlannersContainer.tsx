@@ -5,11 +5,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@pullim-planner/api-client';
 import type { Planner } from '@/lib/mock';
-import { getPlanners } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient } from '@/lib/planner/client';
 import ManagePlannersPresenter from '../presenters/ManagePlannersPresenter';
-
-const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
 /**
  * 시간표 관리 Container — N개 플래너 카드 그리드 + CRUD.
@@ -30,14 +27,6 @@ export default function ManagePlannersContainer() {
   // 마운트 + tick(mutation 후 refresh) 마다 본인 시간표 목록을 다시 읽는다.
   // loading/loadError 를 분리해 "정말 비어 있음"과 "불러오기 실패"를 구분한다 (codex).
   useEffect(() => {
-    // 로컬 dev 우회 — pullim-api CORS/쿠키 미지원 환경에서 mock 데이터 사용.
-    if (DEV_AUTH_BYPASS) {
-      setAllPlanners(getPlanners({ includeArchived: true }));
-      setLoadError(false);
-      setLoading(false);
-      return;
-    }
-
     let cancelled = false;
     void (async () => {
       try {
