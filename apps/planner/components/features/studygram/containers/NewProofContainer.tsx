@@ -4,10 +4,10 @@ import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TONE_PRESETS } from '../types';
 import type { StudyProof, Visibility } from '../types';
-import { mockStudygramSetting } from '@/lib/mock/studygram';
+import { mockStudygramSetting, todayKST } from '@/lib/mock/studygram';
 import NewProofPresenter from '../presenters/NewProofPresenter';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = todayKST();
 
 const TODAY_SNAPSHOT = {
   completedBlocks: 5,

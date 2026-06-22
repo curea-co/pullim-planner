@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@pullim-planner/api-client';
 import type { Planner } from '@/lib/mock';
-import { getPlanners } from '@/lib/mock/planner';
+import {
+  getPlanners,
+  activatePlanner,
+  duplicatePlanner,
+  archivePlanner,
+  deletePlanner,
+} from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient } from '@/lib/planner/client';
 import ManagePlannersPresenter from '../presenters/ManagePlannersPresenter';
 
@@ -82,15 +88,16 @@ export default function ManagePlannersContainer() {
   }
   async function confirmActivate() {
     if (!activateTarget) return;
-    // dev 우회 — 실 API 대신 로컬 mock 상태를 직접 갱신 (refresh 는 mock 원본을 되읽어 초기화하므로 생략).
+    // dev 우회 — 실 API 대신 공유 mock store(lib/mock/planner)를 변경한다. 홈/헤더가 읽는
+    // getActivePlanner()/getPlanners() 와 동일 store 라 화면을 벗어나도 일관되며, refresh 로 되읽는다.
     if (DEV_AUTH_BYPASS) {
-      const id = activateTarget.id;
-      setAllPlanners((prev) => prev.map((p) => ({ ...p, active: p.id === id })));
+      activatePlanner(activateTarget.id);
       toast.success('✓ 활성 시간표 변경', {
         description: `${activateTarget.name} — 홈 시간표가 갱신됩니다`,
         duration: 3000,
       });
       setActivateTarget(null);
+      refresh();
       return;
     }
     try {
@@ -108,17 +115,9 @@ export default function ManagePlannersContainer() {
 
   async function onDuplicate(id: string) {
     if (DEV_AUTH_BYPASS) {
-      const src = allPlanners.find((p) => p.id === id);
-      if (!src) return;
-      const dup: Planner = {
-        ...src,
-        id: `local-${Date.now()}`,
-        name: `${src.name} (복사본)`,
-        active: false,
-        archived: false,
-      };
-      setAllPlanners((prev) => [...prev, dup]);
+      const dup = duplicatePlanner(id);
       toast.success('✓ 복사본 만들어짐', { description: dup.name, duration: 2500 });
+      refresh();
       return;
     }
     try {
@@ -137,13 +136,12 @@ export default function ManagePlannersContainer() {
     const target = allPlanners.find((p) => p.id === id);
     if (!target) return;
     if (DEV_AUTH_BYPASS) {
-      setAllPlanners((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, archived: true, active: false } : p)),
-      );
+      archivePlanner(id);
       toast(`📦 ${target.name} — 아카이브`, {
         description: '회고용으로 보존됩니다. 지난 시간표 토글로 다시 볼 수 있어요.',
         duration: 3000,
       });
+      refresh();
       return;
     }
     try {
@@ -173,10 +171,10 @@ export default function ManagePlannersContainer() {
   async function confirmDelete() {
     if (!deleteTarget) return;
     if (DEV_AUTH_BYPASS) {
-      const id = deleteTarget.id;
-      setAllPlanners((prev) => prev.filter((p) => p.id !== id));
+      deletePlanner(deleteTarget.id);
       toast(`🗑 ${deleteTarget.name} — 삭제됨`, { duration: 2500 });
       setDeleteTarget(null);
+      refresh();
       return;
     }
     try {

@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import SetupPresenter, { SETUP_STEPS, type SetupStep } from '../presenters/SetupPresenter';
-import { mockStudygramSetting } from '@/lib/mock/studygram';
+import { mockStudygramSetting, saveStudygramSetting } from '@/lib/mock/studygram';
 import type { TonePresetId } from '../types';
 
 export default function SetupContainer() {
@@ -32,9 +32,10 @@ export default function SetupContainer() {
 
   const handleSubmit = useCallback(() => {
     // TODO: PATCH /planner/studygram/setting (api-client 연동 후)
-    // 현재는 mock — 저장 완료 후 공유 허브로 이동
+    // 현재는 mock — 공유 mock 세팅에 반영 후 허브로 이동(허브가 같은 객체를 읽어 변경 반영).
+    saveStudygramSetting({ topicLine, tonePresetId, goalHorizonDays, goalPostsPerDay });
     router.push('/planner/share');
-  }, [router]);
+  }, [router, topicLine, tonePresetId, goalHorizonDays, goalPostsPerDay]);
 
   return (
     <SetupPresenter

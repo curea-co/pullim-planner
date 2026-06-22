@@ -10,9 +10,10 @@ import {
   mockFriendProofs,
   hasTodayProof,
   calcGoalProgress,
+  todayKST,
 } from '@/lib/mock/studygram';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = todayKST();
 
 export default function ShareContainer() {
   const [activeTab, setActiveTab] = useState<ShareTab>('mine');

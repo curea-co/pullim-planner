@@ -53,15 +53,22 @@ export type Friend = {
   latestProofDate?: string;
 };
 
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
 /**
- * 오늘(UTC) 기준 N일 전 YYYY-MM-DD.
+ * 한국 시간(Asia/Seoul, 고정 UTC+9·DST 없음) 기준 오늘 YYYY-MM-DD.
+ * UTC 자정 직후(KST 00:00~08:59)에 '어제'로 밀리는 경계 오류를 막는다.
+ */
+export function todayKST(): string {
+  return new Date(Date.now() + KST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * KST 오늘 기준 N일 전 YYYY-MM-DD.
  * mock 인증카드 날짜를 항상 '최근'으로 유지해, 어느 날 열어도 오늘 인증·연속일이 동작하도록.
- * hasTodayProof/calcGoalProgress 의 today 기본값(UTC)과 동일 기준.
  */
 function daysAgo(n: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - n);
-  return d.toISOString().slice(0, 10);
+  return new Date(Date.now() + KST_OFFSET_MS - n * 86400000).toISOString().slice(0, 10);
 }
 
 export const mockStudygramSetting: StudygramSetting = {
@@ -71,6 +78,14 @@ export const mockStudygramSetting: StudygramSetting = {
   goalPostsPerDay: 1,
   consentGiven: true,
 };
+
+/**
+ * 세팅 저장 — BE(api-client) 연동 전까지 공유 mock 상태를 in-place 갱신한다.
+ * 세팅 화면 저장 후 공유 허브가 같은 객체를 읽어 변경이 반영된다.
+ */
+export function saveStudygramSetting(patch: Partial<StudygramSetting>): void {
+  Object.assign(mockStudygramSetting, patch);
+}
 
 export const mockStudyProofs: StudyProof[] = [
   {
@@ -255,7 +270,7 @@ export const mockFriendProofs: StudyProof[] = [
 /** 오늘 이미 인증했는지 여부 */
 export function hasTodayProof(
   proofs: StudyProof[],
-  today = new Date().toISOString().slice(0, 10),
+  today = todayKST(),
 ): boolean {
   return proofs.some((p) => p.date === today);
 }
@@ -264,7 +279,7 @@ export function hasTodayProof(
 export function calcGoalProgress(
   proofs: StudyProof[],
   setting: StudygramSetting,
-  today = new Date().toISOString().slice(0, 10),
+  today = todayKST(),
 ): { posted: number; goalTotal: number; remainDays: number; streakDays: number } {
   const goalTotal = setting.goalHorizonDays * setting.goalPostsPerDay;
   const posted = proofs.length;
