@@ -17,8 +17,11 @@
 cutover 골자:
 - 인증: 자체 BE 토큰 → **pullim 쿠키 SSO**(HttpOnly, `Domain=.pullim.ai`, CSRF double-submit).
 - 세션 상태: `GET /planner/me` 결과로 판정 — 200=authenticated, 401=unauthenticated,
-  403=forbidden(엔타이틀먼트 `flags.planner` 미보유), 404=onboarding(프로필 미생성).
-- 온보딩: 서버 상태 단일 권위(`/planner/me` 404 → 온보딩). localStorage 첫방문 가드 제거.
+  403=forbidden(엔타이틀먼트 `flags.planner` 미보유), 404=onboarding(프로필 행 미생성).
+  ⚠️ **온보딩 미완료는 404 만이 아니다**: 2026-06-15 흡수 핸드오프 §3.2 기준 정식 계약은
+  **`404`(행 없음) 또는 `200 + onboardedAt == null`** 둘 다 온보딩 상태다. 프로필 행은 생성됐지만
+  온보딩이 안 끝난 사용자를 홈으로 보내지 않도록 FE 는 `onboardedAt` 분기를 반드시 둔다.
+- 온보딩: 서버 상태 단일 권위(`/planner/me` 404 또는 `onboardedAt==null` → 온보딩). localStorage 첫방문 가드 제거.
   진입 시 `PATCH /planner/me`(서버 기본값) 로 프로필 생성, 실패 시 재시도/로그아웃 탈출.
 - 자체 회원가입 비활성 → `/login` 리다이렉트(중앙 KCB 가입은 후속). `checkEmail` 만 한시적 legacy.
 - dev-reset 버튼: pullim 쿠키 로그아웃을 **await 후** 리로드(세션 복원 회귀 방지).

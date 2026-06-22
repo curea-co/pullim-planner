@@ -145,8 +145,11 @@
 ### 핵심 비즈니스 규칙
 - **BR-1 인증 카드는 결과 스냅샷이다.** 생성 시점의 완료블록·학습시간·정답률·컨디션·한줄회고를
   **동결**한다(이후 원본 변경에 영향 안 받음). 캡션·visibility만 사후 편집(PATCH).
-- **BR-2 하루 1포스트 cadence.** 목표는 `{ horizonDays, postsPerDay }`. 같은 날짜 중복 인증은
-  허용하되 목표 카운트는 **날짜당 1회**만 집계(streak 기준).
+- **BR-2 포스팅 cadence.** 목표는 `{ horizonDays, postsPerDay }`.
+  - **MVP: `postsPerDay = 1` 고정** — 목표 카운트·streak 모두 **날짜당 1회**만 집계(같은 날 중복 인증은
+    허용하되 진행도에는 1로 계산). validation 의 `goalPostsPerDay` 도 MVP 에선 1 로 제한.
+  - **후속(`postsPerDay > 1`)**: 날짜당 1회 집계 규칙과 모순되므로, 다포스트를 지원할 땐 집계를
+    **실제 포스트 수 기준**으로 바꾼다(날짜당 최대 `postsPerDay` 까지 카운트). MVP 범위 밖.
 - **BR-3 기본 비공개 지향.** visibility 기본 = `close_friends`. `public` 값은 **이번 범위에서 미지원**.
 - **BR-4 공유 동의 게이트.** 최초 공유 시 `ConsentDialog`(기존 패턴 재사용) 1회 동의 필수. 미성년
   표준 문구. 동의 철회 시 모든 카드 `private` 전환.
@@ -156,7 +159,8 @@
 ### ERD (명세 레벨 — 신규 엔티티)
 ```
 User(기존 auth.users) (1) ── (N) StudyProof
-User (1) ── (N) Friendship(요청자/수신자, status) ── (1) User
+User (1) ── (N) Friendship(요청자/수신자, status) ── (1) User   # 무방향 관계(수락 쌍)
+User (1) ── (N) CloseFriendDesignation(ownerId→friendId) ── (1) User   # 방향성 공개 지정
 User (1) ── (1) StudygramSetting(주제·톤·목표)
 StudyProof (1) ── (N) ProofReaction(응원 이모지)
 ```
@@ -165,7 +169,8 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 |---|---|
 | **StudygramSetting** | userId, topicLine(주제 1문장), tonePresetId(→paletteId 매핑), goalHorizonDays, goalPostsPerDay, createdAt/updatedAt |
 | **StudyProof** | id, userId, date(YYYY-MM-DD), snapshot{completedBlocks, studyMinutes, accuracy, condition, reflectionLine, subjectTags[]}, tonePresetId, caption, visibility(`close_friends`\|`friends`\|`private`), createdAt/updatedAt |
-| **Friendship** | id, requesterId, addresseeId, status(`pending`\|`accepted`\|`blocked`), isCloseFriend(bool), createdAt |
+| **Friendship** | id, requesterId, addresseeId, status(`pending`\|`accepted`\|`blocked`), createdAt — **친구 관계 자체는 무방향(수락된 한 쌍)** |
+| **CloseFriendDesignation** | id, ownerId, friendId, createdAt — **방향성 edge**: `ownerId` 가 `friendId` 를 close-friend 로 지정. 공개 판정은 viewer(=ownerId) 관점에서만 본다. A→B 지정이 B→A 를 만들지 않음(권한 누수 방지) |
 | **ProofReaction** | id, proofId, userId, emoji, createdAt |
 
 ### Validation Rules
@@ -173,7 +178,7 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 |---|---|
 | topicLine | 1~60자, 필수 |
 | goalHorizonDays | 1~365 정수 |
-| goalPostsPerDay | 1~3 정수 |
+| goalPostsPerDay | 정수. **MVP=1 고정**(BR-2). 후속 다포스트 시 1~3 |
 | caption | 0~140자 |
 | visibility | enum 3종, 기본 `close_friends` |
 | date | 미래 날짜 금지(오늘 이하) |
@@ -240,7 +245,7 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 | 톤 프리셋 | `customization.paletteId` + `lib/tokens/palettes.ts` |
 | 카드 콘텐츠 | reports 데이터(weekly/daily summary, today-reflection), `lib/mock/planner.ts` |
 | 공유 동의 | `planner-reports/components/consent-dialog.tsx` 패턴 |
-| 인증/세션 | `auth-context`(쿠키 SSO) — 추가 인증 불필요 |
+| 인증/세션 | **pullim 쿠키 SSO** — 세션 권위는 `api-client`(`on401` 핸들러) + `GET /planner/me` 판정. 추가 인증 불필요. ⚠️ cutover 에서 자체 `auth-context` 토큰 부트스트랩은 **제거됨** — 이 추상화에 다시 의존하지 말 것(흡수 §10) |
 | 데이터 클라 | `PullimPlannerClient` 패턴(`on401`, cookie-http) |
 | 화면 구조 | Container/Presenter + `features/studygram/*` |
 
