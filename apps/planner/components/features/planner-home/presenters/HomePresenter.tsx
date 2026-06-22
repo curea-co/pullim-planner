@@ -48,7 +48,7 @@ export default function HomePresenter({
         title: '오늘의 학습 — 4월 24일 목요일',
         description: (
           <>
-            <strong className="text-pullim-blue-700">{examName}</strong>
+            <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
             <span className="mx-1">·</span>
             <DDayChip {...composeDDayChipProps(dday, examName)} />
             <span className="mx-1">·</span>
@@ -65,7 +65,7 @@ export default function HomePresenter({
         title: '4월 21일 — 27일',
         description: (
           <>
-            <strong className="text-pullim-blue-700">{examName}</strong>
+            <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
             <span className="mx-1">·</span>
             이번 주 계획 <span className="font-mono text-pullim-slate-700 font-bold">{weekMeta.totalHours}h</span>
             <span className="mx-1">·</span>
@@ -81,7 +81,7 @@ export default function HomePresenter({
       title: '2026년 4월',
       description: (
         <>
-          <strong className="text-pullim-blue-700">{examName}</strong>까지 <DDayChip {...composeDDayChipProps(dday, examName)} />
+          <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>까지 <DDayChip {...composeDDayChipProps(dday, examName)} />
           <span className="mx-1">·</span>
           이번 달 학습 블록 <span className="font-mono font-bold">{monthMeta.totalBlocks}개</span>
         </>

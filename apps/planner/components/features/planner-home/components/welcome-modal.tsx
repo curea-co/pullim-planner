@@ -1,0 +1,66 @@
+'use client';
+
+import Link from 'next/link';
+import { CalendarClock, BarChart2, Share2, Repeat2, BookOpen } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  DialogFooter, DialogClose,
+} from '@/components/ui/dialog';
+
+interface WelcomeModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+const FEATURES = [
+  { icon: CalendarClock, title: '일·주·월 시간표', desc: '학습 블록이 하루·이번 주·이번 달로 자동 배치돼요.' },
+  { icon: BarChart2,    title: '성장 리포트',   desc: '완료율·학습 시간·컨디션 트렌드를 매일 기록해요.' },
+  { icon: Share2,       title: '공부 공유',      desc: '오늘 결과를 인증 카드로 만들고 친구와 나눠요.' },
+  { icon: Repeat2,      title: '루틴 (준비 중)', desc: '반복 블록을 설정해 매일 자동 채워요.' },
+];
+
+export function WelcomeModal({ open, onClose }: WelcomeModalProps) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-base font-bold">풀림 플래너 시작하기</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            AI가 학습 블록을 자동 배치하고, 오늘 결과가 내일 플랜에 반영돼요.
+          </DialogDescription>
+        </DialogHeader>
+
+        <ul className="mt-1 space-y-3">
+          {FEATURES.map(({ icon: Icon, title, desc }) => (
+            <li key={title} className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-pullim-blue-50">
+                <Icon className="h-4 w-4 text-pullim-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-foreground">{title}</p>
+                <p className="text-xs text-muted-foreground">{desc}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <DialogFooter className="mt-2 flex gap-2">
+          <Link
+            href="/planner/onboarding"
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-border py-2.5 text-center text-xs font-semibold text-muted-foreground hover:bg-pullim-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+          >
+            <BookOpen className="mr-1 inline h-3.5 w-3.5" />
+            전체 가이드
+          </Link>
+          {/* onClick 생략 — DialogClose가 onOpenChange(false)를 발화해 onClose가 한 번만 호출됨 */}
+          <DialogClose
+            className="flex-1 rounded-xl bg-pullim-blue-600 py-2.5 text-xs font-bold text-white hover:bg-pullim-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+          >
+            바로 시작
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -4,7 +4,7 @@
  */
 
 import {
-  Home, CalendarClock, Wrench, FileText, BookOpen,
+  Home, CalendarClock, Wrench, FileText, BookOpen, Share2, Repeat2,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -45,8 +45,10 @@ export type Role = 'student';
 export const plannerSection: NavSubItem[] = [
   { href: '/planner',            label: '홈',          icon: Home,     description: '활성 플래너 — 일·주·월 시간표' },
   { href: '/planner/manage',     label: '시간표 관리', icon: Wrench,   description: '내 시간표 N개 — 새로 만들기·수정·삭제' },
+  { href: '/planner/routine',    label: '루틴',        icon: Repeat2,  locked: true, description: '나만의 루틴 블록 — 2026-06-23 구현 예정' },
   { href: '/planner/reports',    label: '성장 리포트', icon: FileText, description: '일·주·월 회고 + 부모 공유' },
-  { href: '/planner/onboarding', label: '소개하기',    icon: BookOpen, description: '5분 사용법 가이드' },
+  { href: '/planner/share',      label: '공유',        icon: Share2,   description: '학습 인증 공유 — 친구 피드 + 인증 카드' },
+  { href: '/planner?help=1',     label: '매뉴얼',      icon: BookOpen, description: '5분 사용법 가이드 — 첫 화면에서 모달로 열림' },
 ];
 
 /** 도메인 — 플래너 단일 */
@@ -67,12 +69,13 @@ export function navForRole(_role: Role): NavGroup[] {
   return studentNav;
 }
 
-/** 모바일 하단 탭 — 플래너 4 섹션 (홈 / 관리 / 리포트 / 소개) */
+/** 모바일 하단 탭 — 플래너 5 섹션 (홈 / 관리 / 리포트 / 공유 / 소개) */
 export const studentBottomTabs = [
-  { href: '/planner',            label: '홈',     icon: Home,           matchPrefix: ['/', '/planner'] },
-  { href: '/planner/manage',     label: '관리',   icon: Wrench,         matchPrefix: ['/planner/manage'] },
-  { href: '/planner/reports',    label: '리포트', icon: FileText,       matchPrefix: ['/planner/reports'] },
-  { href: '/planner/onboarding', label: '소개',   icon: BookOpen,       matchPrefix: ['/planner/onboarding'] },
+  { href: '/planner',            label: '홈',      icon: Home,     matchPrefix: ['/', '/planner'] },
+  { href: '/planner/manage',     label: '관리',    icon: Wrench,   matchPrefix: ['/planner/manage'] },
+  { href: '/planner/reports',    label: '리포트',  icon: FileText, matchPrefix: ['/planner/reports'] },
+  { href: '/planner/share',      label: '공유',    icon: Share2,   matchPrefix: ['/planner/share'] },
+  { href: '/planner/onboarding', label: '안내',    icon: BookOpen, matchPrefix: ['/planner/onboarding'] },
 ] as const;
 
 /** 현재 pathname이 어떤 섹션 안에 있는지 — sidebar swap 판단 */

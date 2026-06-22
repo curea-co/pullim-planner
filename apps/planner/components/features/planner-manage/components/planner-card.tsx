@@ -69,13 +69,13 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
     >
       {/* 활성 배지 */}
       {isActive && (
-        <span className="bg-pullim-blue-600 absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase text-white shadow-pullim-sm">
+        <span className="bg-pullim-blue-600 absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase text-white shadow-pullim-sm">
           <CheckCircle2 className="h-3 w-3" />
           활성
         </span>
       )}
       {isArchived && (
-        <span className="bg-pullim-slate-300 text-pullim-slate-700 absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase shadow-pullim-sm">
+        <span className="bg-pullim-slate-300 text-pullim-slate-700 absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase shadow-pullim-sm">
           <Archive className="h-3 w-3" />
           지난 시간표
         </span>
@@ -87,7 +87,7 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
           <h3 className="text-pullim-slate-900 truncate text-base font-bold">
             {planner.name}
           </h3>
-          <p className="text-pullim-slate-500 mt-0.5 text-[11px]">
+          <p className="text-pullim-slate-500 mt-0.5 text-xs">
             {examTypeLabel}
             {planner.motto && (
               <>
@@ -101,7 +101,7 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label={`${planner.name} 메뉴`}
-            className="text-pullim-slate-400 hover:bg-pullim-slate-100 hover:text-pullim-slate-700 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+            className="text-pullim-slate-400 hover:bg-pullim-slate-100 hover:text-pullim-slate-700 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
           >
             <MoreVertical className="h-4 w-4" aria-hidden />
           </DropdownMenuTrigger>
@@ -154,21 +154,21 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
       </div>
 
       <footer className="border-pullim-slate-100 mt-3 flex items-center justify-between gap-2 border-t pt-3">
-        <span className="text-pullim-slate-500 text-[10px]">
+        <span className="text-pullim-slate-500 text-xs">
           {formatRelativeUpdate(planner.updatedAt)}
         </span>
         {!isActive && !isArchived && (
           <button
             type="button"
             onClick={() => onActivate(planner.id)}
-            className="bg-pullim-blue-600 hover:bg-pullim-blue-700 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+            className="bg-pullim-blue-600 hover:bg-pullim-blue-700 inline-flex items-center gap-1 rounded-lg px-3 py-2.5 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
           >
             <CheckCircle2 className="h-3 w-3" />
             이 시간표 활성화
           </button>
         )}
         {isActive && (
-          <span className="text-pullim-blue-700 text-[11px] font-bold">
+          <span className="text-pullim-blue-700 text-xs font-bold">
             지금 사용 중
           </span>
         )}
@@ -188,7 +188,7 @@ function Metric({
 }) {
   return (
     <div className="bg-pullim-slate-50 rounded-md p-2">
-      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-xs font-bold tracking-wider uppercase">
         <Icon className="h-3 w-3" />
         {label}
       </div>
@@ -200,7 +200,7 @@ function Metric({
       >
         {value}
       </div>
-      <div className="text-pullim-slate-500 break-words text-[10px] sm:truncate">{sub}</div>
+      <div className="text-pullim-slate-500 break-words text-xs sm:truncate">{sub}</div>
     </div>
   );
 }
