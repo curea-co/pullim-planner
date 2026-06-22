@@ -87,6 +87,14 @@ export function saveStudygramSetting(patch: Partial<StudygramSetting>): void {
   Object.assign(mockStudygramSetting, patch);
 }
 
+/**
+ * 새 인증카드 추가 — BE 연동 전까지 공유 mock 배열 맨 앞에 in-place 삽입한다.
+ * 공유 허브가 같은 배열을 읽어 카드 목록·CTA 숨김·목표 진행도에 즉시 반영된다.
+ */
+export function addStudyProof(proof: StudyProof): void {
+  mockStudyProofs.unshift(proof);
+}
+
 export const mockStudyProofs: StudyProof[] = [
   {
     id: 'proof-001',
@@ -293,13 +301,15 @@ export function calcGoalProgress(
   );
 
   // 연속 인증일 계산 (날짜 정렬 기준 역순)
+  // 첫 항목은 반드시 '오늘'이어야 streak 시작 — 오늘 인증이 없으면(어제만 있으면) streak=0.
+  // 그 다음부터만 직전 인증과 하루 차이인지로 연속성을 잇는다 (codex).
   const sortedDates = [...new Set(proofs.map((p) => p.date))].sort().reverse();
   let streakDays = 0;
   let cursor = new Date(today + 'T00:00:00');
-  for (const d of sortedDates) {
-    const proofDate = new Date(d + 'T00:00:00');
+  for (let i = 0; i < sortedDates.length; i++) {
+    const proofDate = new Date(sortedDates[i] + 'T00:00:00');
     const diff = Math.round((cursor.getTime() - proofDate.getTime()) / 86400000);
-    if (diff <= 1) {
+    if (i === 0 ? diff === 0 : diff === 1) {
       streakDays++;
       cursor = proofDate;
     } else {
