@@ -170,7 +170,7 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 | **StudygramSetting** | userId, topicLine(주제 1문장), tonePresetId(→paletteId 매핑), goalHorizonDays, goalPostsPerDay, createdAt/updatedAt |
 | **StudyProof** | id, userId, date(YYYY-MM-DD), snapshot{completedBlocks, studyMinutes, accuracy, condition, reflectionLine, subjectTags[]}, tonePresetId, caption, visibility(`close_friends`\|`friends`\|`private`), createdAt/updatedAt |
 | **Friendship** | id, requesterId, addresseeId, status(`pending`\|`accepted`\|`blocked`), createdAt — **친구 관계 자체는 무방향(수락된 한 쌍)** |
-| **CloseFriendDesignation** | id, ownerId(게시자), friendId(허용 대상 viewer), createdAt — **방향성 edge**: 게시자 `ownerId` 가 자신의 `close_friends` 카드를 볼 수 있게 `friendId` 를 지정. 공개 판정: proof 의 `userId == ownerId` 이고 `visibility==close_friends` 면, **`friendId == 현재 viewer`** 인 designation 이 존재할 때만 노출. A→B 지정이 B→A 를 만들지 않음(권한 누수 방지) |
+| **CloseFriendDesignation** | id, ownerId(게시자), friendId(허용 대상 viewer), createdAt — **방향성 edge**: 게시자 `ownerId` 가 자신의 `close_friends` 카드를 볼 수 있게 `friendId` 를 지정. **전제(BR-5): `ownerId↔friendId` 의 `Friendship.status=='accepted'` 가 있어야만 지정 가능**(승인 안 된/임의 사용자 지정 불가). 공개 판정: proof 의 `userId == ownerId` 이고 `visibility==close_friends` 면, **(i) accepted Friendship 존재 && (ii) `friendId == 현재 viewer` 인 designation 존재** 둘 다 충족 시에만 노출. A→B 지정이 B→A 를 만들지 않음(권한 누수 방지) |
 | **ProofReaction** | id, proofId, userId, emoji, createdAt |
 
 ### Validation Rules
