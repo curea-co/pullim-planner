@@ -32,7 +32,7 @@ export default function HomeContainer() {
   const raw = params.get('view');
   const view: CalendarView = (VALID_VIEWS as string[]).includes(raw ?? '')
     ? (raw as CalendarView)
-    : 'month';
+    : 'day';
 
   const helpParam = params.get('help') === '1';
   const [welcomeOpen, setWelcomeOpen] = useState(false);
@@ -57,7 +57,7 @@ export default function HomeContainer() {
 
   const onChangeView = useCallback(
     (next: CalendarView) => {
-      const qs = next === 'month' ? '' : `?view=${next}`;
+      const qs = next === 'day' ? '' : `?view=${next}`;
       router.replace(`/planner${qs}`, { scroll: false });
     },
     [router],

@@ -82,6 +82,17 @@ export default function ManagePlannersContainer() {
   }
   async function confirmActivate() {
     if (!activateTarget) return;
+    // dev 우회 — 실 API 대신 로컬 mock 상태를 직접 갱신 (refresh 는 mock 원본을 되읽어 초기화하므로 생략).
+    if (DEV_AUTH_BYPASS) {
+      const id = activateTarget.id;
+      setAllPlanners((prev) => prev.map((p) => ({ ...p, active: p.id === id })));
+      toast.success('✓ 활성 시간표 변경', {
+        description: `${activateTarget.name} — 홈 시간표가 갱신됩니다`,
+        duration: 3000,
+      });
+      setActivateTarget(null);
+      return;
+    }
     try {
       await plannerClient.activate(activateTarget.id);
       toast.success('✓ 활성 시간표 변경', {
@@ -96,6 +107,20 @@ export default function ManagePlannersContainer() {
   }
 
   async function onDuplicate(id: string) {
+    if (DEV_AUTH_BYPASS) {
+      const src = allPlanners.find((p) => p.id === id);
+      if (!src) return;
+      const dup: Planner = {
+        ...src,
+        id: `local-${Date.now()}`,
+        name: `${src.name} (복사본)`,
+        active: false,
+        archived: false,
+      };
+      setAllPlanners((prev) => [...prev, dup]);
+      toast.success('✓ 복사본 만들어짐', { description: dup.name, duration: 2500 });
+      return;
+    }
     try {
       const dup = await plannerClient.duplicate(id);
       toast.success('✓ 복사본 만들어짐', {
@@ -111,6 +136,16 @@ export default function ManagePlannersContainer() {
   async function onArchive(id: string) {
     const target = allPlanners.find((p) => p.id === id);
     if (!target) return;
+    if (DEV_AUTH_BYPASS) {
+      setAllPlanners((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, archived: true, active: false } : p)),
+      );
+      toast(`📦 ${target.name} — 아카이브`, {
+        description: '회고용으로 보존됩니다. 지난 시간표 토글로 다시 볼 수 있어요.',
+        duration: 3000,
+      });
+      return;
+    }
     try {
       await plannerClient.archive(id);
       toast(`📦 ${target.name} — 아카이브`, {
@@ -137,6 +172,13 @@ export default function ManagePlannersContainer() {
   }
   async function confirmDelete() {
     if (!deleteTarget) return;
+    if (DEV_AUTH_BYPASS) {
+      const id = deleteTarget.id;
+      setAllPlanners((prev) => prev.filter((p) => p.id !== id));
+      toast(`🗑 ${deleteTarget.name} — 삭제됨`, { duration: 2500 });
+      setDeleteTarget(null);
+      return;
+    }
     try {
       await plannerClient.remove(deleteTarget.id);
       toast(`🗑 ${deleteTarget.name} — 삭제됨`, { duration: 2500 });
