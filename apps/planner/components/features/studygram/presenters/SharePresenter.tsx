@@ -96,7 +96,7 @@ export default function SharePresenter({
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {tab === 'mine' ? `내 인증 ${myProofs.length}` : `친구 피드 ${acceptedFriends.length}`}
+                  {tab === 'mine' ? `내 인증 ${myProofs.length}` : `친구 피드 ${friendProofs.length}`}
                 </button>
               ))}
             </div>

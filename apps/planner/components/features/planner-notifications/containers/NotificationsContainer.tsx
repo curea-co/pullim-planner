@@ -1,15 +1,5 @@
-'use client';
-
 import NotificationsPresenter from '../presenters/NotificationsPresenter';
-
-export type Notification = {
-  id: string;
-  type: 'streak' | 'friend' | 'report' | 'burnout' | 'system';
-  title: string;
-  body: string;
-  time: string;
-  read: boolean;
-};
+import type { Notification } from '../types';
 
 const mockNotifications: Notification[] = [
   {

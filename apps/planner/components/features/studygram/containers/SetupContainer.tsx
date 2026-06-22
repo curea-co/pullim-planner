@@ -2,11 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import SetupPresenter, { type SetupStep } from '../presenters/SetupPresenter';
+import SetupPresenter, { SETUP_STEPS, type SetupStep } from '../presenters/SetupPresenter';
 import { mockStudygramSetting } from '@/lib/mock/studygram';
 import type { TonePresetId } from '../types';
-
-const STEPS: SetupStep[] = ['topic', 'tone', 'goal'];
 
 export default function SetupContainer() {
   const router = useRouter();
@@ -18,17 +16,17 @@ export default function SetupContainer() {
   const [goalHorizonDays, setGoalHorizonDays] = useState(mockStudygramSetting.goalHorizonDays);
   const [goalPostsPerDay, setGoalPostsPerDay] = useState(mockStudygramSetting.goalPostsPerDay);
 
-  const currentIdx = STEPS.indexOf(step);
+  const currentIdx = SETUP_STEPS.indexOf(step);
 
   const handleNext = useCallback(() => {
-    if (currentIdx < STEPS.length - 1) {
-      setStep(STEPS[currentIdx + 1]);
+    if (currentIdx < SETUP_STEPS.length - 1) {
+      setStep(SETUP_STEPS[currentIdx + 1]);
     }
   }, [currentIdx]);
 
   const handleBack = useCallback(() => {
     if (currentIdx > 0) {
-      setStep(STEPS[currentIdx - 1]);
+      setStep(SETUP_STEPS[currentIdx - 1]);
     }
   }, [currentIdx]);
 

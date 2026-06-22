@@ -1,8 +1,6 @@
-'use client';
-
 import { Flame, Users, BarChart2, AlertTriangle, Bell } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
-import type { Notification } from '../containers/NotificationsContainer';
+import type { Notification } from '../types';
 import { cn } from '@/lib/utils';
 
 const TYPE_ICON: Record<Notification['type'], React.ElementType> = {

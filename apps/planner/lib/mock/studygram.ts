@@ -53,6 +53,17 @@ export type Friend = {
   latestProofDate?: string;
 };
 
+/**
+ * 오늘(UTC) 기준 N일 전 YYYY-MM-DD.
+ * mock 인증카드 날짜를 항상 '최근'으로 유지해, 어느 날 열어도 오늘 인증·연속일이 동작하도록.
+ * hasTodayProof/calcGoalProgress 의 today 기본값(UTC)과 동일 기준.
+ */
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
 export const mockStudygramSetting: StudygramSetting = {
   topicLine: '2027 수능 국어·영어 매일 2시간',
   tonePresetId: 'classic',
@@ -65,7 +76,7 @@ export const mockStudyProofs: StudyProof[] = [
   {
     id: 'proof-001',
     userId: 'dev-local',
-    date: '2026-06-22',
+    date: daysAgo(0),
     snapshot: {
       completedBlocks: 5,
       totalBlocks: 6,
@@ -84,7 +95,7 @@ export const mockStudyProofs: StudyProof[] = [
   {
     id: 'proof-002',
     userId: 'dev-local',
-    date: '2026-06-21',
+    date: daysAgo(1),
     snapshot: {
       completedBlocks: 4,
       totalBlocks: 5,
@@ -103,7 +114,7 @@ export const mockStudyProofs: StudyProof[] = [
   {
     id: 'proof-003',
     userId: 'dev-local',
-    date: '2026-06-20',
+    date: daysAgo(2),
     snapshot: {
       completedBlocks: 6,
       totalBlocks: 6,
@@ -122,7 +133,7 @@ export const mockStudyProofs: StudyProof[] = [
   {
     id: 'proof-004',
     userId: 'dev-local',
-    date: '2026-06-19',
+    date: daysAgo(3),
     snapshot: {
       completedBlocks: 3,
       totalBlocks: 5,
@@ -140,7 +151,7 @@ export const mockStudyProofs: StudyProof[] = [
   {
     id: 'proof-005',
     userId: 'dev-local',
-    date: '2026-06-18',
+    date: daysAgo(4),
     snapshot: {
       completedBlocks: 5,
       totalBlocks: 5,
@@ -167,7 +178,7 @@ export const mockFriends: Friend[] = [
     isCloseFriend: true,
     status: 'accepted',
     proofCount: 22,
-    latestProofDate: '2026-06-22',
+    latestProofDate: daysAgo(0),
   },
   {
     id: 'friend-002',
@@ -177,7 +188,7 @@ export const mockFriends: Friend[] = [
     isCloseFriend: true,
     status: 'accepted',
     proofCount: 18,
-    latestProofDate: '2026-06-21',
+    latestProofDate: daysAgo(1),
   },
   {
     id: 'friend-003',
@@ -187,7 +198,7 @@ export const mockFriends: Friend[] = [
     isCloseFriend: false,
     status: 'accepted',
     proofCount: 11,
-    latestProofDate: '2026-06-20',
+    latestProofDate: daysAgo(2),
   },
   {
     id: 'friend-004',
@@ -205,7 +216,7 @@ export const mockFriendProofs: StudyProof[] = [
   {
     id: 'friend-proof-001',
     userId: 'user-j',
-    date: '2026-06-22',
+    date: daysAgo(0),
     snapshot: {
       completedBlocks: 4,
       totalBlocks: 4,
@@ -224,7 +235,7 @@ export const mockFriendProofs: StudyProof[] = [
   {
     id: 'friend-proof-002',
     userId: 'user-m',
-    date: '2026-06-21',
+    date: daysAgo(1),
     snapshot: {
       completedBlocks: 5,
       totalBlocks: 6,

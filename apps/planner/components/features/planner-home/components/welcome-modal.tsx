@@ -53,8 +53,8 @@ export function WelcomeModal({ open, onClose }: WelcomeModalProps) {
             <BookOpen className="mr-1 inline h-3.5 w-3.5" />
             전체 가이드
           </Link>
+          {/* onClick 생략 — DialogClose가 onOpenChange(false)를 발화해 onClose가 한 번만 호출됨 */}
           <DialogClose
-            onClick={onClose}
             className="flex-1 rounded-xl bg-pullim-blue-600 py-2.5 text-xs font-bold text-white hover:bg-pullim-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
           >
             바로 시작

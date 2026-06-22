@@ -38,8 +38,11 @@ export default function HomeContainer() {
   const [welcomeOpen, setWelcomeOpen] = useState(false);
 
   useEffect(() => {
+    // sessionStorage 는 클라이언트 전용 — 서버 렌더는 항상 닫힘(false)으로 hydration 일치시키고,
+    // 마운트 후 이 effect 에서만 연다. 첫 페인트 직후 1회 여는 의도된 setState 라 룰을 끈다.
     const alreadyShown = sessionStorage.getItem(WELCOME_STORAGE_KEY) === '1';
     if (helpParam || !alreadyShown) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWelcomeOpen(true);
     }
   }, [helpParam]);

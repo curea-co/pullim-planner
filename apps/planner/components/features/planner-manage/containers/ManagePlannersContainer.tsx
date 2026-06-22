@@ -30,16 +30,18 @@ export default function ManagePlannersContainer() {
   // 마운트 + tick(mutation 후 refresh) 마다 본인 시간표 목록을 다시 읽는다.
   // loading/loadError 를 분리해 "정말 비어 있음"과 "불러오기 실패"를 구분한다 (codex).
   useEffect(() => {
-    // 로컬 dev 우회 — pullim-api CORS/쿠키 미지원 환경에서 mock 데이터 사용.
-    if (DEV_AUTH_BYPASS) {
-      setAllPlanners(getPlanners({ includeArchived: true }));
-      setLoadError(false);
-      setLoading(false);
-      return;
-    }
-
     let cancelled = false;
     void (async () => {
+      // 로컬 dev 우회 — pullim-api CORS/쿠키 미지원 환경에서 mock 데이터 사용.
+      // (동기 setState 가 아닌 async 콜백 내부에서 처리해 set-state-in-effect 룰 충족.)
+      if (DEV_AUTH_BYPASS) {
+        if (!cancelled) {
+          setAllPlanners(getPlanners({ includeArchived: true }));
+          setLoadError(false);
+          setLoading(false);
+        }
+        return;
+      }
       try {
         const list = await plannerClient.list();
         if (!cancelled) {

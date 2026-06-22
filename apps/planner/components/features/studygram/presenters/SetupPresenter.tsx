@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils';
 
 export type SetupStep = 'topic' | 'tone' | 'goal';
 
+/** 세팅 스텝 순서 — Container/Presenter 단일 출처 */
+export const SETUP_STEPS: SetupStep[] = ['topic', 'tone', 'goal'];
+
 interface SetupPresenterProps {
   step: SetupStep;
   topicLine: string;
@@ -45,8 +48,7 @@ export default function SetupPresenter({
   onBack,
   onSubmit,
 }: SetupPresenterProps) {
-  const steps: SetupStep[] = ['topic', 'tone', 'goal'];
-  const stepIdx = steps.indexOf(step);
+  const stepIdx = SETUP_STEPS.indexOf(step);
   const isLast = step === 'goal';
 
   return (
@@ -58,7 +60,7 @@ export default function SetupPresenter({
 
       {/* 스텝 인디케이터 */}
       <div className="flex items-center gap-1.5">
-        {steps.map((s, i) => (
+        {SETUP_STEPS.map((s, i) => (
           <div key={s} className="flex items-center gap-1.5">
             <span
               className={cn(
@@ -72,7 +74,7 @@ export default function SetupPresenter({
             >
               {STEP_LABELS[s]}
             </span>
-            {i < steps.length - 1 && (
+            {i < SETUP_STEPS.length - 1 && (
               <ChevronRight className="h-3 w-3 text-muted-foreground" />
             )}
           </div>
