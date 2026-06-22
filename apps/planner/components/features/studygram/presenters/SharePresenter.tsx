@@ -14,25 +14,25 @@ interface SharePresenterProps {
   setting: StudygramSetting | null;
   myProofs: StudyProof[];
   friendProofs: StudyProof[];
-  friends: Friend[];
+  acceptedFriends: Friend[];
   goalProgress: { posted: number; goalTotal: number; remainDays: number; streakDays: number } | null;
   activeTab: ShareTab;
   hasTodayProof: boolean;
   onChangeTab: (tab: ShareTab) => void;
+  onProofClick: (id: string) => void;
 }
 
 export default function SharePresenter({
   setting,
   myProofs,
   friendProofs,
-  friends,
+  acceptedFriends,
   goalProgress,
   activeTab,
   hasTodayProof,
   onChangeTab,
+  onProofClick,
 }: SharePresenterProps) {
-  const acceptedFriends = friends.filter((f) => f.status === 'accepted');
-
   return (
     <>
       <PageHeader
@@ -59,12 +59,10 @@ export default function SharePresenter({
       />
 
       <div className="space-y-4">
-        {/* 세팅 미완 → 유도 */}
         {!setting ? (
           <EmptyState variant="no-setting" />
         ) : (
           <>
-            {/* 목표 진행 위젯 */}
             {goalProgress && (
               <GoalProgressWidget
                 posted={goalProgress.posted}
@@ -75,7 +73,6 @@ export default function SharePresenter({
               />
             )}
 
-            {/* 오늘 인증 CTA */}
             {!hasTodayProof && (
               <Link
                 href="/planner/share/proof/new"
@@ -104,7 +101,6 @@ export default function SharePresenter({
               ))}
             </div>
 
-            {/* 탭 콘텐츠 */}
             {activeTab === 'mine' && (
               myProofs.length === 0 ? (
                 <EmptyState variant="no-proofs" />
@@ -115,7 +111,7 @@ export default function SharePresenter({
                       key={proof.id}
                       proof={proof}
                       variant="grid"
-                      onClick={() => {/* 상세 라우팅은 Container에서 처리 */}}
+                      onClick={() => onProofClick(proof.id)}
                     />
                   ))}
                 </div>
@@ -132,7 +128,7 @@ export default function SharePresenter({
               ) : (
                 <div className="flex flex-col gap-3">
                   {friendProofs.map((proof) => {
-                    const friend = friends.find((f) => f.userId === proof.userId);
+                    const friend = acceptedFriends.find((f) => f.userId === proof.userId);
                     return (
                       <ProofCard
                         key={proof.id}

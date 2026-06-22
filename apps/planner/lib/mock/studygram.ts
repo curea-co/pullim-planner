@@ -1,9 +1,57 @@
 /**
  * 공유(Study-gram) mock 데이터
  * spec §6 — 친구 3~5건, 인증카드 5건, 세팅 1건.
+ *
+ * 데이터 타입 정의도 여기에 위치 (components/features → lib 의존 방향 유지).
+ * Phase P0 완료 후 packages/types로 이전 예정.
  */
 
-import type { StudyProof, StudygramSetting, Friend } from '@/components/features/studygram/types';
+export type TonePresetId = 'fancy' | 'calm' | 'classic' | 'minimal' | 'soft';
+
+export type Visibility = 'close_friends' | 'friends' | 'private';
+
+export type FriendshipStatus = 'pending' | 'accepted' | 'blocked';
+
+export type ProofSnapshot = {
+  completedBlocks: number;
+  totalBlocks: number;
+  studyMinutes: number;
+  accuracy?: number;
+  condition: 1 | 2 | 3 | 4 | 5;
+  reflectionLine: string;
+  subjectTags: string[];
+};
+
+export type StudyProof = {
+  id: string;
+  userId: string;
+  date: string;             // YYYY-MM-DD
+  snapshot: ProofSnapshot;
+  tonePresetId: TonePresetId;
+  caption: string;
+  visibility: Visibility;
+  createdAt: string;
+  reactionCount: number;
+};
+
+export type StudygramSetting = {
+  topicLine: string;
+  tonePresetId: TonePresetId;
+  goalHorizonDays: number;
+  goalPostsPerDay: number;
+  consentGiven: boolean;
+};
+
+export type Friend = {
+  id: string;
+  userId: string;
+  name: string;
+  grade: string;
+  isCloseFriend: boolean;
+  status: FriendshipStatus;
+  proofCount: number;
+  latestProofDate?: string;
+};
 
 export const mockStudygramSetting: StudygramSetting = {
   topicLine: '2027 수능 국어·영어 매일 2시간',
@@ -193,8 +241,11 @@ export const mockFriendProofs: StudyProof[] = [
   },
 ];
 
-/** 오늘(2026-06-22) 이미 인증했는지 여부 */
-export function hasTodayProof(proofs: StudyProof[], today = '2026-06-22'): boolean {
+/** 오늘 이미 인증했는지 여부 */
+export function hasTodayProof(
+  proofs: StudyProof[],
+  today = new Date().toISOString().slice(0, 10),
+): boolean {
   return proofs.some((p) => p.date === today);
 }
 
@@ -202,13 +253,14 @@ export function hasTodayProof(proofs: StudyProof[], today = '2026-06-22'): boole
 export function calcGoalProgress(
   proofs: StudyProof[],
   setting: StudygramSetting,
-  today = '2026-06-22',
+  today = new Date().toISOString().slice(0, 10),
 ): { posted: number; goalTotal: number; remainDays: number; streakDays: number } {
   const goalTotal = setting.goalHorizonDays * setting.goalPostsPerDay;
   const posted = proofs.length;
 
-  const startDate = new Date('2026-05-14'); // mock 시작일
-  const todayDate = new Date(today);
+  // mock 시작일: 오늘 기준 39일 전 (고정 오프셋)
+  const todayDate = new Date(today + 'T00:00:00');
+  const startDate = new Date(todayDate.getTime() - 39 * 86400000);
   const remainDays = Math.max(
     0,
     setting.goalHorizonDays - Math.floor((todayDate.getTime() - startDate.getTime()) / 86400000),
@@ -217,9 +269,9 @@ export function calcGoalProgress(
   // 연속 인증일 계산 (날짜 정렬 기준 역순)
   const sortedDates = [...new Set(proofs.map((p) => p.date))].sort().reverse();
   let streakDays = 0;
-  let cursor = new Date(today);
+  let cursor = new Date(today + 'T00:00:00');
   for (const d of sortedDates) {
-    const proofDate = new Date(d);
+    const proofDate = new Date(d + 'T00:00:00');
     const diff = Math.round((cursor.getTime() - proofDate.getTime()) / 86400000);
     if (diff <= 1) {
       streakDays++;

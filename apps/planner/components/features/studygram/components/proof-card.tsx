@@ -18,22 +18,19 @@ export function ProofCard({ proof, ownerName, variant = 'grid', onClick }: Proof
   const palette = palettes[paletteId];
   const { snapshot } = proof;
 
-  const headerBg = palette.block.concept;  // 팔레트 대표색으로 헤더 배경
+  const headerBg = palette.block.concept;
   const accentColor = palette.block.mock;
-
   const isGrid = variant === 'grid';
 
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex flex-col overflow-hidden rounded-2xl border border-border bg-background text-left shadow-pullim-sm transition-shadow hover:shadow-pullim-md',
-        isGrid ? 'aspect-square w-full' : 'w-full max-w-sm',
-        onClick && 'cursor-pointer',
-      )}
-    >
-      {/* 상단 헤더 — 날짜 + D-day (팔레트 배경) */}
+  const cardCls = cn(
+    'flex flex-col overflow-hidden rounded-2xl border border-border bg-background text-left shadow-pullim-sm transition-shadow',
+    isGrid ? 'aspect-square w-full' : 'w-full max-w-sm',
+    onClick ? 'cursor-pointer hover:shadow-pullim-md' : 'hover:shadow-pullim-sm',
+  );
+
+  const body = (
+    <>
+      {/* 상단 헤더 — 날짜 + 공개범위 (팔레트 배경) */}
       <div
         className="flex items-center justify-between px-3 py-2"
         style={{ backgroundColor: headerBg }}
@@ -115,11 +112,21 @@ export function ProofCard({ proof, ownerName, variant = 'grid', onClick }: Proof
       >
         pullim
       </div>
-    </button>
+    </>
   );
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cardCls}>
+        {body}
+      </button>
+    );
+  }
+  return <div className={cardCls}>{body}</div>;
 }
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${d.getMonth() + 1}/${d.getDate()} (${['일','월','화','수','목','금','토'][d.getDay()]})`;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dow = new Date(y, m - 1, d).getDay();
+  return `${m}/${d} (${['일', '월', '화', '수', '목', '금', '토'][dow]})`;
 }

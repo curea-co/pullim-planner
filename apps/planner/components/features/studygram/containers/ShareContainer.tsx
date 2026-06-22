@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import SharePresenter, { type ShareTab } from '../presenters/SharePresenter';
 import {
@@ -12,7 +12,7 @@ import {
   calcGoalProgress,
 } from '@/lib/mock/studygram';
 
-const TODAY = '2026-06-22';
+const TODAY = new Date().toISOString().slice(0, 10);
 
 export default function ShareContainer() {
   const router = useRouter();
@@ -22,6 +22,11 @@ export default function ShareContainer() {
   const myProofs = mockStudyProofs;
   const friends = mockFriends;
   const friendProofs = mockFriendProofs;
+
+  const acceptedFriends = useMemo(
+    () => friends.filter((f) => f.status === 'accepted'),
+    [friends],
+  );
 
   const goalProgress = setting
     ? calcGoalProgress(myProofs, setting, TODAY)
@@ -45,11 +50,12 @@ export default function ShareContainer() {
       setting={setting}
       myProofs={myProofs}
       friendProofs={friendProofs}
-      friends={friends}
+      acceptedFriends={acceptedFriends}
       goalProgress={goalProgress}
       activeTab={activeTab}
       hasTodayProof={todayProof}
       onChangeTab={handleChangeTab}
+      onProofClick={handleProofClick}
     />
   );
 }

@@ -12,7 +12,7 @@ interface EmptyStateProps {
 const CONFIG: Record<EmptyVariant, { icon: React.ElementType; title: string; desc: string; cta: { label: string; href: string } }> = {
   'no-setting': {
     icon: BookOpen,
-    title: '공유을 시작해보세요',
+    title: '공유를 시작해보세요',
     desc: '주제 한 줄, 톤, 목표를 정하면\n오늘 학습이 인증 카드가 됩니다.',
     cta: { label: '공유 세팅하기', href: '/planner/share/setup' },
   },
