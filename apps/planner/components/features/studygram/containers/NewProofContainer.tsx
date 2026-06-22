@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TONE_PRESETS } from '../types';
 import type { StudyProof, Visibility } from '../types';
-import { mockStudygramSetting, addStudyProof, todayKST } from '@/lib/mock/studygram';
+import { mockStudygramSetting, mockStudyProofs, addStudyProof, hasTodayProof, todayKST } from '@/lib/mock/studygram';
 import NewProofPresenter from '../presenters/NewProofPresenter';
 
 const TODAY = todayKST();
@@ -49,11 +49,14 @@ export default function NewProofContainer() {
   const handlePost = useCallback(() => {
     // TODO: POST /planner/studygram/proofs (api-client 연동 후)
     // mock 단계 — 공유 배열에 새 카드를 추가해 허브의 목록·CTA 숨김·목표 진행도에 반영한다 (codex).
-    addStudyProof({
-      ...previewProof,
-      id: `proof-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    });
+    // BR-2: 하루 1포스트 — 이미 오늘 카드가 있으면(더블클릭·직접 URL 재진입) 중복 삽입하지 않고 허브로만 이동.
+    if (!hasTodayProof(mockStudyProofs, TODAY)) {
+      addStudyProof({
+        ...previewProof,
+        id: `proof-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+      });
+    }
     router.push('/planner/share');
   }, [router, previewProof]);
 
