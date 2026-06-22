@@ -62,13 +62,14 @@ export function AppHeader({ role }: { role: Role }) {
           >
             <Search className="h-5 w-5" />
           </button>
-          <button
+          <Link
+            href="/planner/notifications"
             aria-label="알림"
-            className="hover:bg-pullim-slate-100 relative inline-flex h-9 w-9 items-center justify-center rounded-lg"
+            className="hover:bg-pullim-slate-100 relative inline-flex h-9 w-9 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
           >
             <Bell className="h-5 w-5" />
             <span className="bg-pullim-danger absolute top-1.5 right-1.5 inline-block h-2 w-2 rounded-full" />
-          </button>
+          </Link>
           <ProfileMenu />
         </div>
       </div>
