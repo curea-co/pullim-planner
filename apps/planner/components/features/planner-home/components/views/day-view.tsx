@@ -75,7 +75,7 @@ export function DayView() {
                     type="button"
                     onClick={() => setTrimTimeline(t => !t)}
                     aria-pressed={!trimTimeline}
-                    className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
+                    className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
                   >
                     <Clock className="h-3 w-3" />
                     {trimTimeline ? '전체 24h' : '핵심 시간만'}
@@ -86,7 +86,7 @@ export function DayView() {
                   onClick={() => setShowLegend(s => !s)}
                   aria-expanded={showLegend}
                   aria-controls="day-clock-legend"
-                  className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
+                  className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
                 >
                   {showLegend ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                   색상 범례
@@ -109,11 +109,11 @@ export function DayView() {
                     <NextIcon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="text-pullim-blue-700 text-[10px] font-bold tracking-wider uppercase">
+                    <div className="text-pullim-blue-700 text-xs font-bold tracking-wider uppercase">
                       다음 블록
                     </div>
                     <div className="text-pullim-slate-900 truncate text-sm font-bold">{next.title}</div>
-                    <div className="text-pullim-slate-500 text-[11px]">
+                    <div className="text-pullim-slate-500 text-xs">
                       <span className="font-mono">{next.start}</span>
                       <span className="mx-1">·</span>
                       {next.subject !== 'rest' && subjectLabels[next.subject]}
@@ -148,7 +148,7 @@ export function DayView() {
                 className="border-pullim-slate-100 mt-3 flex flex-wrap gap-2 border-t pt-3"
               >
                 {legendTypes.map(t => (
-                  <span key={t} className="inline-flex items-center gap-1 text-[10px] text-pullim-slate-500">
+                  <span key={t} className="inline-flex items-center gap-1 text-xs text-pullim-slate-500">
                     <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: getBlockColor(t, paletteId) }} />
                     {blockTypeMeta[t].label}
                   </span>
@@ -169,7 +169,7 @@ export function DayView() {
             description="7대 교육학 엔진이 자동 적용된 학습 단위"
             action={
               <span
-                className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[11px] font-semibold"
+                className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-xs font-semibold"
                 title="드래그 정렬은 곧 열려요. 지금은 빌더에서 시간대를 조정하세요."
               >
                 드래그 정렬 곧 열려요
