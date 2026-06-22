@@ -57,6 +57,7 @@ export function CalendarShell({
   children,
 }: Props) {
   const meta = viewMeta[view];
+  const navDisabled = !onPrev && !onNext;
 
   return (
     <div className="space-y-4">
@@ -77,7 +78,6 @@ export function CalendarShell({
             onClick={onPrev}
             disabled={!onPrev}
             aria-label={prevLabel ?? `이전 ${meta.navUnit}`}
-            title={!onPrev ? '기간 이동은 아직 지원하지 않아요 — 이번 기간 데이터만 채워져 있어요' : undefined}
             className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -85,13 +85,20 @@ export function CalendarShell({
           </button>
           <span className="text-pullim-slate-700 px-2 text-xs font-bold">
             {navLabel}
+            {navDisabled && (
+              <span
+                className="text-pullim-slate-400 ml-1 text-xs font-normal"
+                aria-label="기간 이동은 아직 지원하지 않아요"
+              >
+                (이번 기간만)
+              </span>
+            )}
           </span>
           <button
             type="button"
             onClick={onNext}
             disabled={!onNext}
             aria-label={nextLabel ?? `다음 ${meta.navUnit}`}
-            title={!onNext ? '기간 이동은 아직 지원하지 않아요 — 이번 기간 데이터만 채워져 있어요' : undefined}
             className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
           >
             <span className="hidden sm:inline">{nextLabel ?? `다음 ${meta.navUnit}`}</span>
