@@ -104,7 +104,7 @@
 | 화면 | 구성요소 | 설명 |
 |---|---|---|
 | 공유 허브 `/planner/share` | 목표 진행 위젯, 내 인증 그리드(인스타형), 친구 피드 탭, "오늘 인증하기" CTA | 내 탭/친구 탭 토글. 빈 상태=세팅 유도 |
-| 세팅 `/share/setup` | 주제 1문장 입력, 톤 프리셋 선택(팔레트 매핑), 목표 숫자(horizon+cadence) | 3-step. 기존 planner 필드 prefill |
+| 세팅 `/share/setup` | 주제 1문장 입력, 톤 프리셋 선택(팔레트 매핑), 목표 기간(`horizonDays`만) | 3-step. 기존 planner 필드 prefill. **MVP: cadence(postsPerDay)는 1 고정 — UI 입력 없음**(BR-2). 다포스트 cadence 입력은 후속 |
 | 인증 카드 상세 `/share/[proofId]` | 카드 프리뷰(템플릿), 캡션 편집, visibility 셀렉트, **PNG 내보내기**, 삭제 | 동의 게이트 통과 후 공유 |
 | 친구 `/share/friends` | 친구 검색·요청·수락, close-friends 지정 토글, 차단 | 미성년 안전: 요청 승인제 |
 
@@ -115,7 +115,7 @@
 ### 시나리오 A — 첫 인증(해피 패스)
 1. 온보딩/홈에서 "공스타그램 시작" CTA → `/share/setup`
 2. **주제** 한 문장 고정(예: "2026 9급 국어/영어 매일 2시간") → **톤** 선택(fancy=sunset 팔레트 등)
-   → **목표** 숫자("D-100까지 하루 1포스트")
+   → **목표 기간** 설정("D-100"; MVP 는 하루 1포스트 고정이라 cadence 입력은 없음)
 3. 하루 학습 종료 → 홈/리포트의 "오늘 인증하기" → 그날 결과로 **StudyProof 자동 구성**(완료블록·시간·정답률·한줄)
 4. 카드 프리뷰 확인 → 캡션 한 줄 → **visibility=close_friends** → **공유 동의** → POST
 5. 친구 피드에 노출 + (선택) **PNG export** → 인스타/카톡
@@ -170,7 +170,7 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 | **StudygramSetting** | userId, topicLine(주제 1문장), tonePresetId(→paletteId 매핑), goalHorizonDays, goalPostsPerDay, createdAt/updatedAt |
 | **StudyProof** | id, userId, date(YYYY-MM-DD), snapshot{completedBlocks, studyMinutes, accuracy, condition, reflectionLine, subjectTags[]}, tonePresetId, caption, visibility(`close_friends`\|`friends`\|`private`), createdAt/updatedAt |
 | **Friendship** | id, requesterId, addresseeId, status(`pending`\|`accepted`\|`blocked`), createdAt — **친구 관계 자체는 무방향(수락된 한 쌍)** |
-| **CloseFriendDesignation** | id, ownerId, friendId, createdAt — **방향성 edge**: `ownerId` 가 `friendId` 를 close-friend 로 지정. 공개 판정은 viewer(=ownerId) 관점에서만 본다. A→B 지정이 B→A 를 만들지 않음(권한 누수 방지) |
+| **CloseFriendDesignation** | id, ownerId(게시자), friendId(허용 대상 viewer), createdAt — **방향성 edge**: 게시자 `ownerId` 가 자신의 `close_friends` 카드를 볼 수 있게 `friendId` 를 지정. 공개 판정: proof 의 `userId == ownerId` 이고 `visibility==close_friends` 면, **`friendId == 현재 viewer`** 인 designation 이 존재할 때만 노출. A→B 지정이 B→A 를 만들지 않음(권한 누수 방지) |
 | **ProofReaction** | id, proofId, userId, emoji, createdAt |
 
 ### Validation Rules
@@ -191,7 +191,8 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 | `GET /planner/studygram/proofs?scope=mine\|friends` | 내/친구 피드 |
 | `PATCH /planner/studygram/proofs/:id` | 캡션·visibility 수정 |
 | `DELETE /planner/studygram/proofs/:id` | 삭제 |
-| `POST /planner/studygram/friends` · `PATCH …/:id`(accept/block/close) · `GET …/friends` | 친구 |
+| `POST /planner/studygram/friends` · `PATCH …/:id`(accept/block) · `GET …/friends` | 친구 관계(무방향, 승인제) |
+| `PUT /planner/studygram/close-friends/:friendId` · `DELETE …/:friendId` · `GET …/close-friends` | close-friend **지정 생성/해제/목록** — `CloseFriendDesignation`(ownerId=호출자, friendId=path) 방향성 edge. `Friendship` 의 status 변경(accept/block)과 별도 |
 | `POST /planner/studygram/proofs/:id/reactions` | 응원 |
 
 > ⚠️ 계약은 `PullimPlannerClient` 패턴([packages/api-client/src/pullim-planner.ts](../../packages/api-client/src/pullim-planner.ts))을
