@@ -99,7 +99,7 @@ export function ProofCard({ proof, ownerName, variant = 'grid', onClick }: Proof
           )}
           {proof.reactionCount > 0 && (
             <span className="ml-auto text-xs text-muted-foreground">
-              🔥 {proof.reactionCount}
+              {proof.reactionCount}
             </span>
           )}
         </div>

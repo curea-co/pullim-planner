@@ -37,11 +37,7 @@ type Props = {
   prevLabel?: string;
   /** 우측 next 버튼 라벨 (선택) */
   nextLabel?: string;
-  /**
-   * prev/next 클릭 핸들러.
-   * 둘 다 미전달이면 자동으로 disabled + navLabel 옆 `(데모)` chip을 노출해
-   * 사용자에게 "시간 이동은 아직 데모"임을 명시한다 (audit #6 fix).
-   */
+  /** prev/next 클릭 핸들러. 미전달 시 버튼 disabled. */
   onPrev?: () => void;
   onNext?: () => void;
   /** 추가 우측 액션 (예: '오늘로' 버튼) */
@@ -61,7 +57,6 @@ export function CalendarShell({
   children,
 }: Props) {
   const meta = viewMeta[view];
-  const isDemoNav = !onPrev && !onNext;
 
   return (
     <div className="space-y-4">
@@ -89,14 +84,6 @@ export function CalendarShell({
           </button>
           <span className="text-pullim-slate-700 px-2 text-xs font-bold">
             {navLabel}
-            {isDemoNav && (
-              <span
-                className="text-pullim-slate-500 ml-1 font-mono text-xs font-semibold"
-                title="시간 이동은 데모 단계에서는 비활성 — 이번 주 데이터만 채워져 있어요"
-              >
-                (데모)
-              </span>
-            )}
           </span>
           <button
             type="button"

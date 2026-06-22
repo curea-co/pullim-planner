@@ -21,16 +21,16 @@ export function WeeklyInsights() {
     if (!a) return;
     switch (a.kind) {
       case 'adjust_schedule':
-        toast.info('🗓 시간표 조정', { description: '시간표 빌더로 이동…', duration: 2500 });
+        toast.info('시간표 조정', { description: '시간표 빌더로 이동…', duration: 2500 });
         break;
       case 'reduce_block':
-        toast.success('🌙 블록 축소 예약', { description: '내일 1블록을 자동 이월할게요.', duration: 2500 });
+        toast.success('블록 축소 예약', { description: '내일 1블록을 자동 이월할게요.', duration: 2500 });
         break;
       case 'review_weak':
-        toast.info('🎯 약점 복습', { description: '약점 단원 정복 큐로 이동…', duration: 2500 });
+        toast.info('약점 복습', { description: '약점 단원 정복 큐로 이동…', duration: 2500 });
         break;
       case 'celebrate':
-        toast.success('🔥 잘하고 있어요!', { duration: 2500 });
+        toast.success('잘하고 있어요!', { duration: 2500 });
         break;
     }
   }
