@@ -169,8 +169,8 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 |---|---|
 | **StudygramSetting** | userId, topicLine(주제 1문장), tonePresetId(→paletteId 매핑), goalHorizonDays, goalPostsPerDay, createdAt/updatedAt |
 | **StudyProof** | id, userId, date(YYYY-MM-DD), snapshot{completedBlocks, studyMinutes, accuracy, condition, reflectionLine, subjectTags[]}, tonePresetId, caption, visibility(`close_friends`\|`friends`\|`private`), createdAt/updatedAt |
-| **Friendship** | id, requesterId, addresseeId, status(`pending`\|`accepted`\|`blocked`), createdAt — **친구 관계 자체는 무방향(수락된 한 쌍)** |
-| **CloseFriendDesignation** | id, ownerId(게시자), friendId(허용 대상 viewer), createdAt — **방향성 edge**: 게시자 `ownerId` 가 자신의 `close_friends` 카드를 볼 수 있게 `friendId` 를 지정. **전제(BR-5): `ownerId↔friendId` 의 `Friendship.status=='accepted'` 가 있어야만 지정 가능**(승인 안 된/임의 사용자 지정 불가). 공개 판정: proof 의 `userId == ownerId` 이고 `visibility==close_friends` 면, **(i) accepted Friendship 존재 && (ii) `friendId == 현재 viewer` 인 designation 존재** 둘 다 충족 시에만 노출. A→B 지정이 B→A 를 만들지 않음(권한 누수 방지) |
+| **Friendship** | id, requesterId, addresseeId, status(`pending`\|`accepted`\|`blocked`), createdAt — **무방향(수락된 한 쌍)**. ⚠️ **unordered-pair 유니크**: `(least(a,b), greatest(a,b))` canonical 정렬로 한 쌍당 1행만(교차 요청 `A→B`/`B→A` 가 둘 다 accepted 로 남지 않게 병합) |
+| **CloseFriendDesignation** | id, ownerId(게시자), friendId(허용 대상 viewer), createdAt — **방향성 edge** + **`(ownerId, friendId)` 유니크**(한 owner 가 같은 friend 를 최대 1회 지정 → `PUT` 멱등): 게시자 `ownerId` 가 자신의 `close_friends` 카드를 볼 수 있게 `friendId` 를 지정. **전제(BR-5): `ownerId↔friendId` 의 `Friendship.status=='accepted'` 가 있어야만 지정 가능**(승인 안 된/임의 사용자 지정 불가). 공개 판정: proof 의 `userId == ownerId` 이고 `visibility==close_friends` 면, **(i) accepted Friendship 존재 && (ii) `friendId == 현재 viewer` 인 designation 존재** 둘 다 충족 시에만 노출. A→B 지정이 B→A 를 만들지 않음(권한 누수 방지) |
 | **ProofReaction** | id, proofId, userId, emoji, createdAt |
 
 ### Validation Rules
@@ -192,7 +192,7 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 | `PATCH /planner/studygram/proofs/:id` | 캡션·visibility 수정 |
 | `DELETE /planner/studygram/proofs/:id` | 삭제 |
 | `POST /planner/studygram/friends` · `PATCH …/:id`(accept/block) · `GET …/friends` | 친구 관계(무방향, 승인제) |
-| `PUT /planner/studygram/close-friends/:friendId` · `DELETE …/:friendId` · `GET …/close-friends` | close-friend **지정 생성/해제/목록** — `CloseFriendDesignation`(ownerId=호출자, friendId=path) 방향성 edge. `Friendship` 의 status 변경(accept/block)과 별도 |
+| `PUT /planner/studygram/close-friends/:friendId` · `DELETE …/:friendId` · `GET …/close-friends` | close-friend **지정 생성/해제/목록** — `CloseFriendDesignation`(ownerId=호출자, friendId=path) 방향성 edge. **`PUT` 은 `(ownerId,friendId)` 유니크 기준 멱등 upsert**(중복 생성 없음). `Friendship` 의 status 변경(accept/block)과 별도 |
 | `POST /planner/studygram/proofs/:id/reactions` | 응원 |
 
 > ⚠️ 계약은 `PullimPlannerClient` 패턴([packages/api-client/src/pullim-planner.ts](../../packages/api-client/src/pullim-planner.ts))을
