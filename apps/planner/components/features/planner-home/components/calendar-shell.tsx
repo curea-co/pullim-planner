@@ -77,6 +77,7 @@ export function CalendarShell({
             onClick={onPrev}
             disabled={!onPrev}
             aria-label={prevLabel ?? `이전 ${meta.navUnit}`}
+            title={!onPrev ? '기간 이동은 아직 지원하지 않아요 — 이번 기간 데이터만 채워져 있어요' : undefined}
             className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -90,6 +91,7 @@ export function CalendarShell({
             onClick={onNext}
             disabled={!onNext}
             aria-label={nextLabel ?? `다음 ${meta.navUnit}`}
+            title={!onNext ? '기간 이동은 아직 지원하지 않아요 — 이번 기간 데이터만 채워져 있어요' : undefined}
             className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
           >
             <span className="hidden sm:inline">{nextLabel ?? `다음 ${meta.navUnit}`}</span>
