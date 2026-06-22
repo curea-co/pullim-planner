@@ -264,10 +264,10 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 
 | Phase | 범위 | 산출/검증 |
 |---|---|---|
-| **P0 — 타입·계약** | `packages/types`에 StudyProof/Friendship/Setting/Visibility, api-client 클라 스텁(`PullimStudygramClient`) | 타입 PR 단독. typecheck 통과 |
+| **P0 — 타입·계약** | `packages/types`에 StudyProof/Friendship/**CloseFriendDesignation**/Setting/Visibility(+ close-friend 지정/해제 request·response 타입), api-client 클라 스텁(`PullimStudygramClient`) | 타입 PR 단독. typecheck 통과. close-friends 지정 계약 포함(후속 재계약 방지) |
 | **P1 — 세팅(주제·톤·목표)** | `/share/setup` + StudygramSetting CRUD. 톤=팔레트 매핑 | dev에서 세팅 저장·재진입 유지 |
 | **P2 — 인증 카드(StudyProof)** | 결과 스냅샷 생성/편집/삭제 + 고정 템플릿 + 동의 게이트 | 카드 POST/GET/PATCH/DELETE, 동의 1회 |
-| **P3 — 친구·피드** | Friendship(승인제·close-friends) + 내/친구 피드 + 응원 | 친구 수락 후에만 노출, RBAC 검증 |
+| **P3 — 친구·피드** | **Friendship(무방향 승인제)** + **CloseFriendDesignation(방향성 지정/해제)** + 내/친구 피드 + 응원 — 둘은 별도 구현 대상(close-friends 를 Friendship 속성으로 접지 말 것) | accepted Friendship 전제 + designation 둘 다 충족 시 노출, RBAC 검증 |
 | **P4 — export·목표 위젯** | PNG export(워터마크) + 목표 진행(posted X/N·streak) | export 이미지 확인, 목표 카운트 정확 |
 | **P5 — IA·온보딩 배선** | 하단탭/온보딩 CTA 연결(OI-1 확정 반영) | 네비 일관성(orchestration 체크리스트) |
 
@@ -282,7 +282,9 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 
 ## 오픈 이슈 (Open Issues)
 - **OI-1** 하단탭 5개 vs 소개 메뉴화(공유 승격) — 권장: 소개 메뉴화. **사용자 확정 필요.**
-- **OI-2** `friends` vs `close_friends` 2단계 공개 범위를 모두 둘지, close_friends 단일로 시작할지.
+- ~~**OI-2** `friends` vs `close_friends` 2단계 공개 범위를 모두 둘지, close_friends 단일로 시작할지.~~
+  **→ 확정(닫음): 2단계 모델 채택** — visibility enum(`close_friends`\|`friends`\|`private`)·RBAC·API·
+  `CloseFriendDesignation` 이 모두 2단계 전제로 서술됨. close_friends 단일로 되돌리지 않는다.
 - **OI-3** 엔타이틀먼트 게이트 — 공유 계층을 `flags.planner` 안에 둘지 별도 플래그(`flags.studygram`)로 둘지.
 - **OI-4** PNG export 라이브러리 선정·번들 영향(글로벌 의존성 승인).
 - **OI-5** 미성년 안전 정책(신고·차단·연령 게이트) 범위 — 법무/정책 확인.
