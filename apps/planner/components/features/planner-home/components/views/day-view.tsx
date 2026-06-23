@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { Clock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   todayBlocks, currentPersona, getDday, nextActiveBlock,
-  blockTypeMeta, subjectLabels, getFeatureRoute, conditionMeta,
+  blockTypeMeta, conditionMeta,
   hasQAccess, getBlockColor,
   type ConditionLevel, type BlockType, type TimeBlock,
 } from '@/lib/mock';
@@ -16,6 +15,7 @@ import { ActiveDayLayout } from '@/components/features/planner-home/components/l
 import { ConditionBurnoutPanel } from '@/components/features/planner-home/components/condition-burnout-panel';
 import { BlockCard } from '@/components/features/planner-home/components/block-card';
 import { BlockCompleteDialog } from '@/components/features/planner-home/components/block-complete-dialog';
+import { NextBlockHero } from '@/components/features/planner-home/components/next-block-hero';
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 
 /** 완료한 블록 다음의 첫 학습 블록(휴식 제외, todo/doing) — 모달 CTA 라우팅용 */
@@ -40,7 +40,6 @@ export function DayView() {
   const dday = getDday(currentPersona);
   const ddayLabel = dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY' : `D+${Math.abs(dday)}`;
   const next = nextActiveBlock();
-  const NextIcon = next ? blockTypeMeta[next.type].Icon : null;
   const qAccess = hasQAccess();
   const { layoutId, paletteId } = getActiveCustomization();
 
@@ -102,44 +101,13 @@ export function DayView() {
               trimToBlocks={trimTimeline}
             />
 
-            {next && NextIcon && (
-              <div className="bg-pullim-blue-50 border-pullim-blue-100 mt-4 flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="bg-pullim-blue-100 text-pullim-blue-700 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" aria-hidden>
-                    <NextIcon className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-pullim-blue-700 text-xs font-bold tracking-wider uppercase">
-                      다음 블록
-                    </div>
-                    <div className="text-pullim-slate-900 truncate text-sm font-bold">{next.title}</div>
-                    <div className="text-pullim-slate-500 text-xs">
-                      <span className="font-mono">{next.start}</span>
-                      <span className="mx-1">·</span>
-                      {next.subject !== 'rest' && subjectLabels[next.subject]}
-                      <span className="mx-1">·</span>
-                      {next.expectedMinutes}분
-                    </div>
-                  </div>
-                </div>
-                {qAccess ? (
-                  <Link
-                    href={next.linkedFeatureSlug ? getFeatureRoute(next.linkedFeatureSlug) : '#'}
-                    className="bg-pullim-blue-600 inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-sm sm:w-auto"
-                  >
-                    지금 시작
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={notifyQNoAccess}
-                    aria-label="풀림 Q 미구독 — 클릭하면 구독 안내가 떠요"
-                    className="bg-pullim-blue-600 inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-sm sm:w-auto"
-                  >
-                    지금 시작
-                  </button>
-                )}
-              </div>
+            {next && (
+              <NextBlockHero
+                next={next}
+                qAccess={qAccess}
+                paletteId={paletteId}
+                onNoAccess={notifyQNoAccess}
+              />
             )}
 
             {showLegend && (
