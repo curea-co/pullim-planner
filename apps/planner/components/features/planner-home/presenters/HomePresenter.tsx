@@ -7,6 +7,7 @@ import { DayView } from '../components/views/day-view';
 import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
 import { composeDDayChipProps } from '@/lib/planner/d-day-tier';
+import { formatDayNavLabel, formatDayTitle } from '@/lib/planner/day-nav';
 import { DDayChip } from '@/components/shared/d-day-chip';
 import { DDayHeaderBand } from '../components/d-day-header-band';
 import { BurnoutThresholdBanner } from '../components/burnout-threshold-banner';
@@ -19,6 +20,11 @@ interface HomePresenterProps {
   daySummary: { done: number; total: number };
   weekMeta: { totalHours: number; completedHours: number };
   monthMeta: { totalBlocks: number };
+  /** day-view 날짜 이동 offset (0=기준일) */
+  dayOffset: number;
+  onPrevDay: () => void;
+  onNextDay: () => void;
+  onResetToday: () => void;
   onChangeView: (next: CalendarView) => void;
 }
 
@@ -30,6 +36,10 @@ export default function HomePresenter({
   daySummary,
   weekMeta,
   monthMeta,
+  dayOffset,
+  onPrevDay,
+  onNextDay,
+  onResetToday,
   onChangeView,
 }: HomePresenterProps) {
   const switchAction = (
@@ -45,19 +55,25 @@ export default function HomePresenter({
   const headerProps = (() => {
     if (view === 'day') {
       return {
-        title: '오늘의 학습 — 4월 24일 목요일',
+        title: dayOffset === 0
+          ? `오늘의 학습 — ${formatDayTitle(0)}`
+          : `${formatDayTitle(dayOffset)} 학습 계획`,
         description: (
           <>
             <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
             <span className="mx-1">·</span>
             <DDayChip {...composeDDayChipProps(dday, examName)} />
-            <span className="mx-1">·</span>
-            {daySummary.done}/{daySummary.total} 블록 완료
+            {daySummary.total > 0 && (
+              <>
+                <span className="mx-1">·</span>
+                {daySummary.done}/{daySummary.total} 블록 완료
+              </>
+            )}
           </>
         ),
-        navLabel: '2026.04.24 (목)',
-        prevLabel: undefined,
-        nextLabel: undefined,
+        navLabel: formatDayNavLabel(dayOffset),
+        prevLabel: '이전 하루',
+        nextLabel: '다음 하루',
       };
     }
     if (view === 'week') {
@@ -104,9 +120,12 @@ export default function HomePresenter({
         navLabel={headerProps.navLabel}
         prevLabel={headerProps.prevLabel}
         nextLabel={headerProps.nextLabel}
+        // day 뷰만 날짜 이동 활성 — week/월은 아직 "(이번 기간만)"
+        onPrev={view === 'day' ? onPrevDay : undefined}
+        onNext={view === 'day' ? onNextDay : undefined}
         action={switchAction}
       >
-        {view === 'day' && <DayView />}
+        {view === 'day' && <DayView dayOffset={dayOffset} onResetToday={onResetToday} />}
         {view === 'week' && <WeekView />}
         {view === 'month' && <MonthView />}
       </CalendarShell>

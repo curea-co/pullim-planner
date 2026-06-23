@@ -197,6 +197,17 @@ export function nextActiveBlock(blocks: TimeBlock[] = todayBlocks): TimeBlock | 
   return blocks.find(b => b.status === 'doing') ?? blocks.find(b => b.status === 'todo');
 }
 
+/** day-view 날짜 네비게이션 기준일 — 데모 플랜이 존재하는 유일한 날(서연의 저녁 학습). */
+export const planBaseDate = '2026-04-24';
+
+/**
+ * day-view 날짜 offset(0=기준일)별 블록.
+ * 데모는 기준일에만 플랜이 있으므로 그 외 날짜는 빈 배열(빈 상태) — BE 연동 시 그날 블록으로 교체.
+ */
+export function getBlocksForDayOffset(offset: number): TimeBlock[] {
+  return offset === 0 ? todayBlocks : [];
+}
+
 export function plannerProgress(blocks: TimeBlock[] = todayBlocks): { done: number; total: number; pct: number } {
   const learning = blocks.filter(b => b.type !== 'break');
   const done = learning.filter(b => b.status === 'done').length;

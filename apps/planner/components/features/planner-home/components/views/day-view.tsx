@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, Eye, EyeOff, CalendarX2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  todayBlocks, currentPersona, getDday, nextActiveBlock,
+  getBlocksForDayOffset, currentPersona, getDday, nextActiveBlock,
   blockTypeMeta, conditionMeta,
   hasQAccess, getBlockColor,
   type ConditionLevel, type BlockType, type TimeBlock,
@@ -19,11 +20,11 @@ import { NextBlockHero } from '@/components/features/planner-home/components/nex
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 
 /** 완료한 블록 다음의 첫 학습 블록(휴식 제외, todo/doing) — 모달 CTA 라우팅용 */
-function findFollowing(block: TimeBlock): TimeBlock | null {
-  const idx = todayBlocks.findIndex(b => b.id === block.id);
+function findFollowing(block: TimeBlock, blocks: TimeBlock[]): TimeBlock | null {
+  const idx = blocks.findIndex(b => b.id === block.id);
   if (idx < 0) return null;
-  for (let i = idx + 1; i < todayBlocks.length; i++) {
-    const b = todayBlocks[i];
+  for (let i = idx + 1; i < blocks.length; i++) {
+    const b = blocks[i];
     if (b.type !== 'break' && (b.status === 'todo' || b.status === 'doing')) return b;
   }
   return null;
@@ -31,15 +32,23 @@ function findFollowing(block: TimeBlock): TimeBlock | null {
 
 const legendTypes: BlockType[] = ['concept', 'practice', 'review', 'memorize', 'mock', 'tutor', 'self_explain'];
 
+interface DayViewProps {
+  /** 날짜 이동 offset (0=기준일). 0 외에는 데모 플랜이 없어 빈 상태. */
+  dayOffset?: number;
+  /** 빈 상태에서 "오늘 계획 보기" — offset 0으로 리셋 */
+  onResetToday?: () => void;
+}
+
 /** 일간 캘린더 본문 — 24h 시계 + 자기보고 패널 + 블록 리스트. */
-export function DayView() {
+export function DayView({ dayOffset = 0, onResetToday }: DayViewProps) {
   const [condition, setCondition] = useState<ConditionLevel>(3);
   const [showLegend, setShowLegend] = useState(false);
   const [trimTimeline, setTrimTimeline] = useState(true);
   const [completingBlock, setCompletingBlock] = useState<TimeBlock | null>(null);
   const dday = getDday(currentPersona);
   const ddayLabel = dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY' : `D+${Math.abs(dday)}`;
-  const next = nextActiveBlock();
+  const blocks = getBlocksForDayOffset(dayOffset);
+  const next = nextActiveBlock(blocks);
   const qAccess = hasQAccess();
   const { layoutId, paletteId } = getActiveCustomization();
 
@@ -58,6 +67,34 @@ export function DayView() {
       description: `오늘 블록이 ${meta.difficultyAdj}로 자동 조정됐어요.`,
       duration: 2500,
     });
+  }
+
+  // 기준일(offset 0) 외에는 데모 플랜이 없어 빈 상태. BE 연동 시 그날 블록으로 대체.
+  if (blocks.length === 0) {
+    return (
+      <div className="border-pullim-slate-200 bg-pullim-slate-50/50 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-16 text-center">
+        <CalendarX2 className="text-pullim-slate-400 h-8 w-8" aria-hidden />
+        <p className="text-pullim-slate-700 text-sm font-bold">이 날짜엔 아직 계획이 없어요</p>
+        <p className="text-pullim-slate-500 text-xs">빌더에서 시간표를 만들면 이 날짜에도 블록이 채워져요.</p>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+          {onResetToday && (
+            <button
+              type="button"
+              onClick={onResetToday}
+              className="bg-pullim-blue-600 hover:bg-pullim-blue-700 inline-flex items-center rounded-lg px-3 py-2 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-300"
+            >
+              오늘 계획 보기
+            </button>
+          )}
+          <Link
+            href="/planner/manage"
+            className="text-pullim-blue-700 hover:bg-pullim-blue-50 inline-flex items-center rounded-lg px-3 py-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+          >
+            시간표 관리
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -94,7 +131,7 @@ export function DayView() {
             </header>
 
             <ActiveDayLayout
-              blocks={todayBlocks}
+              blocks={blocks}
               ddayLabel={ddayLabel}
               layoutId={layoutId}
               paletteId={paletteId}
@@ -144,7 +181,7 @@ export function DayView() {
             }
           />
           <ol className="space-y-1.5">
-            {todayBlocks.map(b => (
+            {blocks.map(b => (
               <li key={b.id}>
                 <BlockCard block={b} onComplete={setCompletingBlock} variant="compact" />
               </li>
@@ -159,7 +196,7 @@ export function DayView() {
 
       <BlockCompleteDialog
         block={completingBlock}
-        nextBlock={completingBlock ? findFollowing(completingBlock) : null}
+        nextBlock={completingBlock ? findFollowing(completingBlock, blocks) : null}
         onClose={() => setCompletingBlock(null)}
       />
     </div>
