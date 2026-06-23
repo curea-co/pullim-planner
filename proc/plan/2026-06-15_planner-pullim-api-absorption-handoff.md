@@ -441,6 +441,6 @@ daily_conditions, burnout_snapshots}` 를 purge** 한다(물리 cross-schema CAS
 
 - [x] planner 서비스 등록 + `flags['planner']` 발급 — **오너 합의 완료(2026-06-15)**.
 - [ ] `entitlementFlags[*][*].planner` 구체 수치(가격정책 매트릭스에서 확정).
-- [ ] 크로스스키마 FK(`planner → auth.users`) 사용 여부 — pullim-api 컨벤션 확인.
+- [x] 크로스스키마 FK(`planner → auth.users`) 사용 여부 — **§6.1(c) 에서 확정: 물리 FK 미사용·앱레벨 참조**. 잔여는 `user_id` 타입을 `auth.users.id` 에 맞추는 정합 확인뿐(결정 재검토 대상 아님).
 - [ ] planner FE 서브도메인(`planner.pullim.ai`) 배정.
 - [ ] AI 자동 생성(현 mock)의 등급(`featureRequires.planner.ai_generate`) 정책.

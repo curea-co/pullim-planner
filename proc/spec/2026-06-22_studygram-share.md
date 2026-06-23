@@ -104,7 +104,7 @@
 | 화면 | 구성요소 | 설명 |
 |---|---|---|
 | 공유 허브 `/planner/share` | 목표 진행 위젯, 내 인증 그리드(인스타형), 친구 피드 탭, "오늘 인증하기" CTA | 내 탭/친구 탭 토글. 빈 상태=세팅 유도 |
-| 세팅 `/share/setup` | 주제 1문장 입력, 톤 프리셋 선택(팔레트 매핑), 목표 숫자(horizon+cadence) | 3-step. 기존 planner 필드 prefill |
+| 세팅 `/share/setup` | 주제 1문장 입력, 톤 프리셋 선택(팔레트 매핑), 목표 기간(`horizonDays`만) | 3-step. 기존 planner 필드 prefill. **MVP: cadence(postsPerDay)는 1 고정 — UI 입력 없음**(BR-2). 다포스트 cadence 입력은 후속 |
 | 인증 카드 상세 `/share/[proofId]` | 카드 프리뷰(템플릿), 캡션 편집, visibility 셀렉트, **PNG 내보내기**, 삭제 | 동의 게이트 통과 후 공유 |
 | 친구 `/share/friends` | 친구 검색·요청·수락, close-friends 지정 토글, 차단 | 미성년 안전: 요청 승인제 |
 
@@ -115,7 +115,7 @@
 ### 시나리오 A — 첫 인증(해피 패스)
 1. 온보딩/홈에서 "공스타그램 시작" CTA → `/share/setup`
 2. **주제** 한 문장 고정(예: "2026 9급 국어/영어 매일 2시간") → **톤** 선택(fancy=sunset 팔레트 등)
-   → **목표** 숫자("D-100까지 하루 1포스트")
+   → **목표 기간** 설정("D-100"; MVP 는 하루 1포스트 고정이라 cadence 입력은 없음)
 3. 하루 학습 종료 → 홈/리포트의 "오늘 인증하기" → 그날 결과로 **StudyProof 자동 구성**(완료블록·시간·정답률·한줄)
 4. 카드 프리뷰 확인 → 캡션 한 줄 → **visibility=close_friends** → **공유 동의** → POST
 5. 친구 피드에 노출 + (선택) **PNG export** → 인스타/카톡
@@ -145,8 +145,11 @@
 ### 핵심 비즈니스 규칙
 - **BR-1 인증 카드는 결과 스냅샷이다.** 생성 시점의 완료블록·학습시간·정답률·컨디션·한줄회고를
   **동결**한다(이후 원본 변경에 영향 안 받음). 캡션·visibility만 사후 편집(PATCH).
-- **BR-2 하루 1포스트 cadence.** 목표는 `{ horizonDays, postsPerDay }`. 같은 날짜 중복 인증은
-  허용하되 목표 카운트는 **날짜당 1회**만 집계(streak 기준).
+- **BR-2 포스팅 cadence.** 목표는 `{ horizonDays, postsPerDay }`.
+  - **MVP: `postsPerDay = 1` 고정** — 목표 카운트·streak 모두 **날짜당 1회**만 집계(같은 날 중복 인증은
+    허용하되 진행도에는 1로 계산). validation 의 `goalPostsPerDay` 도 MVP 에선 1 로 제한.
+  - **후속(`postsPerDay > 1`)**: 날짜당 1회 집계 규칙과 모순되므로, 다포스트를 지원할 땐 집계를
+    **실제 포스트 수 기준**으로 바꾼다(날짜당 최대 `postsPerDay` 까지 카운트). MVP 범위 밖.
 - **BR-3 기본 비공개 지향.** visibility 기본 = `close_friends`. `public` 값은 **이번 범위에서 미지원**.
 - **BR-4 공유 동의 게이트.** 최초 공유 시 `ConsentDialog`(기존 패턴 재사용) 1회 동의 필수. 미성년
   표준 문구. 동의 철회 시 모든 카드 `private` 전환.
@@ -156,7 +159,8 @@
 ### ERD (명세 레벨 — 신규 엔티티)
 ```
 User(기존 auth.users) (1) ── (N) StudyProof
-User (1) ── (N) Friendship(요청자/수신자, status) ── (1) User
+User (1) ── (N) Friendship(요청자/수신자, status) ── (1) User   # 무방향 관계(수락 쌍)
+User (1) ── (N) CloseFriendDesignation(ownerId→friendId) ── (1) User   # 방향성 공개 지정
 User (1) ── (1) StudygramSetting(주제·톤·목표)
 StudyProof (1) ── (N) ProofReaction(응원 이모지)
 ```
@@ -165,7 +169,8 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 |---|---|
 | **StudygramSetting** | userId, topicLine(주제 1문장), tonePresetId(→paletteId 매핑), goalHorizonDays, goalPostsPerDay, createdAt/updatedAt |
 | **StudyProof** | id, userId, date(YYYY-MM-DD), snapshot{completedBlocks, studyMinutes, accuracy, condition, reflectionLine, subjectTags[]}, tonePresetId, caption, visibility(`close_friends`\|`friends`\|`private`), createdAt/updatedAt |
-| **Friendship** | id, requesterId, addresseeId, status(`pending`\|`accepted`\|`blocked`), isCloseFriend(bool), createdAt |
+| **Friendship** | id, requesterId, addresseeId, status(`pending`\|`accepted`\|`blocked`), createdAt — **무방향(수락된 한 쌍)**. ⚠️ **unordered-pair 유니크**: `(least(a,b), greatest(a,b))` canonical 정렬로 한 쌍당 1행만(교차 요청 `A→B`/`B→A` 가 둘 다 accepted 로 남지 않게 병합) |
+| **CloseFriendDesignation** | id, ownerId(게시자), friendId(허용 대상 viewer), createdAt — **방향성 edge** + **`(ownerId, friendId)` 유니크**(한 owner 가 같은 friend 를 최대 1회 지정 → `PUT` 멱등): 게시자 `ownerId` 가 자신의 `close_friends` 카드를 볼 수 있게 `friendId` 를 지정. **전제(BR-5): `ownerId↔friendId` 의 `Friendship.status=='accepted'` 가 있어야만 지정 가능**(승인 안 된/임의 사용자 지정 불가). 공개 판정: proof 의 `userId == ownerId` 이고 `visibility==close_friends` 면, **(i) accepted Friendship 존재 && (ii) `friendId == 현재 viewer` 인 designation 존재** 둘 다 충족 시에만 노출. A→B 지정이 B→A 를 만들지 않음(권한 누수 방지) |
 | **ProofReaction** | id, proofId, userId, emoji, createdAt |
 
 ### Validation Rules
@@ -173,7 +178,7 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 |---|---|
 | topicLine | 1~60자, 필수 |
 | goalHorizonDays | 1~365 정수 |
-| goalPostsPerDay | 1~3 정수 |
+| goalPostsPerDay | 정수. **MVP=1 고정**(BR-2). 후속 다포스트 시 1~3 |
 | caption | 0~140자 |
 | visibility | enum 3종, 기본 `close_friends` |
 | date | 미래 날짜 금지(오늘 이하) |
@@ -186,7 +191,8 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 | `GET /planner/studygram/proofs?scope=mine\|friends` | 내/친구 피드 |
 | `PATCH /planner/studygram/proofs/:id` | 캡션·visibility 수정 |
 | `DELETE /planner/studygram/proofs/:id` | 삭제 |
-| `POST /planner/studygram/friends` · `PATCH …/:id`(accept/block/close) · `GET …/friends` | 친구 |
+| `POST /planner/studygram/friends` · `PATCH …/:id`(accept/block) · `GET …/friends` | 친구 관계(무방향, 승인제) |
+| `PUT /planner/studygram/close-friends/:friendId` · `DELETE …/:friendId` · `GET …/close-friends` | close-friend **지정 생성/해제/목록** — `CloseFriendDesignation`(ownerId=호출자, friendId=path) 방향성 edge. **`PUT` 은 `(ownerId,friendId)` 유니크 기준 멱등 upsert**(중복 생성 없음). `Friendship` 의 status 변경(accept/block)과 별도 |
 | `POST /planner/studygram/proofs/:id/reactions` | 응원 |
 
 > ⚠️ 계약은 `PullimPlannerClient` 패턴([packages/api-client/src/pullim-planner.ts](../../packages/api-client/src/pullim-planner.ts))을
@@ -240,7 +246,7 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 | 톤 프리셋 | `customization.paletteId` + `lib/tokens/palettes.ts` |
 | 카드 콘텐츠 | reports 데이터(weekly/daily summary, today-reflection), `lib/mock/planner.ts` |
 | 공유 동의 | `planner-reports/components/consent-dialog.tsx` 패턴 |
-| 인증/세션 | `auth-context`(쿠키 SSO) — 추가 인증 불필요 |
+| 인증/세션 | **pullim 쿠키 SSO** — 세션 권위는 `api-client`(`on401` 핸들러) + `GET /planner/me` 판정. 추가 인증 불필요. ⚠️ cutover 에서 자체 `auth-context` 토큰 부트스트랩은 **제거됨** — 이 추상화에 다시 의존하지 말 것(흡수 §10) |
 | 데이터 클라 | `PullimPlannerClient` 패턴(`on401`, cookie-http) |
 | 화면 구조 | Container/Presenter + `features/studygram/*` |
 
@@ -258,10 +264,10 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 
 | Phase | 범위 | 산출/검증 |
 |---|---|---|
-| **P0 — 타입·계약** | `packages/types`에 StudyProof/Friendship/Setting/Visibility, api-client 클라 스텁(`PullimStudygramClient`) | 타입 PR 단독. typecheck 통과 |
+| **P0 — 타입·계약** | `packages/types`에 StudyProof/Friendship/**CloseFriendDesignation**/Setting/Visibility(+ close-friend 지정/해제 request·response 타입), api-client 클라 스텁(`PullimStudygramClient`) | 타입 PR 단독. typecheck 통과. close-friends 지정 계약 포함(후속 재계약 방지) |
 | **P1 — 세팅(주제·톤·목표)** | `/share/setup` + StudygramSetting CRUD. 톤=팔레트 매핑 | dev에서 세팅 저장·재진입 유지 |
 | **P2 — 인증 카드(StudyProof)** | 결과 스냅샷 생성/편집/삭제 + 고정 템플릿 + 동의 게이트 | 카드 POST/GET/PATCH/DELETE, 동의 1회 |
-| **P3 — 친구·피드** | Friendship(승인제·close-friends) + 내/친구 피드 + 응원 | 친구 수락 후에만 노출, RBAC 검증 |
+| **P3 — 친구·피드** | **Friendship(무방향 승인제)** + **CloseFriendDesignation(방향성 지정/해제)** + 내/친구 피드 + 응원 — 둘은 별도 구현 대상(close-friends 를 Friendship 속성으로 접지 말 것) | accepted Friendship 전제 + designation 둘 다 충족 시 노출, RBAC 검증 |
 | **P4 — export·목표 위젯** | PNG export(워터마크) + 목표 진행(posted X/N·streak) | export 이미지 확인, 목표 카운트 정확 |
 | **P5 — IA·온보딩 배선** | 하단탭/온보딩 CTA 연결(OI-1 확정 반영) | 네비 일관성(orchestration 체크리스트) |
 
@@ -276,7 +282,9 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 
 ## 오픈 이슈 (Open Issues)
 - **OI-1** 하단탭 5개 vs 소개 메뉴화(공유 승격) — 권장: 소개 메뉴화. **사용자 확정 필요.**
-- **OI-2** `friends` vs `close_friends` 2단계 공개 범위를 모두 둘지, close_friends 단일로 시작할지.
+- ~~**OI-2** `friends` vs `close_friends` 2단계 공개 범위를 모두 둘지, close_friends 단일로 시작할지.~~
+  **→ 확정(닫음): 2단계 모델 채택** — visibility enum(`close_friends`\|`friends`\|`private`)·RBAC·API·
+  `CloseFriendDesignation` 이 모두 2단계 전제로 서술됨. close_friends 단일로 되돌리지 않는다.
 - **OI-3** 엔타이틀먼트 게이트 — 공유 계층을 `flags.planner` 안에 둘지 별도 플래그(`flags.studygram`)로 둘지.
 - **OI-4** PNG export 라이브러리 선정·번들 영향(글로벌 의존성 승인).
 - **OI-5** 미성년 안전 정책(신고·차단·연령 게이트) 범위 — 법무/정책 확인.
