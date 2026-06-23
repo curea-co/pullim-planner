@@ -51,11 +51,14 @@ describe('Pullim DS canonical token values', () => {
     });
   });
 
-  describe('semantic', () => {
+  describe('semantic (전경 + 배경)', () => {
     it.each([
-      ['--color-pullim-success', '#0E8C56'],
-      ['--color-pullim-warn',    '#D97706'],
-      ['--color-pullim-danger',  '#C03B3F'],
+      ['--color-pullim-success',    '#0E8C56'],
+      ['--color-pullim-success-bg', '#E6F8EF'],
+      ['--color-pullim-warn',       '#D97706'],
+      ['--color-pullim-warn-bg',    '#FFF7E6'],
+      ['--color-pullim-danger',     '#C03B3F'],
+      ['--color-pullim-danger-bg',  '#FDECEC'],
     ])('%s === %s', (name, expected) => {
       expect(token(name)).toBe(expected);
     });
