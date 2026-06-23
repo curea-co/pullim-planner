@@ -868,7 +868,8 @@ function buildInitialPlanners(): Planner[] {
       archived: false,
       createdAt: '2026-04-20T10:00:00',
       updatedAt: '2026-04-20T10:00:00',
-      customization: { layoutId: 'block_cards', weekLayoutId: 'school_grid', paletteId: 'forest' },
+      // 색상: playbook 가드 정합 — forest(초록 큰 면) → pullim_blue(블루+레몬 액센트). color-palette green 회피.
+      customization: { layoutId: 'block_cards', weekLayoutId: 'school_grid', paletteId: 'pullim_blue' },
     },
     {
       id: 'pl_003',
