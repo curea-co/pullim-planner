@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import SharePresenter, { type ShareTab } from '../presenters/SharePresenter';
 import {
   mockStudygramSetting,
@@ -16,6 +16,7 @@ import {
 const TODAY = todayKST();
 
 export default function ShareContainer() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<ShareTab>('mine');
 
   const setting = mockStudygramSetting;
@@ -38,11 +39,9 @@ export default function ShareContainer() {
     setActiveTab(tab);
   }, []);
 
-  // 인증카드 상세 화면(/planner/share/[id])은 후속 PR 범위 — 현재는 안내 토스트로 대체해
-  // 미존재 라우트로의 404 이동을 막는다.
-  const handleProofClick = useCallback(() => {
-    toast('인증 카드 상세는 곧 열려요');
-  }, []);
+  const handleProofClick = useCallback((id: string) => {
+    router.push(`/planner/share/${id}`);
+  }, [router]);
 
   return (
     <SharePresenter
