@@ -1,8 +1,30 @@
-# 풀림 플래너 — bun workspace 모노레포
+# 풀림 플래너
 
-학생용 학습 플래너. 향후 `pullim` 플랫폼의 하위 도메인으로 흡수될 SaaS 단위로, 본 리포는 흡수 전 단계의 단독 운영체입니다.
+오늘 뭐 공부할지 계획 세우고, 끝나면 결과를 기록하는 학습 플래너예요.
+시간표를 짜면 하루 블록이 쫙 펼쳐지고, 공부 마친 블록을 체크하다 보면 오늘 얼마나 했는지 한눈에 보여요.
+매일 컨디션도 기록하고, 번아웃이 가까워지면 알림도 와요.
+공부한 내역은 친구한테 인증 카드로 공유할 수도 있어요.
 
-BE 구조는 [curea-co/pullim](https://github.com/curea-co/pullim) 패턴 차용 (NestJS 11 + TypeORM, clean architecture + Facade). 마이그레이션은 [proc/plan/2026-05-26_pullim-be-adoption.md](proc/plan/2026-05-26_pullim-be-adoption.md) Phase α~η로 단계적 진행.
+---
+
+**dev 배포:** [dev-planner.pullim.ai](https://dev-planner.pullim.ai/planner) (팀 전용, Vercel 로그인 필요)  
+**리포:** bun workspace 모노레포. 풀림 플랫폼의 하위 도메인으로 흡수 예정이며, 현재는 단독 운영체입니다.
+
+## 현재 구현된 화면
+
+| 라우트 | 기능 |
+|---|---|
+| `/planner` | 홈 — 월간/주간/일간 캘린더, 오늘 블록 현황, 번아웃 배너, 웰컴 모달 |
+| `/planner/manage` | 시간표 관리 — 목록/생성/편집/활성화/보관 |
+| `/planner/reports` | 리포트 — 주간 인사이트, 컨디션 추이, 부모 공유 |
+| `/planner/share` | 공스타그램 — 인증 카드 허브, 친구 피드, 목표 진행 위젯 |
+| `/planner/share/setup` | 공스타그램 세팅 — 주제·톤·목표 기간 |
+| `/planner/share/friends` | 친구 관리 — 요청·수락·close-friends 지정 |
+| `/planner/notifications` | 알림 목록 |
+| `/planner/onboarding` | 온보딩 |
+| `/planner/builder` | 시간표 빌더 |
+
+인증은 pullim-api 쿠키 SSO (`dev-api.pullim.ai`). 데이터 레이어는 `packages/api-client` + 일부 mock 혼용.
 
 ## 구조
 
@@ -12,9 +34,9 @@ pullim-planner/
 │   ├── planner/        # Next.js 16 (App Router) — Planner FE
 │   └── backend/        # NestJS 11 — Planner BE (Phase β 이후 본격)
 ├── packages/
-│   ├── types/          # BE↔FE 공유 타입 (Phase γ에서 본격)
-│   ├── api-client/     # FE → BE fetch 래퍼 (Phase δ에서 본격)
-│   └── auth/           # IAuthProvider 추상화 (Phase β에서 본격)
+│   ├── types/          # BE↔FE 공유 타입 (placeholder)
+│   ├── api-client/     # FE → pullim-api fetch 래퍼 (구현 완료 — pullim-planner.ts 등)
+│   └── auth/           # IAuthProvider 추상화 (placeholder)
 ├── proc/               # plan / spec / knowhow / archive / research
 ├── input/              # 기획 문서 (docs-archive 권위)
 ├── daily_outcome/      # PM 일일 보고
@@ -76,7 +98,8 @@ bun run dev:backend       # backend만
 
 | Phase | 내용 | 상태 |
 |---|---|---|
-| α | 모노레포 재편 + Drizzle 폐기 + NestJS Hello World | 진행 중 |
+| α | 모노레포 재편 + Drizzle 폐기 + NestJS Hello World | ✅ 완료 |
+| §10 cutover | FE 데이터·인증을 pullim-api 쿠키 SSO로 전환 + `api-client` 구현 | ✅ 완료 (dev 라이브) |
 | β | pullim common 패턴 차용 (filters/interceptors/guards) | 대기 |
 | γ | planner entity + 마이그레이션 + seed | 대기 |
 | δ | read endpoint 3건 이식 | 대기 |
