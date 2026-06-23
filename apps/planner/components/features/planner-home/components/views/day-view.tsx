@@ -105,7 +105,6 @@ export function DayView() {
               <NextBlockHero
                 next={next}
                 qAccess={qAccess}
-                paletteId={paletteId}
                 onNoAccess={notifyQNoAccess}
               />
             )}

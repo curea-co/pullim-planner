@@ -3,27 +3,39 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import {
-  blockTypeMeta, subjectLabels, getFeatureRoute, getBlockColor,
-  type TimeBlock, type PaletteId,
+  blockTypeMeta, subjectLabels, getFeatureRoute,
+  type TimeBlock, type BlockType,
 } from '@/lib/mock';
+import { cn } from '@/lib/utils';
+
+/**
+ * 블록 타입별 좌측 stripe 색 — `blockTypeMeta.colorVar`(고정 토큰)을 Tailwind 클래스로 매핑.
+ * 인라인 style 없이 타입 색 정체성 부여(AGENTS.md Tailwind-only 준수). self_explain은 레몬 시그니처.
+ */
+const TYPE_STRIPE: Record<BlockType, string> = {
+  concept:      'bg-pullim-blue-300',
+  practice:     'bg-pullim-blue-700',
+  review:       'bg-pullim-blue-900',
+  memorize:     'bg-pullim-blue-200',
+  mock:         'bg-pullim-blue-500',
+  tutor:        'bg-pullim-blue-400',
+  self_explain: 'bg-pullim-lemon',
+  break:        'bg-pullim-slate-300',
+};
 
 interface NextBlockHeroProps {
   next: TimeBlock;
   /** 풀림 Q 구독 여부 — 미구독 시 CTA가 구독 안내 토스트로 */
   qAccess: boolean;
-  /** 좌측 stripe 색 계산용 활성 팔레트 */
-  paletteId?: PaletteId;
   onNoAccess: () => void;
 }
 
 /**
  * "다음 블록" 히어로 — 홈 day-view 일과 시계 바로 아래.
  * 평면 카드 → 좌측 타입색 4px stripe + 블루 그라데이션 surface + 시작 시각 강조 + 강조 CTA.
- * stripe만 팔레트 동적색(inline) — side-timeline·today-timeline과 동일 패턴. 나머지는 토큰 클래스.
  */
-export function NextBlockHero({ next, qAccess, paletteId, onNoAccess }: NextBlockHeroProps) {
+export function NextBlockHero({ next, qAccess, onNoAccess }: NextBlockHeroProps) {
   const Icon = blockTypeMeta[next.type].Icon;
-  const stripeColor = getBlockColor(next.type, paletteId);
 
   const ctaCls =
     'bg-pullim-blue-600 hover:bg-pullim-blue-700 inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-pullim-sm transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-300 sm:w-auto';
@@ -32,8 +44,7 @@ export function NextBlockHero({ next, qAccess, paletteId, onNoAccess }: NextBloc
     <div className="border-pullim-blue-100 from-pullim-blue-50 to-pullim-blue-100/40 shadow-pullim-sm relative mt-4 overflow-hidden rounded-2xl border bg-gradient-to-br p-3 pl-4">
       {/* 좌측 타입색 stripe — 4px 얇은 액센트(가드 안전) */}
       <span
-        className="absolute inset-y-0 left-0 w-1"
-        style={{ background: stripeColor }}
+        className={cn('absolute inset-y-0 left-0 w-1', TYPE_STRIPE[next.type])}
         aria-hidden
       />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
