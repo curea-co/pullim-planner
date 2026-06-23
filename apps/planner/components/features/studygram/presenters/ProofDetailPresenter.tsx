@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from 'lucide-react';
 import type { StudyProof } from '../types';
-import { VISIBILITY_LABEL, CONDITION_EMOJI } from '../types';
+import { VISIBILITY_LABEL } from '../types';
 import { ProofCard } from '../components/proof-card';
 
 interface ProofDetailPresenterProps {
@@ -44,7 +44,7 @@ export default function ProofDetailPresenter({ proof, onBack }: ProofDetailPrese
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">컨디션</span>
-          <span>{CONDITION_EMOJI[snapshot.condition]}</span>
+          <span className="font-medium text-foreground">{snapshot.condition}/5</span>
         </div>
         {snapshot.accuracy !== undefined && (
           <div className="flex items-center justify-between text-sm">

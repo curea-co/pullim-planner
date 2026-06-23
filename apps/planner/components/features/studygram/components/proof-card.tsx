@@ -1,7 +1,7 @@
 'use client';
 
 import { palettes } from '@/lib/tokens/palettes';
-import { TONE_TO_PALETTE, CONDITION_EMOJI, VISIBILITY_LABEL } from '../types';
+import { TONE_TO_PALETTE, VISIBILITY_LABEL } from '../types';
 import type { StudyProof } from '../types';
 import { cn } from '@/lib/utils';
 
@@ -78,11 +78,8 @@ export function ProofCard({ proof, ownerName, variant = 'grid', onClick }: Proof
         {/* 컨디션 + 한줄회고 */}
         {!isGrid && (
           <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-            {CONDITION_EMOJI[snapshot.condition]} {snapshot.reflectionLine}
+            {snapshot.reflectionLine}
           </p>
-        )}
-        {isGrid && (
-          <span className="text-base leading-none">{CONDITION_EMOJI[snapshot.condition]}</span>
         )}
 
         {/* 캡션 */}
