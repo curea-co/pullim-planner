@@ -54,9 +54,9 @@
   --color-pullim-blue-500: #3B6FF6;
   --color-pullim-blue-600: #2854D8;
   --color-pullim-blue-700: #1D3FA8;
-  --color-pullim-blue-800: #152E7A;
-  --color-pullim-blue-900: #0E1F54;
-  --color-pullim-blue-950: #070F2C;
+  --color-pullim-blue-800: #142C73;
+  --color-pullim-blue-900: #070F2C;
+  --color-pullim-blue-950: #050A1E;
 
   /* 풀림 슬레이트 (쿨한 중립색) */
   --color-pullim-slate-0:   #FFFFFF;
@@ -64,24 +64,22 @@
   --color-pullim-slate-50:  #F5F7FB;
   --color-pullim-slate-100: #EDF0F5;
   --color-pullim-slate-200: #DDE2EC;
-  --color-pullim-slate-300: #C4CBDA;
+  --color-pullim-slate-300: #B7BDCD;
   --color-pullim-slate-400: #97A0B4;
   --color-pullim-slate-500: #6B7489;
   --color-pullim-slate-600: #4A536A;
-  --color-pullim-slate-700: #343B50;
-  --color-pullim-slate-800: #20263A;
+  --color-pullim-slate-700: #2B3245;
+  --color-pullim-slate-800: #1E2435;
   --color-pullim-slate-900: #121627;
-  --color-pullim-slate-950: #080B18;
+  --color-pullim-slate-950: #0B0E1A;
 
   /* 시맨틱 */
-  --color-pullim-success: #12B26B;
-  --color-pullim-success-bg: #E6F7EE;
-  --color-pullim-success-strong: #0E8C56; /* 흰글자 위 success 텍스트 안전 값 (AA) */
-  --color-pullim-warn: #F59E0B;
-  --color-pullim-warn-bg: #FEF3DB;
-  --color-pullim-warn-cta-bg: #D97706;    /* 흰글자 위 warn CTA 배경 전용 (AA — #F59E0B+흰글자 2.6:1 회피) */
-  --color-pullim-danger: #E5484D;
-  --color-pullim-danger-bg: #FCE9EA;
+  --color-pullim-success: #0E8C56;        /* DS canonical — AA on white */
+  --color-pullim-success-bg: #E6F8EF;
+  --color-pullim-warn: #D97706;           /* DS canonical — AA on white */
+  --color-pullim-warn-bg: #FFF7E6;
+  --color-pullim-danger: #C03B3F;         /* DS canonical — AA on white */
+  --color-pullim-danger-bg: #FDECEC;
 
   /* IRT 난이도 5단계 */
   --color-pullim-lvl-1: #E5EEFF;
@@ -92,7 +90,7 @@
 
   /* 풀림 레몬 — 강조·CTA·스트릭 (플래너 핸드오프 12.1) */
   --color-pullim-lemon: #E6FF4C;
-  --color-pullim-lemon-soft: #F5FFB8;
+  --color-pullim-lemon-soft: #F4FFB8;
   --color-pullim-lemon-ink: #5C6B0A;
 
   /* 보조 색 — 블록 타입별 아이콘 컨테이너 (11-planner-design § 5.1) */
