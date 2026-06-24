@@ -168,7 +168,7 @@ export function formToPlannerPatch(form: PlannerForm): Omit<Planner, 'id' | 'act
 }
 
 export const plannerStepConfig: readonly StepInfo[] = [
-  { num: 1, label: '목표',      icon: Target,    title: '목표 · D-day',         description: '시험 종류(모의/수능/중간/기말/기타)에 따라 단일 일자 또는 시험 범위(시작~종료)를 설정해요.' },
+  { num: 1, label: '목표',      icon: Target,    title: '목표 · D-day',         description: '' },
   { num: 2, label: '가용시간',  icon: Clock,     title: '학습 가능 시간',       description: '평일·주말 학습할 수 있는 시간대. 학교/학원 시간 빼고.' },
   { num: 3, label: '범위',      icon: BookOpen,  title: '학습 범위',            description: '이번 시험에서 다룰 과목 · 단원 선택. 시간 분배는 AI가 단원 수·약점·D-day로 자동 계산해요.' },
   { num: 4, label: '블록',      icon: Hourglass, title: '블록 패턴',            description: '집중 ↔ 휴식 리듬. 본인 집중력에 맞춰 선택.' },

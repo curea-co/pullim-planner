@@ -175,15 +175,7 @@ export function PStep1Goal({ form, setForm }: Props) {
           placeholder="예: 영어 빈칸 추론 1등급 사수"
           className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
         />
-        <p className="text-pullim-slate-500 mt-1 text-[10px]">
-          힘들 때 봇이 너의 다짐을 떠올려줘요. 짧을수록 좋음.
-        </p>
       </div>
-
-      <aside className="bg-pullim-blue-50 text-pullim-blue-700 inline-flex w-full items-start gap-1.5 rounded-xl p-3 text-[11px] leading-relaxed">
-        <Lightbulb aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        <span>{meta.hint}</span>
-      </aside>
     </div>
   );
 }

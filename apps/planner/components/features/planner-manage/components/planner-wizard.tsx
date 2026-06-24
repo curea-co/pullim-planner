@@ -58,9 +58,11 @@ export function PlannerWizard({
             <h2 className="text-pullim-slate-900 mt-0.5 text-lg font-bold tracking-tight">
               {stepInfo.title}
             </h2>
-            <p className="text-pullim-slate-600 mt-1 text-xs leading-relaxed">
-              {stepInfo.description}
-            </p>
+            {stepInfo.description && (
+              <p className="text-pullim-slate-600 mt-1 text-xs leading-relaxed">
+                {stepInfo.description}
+              </p>
+            )}
           </div>
         </header>
 
