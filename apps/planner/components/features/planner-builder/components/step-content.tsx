@@ -689,7 +689,7 @@ export function PStep5Routine({ form, setForm }: Props) {
   return (
     <div className="space-y-3">
       <p className="text-pullim-slate-500 text-xs">
-        이 시간표에 넣을 반복 행동을 골라요. 고른 루틴은 마지막 단계 미리보기에 해당 요일마다 들어가요. 건너뛰어도 돼요.
+        이 시간표에 넣을 반복 행동을 골라요. 시간이 맞는 요일은 마지막 단계 미리보기에 들어가요(기존 블록과 겹치면 제외). 건너뛰어도 돼요.
       </p>
       <ul className="space-y-2">
         {routines.map((r) => {
@@ -1136,7 +1136,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props
           <li>· 학습 범위: <strong className="text-white font-mono">{Object.keys(form.subjectUnits ?? {}).length}개 과목 · {Object.values(form.subjectUnits ?? {}).reduce((a, b) => a + (b?.length ?? 0), 0)}개 단원</strong>{form.weaknessAutoReflect ? ' (+ 약점 단원 자동)' : ''}</li>
           <li>· 시간 분배: <span className="text-pullim-slate-400">AI 자동 (단원 수 + 약점 + D-day 기반)</span></li>
           <li>· 블록 패턴: {blockPatternMeta[form.blockPattern].label} <span className="text-pullim-slate-500">({blockPatternMeta[form.blockPattern].spec})</span></li>
-          <li>· 적용 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(미리보기 반영)</span></li>
+          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(시간 맞는 요일만 미리보기 반영)</span></li>
           <li>· 동기 스타일: {motivationStyleMeta[form.motivationStyle].label}</li>
           <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON' : 'OFF'}</li>
           <li>· 알림: {[form.remindKakao && '카톡', form.remindPush && '푸시', form.remindBefore5min && '5분 전', form.parentDailyReport && '부모 보고'].filter(Boolean).join(', ') || '없음'}</li>
