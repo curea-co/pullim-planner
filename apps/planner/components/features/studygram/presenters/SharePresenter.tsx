@@ -105,7 +105,7 @@ export default function SharePresenter({
                   친구들이 아직 오늘 인증을 안 했어요
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   {friendProofs.map((proof) => {
                     const friend = acceptedFriends.find((f) => f.userId === proof.userId);
                     return (
