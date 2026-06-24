@@ -33,12 +33,19 @@ describe('PUDS 토큰 별칭 (re-skin lock)', () => {
   });
 
   describe('slate → gray', () => {
-    it.each([100, 200, 300, 400, 500, 600, 700, 800, 900, 950])(
+    it.each([50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950])(
       'pullim-slate-%i → gray-%i',
       (s) => {
         expect(alias(`--color-pullim-slate-${s}`)).toBe(`--color-gray-${s}`);
       },
     );
+    it('slate-0 → surface-raised', () => {
+      expect(alias('--color-pullim-slate-0')).toBe('--surface-raised');
+    });
+    it('slate-25는 별도 상단 톤 — 50과 수렴하지 않는다', () => {
+      const m = css.match(/--color-pullim-slate-25:\s*([^;]+);/);
+      expect(m?.[1]).toContain('color-mix'); // gray-50 단순 별칭이 아니어야
+    });
   });
 
   describe('semantic → PUDS ramp', () => {
