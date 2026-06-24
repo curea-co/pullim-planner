@@ -30,7 +30,7 @@ export default function NewPlannerPresenter({
       <PageHeader
         eyebrow={{ icon: Wrench, text: '플래너 빌더' }}
         title="내 맞춤 플래너 만들기"
-        description="8단계 위저드 — 목표·가용 시간·약점을 종합해 일주일치 플래너를 자동 생성해요."
+        description="9단계 프로세스 — 목표·가용 시간·루틴·약점을 종합해 일주일치 플래너를 자동 생성해요."
         action={
           <button
             type="button"

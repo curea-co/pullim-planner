@@ -16,7 +16,7 @@ type Props = {
 };
 
 /**
- * 8단계 위저드 진행 표시 — 데스크탑 가로, 모바일 세로 압축.
+ * 9단계 프로세스 진행 표시 — 데스크탑 가로, 모바일 세로 압축.
  * 완료 단계는 체크, 현재 단계는 강조, 미완 단계는 흐림.
  */
 export function StepIndicator({ steps, current, onJump }: Props) {

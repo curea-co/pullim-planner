@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StepIndicator } from '@/components/features/planner-builder/components/step-indicator';
 import {
-  PStep1Goal, PStep2Hours, PStep3Subjects, PStep4Pattern,
+  PStep1Goal, PStep2Hours, PStep3Subjects, PStep4Pattern, PStep5Routine,
   PStep5Weakness, PStep6Motivation, PStep7Reminder, PStep8Activate,
 } from '@/components/features/planner-builder/components/step-content';
 import {
@@ -12,7 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
- * 8단계 위저드 마크업 — new/edit 페이지 공유.
+ * 9단계 프로세스 마크업 — new/edit 페이지 공유.
  * 상태/이벤트는 props로 받기만 (presentation).
  */
 interface PlannerWizardProps {
@@ -53,7 +53,7 @@ export function PlannerWizard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
-              Step {currentStep} / 8
+              Step {currentStep} / 9
             </div>
             <h2 className="text-pullim-slate-900 mt-0.5 text-lg font-bold tracking-tight">
               {stepInfo.title}
@@ -69,10 +69,11 @@ export function PlannerWizard({
           {currentStep === 2 && <PStep2Hours form={form} setForm={setForm} />}
           {currentStep === 3 && <PStep3Subjects form={form} setForm={setForm} />}
           {currentStep === 4 && <PStep4Pattern form={form} setForm={setForm} />}
-          {currentStep === 5 && <PStep5Weakness form={form} setForm={setForm} />}
-          {currentStep === 6 && <PStep6Motivation form={form} setForm={setForm} />}
-          {currentStep === 7 && <PStep7Reminder form={form} setForm={setForm} />}
-          {currentStep === 8 && <PStep8Activate form={form} mode={mode} onActivate={onActivate} />}
+          {currentStep === 5 && <PStep5Routine form={form} setForm={setForm} />}
+          {currentStep === 6 && <PStep5Weakness form={form} setForm={setForm} />}
+          {currentStep === 7 && <PStep6Motivation form={form} setForm={setForm} />}
+          {currentStep === 8 && <PStep7Reminder form={form} setForm={setForm} />}
+          {currentStep === 9 && <PStep8Activate form={form} mode={mode} onActivate={onActivate} />}
         </div>
 
         <footer className="mt-5 flex items-center justify-between border-t pt-4">
@@ -92,7 +93,7 @@ export function PlannerWizard({
           </button>
 
           <div className="text-pullim-slate-500 hidden sm:block text-[10px] font-mono">
-            {currentStep}/8 — {stepInfo.label}
+            {currentStep}/9 — {stepInfo.label}
           </div>
 
           {canNext ? (

@@ -1,12 +1,12 @@
 import {
-  Target, Clock, BookOpen, Hourglass, Flame, Heart, Bell, Sparkles,
+  Target, Clock, BookOpen, Hourglass, Flame, Heart, Bell, Sparkles, Repeat2,
   Timer, Waves, Leaf, HandHeart,
   type LucideIcon,
 } from 'lucide-react';
 import type { SubjectKey } from '@/lib/mock';
 
 /**
- * 학생 플래너 빌더 8단계 폼 데이터.
+ * 학생 플래너 빌더 9단계 폼 데이터.
  * 핸드오프 08 기반.
  */
 
@@ -50,13 +50,15 @@ export type PlannerForm = {
   blockPattern: BlockPattern;
   /** @deprecated 의미 모호로 v2에서 제거 — 패턴 카드 자체가 휴식 비율 정의 */
   breakRatio?: number;
-  // Step 5 — 약점 자동 반영 (가중치 fine-tune은 AI에 위임)
+  // Step 5 — 루틴(반복 행동) 적용 — 라이브러리에서 고른 루틴 id (선택)
+  routineIds: string[];
+  // Step 6 — 약점 자동 반영 (가중치 fine-tune은 AI에 위임)
   weaknessAutoReflect: boolean;
   /** @deprecated 의미 모호로 v2에서 제거 */
   weaknessWeight?: number;
-  // Step 6 — 동기 스타일
+  // Step 7 — 동기 스타일
   motivationStyle: MotivationStyle;
-  // Step 7 — 리마인더
+  // Step 8 — 리마인더
   remindKakao: boolean;
   remindPush: boolean;
   remindBefore5min: boolean;
@@ -80,6 +82,7 @@ export const initialPlannerForm: PlannerForm = {
     science: ['역학과 에너지'],
   },
   blockPattern: 'focused',
+  routineIds: [],
   weaknessAutoReflect: true,
   motivationStyle: 'guided',
   remindKakao: true,
@@ -127,6 +130,8 @@ export function plannerToForm(p: Planner): PlannerForm {
     weekendHours: { ...p.weekendHours },
     subjectUnits: { ...p.subjectUnits },
     blockPattern: p.blockPattern,
+    // 루틴 적용은 Planner 메타에 미보존(실 BE 연기) — 편집 진입 시 빈 선택으로 시작
+    routineIds: [],
     weaknessAutoReflect: p.weaknessAutoReflect,
     motivationStyle: p.motivationStyle,
     // 알림 설정은 Planner 메타에 미보존 — 기본값 사용 (별도 사용자 설정으로 분리 예정)
@@ -167,8 +172,9 @@ export const plannerStepConfig: readonly StepInfo[] = [
   { num: 2, label: '가용시간',  icon: Clock,     title: '학습 가능 시간',       description: '평일·주말 학습할 수 있는 시간대. 학교/학원 시간 빼고.' },
   { num: 3, label: '범위',      icon: BookOpen,  title: '학습 범위',            description: '이번 시험에서 다룰 과목 · 단원 선택. 시간 분배는 AI가 단원 수·약점·D-day로 자동 계산해요.' },
   { num: 4, label: '블록',      icon: Hourglass, title: '블록 패턴',            description: '집중 ↔ 휴식 리듬. 본인 집중력에 맞춰 선택.' },
-  { num: 5, label: '약점',      icon: Flame,     title: '약점 자동 반영',       description: '풀림 분석의 약점 단원을 플래너가 자동으로 더 많이 배정할지.' },
-  { num: 6, label: '동기',      icon: Heart,     title: '동기 부여 스타일',     description: '봇이 어떻게 너를 도울지. 스파르타로 갈수록 알림이 늘어요.' },
-  { num: 7, label: '알림',      icon: Bell,      title: '리마인더',             description: '카톡·푸시·시작 5분 전 알림. 부모 일일 보고는 동의 필요.' },
-  { num: 8, label: '활성화',    icon: Sparkles,  title: '미리보기 · 활성화',    description: '일주일 자동 생성된 플래너를 확인하고 활성화.' },
+  { num: 5, label: '루틴',      icon: Repeat2,   title: '루틴 — 반복하는 행동', description: '매일·매주 반복할 행동을 골라 이 시간표에 넣어요. 건너뛰어도 돼요.' },
+  { num: 6, label: '약점',      icon: Flame,     title: '약점 자동 반영',       description: '풀림 분석의 약점 단원을 플래너가 자동으로 더 많이 배정할지.' },
+  { num: 7, label: '동기',      icon: Heart,     title: '동기 부여 스타일',     description: '봇이 어떻게 너를 도울지. 스파르타로 갈수록 알림이 늘어요.' },
+  { num: 8, label: '알림',      icon: Bell,      title: '리마인더',             description: '카톡·푸시·시작 5분 전 알림. 부모 일일 보고는 동의 필요.' },
+  { num: 9, label: '활성화',    icon: Sparkles,  title: '미리보기 · 활성화',    description: '일주일 자동 생성된 플래너를 확인하고 활성화.' },
 ] as const;

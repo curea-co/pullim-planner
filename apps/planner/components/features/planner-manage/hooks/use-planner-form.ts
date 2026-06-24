@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 
 /**
- * 8단계 위저드 step navigation + form state — new/edit 공유 hook.
+ * 9단계 프로세스 step navigation + form state — new/edit 공유 hook.
  *
  * 책임: currentStep / form 상태, goPrev/goNext (validation 포함), jumpTo, saveDraft toast.
  * 저장 핸들러(create/activate vs update)는 Container 책임.
@@ -15,7 +15,7 @@ export function usePlannerForm(initialForm: PlannerForm, draftFallbackName: stri
   const [form, setForm] = useState<PlannerForm>(initialForm);
 
   const canPrev = currentStep > 1;
-  const canNext = currentStep < 8;
+  const canNext = currentStep < 9;
 
   function goPrev() {
     if (canPrev) setCurrentStep(currentStep - 1);
@@ -48,7 +48,7 @@ export function usePlannerForm(initialForm: PlannerForm, draftFallbackName: stri
 
   function saveDraft() {
     toast.info('💾 임시저장 (데모)', {
-      description: `${form.examName || draftFallbackName} · ${currentStep}/8단계까지 작성됨`,
+      description: `${form.examName || draftFallbackName} · ${currentStep}/9단계까지 작성됨`,
     });
   }
 
