@@ -25,6 +25,7 @@ import {
   type WeekLayoutId,
 } from '@/lib/mock';
 import { plannerClient } from '@/lib/planner/client';
+import { updatePlannerCustomization } from '@/lib/mock/planner';
 import {
   getCustomization,
   type Customization,
@@ -32,6 +33,8 @@ import {
 import { ActiveDayLayout } from '@/components/features/planner-home/components/layouts/active-day-layout';
 import { ActiveWeekLayout } from '@/components/features/planner-home/components/layouts/active-week-layout';
 import { cn } from '@/lib/utils';
+
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
 type PreviewTab = 'day' | 'week';
 
@@ -108,23 +111,29 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
 
     async function save() {
       if (!selectedPlanner) return;
-      try {
-        await plannerClient.updateCustomization(selectedPlanner.id, {
-          layoutId: draftLayout,
-          weekLayoutId: draftWeekLayout,
-          paletteId: draftPalette,
-        });
-        // 저장 성공 → baseline 끌어올림 (isDirty=false, 저장 버튼 비활성·되돌리기 정합).
-        setSavedOverride({
-          layoutId: draftLayout,
-          weekLayoutId: draftWeekLayout,
-          paletteId: draftPalette,
-        });
+      const next = {
+        layoutId: draftLayout,
+        weekLayoutId: draftWeekLayout,
+        paletteId: draftPalette,
+      };
+      // 저장 성공 후 공통 처리 — baseline 끌어올림(isDirty=false) + toast + 상위 알림.
+      const onOk = () => {
+        setSavedOverride(next);
         toast.success('🎨 시간표 꾸미기 저장됨', {
           description: `${selectedPlanner.name} — 일간 ${layoutTemplates[draftLayout].label} · 주간 ${weekLayouts[draftWeekLayout].label} · ${palettes[draftPalette].label}`,
           duration: 2500,
         });
         onSaved?.(selectedPlanner.id);
+      };
+      // 로컬 dev 우회 — 실 API 대신 공유 mock store를 갱신한다.
+      if (DEV_AUTH_BYPASS) {
+        updatePlannerCustomization(selectedPlanner.id, next);
+        onOk();
+        return;
+      }
+      try {
+        await plannerClient.updateCustomization(selectedPlanner.id, next);
+        onOk();
       } catch (e) {
         toast.error(e instanceof ApiError ? e.message : '꾸미기 저장 실패');
       }

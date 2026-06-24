@@ -9,11 +9,14 @@ import {
   type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
 import type { Planner } from '@/lib/mock';
+import { findPlanner, updatePlanner } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient, toWriteInput } from '@/lib/planner/client';
 import { usePlannerForm } from '../hooks/use-planner-form';
 import EditPlannerPresenter from '../presenters/EditPlannerPresenter';
 
 export type EditTab = 'config' | 'layout';
+
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
 /**
  * 기존 시간표 수정 Container — 빌더 with pre-fill (mode='edit').
@@ -39,6 +42,15 @@ export default function EditPlannerContainer({
     let cancelled = false;
     void (async () => {
       if (!cancelled) setLoaded(false);
+      // 로컬 dev 우회 — 실 API 대신 공유 mock store에서 단건을 찾는다 (ManagePlannersContainer 정합).
+      if (DEV_AUTH_BYPASS) {
+        if (!cancelled) {
+          setPlanner(findPlanner(id) ?? null);
+          setLoadError(false);
+          setLoaded(true);
+        }
+        return;
+      }
       try {
         const list = await plannerClient.list();
         const found =
@@ -108,6 +120,16 @@ function EditPlannerForm({
   );
 
   async function handleSave(submitted: PlannerForm) {
+    // 로컬 dev 우회 — 실 API 대신 공유 mock store를 갱신한다.
+    if (DEV_AUTH_BYPASS) {
+      updatePlanner(id, formToPlannerPatch(submitted));
+      toast.success('✓ 변경 사항 저장 완료', {
+        description: `${submitted.examName} — 다음 활성화 시 반영됩니다`,
+        duration: 3000,
+      });
+      router.push('/planner/manage');
+      return;
+    }
     try {
       // customization 은 PUT /planners 가 갱신하지 않는다(전용 엔드포인트 소유, BE 보존).
       // 따라서 폼 결과를 그대로 보낸다 — 굳이 customization 을 실으면 꾸미기 탭에서 방금 저장한
