@@ -209,6 +209,13 @@ const DEMO_BLOCKS_PLANNER_ID = 'pl_001';
  * - 기준일이라도 **활성 플래너가 데모(pl_001)가 아니면** 빈 배열 — mock은 신규 시간표의
  *   블록을 생성하지 않으므로 데모 블록을 잘못 보여주지 않고 "정직한 빈 상태"를 보인다.
  *   (실제 블록 생성은 활성화 시 BE materialize — 06-30+)
+ *
+ * 활성 판정에 `getActivePlanner()`(이 mock store)를 쓰는 이유: **홈은 블록·활성 플래너를
+ * 모두 이 mock 레이어에서 읽는다**(HomeContainer — dev/prod 공통, 아직 BE cutover 전).
+ * 즉 이 게이트는 홈의 현재 데이터 소스와 일관된다.
+ * - dev 우회: activatePlanner()가 이 store를 갱신 → 신규 플래너 활성 시 빈 상태가 의도대로 동작.
+ * - prod: 홈이 아직 BE로 cutover되지 않아 종전에도 줄곧 pl_001 데모만 노출 → 이 PR로도 동일(회귀 없음).
+ * 실 BE 활성 플래너 기준 블록 반영은 **홈→pullim-api cutover + materialize** 시점의 별 작업.
  */
 export function getBlocksForDayOffset(offset: number): TimeBlock[] {
   if (offset !== 0) return [];
