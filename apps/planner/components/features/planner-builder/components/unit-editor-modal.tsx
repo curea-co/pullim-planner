@@ -328,8 +328,7 @@ export function UnitEditorModal({
                   <ListChecks aria-hidden className="h-3 w-3" />
                   출처
                 </span>
-                <span className="ml-1">{defaultSource.text}</span>
-                <span className="text-pullim-slate-400"> · {defaultSource.authority}</span>
+                <span className="ml-1">교육부 고시 교육과정</span>
                 {defaultSource.url && (
                   <span className="text-pullim-slate-400"> · {defaultSource.url}</span>
                 )}
