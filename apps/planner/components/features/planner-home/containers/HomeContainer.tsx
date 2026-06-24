@@ -42,6 +42,7 @@ export default function HomeContainer() {
   const handlePrev = useCallback(() => setOffset(o => o - 1), []);
   const handleNext = useCallback(() => setOffset(o => o + 1), []);
   const handleReset = useCallback(() => setOffset(0), []);
+  const handleJump = useCallback((o: number) => setOffset(o), []);
 
   // 뷰가 바뀌면(토글·뒤로가기·외부 ?view= 진입 모두) offset을 기준 기간으로 리셋.
   // offset이 URL과 분리돼 있어, 이전 뷰의 offset이 남아 다른 뷰에 빈 화면이 뜨는 것을 방지.
@@ -102,6 +103,7 @@ export default function HomeContainer() {
         onPrev={handlePrev}
         onNext={handleNext}
         onReset={handleReset}
+        onJumpOffset={handleJump}
         onChangeView={onChangeView}
       />
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />

@@ -7,6 +7,7 @@ import { DayView } from '../components/views/day-view';
 import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
 import { composeDDayChipProps } from '@/lib/planner/d-day-tier';
+import { planBaseDate } from '@/lib/mock/planner';
 import {
   formatDayNavLabel, formatDayTitle, formatDayRelLabel,
   formatWeekNavLabel, formatWeekTitle,
@@ -29,6 +30,8 @@ interface HomePresenterProps {
   onPrev: () => void;
   onNext: () => void;
   onReset: () => void;
+  /** 날짜 점프 — 기준일 대비 offset 으로 이동 (일간 달력 선택) */
+  onJumpOffset: (offset: number) => void;
   onChangeView: (next: CalendarView) => void;
 }
 
@@ -44,6 +47,7 @@ export default function HomePresenter({
   onPrev,
   onNext,
   onReset,
+  onJumpOffset,
   onChangeView,
 }: HomePresenterProps) {
   const switchAction = (
@@ -134,6 +138,11 @@ export default function HomePresenter({
         nextLabel={headerProps.nextLabel}
         onPrev={onPrev}
         onNext={onNext}
+        datePicker={
+          view === 'day'
+            ? { baseISO: planBaseDate, currentOffset: offset, onPick: onJumpOffset }
+            : undefined
+        }
         action={switchAction}
       >
         {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} />}

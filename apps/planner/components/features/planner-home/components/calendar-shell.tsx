@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { cn } from '@/lib/utils';
+import { DateJumpPopover } from './date-jump-popover';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
@@ -38,6 +39,8 @@ type Props = {
   /** prev/next 클릭 핸들러. 미전달 시 버튼 disabled. */
   onPrev?: () => void;
   onNext?: () => void;
+  /** 날짜 점프 달력 — 전달 시 navLabel이 클릭하면 달력이 열린다(일간 전용). */
+  datePicker?: { baseISO: string; currentOffset: number; onPick: (offset: number) => void };
   /** 추가 우측 액션 (예: '오늘로' 버튼) */
   action?: ReactNode;
   /** view 본문 */
@@ -51,7 +54,7 @@ type Props = {
 export function CalendarShell({
   view, onChangeView,
   title, description, navLabel,
-  prevLabel, nextLabel, onPrev, onNext, action,
+  prevLabel, nextLabel, onPrev, onNext, datePicker, action,
   children,
 }: Props) {
   const meta = viewMeta[view];
@@ -80,17 +83,27 @@ export function CalendarShell({
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">{prevLabel ?? `이전 ${meta.navUnit}`}</span>
           </button>
-          <span className="text-pullim-slate-700 px-2 text-xs font-bold">
-            {navLabel}
-            {navDisabled && (
-              <span
-                className="text-pullim-slate-400 ml-1 text-xs font-normal"
-                aria-label="기간 이동은 아직 지원하지 않아요"
-              >
-                (이번 기간만)
-              </span>
-            )}
-          </span>
+          {datePicker ? (
+            <DateJumpPopover
+              baseISO={datePicker.baseISO}
+              currentOffset={datePicker.currentOffset}
+              onPick={datePicker.onPick}
+            >
+              {navLabel}
+            </DateJumpPopover>
+          ) : (
+            <span className="text-pullim-slate-700 px-2 text-xs font-bold">
+              {navLabel}
+              {navDisabled && (
+                <span
+                  className="text-pullim-slate-400 ml-1 text-xs font-normal"
+                  aria-label="기간 이동은 아직 지원하지 않아요"
+                >
+                  (이번 기간만)
+                </span>
+              )}
+            </span>
+          )}
           <button
             type="button"
             onClick={onNext}
