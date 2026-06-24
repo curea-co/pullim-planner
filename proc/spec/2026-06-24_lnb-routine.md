@@ -16,8 +16,8 @@
 | 소유 단위 | **플래너 단위**(`plannerId` FK) — 시험별 시간표가 다르므로 (오픈이슈 OI-1) |
 | materialize 시점 | **조회 시 on-the-fly**(GET blocks에서 합성) — 사전 생성/저장 안 함 (오픈이슈 OI-2) |
 | 충돌 처리 | **수동 블록 우선** — 같은 시간대 겹치면 루틴 블록은 양보(표시 보류) (오픈이슈 OI-3) |
-| 구현 목표 | **실 BE 데이터 영속**(mock 프리뷰 아님) — 사용자 확정 2026-06-24 |
-| 산출물 | 본 명세(spec) + 실 BE 풀스택 구현. `packages→BE→FE` PR 분리. 일정·배포 현실성은 §12 |
+| 구현 범위(출시) | ⚠️ **FE 화면설계(mock)만** — 실 BE·마이그레이션은 **서비스 오픈 이후로 연기**(사용자 확정 2026-06-24). 이유: 루틴 실 BE는 pullim-api 팀 의존 + 공유 DB 마이그레이션이라 출시일 불가. 자세히는 §12 |
+| 산출물 | 본 명세(spec) + **출시: 루틴 FE(mock) 화면**. 실 BE 풀스택은 후속 트랙(설계는 본 문서가 권위로 보존) |
 
 ---
 
@@ -268,16 +268,19 @@ FE mock은 [apps/planner/lib/mock/planner.ts](../../apps/planner/lib/mock/planne
 ## 9. 단계적 개발 로드맵 (PR 시퀀스 — 각 단독 검증)
 
 > 리포 최상위 룰: FE/BE를 한 PR에 섞지 않는다. 공유 타입이 항상 선행.
+> ⚠️ **출시(06-29) 범위 = R4·R5(FE, mock)만.** R0·R1·R2·R3(실 BE·api-client 연동)은 **서비스 오픈 이후 연기**(§12).
 
-| Phase | PR | 범위 | 검증 |
-|---|---|---|---|
-| **R0** | `packages/types` | `Routine`·`RoutineWrite`·`WeekdayMask` 타입 + 비트마스크 헬퍼 시그니처 | typecheck, 단위테스트 |
-| **R1** | `apps/backend` (1) | Routine 엔티티 + 마이그레이션 + 루틴 CRUD(controller/use-case/repo) | BE 빌드·migration·CRUD e2e |
-| **R2** | `apps/backend` (2) | `GET blocks` materialize 확장(요일 매칭·종료조건·충돌 보류) | materialize 단위테스트(요일/종료/충돌) |
-| **R3** | `packages/api-client` | routine CRUD 클라이언트 + 타입 연결 | typecheck, 계약 테스트 |
-| **R4** | `apps/planner` (1) | LNB 락 해제 + `/planner/routine` 목록·CRUD 폼(mock 우선) | typecheck/lint/test, 화면 회귀 |
-| **R5** | `apps/planner` (2) | 미리보기 + 홈 day-view 루틴 배지/충돌 표시 + api-client 연동 | e2e: 등록→홈 자동반영 |
-| **R6**(Could) | FE/BE | skip exception(오늘만 건너뛰기) / 템플릿 추천 | — |
+| Phase | 출시 | PR | 범위 | 검증 |
+|---|---|---|---|---|
+| **R4** | ✅ 출시 | `apps/planner` (1) | LNB 락 해제 + `/planner/routine` 목록·CRUD 폼·홈 자동반영 (**mock**) | typecheck/lint/test, 화면 회귀 |
+| **R5** | ✅ 출시 | `apps/planner` (2) | 미리보기 + 홈 day-view 루틴 배지/충돌 표시 (mock) | e2e: 등록→홈 자동반영(mock) |
+| **R0** | ⏸ 연기 | `packages/types`(또는 api-client) | `Routine`·`RoutineWrite`·`WeekdayMask` 타입 + 비트마스크 헬퍼 | typecheck, 단위테스트 |
+| **R1** | ⏸ 연기 | **pullim-api**(플랫폼) | Routine 엔티티 + 마이그레이션 + 루틴 CRUD | 게이트키퍼 핸드오프 |
+| **R2** | ⏸ 연기 | **pullim-api**(플랫폼) | `GET blocks` materialize 확장(요일·종료·충돌) | materialize 단위테스트 |
+| **R3** | ⏸ 연기 | `packages/api-client` | routine CRUD 클라이언트 + FE 실연동 | 계약 테스트 |
+| **R6**(Could) | ⏸ 연기 | FE/BE | skip exception / 템플릿 추천 | — |
+
+> R1·R2(실 BE)는 이 repo `apps/backend`가 아니라 **pullim-api(플랫폼, 게이트키퍼 소유)**에 들어간다 — FE가 라이브로 무는 곳. 본 repo `apps/backend`는 참조 구현. 연기 트랙은 cutover와 동일하게 **pullim-api 요구사항 핸드오프**로 시작.
 
 **완료 기준 체크리스트**
 - [ ] 루틴 CRUD 동작(목록·생성·수정·삭제·ON/OFF)
@@ -340,23 +343,19 @@ FE mock은 [apps/planner/lib/mock/planner.ts](../../apps/planner/lib/mock/planne
 2. **루틴 실 BE + 마이그레이션**: 게이트키퍼와 마이그레이션 배포창을 사전에 잡고, **R0→R5 머지 후 별도 통합배포**(06-25 이후 며칠 내 현실적). FE는 그 전까지 mock으로 dev 검증만, 영속은 BE 배포와 함께 켠다.
 3. (대안) 루틴 전체를 한 통합배포로 묶되 **목표일을 06-25가 아닌 BE·마이그레이션 검토 완료 시점으로 조정**.
 
-### 12.4 06-29 통합배포 목표 일정 (사용자 확정 06-24 — OI 3건 결정 완료)
-| 날짜 | 작업 | PR |
+### 12.4 ✅ 최종 결정 (사용자 확정 2026-06-24) — 출시엔 FE만, 실 BE는 오픈 이후 연기
+루틴 실 BE는 (a) pullim-api 팀 의존 + (b) 공유 DB 마이그레이션이라 출시일(06-29)에 못 맞춘다. 따라서:
+
+| 트랙 | 범위 | 시점 |
 |---|---|---|
-| 06-24(오늘) | OI 확정 ✅ → R0 routine 계약 타입·비트마스크 헬퍼(api-client) → R1 BE 엔티티·마이그레이션 착수 | R0 |
-| 06-25 | R1 BE 엔티티·마이그레이션·CRUD → R2 BE materialize | R1·R2 |
-| 06-26 | R3(R0에 흡수 가능) + R4 FE 목록·CRUD · **게이트키퍼 마이그레이션 창 예약** | R4 |
-| 06-27~28(주말) | R5 FE 미리보기·홈배지·실연동·e2e + 버퍼 | R5 |
-| 06-28 | 대표님 컨펌 | — |
-| 06-29 | 게이트키퍼 통합배포(마이그레이션 포함) | 🚀 |
+| **출시(06-29)** | **루틴 FE 화면설계(mock)** — LNB 락해제 + 목록·CRUD·홈 자동반영, mock materialize. **미영속**(UI 동작·디자인 확정) | 지금 (R4·R5) |
+| **연기(서비스 오픈 이후)** | 실 BE — pullim-api 루틴 엔드포인트·Routine 엔티티·마이그레이션·materialize + api-client 실연동 | 오픈 후 (R0~R3) |
 
-> **critical path = 마이그레이션 통합배포 창**. 게이트키퍼에 **06-29 창을 06-26까지 예약**해야 일정 성립.
-> R0(routine 계약 타입)는 codebase 관례상 planner와 동일하게 **api-client(`pullim-planner.ts`)**에 둔다(packages/types는 현재 auth 전용). 비트마스크 도메인 로직은 FE/BE 각자 보유(모노레포 타입 분리).
+출시 FE 일정: R4·R5 = ~1.5 dev-day → 06-29 여유. OI 3건 결정(§11)은 **연기 BE 설계**에 그대로 사용.
 
-### 12.5 대표님 컨펌 포인트
-- (1) 루틴을 **06-25 통합배포에 포함** vs **후속 배포로 분리** — 권고: 분리(BE 마이그레이션 위험).
-- (2) **마이그레이션 통합배포 창**을 게이트키퍼와 언제 잡을지.
-- (3) 06-25 배포 = #74~#77(검증 완료) + 명세 확정으로 "작업 완료" 정의해도 되는지.
+### 12.5 연기 BE 트랙 시작점 (오픈 이후)
+- 본 명세를 **pullim-api 요구사항 핸드오프**로 변환 → `pullim-api/docs/planner/`에 cutover와 동일 양식으로 요청(엔티티·엔드포인트·마이그레이션·materialize).
+- 게이트키퍼와 마이그레이션 배포창 협의. R0(계약 타입, api-client) → R3(FE 실연동)은 BE 배포에 맞춰 켠다.
 
 ---
 
