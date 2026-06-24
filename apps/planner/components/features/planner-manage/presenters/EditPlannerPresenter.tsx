@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Wrench, Save, Palette, ListChecks } from 'lucide-react';
+import { Save, Palette, ListChecks } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { FlywheelNote } from '@/components/shell/flywheel-note';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
@@ -52,7 +52,6 @@ export default function EditPlannerPresenter({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow={{ icon: Wrench, text: '시간표 수정' }}
         title={`${planner.name} 수정하기`}
         description={tab === 'config'
           ? '기존 설정 그대로 불러왔어요. 변경 후 마지막 단계에서 [변경 사항 저장] 클릭.'

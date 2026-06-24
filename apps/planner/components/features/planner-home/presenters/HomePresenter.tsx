@@ -76,8 +76,8 @@ export default function HomePresenter({
           </>
         ),
         navLabel: formatDayNavLabel(offset),
-        prevLabel: '이전 하루',
-        nextLabel: '다음 하루',
+        prevLabel: '어제',
+        nextLabel: '내일',
       };
     }
     if (view === 'week') {

@@ -147,7 +147,6 @@ export function DayView({ dayOffset = 0, onResetToday }: DayViewProps) {
         <section>
           <SectionHeading
             title="오늘의 학습 블록"
-            description="7대 교육학 엔진이 자동 적용된 학습 단위"
             action={
               <span
                 className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-xs font-semibold"
