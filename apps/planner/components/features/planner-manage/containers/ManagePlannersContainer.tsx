@@ -13,6 +13,7 @@ import {
   deletePlanner,
 } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient } from '@/lib/planner/client';
+import { mockFriends } from '@/lib/mock/studygram';
 import ManagePlannersPresenter from '../presenters/ManagePlannersPresenter';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
@@ -28,6 +29,7 @@ export default function ManagePlannersContainer() {
   const [showArchived, setShowArchived] = useState(false);
   const [activateTarget, setActivateTarget] = useState<Planner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Planner | null>(null);
+  const [shareTarget, setShareTarget] = useState<Planner | null>(null);
   const [allPlanners, setAllPlanners] = useState<Planner[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -192,6 +194,36 @@ export default function ManagePlannersContainer() {
     router.push(`/planner/manage/${id}/edit?tab=layout`);
   }
 
+  /** 공유 — 친구 선택 모달 열기 (아웃바운드. 인바운드 조회는 LNB "공유") */
+  function onShareRequest(id: string) {
+    const target = allPlanners.find((p) => p.id === id);
+    if (target) setShareTarget(target);
+  }
+  /**
+   * 공유 확정 — studygram 공유 BE·인바운드 조회 화면이 모두 미구현(spec P1+).
+   * 실환경에서 성공처럼 보이면 안 되므로, **DEV 우회에서만 mock 성공**을 띄우고
+   * 그 외에는 "준비 중" 안내로 정직하게 처리한다 (codex).
+   */
+  function confirmShare(friendIds: string[]) {
+    if (!shareTarget) return;
+    if (DEV_AUTH_BYPASS) {
+      const names = mockFriends
+        .filter((f) => friendIds.includes(f.id))
+        .map((f) => f.name)
+        .join(', ');
+      toast.success(`📨 ${shareTarget.name} 공유 (미리보기)`, {
+        description: `${names}님에게 공유 — 실제 전송·조회는 준비 중`,
+        duration: 3000,
+      });
+    } else {
+      toast.info('친구 공유는 준비 중이에요', {
+        description: '시간표를 친구에게 전달하는 기능을 순차 제공할게요',
+        duration: 3000,
+      });
+    }
+    setShareTarget(null);
+  }
+
   return (
     <ManagePlannersPresenter
       tick={tick}
@@ -218,6 +250,12 @@ export default function ManagePlannersContainer() {
       }}
       onDeleteConfirm={confirmDelete}
       onDecorate={onDecorate}
+      shareTarget={shareTarget}
+      onShareRequest={onShareRequest}
+      onShareOpenChange={(o) => {
+        if (!o) setShareTarget(null);
+      }}
+      onShareConfirm={confirmShare}
     />
   );
 }

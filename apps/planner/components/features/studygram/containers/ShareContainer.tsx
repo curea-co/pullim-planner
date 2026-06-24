@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import SharePresenter, { type ShareTab } from '../presenters/SharePresenter';
 import {
   mockStudygramSetting,
@@ -16,10 +15,11 @@ import {
 const TODAY = todayKST();
 
 export default function ShareContainer() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<ShareTab>('mine');
+  // 내 인증 탭 제거 → 친구 시간표(인바운드)만. 기본 탭 'friends'.
+  const [activeTab, setActiveTab] = useState<ShareTab>('friends');
 
   const setting = mockStudygramSetting;
+  // myProofs는 목표 진행률·오늘 인증 여부 계산에만 사용(목록 노출 X).
   const myProofs = mockStudyProofs;
   const friends = mockFriends;
   const friendProofs = mockFriendProofs;
@@ -39,21 +39,15 @@ export default function ShareContainer() {
     setActiveTab(tab);
   }, []);
 
-  const handleProofClick = useCallback((id: string) => {
-    router.push(`/planner/share/${id}`);
-  }, [router]);
-
   return (
     <SharePresenter
       setting={setting}
-      myProofs={myProofs}
       friendProofs={friendProofs}
       acceptedFriends={acceptedFriends}
       goalProgress={goalProgress}
       activeTab={activeTab}
       hasTodayProof={todayProof}
       onChangeTab={handleChangeTab}
-      onProofClick={handleProofClick}
     />
   );
 }
