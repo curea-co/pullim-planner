@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
+import { examTypeMeta, type PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 
 /**
  * 9단계 프로세스 step navigation + form state — new/edit 공유 hook.
@@ -30,6 +30,14 @@ export function usePlannerForm(initialForm: PlannerForm, draftFallbackName: stri
       if (!form.examStartDate) {
         toast.error('시험 날짜를 선택해주세요');
         return;
+      }
+      // 등급형(모의·수능)은 자유입력 — 숫자가 없으면 저장 시 조용히 1등급으로 치환되므로 차단
+      if (examTypeMeta[form.examType ?? 'mock'].targetKind === 'grade') {
+        const n = parseInt(form.targetGrade, 10);
+        if (!Number.isFinite(n) || n < 1 || n > 9) {
+          toast.error('목표 등급을 숫자로 입력해주세요 (예: 1등급)');
+          return;
+        }
       }
     }
     if (currentStep === 3) {

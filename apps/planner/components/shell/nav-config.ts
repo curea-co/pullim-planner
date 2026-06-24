@@ -7,6 +7,7 @@ import {
   Home, CalendarClock, Wrench, FileText, BookOpen, Share2, Repeat2,
   type LucideIcon,
 } from 'lucide-react';
+import { ROUTINE_ENABLED } from '@/lib/flags';
 
 export type NavItem = {
   href: string;
@@ -45,7 +46,7 @@ export type Role = 'student';
 export const plannerSection: NavSubItem[] = [
   { href: '/planner',            label: '홈',          icon: Home,     description: '활성 플래너 — 일·주·월 시간표' },
   { href: '/planner/manage',     label: '시간표 관리', icon: Wrench,   description: '내 시간표 N개 — 새로 만들기·수정·삭제' },
-  { href: '/planner/routine',    label: '루틴',        icon: Repeat2,  description: '반복하는 행동을 등록 — 새 시간표 만들 때 골라 적용' },
+  { href: '/planner/routine',    label: '루틴',        icon: Repeat2,  locked: !ROUTINE_ENABLED, description: '반복하는 행동을 등록 — 새 시간표 만들 때 골라 적용' },
   { href: '/planner/reports',    label: '성장 리포트', icon: FileText, description: '일·주·월 회고 + 부모 공유' },
   { href: '/planner/share',      label: '공유',        icon: Share2,   description: '학습 인증 공유 — 친구 피드 + 인증 카드' },
   { href: '/planner?help=1',     label: '매뉴얼',      icon: BookOpen, description: '5분 사용법 가이드 — 첫 화면에서 모달로 열림' },

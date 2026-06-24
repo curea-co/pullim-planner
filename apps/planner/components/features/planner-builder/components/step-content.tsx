@@ -1072,6 +1072,13 @@ export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props
       toast.error('1단계에서 시험 날짜를 선택해주세요');
       return;
     }
+    if (examTypeMeta[form.examType ?? 'mock'].targetKind === 'grade') {
+      const n = parseInt(form.targetGrade, 10);
+      if (!Number.isFinite(n) || n < 1 || n > 9) {
+        toast.error('1단계에서 목표 등급을 숫자로 입력해주세요 (예: 1등급)');
+        return;
+      }
+    }
     const subjectCount = Object.keys(form.subjectUnits ?? {}).length;
     if (subjectCount === 0) {
       toast.error('3단계에서 과목을 1개 이상 추가해주세요');
