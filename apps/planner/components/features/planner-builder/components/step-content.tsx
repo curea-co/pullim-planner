@@ -1023,16 +1023,23 @@ function generatePreview(form: PlannerForm, todayISO: string): PreviewDay[] {
     }
 
     // 5단계에서 고른 루틴을 해당 요일 미리보기에 반영 (mock — 실제 적용·영속은 06-30 실 BE)
+    // 가용 시간(2단계) 밖이거나 기존 블록과 겹치면 보류한다(수동/자동 우선 — OI-3).
+    const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+    const winStart = startHour * 60;
+    const winEnd = endHour * 60;
     const routineDay = (dt.weekday + 6) % 7; // jsDay(0=일) → routine weekday(0=월)
     for (const id of form.routineIds) {
       const r = findRoutine(id);
-      if (r && r.weekdays.some(w => w === routineDay)) {
-        items.push({
-          start: r.startTime, end: r.endTime,
-          subjectLabel: routineSubjectLabel(r.subject),
-          type: r.type, unitLabel: r.title, isRoutine: true,
-        });
-      }
+      if (!r || !r.weekdays.some(w => w === routineDay)) continue;
+      const rs = toMin(r.startTime);
+      const re = toMin(r.endTime);
+      if (rs < winStart || re > winEnd) continue;                       // 가용 시간 밖
+      if (items.some(it => rs < toMin(it.end) && toMin(it.start) < re)) continue; // 겹침 보류
+      items.push({
+        start: r.startTime, end: r.endTime,
+        subjectLabel: routineSubjectLabel(r.subject),
+        type: r.type, unitLabel: r.title, isRoutine: true,
+      });
     }
     items.sort((a, b) => a.start.localeCompare(b.start));
 

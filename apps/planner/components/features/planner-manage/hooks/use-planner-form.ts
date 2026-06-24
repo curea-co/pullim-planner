@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { examTypeMeta, type PlannerForm } from '@/components/features/planner-builder/components/builder-types';
+import { examTypeMeta, plannerStepConfig, type PlannerForm } from '@/components/features/planner-builder/components/builder-types';
+
+const TOTAL_STEPS = plannerStepConfig.length;
 
 /**
  * 9단계 프로세스 step navigation + form state — new/edit 공유 hook.
@@ -15,7 +17,7 @@ export function usePlannerForm(initialForm: PlannerForm, draftFallbackName: stri
   const [form, setForm] = useState<PlannerForm>(initialForm);
 
   const canPrev = currentStep > 1;
-  const canNext = currentStep < 9;
+  const canNext = currentStep < TOTAL_STEPS;
 
   function goPrev() {
     if (canPrev) setCurrentStep(currentStep - 1);
@@ -56,7 +58,7 @@ export function usePlannerForm(initialForm: PlannerForm, draftFallbackName: stri
 
   function saveDraft() {
     toast.info('💾 임시저장 (데모)', {
-      description: `${form.examName || draftFallbackName} · ${currentStep}/9단계까지 작성됨`,
+      description: `${form.examName || draftFallbackName} · ${currentStep}/${TOTAL_STEPS}단계까지 작성됨`,
     });
   }
 

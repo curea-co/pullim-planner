@@ -4,6 +4,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { SubjectKey } from '@/lib/mock';
+import { ROUTINE_ENABLED } from '@/lib/flags';
 
 /**
  * 학생 플래너 빌더 9단계 폼 데이터.
@@ -99,8 +100,13 @@ export const motivationStyleMeta: Record<MotivationStyle, { label: string; descr
   spartan:    { label: '스파르타', Icon: Flame,     description: '미시작 30분 = 알림. 부모/멘토 일일 보고 권장.' },
 };
 
+export type StepKey =
+  | 'goal' | 'hours' | 'subjects' | 'pattern' | 'routine'
+  | 'weakness' | 'motivation' | 'reminder' | 'activate';
+
 export type StepInfo = {
   num: number;
+  key: StepKey;
   label: string;
   icon: LucideIcon;
   title: string;
@@ -163,14 +169,19 @@ export function formToPlannerPatch(form: PlannerForm): Omit<Planner, 'id' | 'act
   };
 }
 
-export const plannerStepConfig: readonly StepInfo[] = [
-  { num: 1, label: '목표',      icon: Target,    title: '목표 · D-day',         description: '' },
-  { num: 2, label: '가용시간',  icon: Clock,     title: '학습 가능 시간',       description: '평일·주말 학습할 수 있는 시간대. 학교/학원 시간 빼고.' },
-  { num: 3, label: '범위',      icon: BookOpen,  title: '학습 범위',            description: '이번 시험에서 다룰 과목 · 단원 선택. 시간 분배는 AI가 단원 수·약점·D-day로 자동 계산해요.' },
-  { num: 4, label: '블록',      icon: Hourglass, title: '블록 패턴',            description: '집중 ↔ 휴식 리듬. 본인 집중력에 맞춰 선택.' },
-  { num: 5, label: '루틴',      icon: Repeat2,   title: '루틴 — 반복하는 행동', description: '매일·매주 반복할 행동을 골라 이 시간표에 넣어요. 건너뛰어도 돼요.' },
-  { num: 6, label: '약점',      icon: Flame,     title: '약점 자동 반영',       description: '풀림 분석의 약점 단원을 플래너가 자동으로 더 많이 배정할지.' },
-  { num: 7, label: '동기',      icon: Heart,     title: '동기 부여 스타일',     description: '봇이 어떻게 너를 도울지. 스파르타로 갈수록 알림이 늘어요.' },
-  { num: 8, label: '알림',      icon: Bell,      title: '리마인더',             description: '카톡·푸시·시작 5분 전 알림. 부모 일일 보고는 동의 필요.' },
-  { num: 9, label: '활성화',    icon: Sparkles,  title: '미리보기 · 활성화',    description: '일주일 자동 생성된 플래너를 확인하고 활성화.' },
-] as const;
+// 루틴 단계는 게이트(ROUTINE_ENABLED) off면 제외 — prod에서 미출시 단계/CTA dead-end 방지.
+const allSteps: readonly Omit<StepInfo, 'num'>[] = [
+  { key: 'goal',       label: '목표',      icon: Target,    title: '목표 · D-day',         description: '' },
+  { key: 'hours',      label: '가용시간',  icon: Clock,     title: '학습 가능 시간',       description: '평일·주말 학습할 수 있는 시간대. 학교/학원 시간 빼고.' },
+  { key: 'subjects',   label: '범위',      icon: BookOpen,  title: '학습 범위',            description: '이번 시험에서 다룰 과목 · 단원 선택. 시간 분배는 AI가 단원 수·약점·D-day로 자동 계산해요.' },
+  { key: 'pattern',    label: '블록',      icon: Hourglass, title: '블록 패턴',            description: '집중 ↔ 휴식 리듬. 본인 집중력에 맞춰 선택.' },
+  { key: 'routine',    label: '루틴',      icon: Repeat2,   title: '루틴 — 반복하는 행동', description: '매일·매주 반복할 행동을 골라 이 시간표에 넣어요. 건너뛰어도 돼요.' },
+  { key: 'weakness',   label: '약점',      icon: Flame,     title: '약점 자동 반영',       description: '풀림 분석의 약점 단원을 플래너가 자동으로 더 많이 배정할지.' },
+  { key: 'motivation', label: '동기',      icon: Heart,     title: '동기 부여 스타일',     description: '봇이 어떻게 너를 도울지. 스파르타로 갈수록 알림이 늘어요.' },
+  { key: 'reminder',   label: '알림',      icon: Bell,      title: '리마인더',             description: '카톡·푸시·시작 5분 전 알림. 부모 일일 보고는 동의 필요.' },
+  { key: 'activate',   label: '활성화',    icon: Sparkles,  title: '미리보기 · 활성화',    description: '일주일 자동 생성된 플래너를 확인하고 활성화.' },
+];
+
+export const plannerStepConfig: readonly StepInfo[] = allSteps
+  .filter(s => s.key !== 'routine' || ROUTINE_ENABLED)
+  .map((s, i) => ({ ...s, num: i + 1 }));
