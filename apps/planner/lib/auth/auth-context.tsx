@@ -52,6 +52,27 @@ export interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
+ * 로컬 dev 전용 — 인증 게이트 우회 (`.env.local`: `NEXT_PUBLIC_DEV_AUTH_BYPASS=1`).
+ *
+ * pullim-api 쿠키 SSO 는 `*.pullim.ai` same-site 에서만 동작하므로 `localhost:3030` 에선 세션
+ * 복원이 불가(→ 'error' 게이트). UX/UI 폴리시 등 로컬 화면 확인을 위해 게이트만 통과시킨다 —
+ * 화면 콘텐츠는 어차피 `@/lib/mock` 에서 그려진다. 기본 off + `.env.local` 미커밋이라 dev/prod 무영향.
+ */
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
+const DEV_BYPASS_PROFILE: PullimMeProfile = {
+  id: 'dev-local',
+  name: '개발 미리보기',
+  grade: '고3',
+  track: '이과',
+  school: '',
+  focusSubjects: [],
+  weeklyHours: 0,
+  preferredStudyTime: '',
+  joinedAt: '2026-06-22',
+  streakDays: 0,
+};
+
+/**
  * 앱 전역 인증 상태 Provider (흡수 전환 §10 — pullim 쿠키 SSO).
  *
  * 마운트 시 쿠키 세션으로 `session()`(GET /planner/me)을 호출해 세션을 복원한다(새로고침 유지).
@@ -122,6 +143,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // 로컬 dev 게이트 우회 — 세션 복원 없이 바로 authenticated. (NEXT_PUBLIC_DEV_AUTH_BYPASS=1)
+    // 즉시 인증이 의도라 동기 setState 사용(기본 off라 prod 무영향).
+    if (DEV_AUTH_BYPASS) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setUser(DEV_BYPASS_PROFILE);
+      setStatus('authenticated');
+      /* eslint-enable react-hooks/set-state-in-effect */
+      return;
+    }
     // 마운트 시 1회 세션 복원. StrictMode 이중 마운트면 session() 이 한 번 더 도는 정도로 무해
     // (loadSession 은 idempotent). 언마운트 후 setState 는 React 가 무시한다.
     void loadSession();
