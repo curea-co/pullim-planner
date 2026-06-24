@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import {
   CalendarClock, Clock, BookOpen, MoreVertical, CheckCircle2,
-  Pencil, Copy, Archive, Trash2, Sparkles, Palette,
+  Pencil, Copy, Archive, Trash2, Sparkles, Palette, Share2,
 } from 'lucide-react';
 import { type Planner } from '@/lib/mock';
 import { examTypeMeta, blockPatternMeta } from '@/components/features/planner-builder/components/builder-types';
@@ -20,6 +20,7 @@ type Props = {
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
   onDecorate: (id: string) => void;
+  onShare: (id: string) => void;
 };
 
 /** 일수 차이 — 음수면 과거 */
@@ -42,7 +43,7 @@ function formatRelativeUpdate(iso: string, today = new Date('2026-04-24')): stri
   return `${Math.floor(day / 7)}주 전 갱신`;
 }
 
-export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDelete, onDecorate }: Props) {
+export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDelete, onDecorate, onShare }: Props) {
   const router = useRouter();
   const dday = diffDays(planner.examStartDate);
   const subjectCount = Object.keys(planner.subjectUnits).length;
@@ -132,6 +133,10 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
             >
               <Archive className="text-pullim-warn" />
               아카이브
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onShare(planner.id)}>
+              <Share2 className="text-pullim-blue-600" />
+              공유
             </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"

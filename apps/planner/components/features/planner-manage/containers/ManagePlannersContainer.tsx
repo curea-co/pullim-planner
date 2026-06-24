@@ -13,6 +13,7 @@ import {
   deletePlanner,
 } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient } from '@/lib/planner/client';
+import { mockFriends } from '@/lib/mock/studygram';
 import ManagePlannersPresenter from '../presenters/ManagePlannersPresenter';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
@@ -28,6 +29,7 @@ export default function ManagePlannersContainer() {
   const [showArchived, setShowArchived] = useState(false);
   const [activateTarget, setActivateTarget] = useState<Planner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Planner | null>(null);
+  const [shareTarget, setShareTarget] = useState<Planner | null>(null);
   const [allPlanners, setAllPlanners] = useState<Planner[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -192,6 +194,28 @@ export default function ManagePlannersContainer() {
     router.push(`/planner/manage/${id}/edit?tab=layout`);
   }
 
+  /** 공유 — 친구 선택 모달 열기 (아웃바운드. 인바운드 조회는 LNB "공유") */
+  function onShareRequest(id: string) {
+    const target = allPlanners.find((p) => p.id === id);
+    if (target) setShareTarget(target);
+  }
+  /**
+   * 공유 확정 — studygram 공유 BE는 미구현이라 현재는 mock 확인 토스트.
+   * (실 공유 영속·친구 피드 반영은 studygram spec P1+ BE 작업)
+   */
+  function confirmShare(friendIds: string[]) {
+    if (!shareTarget) return;
+    const names = mockFriends
+      .filter((f) => friendIds.includes(f.id))
+      .map((f) => f.name)
+      .join(', ');
+    toast.success(`📨 ${shareTarget.name} 공유됨`, {
+      description: `${names}님에게 공유했어요`,
+      duration: 3000,
+    });
+    setShareTarget(null);
+  }
+
   return (
     <ManagePlannersPresenter
       tick={tick}
@@ -218,6 +242,12 @@ export default function ManagePlannersContainer() {
       }}
       onDeleteConfirm={confirmDelete}
       onDecorate={onDecorate}
+      shareTarget={shareTarget}
+      onShareRequest={onShareRequest}
+      onShareOpenChange={(o) => {
+        if (!o) setShareTarget(null);
+      }}
+      onShareConfirm={confirmShare}
     />
   );
 }
