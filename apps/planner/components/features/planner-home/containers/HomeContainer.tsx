@@ -37,11 +37,18 @@ export default function HomeContainer() {
   const helpParam = params.get('help') === '1';
   const [welcomeOpen, setWelcomeOpen] = useState(false);
 
-  // 기간 이동 offset (0=기준 기간). 일/주/월 공용 — 뷰 전환 시 0으로 리셋.
+  // 기간 이동 offset (0=기준 기간). 일/주/월 공용.
   const [offset, setOffset] = useState(0);
   const handlePrev = useCallback(() => setOffset(o => o - 1), []);
   const handleNext = useCallback(() => setOffset(o => o + 1), []);
   const handleReset = useCallback(() => setOffset(0), []);
+
+  // 뷰가 바뀌면(토글·뒤로가기·외부 ?view= 진입 모두) offset을 기준 기간으로 리셋.
+  // offset이 URL과 분리돼 있어, 이전 뷰의 offset이 남아 다른 뷰에 빈 화면이 뜨는 것을 방지.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOffset(0);
+  }, [view]);
 
   useEffect(() => {
     // sessionStorage 는 클라이언트 전용 — 서버 렌더는 항상 닫힘(false)으로 hydration 일치시키고,

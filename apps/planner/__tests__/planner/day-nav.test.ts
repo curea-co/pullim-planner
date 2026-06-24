@@ -4,14 +4,14 @@ import {
   formatMonthNavLabel, formatMonthTitle, formatMonthShort,
 } from '@/lib/planner/day-nav';
 
-// 데모 캘린더: 기준일 2026-04-24 = 목, 그 주 = 월21~일27 (2026.04 · 4주차)
-describe('calendar-nav 라벨', () => {
-  describe('일 — formatDayNavLabel (데모 앵커 목, weekView 정합)', () => {
+// 실달력: 기준일 2026-04-24 = 금요일, 그 주 = 월20~일26 (2026.04 · 4주차)
+describe('calendar-nav 라벨 (실달력 getDay 기준)', () => {
+  describe('일 — formatDayNavLabel', () => {
     it.each([
-      [0, '2026.04.24 (목)'],
-      [-1, '2026.04.23 (수)'],
-      [1, '2026.04.25 (금)'],
-      [6, '2026.04.30 (수)'],
+      [0, '2026.04.24 (금)'],
+      [-1, '2026.04.23 (목)'],
+      [1, '2026.04.25 (토)'],
+      [6, '2026.04.30 (목)'],
     ])('offset %i → %s', (offset, expected) => {
       expect(formatDayNavLabel(offset)).toBe(expected);
     });
@@ -19,8 +19,8 @@ describe('calendar-nav 라벨', () => {
 
   describe('일 — formatDayTitle', () => {
     it.each([
-      [0, '4월 24일 목요일'],
-      [-1, '4월 23일 수요일'],
+      [0, '4월 24일 금요일'],
+      [-1, '4월 23일 목요일'],
     ])('offset %i → %s', (offset, expected) => {
       expect(formatDayTitle(offset)).toBe(expected);
     });
@@ -28,9 +28,9 @@ describe('calendar-nav 라벨', () => {
 
   describe('주 — formatWeekTitle (월~일 범위)', () => {
     it.each([
-      [0, '4월 21일 — 27일'],
-      [-1, '4월 14일 — 20일'],
-      [1, '4월 28일 — 5월 4일'], // 월 경계 → 끝에 월 표기
+      [0, '4월 20일 — 26일'],
+      [-1, '4월 13일 — 19일'],
+      [1, '4월 27일 — 5월 3일'], // 월 경계 → 끝에 월 표기
     ])('offset %i → %s', (offset, expected) => {
       expect(formatWeekTitle(offset)).toBe(expected);
     });
@@ -40,7 +40,7 @@ describe('calendar-nav 라벨', () => {
     it.each([
       [-1, '2026.04 · 3주차'],
       [0, '2026.04 · 4주차'],
-      [1, '2026.05 · 1주차'], // 4/28~5/4 주 → 목요일(5/1)이 속한 5월 1주차
+      [1, '2026.04 · 5주차'], // 4/27~5/3 주 → 목요일(4/30)이 속한 4월 5주차
     ])('offset %i → %s', (offset, expected) => {
       expect(formatWeekNavLabel(offset)).toBe(expected);
     });

@@ -1,15 +1,14 @@
 /**
  * 캘린더 기간 네비게이션 — offset(0=기준 기간) → 일/주/월 라벨.
  *
- * 데모 캘린더 기준: 기준일 2026-04-24 = **목요일**, 그 주 = 월21~일27 (2026.04 · 4주차).
- * `weekView`/`monthView` mock 데이터와 정합시키기 위해 실제 JS 요일이 아닌
- * **데모 앵커(목)**를 사용한다. 날짜 숫자/월·연 경계는 JS Date로 정규화한다.
+ * 기준일 `planBaseDate`(2026-04-24, 실달력상 **금요일**)에서 ±N 이동한 기간을 포맷한다.
+ * 요일·주차는 모두 **실달력 `Date#getDay()`** 기준 — monthView(`makeMonth`, 4/1=수 실달력)·
+ * weekView(실주 4/20~4/26) mock 데이터와 정합한다.
  */
 
 import { planBaseDate } from '@/lib/mock';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
-const BASE_WEEKDAY = 4; // 2026-04-24 = 목 (데모 앵커)
 
 function baseParts(): [number, number, number] {
   const [y, m, d] = planBaseDate.split('-').map(Number);
@@ -22,35 +21,31 @@ function dayDate(offset: number): Date {
   return new Date(y, m - 1, d + offset);
 }
 
-/** 데모 앵커 기준 요일 — 실제 JS 요일이 아니라 weekView 데이터와 정합 */
-function demoWeekday(dayShift: number): string {
-  return WEEKDAYS[((BASE_WEEKDAY + dayShift) % 7 + 7) % 7];
-}
-
 /* ── 일 ── */
 
-/** "2026.04.24 (목)" — nav 라벨 */
+/** "2026.04.24 (금)" — nav 라벨 */
 export function formatDayNavLabel(offset: number): string {
   const dt = dayDate(offset);
   const mm = String(dt.getMonth() + 1).padStart(2, '0');
   const dd = String(dt.getDate()).padStart(2, '0');
-  return `${dt.getFullYear()}.${mm}.${dd} (${demoWeekday(offset)})`;
+  return `${dt.getFullYear()}.${mm}.${dd} (${WEEKDAYS[dt.getDay()]})`;
 }
 
-/** "4월 24일 목요일" — 헤더 제목 */
+/** "4월 24일 금요일" — 헤더 제목 */
 export function formatDayTitle(offset: number): string {
   const dt = dayDate(offset);
-  return `${dt.getMonth() + 1}월 ${dt.getDate()}일 ${demoWeekday(offset)}요일`;
+  return `${dt.getMonth() + 1}월 ${dt.getDate()}일 ${WEEKDAYS[dt.getDay()]}요일`;
 }
 
-/* ── 주 ── (기준 주 월요일 = 기준일 -3일 = 04-21) */
+/* ── 주 ── (그 주의 실제 월요일 기준) */
 
 function weekMonday(weekOffset: number): Date {
-  const [y, m, d] = baseParts();
-  return new Date(y, m - 1, d - 3 + weekOffset * 7);
+  const base = dayDate(0);
+  const mondayDelta = (base.getDay() + 6) % 7; // 월요일까지 거슬러 갈 일수 (월=0 … 일=6)
+  return new Date(base.getFullYear(), base.getMonth(), base.getDate() - mondayDelta + weekOffset * 7);
 }
 
-/** "4월 21일 — 27일" (월 다르면 끝에 월 표기) — 헤더 제목 */
+/** "4월 20일 — 26일" (월 다르면 끝에 월 표기) — 헤더 제목 */
 export function formatWeekTitle(weekOffset: number): string {
   const mon = weekMonday(weekOffset);
   const sun = new Date(mon);
