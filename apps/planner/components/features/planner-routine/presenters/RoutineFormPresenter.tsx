@@ -2,15 +2,15 @@
 
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import {
-  blockTypeMeta, subjectLabels, WEEKDAY_LABELS, WEEKDAY_ORDER,
-  type SubjectKey, type BlockType, type Weekday,
+  blockTypeMeta, ROUTINE_SUBJECTS, routineSubjectLabel, WEEKDAY_LABELS, WEEKDAY_ORDER,
+  type RoutineSubject, type BlockType, type Weekday,
 } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
 /** 루틴 폼 상태 (id 제외). */
 export type RoutineFormState = {
   title: string;
-  subject: SubjectKey;
+  subject: RoutineSubject;
   type: BlockType;
   startTime: string;
   endTime: string;
@@ -21,7 +21,6 @@ export type RoutineFormState = {
 const ROUTINE_TYPES: BlockType[] = [
   'concept', 'practice', 'review', 'memorize', 'mock', 'tutor', 'self_explain',
 ];
-const SUBJECTS = Object.keys(subjectLabels) as SubjectKey[];
 
 interface RoutineFormPresenterProps {
   mode: 'create' | 'edit';
@@ -75,11 +74,11 @@ export default function RoutineFormPresenter({
           <select
             id="routine-subject"
             value={form.subject}
-            onChange={(e) => onChange('subject', e.target.value as SubjectKey)}
+            onChange={(e) => onChange('subject', e.target.value as RoutineSubject)}
             className="border-border focus-visible:ring-pullim-blue-500 w-full rounded-lg border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
           >
-            {SUBJECTS.map((s) => (
-              <option key={s} value={s}>{subjectLabels[s]}</option>
+            {ROUTINE_SUBJECTS.map((s) => (
+              <option key={s} value={s}>{routineSubjectLabel(s)}</option>
             ))}
           </select>
         </div>
