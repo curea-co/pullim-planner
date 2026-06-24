@@ -51,6 +51,41 @@ export interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** localhost 류 호스트만 — 배포 도메인에서 우회가 절대 켜지지 않게 하는 런타임 가드. */
+const LOCAL_HOSTS = /^(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)$/;
+
+/**
+ * 로컬 dev 전용 — 인증 게이트 우회 (`.env.local`: `NEXT_PUBLIC_DEV_AUTH_BYPASS=1`).
+ *
+ * pullim-api 쿠키 SSO 는 `*.pullim.ai` same-site 에서만 동작하므로 `localhost:3030` 에선 세션
+ * 복원이 불가(→ 'error' 게이트). UX/UI 폴리시 등 로컬 화면 확인을 위해 게이트만 통과시킨다 —
+ * 화면 콘텐츠는 어차피 `@/lib/mock` 에서 그려진다.
+ *
+ * ⚠️ 보안 — env 플래그만으로는 부족하다. `NEXT_PUBLIC_*` 는 preview/prod 빌드에도 주입될 수 있어
+ * 운영에서 실수로 `1` 이면 누구나 즉시 authenticated 가 된다. 그래서 **3중 가드**로 막는다:
+ *  ① `NODE_ENV === 'development'` — `next dev` 에서만 true(prod 빌드면 정적으로 false → tree-shake)
+ *  ② 브라우저 + localhost 류 hostname — 배포 도메인에선 false
+ *  ③ env 플래그 opt-in
+ * 셋이 모두 참일 때만 우회. (실 데이터/인증은 prod 경로 그대로)
+ */
+const DEV_AUTH_BYPASS =
+  process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1' &&
+  process.env.NODE_ENV === 'development' &&
+  typeof window !== 'undefined' &&
+  LOCAL_HOSTS.test(window.location.hostname);
+const DEV_BYPASS_PROFILE: PullimMeProfile = {
+  id: 'dev-local',
+  name: '개발 미리보기',
+  grade: '고3',
+  track: '이과',
+  school: '',
+  focusSubjects: [],
+  weeklyHours: 0,
+  preferredStudyTime: '',
+  joinedAt: '2026-06-22',
+  streakDays: 0,
+};
+
 /**
  * 앱 전역 인증 상태 Provider (흡수 전환 §10 — pullim 쿠키 SSO).
  *
@@ -115,6 +150,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // pullim 쿠키 세션 만료(데이터/세션 401) 전역 전파 → 비로그인. (자체 BE onSessionExpired 대체)
     const unsubscribe = onPullimSessionExpired(() => {
+      // 우회 모드 — 실 세션이 없으니 만료 전파를 무시한다(미리보기 인증 상태 고정).
+      if (DEV_AUTH_BYPASS) return;
       setUser(null);
       setStatus('unauthenticated');
     });
@@ -122,6 +159,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // 로컬 dev 게이트 우회 — 세션 복원 없이 바로 authenticated. (NEXT_PUBLIC_DEV_AUTH_BYPASS=1)
+    // 즉시 인증이 의도라 동기 setState 사용(기본 off라 prod 무영향).
+    if (DEV_AUTH_BYPASS) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setUser(DEV_BYPASS_PROFILE);
+      setStatus('authenticated');
+      /* eslint-enable react-hooks/set-state-in-effect */
+      return;
+    }
     // 마운트 시 1회 세션 복원. StrictMode 이중 마운트면 session() 이 한 번 더 도는 정도로 무해
     // (loadSession 은 idempotent). 언마운트 후 setState 는 React 가 무시한다.
     void loadSession();
@@ -159,6 +205,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    // 우회 모드 — 실 세션이 없어 로그아웃은 의미 없다. 인증 상태를 고정해 미리보기를 유지한다
+    // (안 그러면 unauthenticated 로 빠져 보호 라우트가 /login 으로 튕긴다 — codex).
+    if (DEV_AUTH_BYPASS) {
+      setUser(DEV_BYPASS_PROFILE);
+      setStatus('authenticated');
+      return;
+    }
     // pullimSession.logout 은 서버가 쿠키를 무효화한다. BE 호출 성패와 무관하게 FE 상태는 항상
     // 초기화해 세션/상태 불일치를 막는다.
     try {
