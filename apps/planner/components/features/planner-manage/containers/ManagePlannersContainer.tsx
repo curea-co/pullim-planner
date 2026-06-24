@@ -200,19 +200,27 @@ export default function ManagePlannersContainer() {
     if (target) setShareTarget(target);
   }
   /**
-   * 공유 확정 — studygram 공유 BE는 미구현이라 현재는 mock 확인 토스트.
-   * (실 공유 영속·친구 피드 반영은 studygram spec P1+ BE 작업)
+   * 공유 확정 — studygram 공유 BE·인바운드 조회 화면이 모두 미구현(spec P1+).
+   * 실환경에서 성공처럼 보이면 안 되므로, **DEV 우회에서만 mock 성공**을 띄우고
+   * 그 외에는 "준비 중" 안내로 정직하게 처리한다 (codex).
    */
   function confirmShare(friendIds: string[]) {
     if (!shareTarget) return;
-    const names = mockFriends
-      .filter((f) => friendIds.includes(f.id))
-      .map((f) => f.name)
-      .join(', ');
-    toast.success(`📨 ${shareTarget.name} 공유됨`, {
-      description: `${names}님에게 공유했어요`,
-      duration: 3000,
-    });
+    if (DEV_AUTH_BYPASS) {
+      const names = mockFriends
+        .filter((f) => friendIds.includes(f.id))
+        .map((f) => f.name)
+        .join(', ');
+      toast.success(`📨 ${shareTarget.name} 공유 (미리보기)`, {
+        description: `${names}님에게 공유 — 실제 전송·조회는 준비 중`,
+        duration: 3000,
+      });
+    } else {
+      toast.info('친구 공유는 준비 중이에요', {
+        description: '시간표를 친구에게 전달하는 기능을 순차 제공할게요',
+        duration: 3000,
+      });
+    }
     setShareTarget(null);
   }
 
