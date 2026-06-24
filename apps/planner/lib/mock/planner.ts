@@ -197,6 +197,17 @@ export function nextActiveBlock(blocks: TimeBlock[] = todayBlocks): TimeBlock | 
   return blocks.find(b => b.status === 'doing') ?? blocks.find(b => b.status === 'todo');
 }
 
+/** day-view 날짜 네비게이션 기준일 — 데모 플랜이 존재하는 유일한 날(서연의 저녁 학습). */
+export const planBaseDate = '2026-04-24';
+
+/**
+ * day-view 날짜 offset(0=기준일)별 블록.
+ * 데모는 기준일에만 플랜이 있으므로 그 외 날짜는 빈 배열(빈 상태) — BE 연동 시 그날 블록으로 교체.
+ */
+export function getBlocksForDayOffset(offset: number): TimeBlock[] {
+  return offset === 0 ? todayBlocks : [];
+}
+
 export function plannerProgress(blocks: TimeBlock[] = todayBlocks): { done: number; total: number; pct: number } {
   const learning = blocks.filter(b => b.type !== 'break');
   const done = learning.filter(b => b.status === 'done').length;
@@ -604,7 +615,7 @@ export type WeekDay = {
 };
 
 export const weekView: WeekDay[] = [
-  { day: '월', date: 21, isToday: false, totalMinutes: 252, completionPct: 100,
+  { day: '월', date: 20, isToday: false, totalMinutes: 252, completionPct: 100,
     blocks: [
       { type: 'concept',  count: 1, minutes: 40 },
       { type: 'practice', count: 2, minutes: 100 },
@@ -613,7 +624,7 @@ export const weekView: WeekDay[] = [
       { type: 'mock',     count: 1, minutes: 40 },
     ],
   },
-  { day: '화', date: 22, isToday: false, totalMinutes: 228, completionPct: 95,
+  { day: '화', date: 21, isToday: false, totalMinutes: 228, completionPct: 95,
     blocks: [
       { type: 'concept',  count: 2, minutes: 60 },
       { type: 'practice', count: 2, minutes: 90 },
@@ -622,7 +633,7 @@ export const weekView: WeekDay[] = [
       { type: 'self_explain', count: 1, minutes: 18 },
     ],
   },
-  { day: '수', date: 23, isToday: false, totalMinutes: 306, completionPct: 100,
+  { day: '수', date: 22, isToday: false, totalMinutes: 306, completionPct: 100,
     blocks: [
       { type: 'concept',  count: 1, minutes: 40 },
       { type: 'practice', count: 3, minutes: 150 },
@@ -632,7 +643,7 @@ export const weekView: WeekDay[] = [
       { type: 'self_explain', count: 1, minutes: 16 },
     ],
   },
-  { day: '목', date: 24, isToday: true,  totalMinutes: 240, completionPct: 35,
+  { day: '목', date: 23, isToday: false, totalMinutes: 240, completionPct: 100,
     blocks: [
       { type: 'concept',  count: 1, minutes: 40 },
       { type: 'practice', count: 2, minutes: 100 },
@@ -641,7 +652,7 @@ export const weekView: WeekDay[] = [
       { type: 'mock',     count: 1, minutes: 40 },
     ],
   },
-  { day: '금', date: 25, isToday: false, totalMinutes: 280, completionPct: 0,
+  { day: '금', date: 24, isToday: true,  totalMinutes: 280, completionPct: 35,
     blocks: [
       { type: 'concept',  count: 2, minutes: 80 },
       { type: 'practice', count: 2, minutes: 100 },
@@ -650,7 +661,7 @@ export const weekView: WeekDay[] = [
       { type: 'tutor',    count: 1, minutes: 40 },
     ],
   },
-  { day: '토', date: 26, isToday: false, totalMinutes: 360, completionPct: 0,
+  { day: '토', date: 25, isToday: false, totalMinutes: 360, completionPct: 0,
     blocks: [
       { type: 'concept',  count: 2, minutes: 80 },
       { type: 'practice', count: 3, minutes: 150 },
@@ -659,7 +670,7 @@ export const weekView: WeekDay[] = [
       { type: 'self_explain', count: 1, minutes: 20 },
     ],
   },
-  { day: '일', date: 27, isToday: false, totalMinutes: 192, completionPct: 0,
+  { day: '일', date: 26, isToday: false, totalMinutes: 192, completionPct: 0,
     blocks: [
       { type: 'concept',  count: 1, minutes: 40 },
       { type: 'practice', count: 2, minutes: 90 },
@@ -700,7 +711,7 @@ const EXAM_MILESTONES: Record<number, ExamMilestone> = {
 };
 
 function makeMonth(): MonthDay[] {
-  // 4월 — 30일치. 24일이 오늘 (목요일).
+  // 4월 — 30일치. 24일이 오늘 (금요일, 4/1=수 실달력).
   // 결정론적으로 생성 (SSR/CSR 일치 보장).
   const days: MonthDay[] = [];
   const today = 24;

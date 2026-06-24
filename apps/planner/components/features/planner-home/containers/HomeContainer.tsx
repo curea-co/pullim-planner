@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { CalendarView } from '../components/calendar-shell';
 import {
   currentPersona, getDday, plannerProgress, getActivePlanner,
-  todayBurnout,
+  todayBurnout, getBlocksForDayOffset,
 } from '@/lib/mock';
 import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
@@ -37,6 +37,19 @@ export default function HomeContainer() {
   const helpParam = params.get('help') === '1';
   const [welcomeOpen, setWelcomeOpen] = useState(false);
 
+  // 기간 이동 offset (0=기준 기간). 일/주/월 공용.
+  const [offset, setOffset] = useState(0);
+  const handlePrev = useCallback(() => setOffset(o => o - 1), []);
+  const handleNext = useCallback(() => setOffset(o => o + 1), []);
+  const handleReset = useCallback(() => setOffset(0), []);
+
+  // 뷰가 바뀌면(토글·뒤로가기·외부 ?view= 진입 모두) offset을 기준 기간으로 리셋.
+  // offset이 URL과 분리돼 있어, 이전 뷰의 offset이 남아 다른 뷰에 빈 화면이 뜨는 것을 방지.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOffset(0);
+  }, [view]);
+
   useEffect(() => {
     // sessionStorage 는 클라이언트 전용 — 서버 렌더는 항상 닫힘(false)으로 hydration 일치시키고,
     // 마운트 후 이 effect 에서만 연다. 첫 페인트 직후 1회 여는 의도된 setState 라 룰을 끈다.
@@ -62,6 +75,7 @@ export default function HomeContainer() {
 
   const onChangeView = useCallback(
     (next: CalendarView) => {
+      setOffset(0); // 뷰 전환 시 기준 기간으로 리셋
       const qs = next === 'day' ? '' : `?view=${next}`;
       router.replace(`/planner${qs}`, { scroll: false });
     },
@@ -70,9 +84,9 @@ export default function HomeContainer() {
 
   const active = getActivePlanner();
   const dday = getDday(currentPersona);
-  const daySummary = plannerProgress();
-  const weekMeta = getWeekMeta();
-  const monthMeta = getMonthMeta();
+  const daySummary = plannerProgress(getBlocksForDayOffset(offset));
+  const weekMeta = getWeekMeta(offset);
+  const monthMeta = getMonthMeta(offset);
 
   return (
     <>
@@ -84,6 +98,10 @@ export default function HomeContainer() {
         daySummary={daySummary}
         weekMeta={weekMeta}
         monthMeta={monthMeta}
+        offset={offset}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        onReset={handleReset}
         onChangeView={onChangeView}
       />
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
