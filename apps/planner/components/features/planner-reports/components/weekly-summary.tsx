@@ -10,6 +10,7 @@ import {
   weeklyConditionTrend, weeklyBurnoutTrend, conditionMeta,
 } from '@/lib/mock';
 import { WeeklyChart } from '@/components/features/planner-home/components/weekly-chart';
+import { Donut } from '@/components/ui/charts/donut';
 import { AccuracyTrendChart } from './accuracy-trend-chart';
 import { WeeklyInsights } from './weekly-insights';
 import { cn } from '@/lib/utils';
@@ -62,6 +63,28 @@ export function WeeklySummary() {
           deltaUnit=""
           tone="default"
         />
+      </section>
+
+      {/* 이번 주 완료율 — PUDS Donut 파일럿(Phase 2). 명시 색(primary/gray)으로 --chart-cat 의존 회피 */}
+      <section className="bg-card flex items-center gap-4 rounded-xl border p-4">
+        <Donut
+          size={120}
+          thickness={16}
+          showLegend={false}
+          segments={[
+            { label: '완료', value: w.completionAvg, color: 'var(--color-primary-600)' },
+            { label: '남음', value: Math.max(0, 100 - w.completionAvg), color: 'var(--color-gray-200)' },
+          ]}
+          centerLabel={`${w.completionAvg}%`}
+          centerSubLabel="완료율"
+          ariaLabel={`이번 주 완료율 ${w.completionAvg}%`}
+        />
+        <div className="min-w-0">
+          <h3 className="text-pullim-slate-900 text-sm font-bold">이번 주 완료율</h3>
+          <p className="text-pullim-slate-500 mt-0.5 text-xs">
+            계획한 블록 대비 완료 비율. 목표 {w.goalHours.toFixed(0)}h 중 {w.totalHours.toFixed(1)}h 달성.
+          </p>
+        </div>
       </section>
 
       {/* 차트 2종 */}
