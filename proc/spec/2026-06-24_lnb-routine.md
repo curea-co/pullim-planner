@@ -151,7 +151,13 @@
 
 ## 4. 운영 로직 및 비즈니스 정책 (Business Rules / Validation / ERD)
 
-> ⚠️ **개념 재정의(2026-06-24) 반영 필요** — 아래 §4.1~§4.4·§5 ERD/규칙은 초안의 "**플래너 종속 + 매일 on-the-fly 합성**" 모델로 서술돼 있다. 확정 개념은 **사용자 단위 라이브러리 + 새 시간표 만들기 위저드에서 적용(생성 시 bake)**이다(§0·§11 OI-1/OI-2). 실 BE(연기 트랙) 착수 시 다음으로 갱신: `routines.userId` FK, 시간표↔루틴 N:M 적용 링크(또는 생성 시 블록 bake), `weekdayMask`·`recurrenceEnd`는 **적용 시점(시간표별)** 결정. 아래는 초안 보존(대안 모델로 참고).
+> 🚫 **비구속 초안 — 계약으로 고정 금지.** 아래 §4.1~§4.4·§5는 **연기된 실 BE 트랙**의 *초안*이며, 초기의 "플래너 종속 + 매일 on-the-fly 합성" 모델로 서술돼 현행 개념(§0·§2: **사용자 단위 라이브러리 + 위저드 적용/bake**)과 일부 어긋난다. **출시(FE mock) 구현은 §0·§2·§9를 따르고, §4~§5는 BE 착수 시 현행 기준으로 재작성한다.** 그 시점에 **반드시 닫아야 할 미정 계약**(Codex 리뷰 반영):
+> - **소유 단위**: `routines.userId`(라이브러리) + 시간표↔루틴 적용 링크/bake (§0 OI-1).
+> - **subject taxonomy**: 라이브러리는 시간표 무관 → **공통 과목 셋**(활성 플래너 `subjectUnits` 아님). 적용 시점에 시간표 과목과 매핑.
+> - **루틴 간 시간 겹침**: "동일 시간대"가 아니라 **구간 overlap 자체 금지**(부분 겹침도 차단).
+> - **충돌 보류 계약(단일)**: 보류 루틴을 FE가 알 수 있도록 **항상 메타를 내려준다**(별도 컬렉션 또는 `suppressed=true` 포함) — "응답에서 제외"는 금지.
+> - **완료 모델(택1 확정)**: 루틴 블록 *완료 불가*로 제한 / `(routineId, date)` 전용 completion / 완료 시 실 `TimeBlock` 승격 중 하나. 합성 `routine:{id}:{date}` ID는 현 `block_completions(block_id)` 구조로 저장 불가.
+> - **요청 스키마(단일)**: `startTime`+`endTime` 고정(duration 입력 시 파생 규칙 명시). `recurrenceEnd`는 라이브러리 속성이 아니라 **적용 시점** 값.
 
 ### 4.1 핵심 비즈니스 규칙
 1. **루틴 = 청사진, 블록 = 인스턴스.** 루틴은 `TimeBlock`을 *생성하는 규칙*이며 그 자체가 블록은 아니다.
@@ -220,23 +226,20 @@ Planner (기존) 1 ──< Routine (신규) >── materialize ──> TimeBloc
 
 ## 5. 콘텐츠 데이터셋 (Seed Data / Mock)
 
-FE mock은 [apps/planner/lib/mock/planner.ts](../../apps/planner/lib/mock/planner.ts)의 `TimeBlock`·`planner`·`blockTypeMeta` 구조를 재사용한다. 신규 `mockRoutines: Routine[]` 추가 예시(활성 플래너 `pl_001` 기준):
+FE mock(출시 구현, R4 반영본): [apps/planner/lib/mock/routine.ts](../../apps/planner/lib/mock/routine.ts). 라이브러리는 **사용자 단위**라 `recurrenceEnd`·`enabled`·`plannerId` 없이 반복 요일은 **`weekdays` 배열(0=월…6=일)**. `recurrenceEnd`는 적용 시점(위저드) 값이라 라이브러리 항목에 두지 않는다.
 
-```
-[
+```ts
+mockRoutines: [
   { id:'routine_001', title:'아침 영단어', subject:'english', type:'memorize',
-    startTime:'07:30', endTime:'08:00', expectedMinutes:30,
-    weekdayMask:0b0111111 /*월~토*/, recurrenceEnd:'exam', enabled:true },
+    startTime:'07:30', endTime:'08:00', weekdays:[0,1,2,3,4,5] /*월~토*/ },
   { id:'routine_002', title:'저녁 수학 인강', subject:'math', type:'concept',
-    startTime:'19:00', endTime:'19:50', expectedMinutes:50,
-    weekdayMask:0b0011111 /*월~금*/, recurrenceEnd:null, enabled:true },
+    startTime:'19:00', endTime:'19:50', weekdays:[0,1,2,3,4] /*월~금*/ },
   { id:'routine_003', title:'주말 모의고사', subject:'math', type:'mock',
-    startTime:'10:00', endTime:'11:40', expectedMinutes:100,
-    weekdayMask:0b1000000 /*일*/, recurrenceEnd:null, enabled:false /*OFF 예시*/ },
+    startTime:'10:00', endTime:'11:40', weekdays:[6] /*일*/ },
 ]
 ```
-- materialize 데모: 오늘(데모 기준일 2026-04-24 금)에는 `routine_001`(토 포함이나 금 매칭)·`routine_002`(금 매칭)가 합성, `routine_003`(일·OFF)은 제외.
-- 빈 상태/충돌 데모용 케이스도 mock으로 1건씩 준비.
+- 위저드 적용 데모(R5): 선택 루틴이 생성 미리보기에서 해당 요일 블록으로 들어감.
+- 실 BE seed(연기): `weekdays`→비트마스크 변환, `recurrenceEnd`는 적용 링크에 둔다(§4 비구속 초안 참고).
 
 ---
 
@@ -291,20 +294,21 @@ FE mock은 [apps/planner/lib/mock/planner.ts](../../apps/planner/lib/mock/planne
 | **R4** | ✅ 출시 | `apps/planner` (1) | LNB 락 해제 + **`/planner/routine` 라이브러리**(목록·생성·편집·삭제, **mock** `mockRoutines`) | typecheck/lint/test, 화면 회귀 |
 | **R5** | ✅ 출시 | `apps/planner` (2) | **새 시간표 만들기 위저드 8→9단계**(5단계=루틴 적용, 라이브러리 멀티선택+인라인추가) + 9단계 미리보기 반영 (mock) | e2e: 등록→위저드 적용→미리보기 |
 | **R5b**(Should) | ◐ 출시여유 | `apps/planner` (3) | 홈 day-view 루틴 출처 배지·충돌 표시 (mock) | 화면 회귀 |
-| **R0** | ⏸ 연기 | `packages/types`(또는 api-client) | `Routine`·`RoutineWrite`·`WeekdayMask` 타입 + 비트마스크 헬퍼 | typecheck, 단위테스트 |
+| **R0** | ⏸ 연기 | `packages/api-client` | routine 계약 타입(`Routine`·`RoutineWrite`) + 비트마스크 헬퍼 — planner 계약과 동일하게 api-client에 co-locate(`packages/types`는 현재 auth 전용) | typecheck, 단위테스트 |
 | **R1** | ⏸ 연기 | **pullim-api**(플랫폼) | Routine 엔티티 + 마이그레이션 + 루틴 CRUD | 게이트키퍼 핸드오프 |
 | **R2** | ⏸ 연기 | **pullim-api**(플랫폼) | `GET blocks` materialize 확장(요일·종료·충돌) | materialize 단위테스트 |
-| **R3** | ⏸ 연기 | `packages/api-client` | routine CRUD 클라이언트 + FE 실연동 | 계약 테스트 |
-| **R6**(Could) | ⏸ 연기 | FE/BE | skip exception / 템플릿 추천 | — |
+| **R3** | ⏸ 연기 | `packages/api-client` + `apps/planner` | routine CRUD 클라이언트 + FE 실연동 (FE/BE 분리: 클라 PR → FE 연동 PR) | 계약 테스트 |
+| **R6a**(Could) | ⏸ 연기 | `apps/planner` | skip exception / 템플릿 추천 FE | — |
+| **R6b**(Could) | ⏸ 연기 | **pullim-api** | skip exception BE | — |
 
+> R0~R3 순서는 Core Rules §3(`공유 계약 → BE → FE`)을 따른다. 단 routine **공유 계약은 `packages/api-client`에 둔다**(planner 계약이 거기 있고 `packages/types`는 auth 전용 — source of truth 단일화).
 > R1·R2(실 BE)는 이 repo `apps/backend`가 아니라 **pullim-api(플랫폼, 게이트키퍼 소유)**에 들어간다 — FE가 라이브로 무는 곳. 본 repo `apps/backend`는 참조 구현. 연기 트랙은 cutover와 동일하게 **pullim-api 요구사항 핸드오프**로 시작.
 
 **완료 기준 체크리스트**
-- [ ] 루틴 CRUD 동작(목록·생성·수정·삭제·ON/OFF)
-- [ ] 활성 플래너·해당 요일에 그날 블록 자동 합성, "루틴" 배지 표시
-- [ ] 종료조건(무기한/종료일/시험일까지) 정확
-- [ ] 수동 블록과 충돌 시 보류 + 안내
-- [ ] `nav-config.ts` 루틴 `locked` 제거 + description 갱신
+- [ ] (출시 FE) 루틴 라이브러리 CRUD + 위저드 9단계 적용 동작(mock)
+- [ ] (연기 BE) 적용 루틴이 해당 요일 블록으로 반영, "루틴" 배지
+- [ ] (연기 BE) 충돌 시 보류 메타 반환 + 안내 / 루틴 간 구간 overlap 차단
+- [ ] **`locked` 해제 게이트**: 출시 mock은 **dev/preview 검증**까지. main(prod) 자동배포 환경이므로, prod 노출은 **실 BE 준비 + 엔타이틀먼트/플래그 게이트 뒤**에 둔다(미영속 mock이 prod 내비에 그대로 노출되지 않도록). 출시 PR은 prod 게이트 방식(route-level gate or prod-locked 유지)을 함께 명시.
 - [ ] FE/BE PR 분리, 각 단독 typecheck/lint/test 통과
 
 ---
