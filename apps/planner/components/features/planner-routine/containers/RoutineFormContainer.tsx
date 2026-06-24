@@ -92,7 +92,7 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
           onClick={onCancel}
           className="text-pullim-blue-600 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
         >
-          내 루틴으로
+          루틴으로
         </button>
       </div>
     );

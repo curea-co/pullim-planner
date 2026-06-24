@@ -8,7 +8,7 @@ import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
 import { composeDDayChipProps } from '@/lib/planner/d-day-tier';
 import {
-  formatDayNavLabel, formatDayTitle,
+  formatDayNavLabel, formatDayTitle, formatDayRelLabel,
   formatWeekNavLabel, formatWeekTitle,
   formatMonthNavLabel, formatMonthTitle, formatMonthShort,
 } from '@/lib/planner/day-nav';
@@ -76,8 +76,8 @@ export default function HomePresenter({
           </>
         ),
         navLabel: formatDayNavLabel(offset),
-        prevLabel: '이전 하루',
-        nextLabel: '다음 하루',
+        prevLabel: formatDayRelLabel(offset - 1),
+        nextLabel: formatDayRelLabel(offset + 1),
       };
     }
     if (view === 'week') {

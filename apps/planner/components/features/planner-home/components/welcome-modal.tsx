@@ -6,6 +6,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
   DialogFooter, DialogClose,
 } from '@/components/ui/dialog';
+import { ROUTINE_ENABLED } from '@/lib/flags';
 
 interface WelcomeModalProps {
   open: boolean;
@@ -14,9 +15,12 @@ interface WelcomeModalProps {
 
 const FEATURES = [
   { icon: CalendarClock, title: '일·주·월 시간표', desc: '학습 블록이 하루·이번 주·이번 달로 자동 배치돼요.' },
+  // 루틴은 출시 게이트(ROUTINE_ENABLED) 따라 노출 — prod 차단 시 잘못된 안내 방지
+  ...(ROUTINE_ENABLED
+    ? [{ icon: Repeat2, title: '루틴', desc: '반복 블록을 설정해 매일 자동 채워요.' }]
+    : []),
   { icon: BarChart2,    title: '성장 리포트',   desc: '완료율·학습 시간·컨디션 트렌드를 매일 기록해요.' },
   { icon: Share2,       title: '공부 공유',      desc: '오늘 결과를 인증 카드로 만들고 친구와 나눠요.' },
-  { icon: Repeat2,      title: '루틴 (준비 중)', desc: '반복 블록을 설정해 매일 자동 채워요.' },
 ];
 
 export function WelcomeModal({ open, onClose }: WelcomeModalProps) {

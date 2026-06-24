@@ -34,8 +34,7 @@ export default function RoutineListPresenter({
   return (
     <div className="space-y-4">
       <PageHeader
-        eyebrow={{ icon: Repeat2, text: '루틴' }}
-        title="내 루틴"
+        title="루틴"
         description="반복하는 행동을 등록해 두세요. 새 시간표 만들기에 곧 연결돼요."
         action={addButton}
       />

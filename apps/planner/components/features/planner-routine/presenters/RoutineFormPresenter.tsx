@@ -44,7 +44,7 @@ export default function RoutineFormPresenter({
         className="text-pullim-slate-500 hover:text-pullim-slate-900 -ml-1 inline-flex items-center gap-1 rounded-md px-1 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
-        내 루틴
+        루틴
       </button>
 
       <section className="bg-card space-y-5 rounded-2xl border p-5">

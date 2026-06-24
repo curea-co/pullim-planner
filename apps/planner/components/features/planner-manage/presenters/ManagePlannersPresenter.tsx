@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Wrench, Plus, Eye, EyeOff } from 'lucide-react';
+import { Plus, Eye, EyeOff } from 'lucide-react';
 import type { Planner } from '@/lib/mock';
 import { PageHeader } from '@/components/shell/page-header';
 import { PlannerCard } from '../components/planner-card';
@@ -69,8 +69,7 @@ export default function ManagePlannersPresenter({
   return (
     <div key={tick} className="space-y-5">
       <PageHeader
-        eyebrow={{ icon: Wrench, text: '시간표 관리' }}
-        title="내 시간표"
+        title="시간표 관리"
         description={`활성 ${active ? 1 : 0} · 대기 ${inactive.length}${archivedList.length > 0 ? ` · 보관 ${archivedList.length}` : ''}`}
         action={
           <Link

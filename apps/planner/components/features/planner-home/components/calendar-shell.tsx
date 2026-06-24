@@ -12,16 +12,14 @@ export type CalendarView = 'day' | 'week' | 'month';
 type ViewMeta = {
   label: string;
   icon: LucideIcon;
-  /** 헤더 eyebrow 텍스트 */
-  eyebrow: string;
   /** 시간 이동 단위 */
   navUnit: '하루' | '주' | '월';
 };
 
 const viewMeta: Record<CalendarView, ViewMeta> = {
-  day:   { label: '일간', icon: CalendarClock, eyebrow: '일간 캘린더', navUnit: '하루' },
-  week:  { label: '주간', icon: CalendarRange, eyebrow: '주간 캘린더', navUnit: '주' },
-  month: { label: '월간', icon: Grid3x3,       eyebrow: '월간 캘린더', navUnit: '월' },
+  day:   { label: '일간', icon: CalendarClock, navUnit: '하루' },
+  week:  { label: '주간', icon: CalendarRange, navUnit: '주' },
+  month: { label: '월간', icon: Grid3x3,       navUnit: '월' },
 };
 
 type Props = {
@@ -62,7 +60,6 @@ export function CalendarShell({
   return (
     <div className="space-y-4">
       <PageHeader
-        eyebrow={{ icon: meta.icon, text: meta.eyebrow }}
         title={title}
         description={description}
         action={action}
