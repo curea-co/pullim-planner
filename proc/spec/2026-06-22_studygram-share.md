@@ -281,7 +281,9 @@ StudyProof (1) ── (N) ProofReaction(응원 이모지)
 ---
 
 ## 오픈 이슈 (Open Issues)
-- **OI-1** 하단탭 5개 vs 소개 메뉴화(공유 승격) — 권장: 소개 메뉴화. **사용자 확정 필요.**
+- ~~**OI-1** 하단탭 5개 vs 소개 메뉴화(공유 승격) — 권장: 소개 메뉴화.~~
+  **→ 확정(닫음, 2026-06-24): 소개 메뉴화 채택** — 하단탭 4개(홈/관리/리포트/공유), 소개는
+  프로필/더보기 메뉴로 내림. 공유를 하단탭으로 승격. 배선은 P5(IA·온보딩)에서 반영.
 - ~~**OI-2** `friends` vs `close_friends` 2단계 공개 범위를 모두 둘지, close_friends 단일로 시작할지.~~
   **→ 확정(닫음): 2단계 모델 채택** — visibility enum(`close_friends`\|`friends`\|`private`)·RBAC·API·
   `CloseFriendDesignation` 이 모두 2단계 전제로 서술됨. close_friends 단일로 되돌리지 않는다.
