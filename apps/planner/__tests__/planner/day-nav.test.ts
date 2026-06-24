@@ -36,10 +36,11 @@ describe('calendar-nav 라벨', () => {
     });
   });
 
-  describe('주 — formatWeekNavLabel (대표일 목요일 기준 주차)', () => {
+  describe('주 — formatWeekNavLabel (ISO 월주차: 첫 목요일 포함 주 = 1주차)', () => {
     it.each([
+      [-1, '2026.04 · 3주차'],
       [0, '2026.04 · 4주차'],
-      [1, '2026.05 · 1주차'],
+      [1, '2026.05 · 1주차'], // 4/28~5/4 주 → 목요일(5/1)이 속한 5월 1주차
     ])('offset %i → %s', (offset, expected) => {
       expect(formatWeekNavLabel(offset)).toBe(expected);
     });

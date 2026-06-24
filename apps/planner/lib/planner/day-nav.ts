@@ -61,13 +61,24 @@ export function formatWeekTitle(weekOffset: number): string {
   return `${mon.getMonth() + 1}월 ${mon.getDate()}일 — ${tail}`;
 }
 
-/** "2026.04 · 4주차" — 대표일(목요일=월+3)의 월·주차 */
+/**
+ * ISO 8601 방식 월 주차 — **1주차 = 그 달의 첫 목요일이 속한 주(월~일)**.
+ * 주의 대표일을 목요일로 잡으면 두 달에 걸친 주도 "목요일이 속한 달"로 명확히 귀속된다.
+ * `thursday`는 그 주의 목요일이어야 한다.
+ */
+function isoWeekOfMonth(thursday: Date): number {
+  const date = thursday.getDate();
+  // thursday와 같은 요일(목)인 그 달의 첫 날짜 — 항상 1..7
+  const firstThursdayDate = ((date - 1) % 7) + 1;
+  return Math.floor((date - firstThursdayDate) / 7) + 1;
+}
+
+/** "2026.04 · 4주차" — 대표일(목요일=월+3)의 월 + ISO 월주차 */
 export function formatWeekNavLabel(weekOffset: number): string {
   const thu = weekMonday(weekOffset);
-  thu.setDate(thu.getDate() + 3);
+  thu.setDate(thu.getDate() + 3); // 월 + 3 = 그 주 목요일(ISO 대표일)
   const mm = String(thu.getMonth() + 1).padStart(2, '0');
-  const weekOfMonth = Math.ceil(thu.getDate() / 7);
-  return `${thu.getFullYear()}.${mm} · ${weekOfMonth}주차`;
+  return `${thu.getFullYear()}.${mm} · ${isoWeekOfMonth(thu)}주차`;
 }
 
 /* ── 월 ── */
