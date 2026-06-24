@@ -37,6 +37,22 @@ export function formatDayTitle(offset: number): string {
   return `${dt.getMonth() + 1}월 ${dt.getDate()}일 ${WEEKDAYS[dt.getDay()]}요일`;
 }
 
+/**
+ * 기준일(offset 0) 대비 상대 일자 라벨 — 페이저 버튼/aria용.
+ * offset 0=오늘, -1=어제, +1=내일, ±2=그제·모레, 그 밖은 날짜로 폴백.
+ * (호출부가 prev=offset-1, next=offset+1을 넘기므로 이동해도 라벨이 어긋나지 않음)
+ */
+export function formatDayRelLabel(offset: number): string {
+  switch (offset) {
+    case 0:  return '오늘';
+    case -1: return '어제';
+    case 1:  return '내일';
+    case -2: return '그제';
+    case 2:  return '모레';
+    default: return formatDayNavLabel(offset);
+  }
+}
+
 /* ── 주 ── (그 주의 실제 월요일 기준) */
 
 function weekMonday(weekOffset: number): Date {

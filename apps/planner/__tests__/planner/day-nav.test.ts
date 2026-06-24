@@ -1,5 +1,5 @@
 import {
-  formatDayNavLabel, formatDayTitle,
+  formatDayNavLabel, formatDayTitle, formatDayRelLabel,
   formatWeekNavLabel, formatWeekTitle,
   formatMonthNavLabel, formatMonthTitle, formatMonthShort,
 } from '@/lib/planner/day-nav';
@@ -23,6 +23,21 @@ describe('calendar-nav 라벨 (실달력 getDay 기준)', () => {
       [-1, '4월 23일 목요일'],
     ])('offset %i → %s', (offset, expected) => {
       expect(formatDayTitle(offset)).toBe(expected);
+    });
+  });
+
+  // 페이저는 prev=offset-1, next=offset+1을 넘김 → 기준일에서 '어제/내일',
+  // 이동 후엔 실제 상대일로 따라감(offset≠0에서도 '어제'로 고정되지 않음)
+  describe('일 — formatDayRelLabel (상대 일자)', () => {
+    it.each([
+      [-1, '어제'],
+      [0, '오늘'],
+      [1, '내일'],
+      [-2, '그제'],
+      [2, '모레'],
+      [3, '2026.04.27 (월)'], // ±2 밖은 날짜로 폴백
+    ])('offset %i → %s', (offset, expected) => {
+      expect(formatDayRelLabel(offset)).toBe(expected);
     });
   });
 
