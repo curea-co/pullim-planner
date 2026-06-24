@@ -53,7 +53,7 @@ export function PlannerWizard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
-              Step {currentStep} / 9
+              Step {currentStep} / {plannerStepConfig.length}
             </div>
             <h2 className="text-pullim-slate-900 mt-0.5 text-lg font-bold tracking-tight">
               {stepInfo.title}
@@ -67,15 +67,16 @@ export function PlannerWizard({
         </header>
 
         <div className="min-h-[280px]">
-          {currentStep === 1 && <PStep1Goal form={form} setForm={setForm} />}
-          {currentStep === 2 && <PStep2Hours form={form} setForm={setForm} />}
-          {currentStep === 3 && <PStep3Subjects form={form} setForm={setForm} />}
-          {currentStep === 4 && <PStep4Pattern form={form} setForm={setForm} />}
-          {currentStep === 5 && <PStep5Routine form={form} setForm={setForm} />}
-          {currentStep === 6 && <PStep5Weakness form={form} setForm={setForm} />}
-          {currentStep === 7 && <PStep6Motivation form={form} setForm={setForm} />}
-          {currentStep === 8 && <PStep7Reminder form={form} setForm={setForm} />}
-          {currentStep === 9 && <PStep8Activate form={form} mode={mode} onActivate={onActivate} />}
+          {/* 단계 번호가 아니라 key로 렌더 — 루틴 게이트로 단계 수가 8/9로 달라져도 안전 */}
+          {stepInfo.key === 'goal'       && <PStep1Goal form={form} setForm={setForm} />}
+          {stepInfo.key === 'hours'      && <PStep2Hours form={form} setForm={setForm} />}
+          {stepInfo.key === 'subjects'   && <PStep3Subjects form={form} setForm={setForm} />}
+          {stepInfo.key === 'pattern'    && <PStep4Pattern form={form} setForm={setForm} />}
+          {stepInfo.key === 'routine'    && <PStep5Routine form={form} setForm={setForm} />}
+          {stepInfo.key === 'weakness'   && <PStep5Weakness form={form} setForm={setForm} />}
+          {stepInfo.key === 'motivation' && <PStep6Motivation form={form} setForm={setForm} />}
+          {stepInfo.key === 'reminder'   && <PStep7Reminder form={form} setForm={setForm} />}
+          {stepInfo.key === 'activate'   && <PStep8Activate form={form} mode={mode} onActivate={onActivate} />}
         </div>
 
         <footer className="mt-5 flex items-center justify-between border-t pt-4">
@@ -95,7 +96,7 @@ export function PlannerWizard({
           </button>
 
           <div className="text-pullim-slate-500 hidden sm:block text-[10px] font-mono">
-            {currentStep}/9 — {stepInfo.label}
+            {currentStep}/{plannerStepConfig.length} — {stepInfo.label}
           </div>
 
           {canNext ? (
