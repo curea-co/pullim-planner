@@ -69,8 +69,18 @@ export function DayView({ dayOffset = 0, onResetToday }: DayViewProps) {
     });
   }
 
-  // 기준일(offset 0) 외에는 데모 플랜이 없어 빈 상태. BE 연동 시 그날 블록으로 대체.
   if (blocks.length === 0) {
+    // 기준일(offset 0)인데 비어 있으면 = 활성 시간표에 아직 블록이 없음(신규 — mock 미생성).
+    // 잘못된 데모 블록을 보여주지 않고 정직한 빈 상태로 안내한다(실제 생성은 BE materialize).
+    if (dayOffset === 0) {
+      return (
+        <PeriodEmptyState
+          message="아직 학습 블록이 없어요"
+          subMessage="활성화한 시간표의 블록은 곧 채워질 거예요."
+        />
+      );
+    }
+    // 기준일 외 날짜 — 데모 플랜이 없어 빈 상태. BE 연동 시 그날 블록으로 대체.
     return <PeriodEmptyState message="이 날짜엔 아직 계획이 없어요" onReset={onResetToday} />;
   }
 
