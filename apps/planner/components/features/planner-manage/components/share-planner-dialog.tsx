@@ -63,7 +63,8 @@ export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm }: P
             <span className="font-bold">{planner.name}</span> 공유하기
           </DialogTitle>
           <DialogDescription>
-            공유할 친구를 고르세요. <span className="text-pullim-slate-400">받은 시간표를 보는 화면(LNB 공유)은 준비 중이라, 지금은 전달 예약만 돼요.</span>
+            공유할 친구를 고르세요. 친구는 <strong>공유 &gt; 친구 시간표</strong>에서 보게 돼요.
+            <span className="text-pullim-slate-400"> (실제 전달은 준비 중)</span>
           </DialogDescription>
         </DialogHeader>
 

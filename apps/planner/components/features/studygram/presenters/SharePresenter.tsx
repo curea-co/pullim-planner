@@ -12,26 +12,22 @@ export type ShareTab = 'mine' | 'friends';
 
 interface SharePresenterProps {
   setting: StudygramSetting | null;
-  myProofs: StudyProof[];
   friendProofs: StudyProof[];
   acceptedFriends: Friend[];
   goalProgress: { posted: number; goalTotal: number; remainDays: number; streakDays: number } | null;
   activeTab: ShareTab;
   hasTodayProof: boolean;
   onChangeTab: (tab: ShareTab) => void;
-  onProofClick: (id: string) => void;
 }
 
 export default function SharePresenter({
   setting,
-  myProofs,
   friendProofs,
   acceptedFriends,
   goalProgress,
   activeTab,
   hasTodayProof,
   onChangeTab,
-  onProofClick,
 }: SharePresenterProps) {
   return (
     <>
@@ -83,9 +79,9 @@ export default function SharePresenter({
               </Link>
             )}
 
-            {/* 탭 토글 */}
+            {/* 친구 시간표 탭 — 친구가 공유한 시간표(인바운드). 내 인증 탭은 제거됨. */}
             <div className="flex rounded-lg bg-pullim-slate-100 p-0.5">
-              {(['mine', 'friends'] as const).map((tab) => (
+              {(['friends'] as const).map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -96,27 +92,10 @@ export default function SharePresenter({
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {tab === 'mine' ? `내 인증 ${myProofs.length}` : `친구 피드 ${friendProofs.length}`}
+                  친구 시간표 {friendProofs.length}
                 </button>
               ))}
             </div>
-
-            {activeTab === 'mine' && (
-              myProofs.length === 0 ? (
-                <EmptyState variant="no-proofs" />
-              ) : (
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                  {myProofs.map((proof) => (
-                    <ProofCard
-                      key={proof.id}
-                      proof={proof}
-                      variant="grid"
-                      onClick={() => onProofClick(proof.id)}
-                    />
-                  ))}
-                </div>
-              )
-            )}
 
             {activeTab === 'friends' && (
               acceptedFriends.length === 0 ? (
