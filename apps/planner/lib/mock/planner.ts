@@ -200,12 +200,26 @@ export function nextActiveBlock(blocks: TimeBlock[] = todayBlocks): TimeBlock | 
 /** day-view 날짜 네비게이션 기준일 — 데모 플랜이 존재하는 유일한 날(서연의 저녁 학습). */
 export const planBaseDate = '2026-04-24';
 
+/** todayBlocks(서연 데모)를 소유한 플래너 — 다른 시간표 활성 시 블록은 미생성. */
+const DEMO_BLOCKS_PLANNER_ID = 'pl_001';
+
 /**
  * day-view 날짜 offset(0=기준일)별 블록.
- * 데모는 기준일에만 플랜이 있으므로 그 외 날짜는 빈 배열(빈 상태) — BE 연동 시 그날 블록으로 교체.
+ * - 기준일 외 날짜: 빈 배열(데모 플랜 없음).
+ * - 기준일이라도 **활성 플래너가 데모(pl_001)가 아니면** 빈 배열 — mock은 신규 시간표의
+ *   블록을 생성하지 않으므로 데모 블록을 잘못 보여주지 않고 "정직한 빈 상태"를 보인다.
+ *   (실제 블록 생성은 활성화 시 BE materialize — 06-30+)
+ *
+ * 활성 판정에 `getActivePlanner()`(이 mock store)를 쓰는 이유: **홈은 블록·활성 플래너를
+ * 모두 이 mock 레이어에서 읽는다**(HomeContainer — dev/prod 공통, 아직 BE cutover 전).
+ * 즉 이 게이트는 홈의 현재 데이터 소스와 일관된다.
+ * - dev 우회: activatePlanner()가 이 store를 갱신 → 신규 플래너 활성 시 빈 상태가 의도대로 동작.
+ * - prod: 홈이 아직 BE로 cutover되지 않아 종전에도 줄곧 pl_001 데모만 노출 → 이 PR로도 동일(회귀 없음).
+ * 실 BE 활성 플래너 기준 블록 반영은 **홈→pullim-api cutover + materialize** 시점의 별 작업.
  */
 export function getBlocksForDayOffset(offset: number): TimeBlock[] {
-  return offset === 0 ? todayBlocks : [];
+  if (offset !== 0) return [];
+  return getActivePlanner().id === DEMO_BLOCKS_PLANNER_ID ? todayBlocks : [];
 }
 
 export function plannerProgress(blocks: TimeBlock[] = todayBlocks): { done: number; total: number; pct: number } {
