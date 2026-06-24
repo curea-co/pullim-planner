@@ -16,13 +16,13 @@ type Props = {
 };
 
 /**
- * 8단계 위저드 진행 표시 — 데스크탑 가로, 모바일 세로 압축.
+ * 9단계 프로세스 진행 표시 — 데스크탑 가로, 모바일 세로 압축.
  * 완료 단계는 체크, 현재 단계는 강조, 미완 단계는 흐림.
  */
 export function StepIndicator({ steps, current, onJump }: Props) {
   return (
     <nav aria-label="봇 빌더 진행" className="bg-card overflow-x-auto rounded-2xl border sm:overflow-hidden">
-      <ol className="flex min-w-max sm:grid sm:grid-cols-8 sm:min-w-0 divide-pullim-slate-100 divide-x">
+      <ol className="flex min-w-max sm:grid sm:grid-cols-9 sm:min-w-0 divide-pullim-slate-100 divide-x">
         {steps.map(s => {
           const isActive = s.num === current;
           const isDone = s.num < current;

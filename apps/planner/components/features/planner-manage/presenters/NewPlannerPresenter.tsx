@@ -1,8 +1,7 @@
 'use client';
 
-import { Wrench, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
-import { FlywheelNote } from '@/components/shell/flywheel-note';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 import { PlannerWizard } from '../components/planner-wizard';
 
@@ -28,9 +27,7 @@ export default function NewPlannerPresenter({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow={{ icon: Wrench, text: '플래너 빌더' }}
-        title="내 맞춤 플래너 만들기"
-        description="8단계 위저드 — 목표·가용 시간·약점을 종합해 일주일치 플래너를 자동 생성해요."
+        title="내 맞춤 시간표 만들기"
         action={
           <button
             type="button"
@@ -56,11 +53,6 @@ export default function NewPlannerPresenter({
         onActivate={onActivate}
         finishHint="↑ 위 [플래너 활성화] 클릭으로 완료"
       />
-
-      <FlywheelNote>
-        설정한 가중치·약점·블록 패턴은 <strong>풀림 분석</strong>의 신규 진단 결과를 반영해
-        매주 자동 보정돼요. 활성화 후엔 일간/주간 캘린더에서 실시간 진행률을 확인할 수 있어요.
-      </FlywheelNote>
     </div>
   );
 }

@@ -18,7 +18,7 @@ export type Persona = {
   streakDays: number;
 };
 
-export type SubjectKey = 'korean' | 'math' | 'english' | 'science' | 'social' | 'history';
+export type SubjectKey = 'korean' | 'math' | 'english' | 'science' | 'social' | 'history' | 'etc';
 
 export const subjectLabels: Record<SubjectKey, string> = {
   korean:  '국어',
@@ -27,6 +27,7 @@ export const subjectLabels: Record<SubjectKey, string> = {
   science: '과학',
   social:  '사회',
   history: '한국사',
+  etc:     '기타',
 };
 
 export const currentPersona: Persona = {
