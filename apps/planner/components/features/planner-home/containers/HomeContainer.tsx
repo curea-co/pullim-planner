@@ -37,11 +37,11 @@ export default function HomeContainer() {
   const helpParam = params.get('help') === '1';
   const [welcomeOpen, setWelcomeOpen] = useState(false);
 
-  // day-view 날짜 이동 (0=기준일). day 뷰 전용 로컬 상태.
-  const [dayOffset, setDayOffset] = useState(0);
-  const handlePrevDay = useCallback(() => setDayOffset(o => o - 1), []);
-  const handleNextDay = useCallback(() => setDayOffset(o => o + 1), []);
-  const handleResetToday = useCallback(() => setDayOffset(0), []);
+  // 기간 이동 offset (0=기준 기간). 일/주/월 공용 — 뷰 전환 시 0으로 리셋.
+  const [offset, setOffset] = useState(0);
+  const handlePrev = useCallback(() => setOffset(o => o - 1), []);
+  const handleNext = useCallback(() => setOffset(o => o + 1), []);
+  const handleReset = useCallback(() => setOffset(0), []);
 
   useEffect(() => {
     // sessionStorage 는 클라이언트 전용 — 서버 렌더는 항상 닫힘(false)으로 hydration 일치시키고,
@@ -68,6 +68,7 @@ export default function HomeContainer() {
 
   const onChangeView = useCallback(
     (next: CalendarView) => {
+      setOffset(0); // 뷰 전환 시 기준 기간으로 리셋
       const qs = next === 'day' ? '' : `?view=${next}`;
       router.replace(`/planner${qs}`, { scroll: false });
     },
@@ -76,9 +77,9 @@ export default function HomeContainer() {
 
   const active = getActivePlanner();
   const dday = getDday(currentPersona);
-  const daySummary = plannerProgress(getBlocksForDayOffset(dayOffset));
-  const weekMeta = getWeekMeta();
-  const monthMeta = getMonthMeta();
+  const daySummary = plannerProgress(getBlocksForDayOffset(offset));
+  const weekMeta = getWeekMeta(offset);
+  const monthMeta = getMonthMeta(offset);
 
   return (
     <>
@@ -90,10 +91,10 @@ export default function HomeContainer() {
         daySummary={daySummary}
         weekMeta={weekMeta}
         monthMeta={monthMeta}
-        dayOffset={dayOffset}
-        onPrevDay={handlePrevDay}
-        onNextDay={handleNextDay}
-        onResetToday={handleResetToday}
+        offset={offset}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        onReset={handleReset}
         onChangeView={onChangeView}
       />
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
