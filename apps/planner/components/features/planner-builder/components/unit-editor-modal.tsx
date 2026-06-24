@@ -40,6 +40,8 @@ export function UnitEditorModal({
   const [pending, setPending] = useState<string[]>([...initialUnits]);
   const [search, setSearch] = useState('');
   const [customInput, setCustomInput] = useState('');
+  // 기타(etc) 과목 전용 — 과목명 직접 입력 (단원명은 customInput 재사용)
+  const [etcName, setEtcName] = useState('');
 
   // 모달이 열릴 때 또는 props가 바뀔 때 — render 중 보정 (React idiom)
   const [openSnap, setOpenSnap] = useState(open);
@@ -54,6 +56,7 @@ export function UnitEditorModal({
       setPending([...initialUnits]);
       setSearch('');
       setCustomInput('');
+      setEtcName('');
     }
   }
 
@@ -92,6 +95,7 @@ export function UnitEditorModal({
     setPending([]);
     setSearch('');
     setCustomInput('');
+    setEtcName('');
   }
 
   function backToPicker() {
@@ -99,6 +103,7 @@ export function UnitEditorModal({
     setPending([]);
     setSearch('');
     setCustomInput('');
+    setEtcName('');
   }
 
   function toggle(label: string) {
@@ -110,7 +115,9 @@ export function UnitEditorModal({
   function addCustom() {
     const v = customInput.trim();
     if (!v) return;
-    if (!pending.includes(v)) setPending(p => [...p, v]);
+    // 기타 과목은 "과목명 · 단원명"으로 결합(과목명 비면 단원명만)
+    const label = pickedSubject === 'etc' && etcName.trim() ? `${etcName.trim()} · ${v}` : v;
+    if (!pending.includes(label)) setPending(p => [...p, label]);
     setCustomInput('');
   }
   function reset() {
@@ -160,7 +167,9 @@ export function UnitEditorModal({
                   {subjectLabels[pickedSubject!]} — 단원 설정
                 </DialogTitle>
                 <DialogDescription className="text-pullim-slate-500 mt-1 text-xs leading-relaxed">
-                  교과 단원 / 자유 입력 모두 가능. 약점 단원 자동 추천.
+                  {pickedSubject === 'etc'
+                    ? '과목명·단원명을 직접 입력해요.'
+                    : '교과 단원 / 자유 입력 모두 가능. 약점 단원 자동 추천.'}
                   <span className="text-pullim-blue-700 ml-1 font-mono font-bold">{pending.length}</span>
                   <span className="text-pullim-slate-500"> 단원 선택됨</span>
                 </DialogDescription>
@@ -180,6 +189,63 @@ export function UnitEditorModal({
         {/* 본문 — 과목 선택 OR 단원 편집 */}
         {inPickerMode ? (
           <SubjectPickerBody available={availableSubjects} onPick={pickSubject} />
+        ) : pickedSubject === 'etc' ? (
+          <div className="flex-1 space-y-4 overflow-y-auto p-5">
+            <div className="space-y-1.5">
+              <label htmlFor="etc-subject" className="text-pullim-slate-700 block text-xs font-bold">과목명</label>
+              <input
+                id="etc-subject"
+                type="text"
+                value={etcName}
+                onChange={e => setEtcName(e.target.value)}
+                placeholder="예: 제2외국어, 한문, 직업탐구"
+                className="border-pullim-slate-200 focus:border-pullim-blue-400 w-full rounded-lg border bg-card px-3 py-2 text-sm outline-none transition-colors"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="etc-unit" className="text-pullim-slate-700 block text-xs font-bold">단원명</label>
+              <div className="flex items-stretch gap-2">
+                <input
+                  id="etc-unit"
+                  type="text"
+                  value={customInput}
+                  onChange={e => setCustomInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }}
+                  placeholder="예: 히라가나 1과"
+                  className="border-pullim-slate-200 focus:border-pullim-blue-400 flex-1 rounded-lg border bg-card px-3 py-2 text-sm outline-none transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={addCustom}
+                  disabled={!customInput.trim()}
+                  className="bg-pullim-blue-600 hover:bg-pullim-blue-700 disabled:bg-pullim-slate-200 disabled:text-pullim-slate-400 disabled:cursor-not-allowed inline-flex shrink-0 items-center gap-1 rounded-lg px-3 text-xs font-bold text-white transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  추가
+                </button>
+              </div>
+            </div>
+            {pending.length > 0 && (
+              <ul className="space-y-1">
+                {pending.map(label => (
+                  <li
+                    key={label}
+                    className="bg-pullim-slate-50 border-pullim-slate-200 flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5"
+                  >
+                    <span className="text-pullim-slate-900 truncate text-sm">{label}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFromPending(label)}
+                      aria-label={`${label} 제거`}
+                      className="text-pullim-slate-400 hover:text-pullim-danger inline-flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         ) : (
           <div className="flex-1 space-y-4 overflow-y-auto p-5">
             {/* 검색 */}
