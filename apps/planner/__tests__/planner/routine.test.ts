@@ -1,6 +1,6 @@
 import {
   formatWeekdays, minutesBetween,
-  addRoutine, updateRoutine, removeRoutine, findRoutine, getRoutines, resetMockRoutines,
+  addRoutine, updateRoutine, removeRoutine, restoreRoutine, findRoutine, getRoutines, resetMockRoutines,
   type Weekday,
 } from '@/lib/mock/routine';
 
@@ -44,6 +44,30 @@ describe('routine mock', () => {
 
     it('updateRoutine 없는 id → undefined', () => {
       expect(updateRoutine('nope', { title: 'x' })).toBeUndefined();
+    });
+
+    it('remove → restore 가 원래 id·위치를 보존한다 (엔티티 동일성)', () => {
+      const ids = getRoutines().map((r) => r.id);
+      const targetId = ids[1];
+      const removed = removeRoutine(targetId);
+      expect(removed?.routine.id).toBe(targetId);
+      expect(removed?.index).toBe(1);
+      expect(findRoutine(targetId)).toBeUndefined();
+
+      restoreRoutine(removed!.routine, removed!.index);
+      expect(findRoutine(targetId)?.id).toBe(targetId); // 새 id 아님
+      expect(getRoutines().map((r) => r.id)).toEqual(ids); // 위치 보존
+    });
+
+    it('restoreRoutine 중복 id 는 무시', () => {
+      const r = getRoutines()[0];
+      const before = getRoutines().length;
+      restoreRoutine(r, 0);
+      expect(getRoutines().length).toBe(before);
+    });
+
+    it('removeRoutine 없는 id → undefined', () => {
+      expect(removeRoutine('nope')).toBeUndefined();
     });
   });
 });

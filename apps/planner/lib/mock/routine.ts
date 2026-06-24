@@ -101,7 +101,20 @@ export function updateRoutine(
   return routine;
 }
 
-export function removeRoutine(id: string): void {
-  const idx = mockRoutines.findIndex((r) => r.id === id);
-  if (idx >= 0) mockRoutines.splice(idx, 1);
+/** 삭제 — 되돌리기용으로 제거된 항목과 원래 위치를 반환한다. 없으면 undefined. */
+export function removeRoutine(id: string): { routine: Routine; index: number } | undefined {
+  const index = mockRoutines.findIndex((r) => r.id === id);
+  if (index < 0) return undefined;
+  const [routine] = mockRoutines.splice(index, 1);
+  return { routine, index };
+}
+
+/** 삭제 되돌리기 — 원래 id·위치 그대로 복원(엔티티 동일성 보존). 이미 있으면 무시. */
+export function restoreRoutine(routine: Routine, index?: number): void {
+  if (mockRoutines.some((r) => r.id === routine.id)) return;
+  if (index === undefined || index < 0 || index > mockRoutines.length) {
+    mockRoutines.push(routine);
+  } else {
+    mockRoutines.splice(index, 0, routine);
+  }
 }
