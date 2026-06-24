@@ -114,16 +114,19 @@
   --color-pullim-heat-4: #2854D8;
   --color-pullim-heat-5: #0E1F54;
 
-  /* 라운드 → PUDS pullim-jr 스케일 (플레이풀, 둥글게) */
-  --radius-xs: 8px;
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
-  --radius-2xl: 40px;
-  --radius-3xl: 48px;
-  --radius-4xl: 56px;
-  --radius-pill: 9999px;
+  /* 라운드 → PUDS radius 토큰 별칭 (data-theme별 스케일 따라감 — os↔jr 전환 시 둥글기도 전환).
+   * PUDS 토큰명이 --radius-*라 자기참조를 피하려 벤더 파일에서 --puds-radius-*로 캡처해 둠
+   * (app/tokens/pullim-{os,jr}.css). 재싱크 시 그 리네임을 다시 적용할 것. */
+  --radius-xs:  var(--puds-radius-xs);
+  --radius-sm:  var(--puds-radius-sm);
+  --radius-md:  var(--puds-radius-md);
+  --radius-lg:  var(--puds-radius-lg);
+  --radius-xl:  var(--puds-radius-xl);
+  --radius-2xl: var(--puds-radius-2xl);
+  /* 3xl/4xl은 PUDS 미보유 — 2xl 기반 파생(테마 전환 함께 따라감) */
+  --radius-3xl: calc(var(--puds-radius-2xl) + 8px);
+  --radius-4xl: calc(var(--puds-radius-2xl) + 16px);
+  --radius-pill: var(--puds-radius-full);
 
   /* 모션 — duration / easing 토큰 (08-design-system § 10) */
   --pullim-duration-fast: 120ms;

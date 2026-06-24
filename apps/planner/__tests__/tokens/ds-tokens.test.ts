@@ -65,6 +65,15 @@ describe('PUDS 토큰 별칭 (re-skin lock)', () => {
     expect(alias('--color-pullim-lemon')).toBe('--color-secondary-500');
   });
 
+  describe('radius → PUDS 토큰 별칭 (테마 전환 따라감, px 리터럴 금지)', () => {
+    it.each(['xs', 'sm', 'md', 'lg', 'xl', '2xl'])('radius-%s → puds-radius-%s', (s) => {
+      expect(alias(`--radius-${s}`)).toBe(`--puds-radius-${s}`);
+    });
+    it('radius-pill → puds-radius-full', () => {
+      expect(alias('--radius-pill')).toBe('--puds-radius-full');
+    });
+  });
+
   describe('shadcn semantic → PUDS', () => {
     it.each<[string, string]>([
       ['--background', '--surface-raised'],

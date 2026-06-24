@@ -39,8 +39,8 @@
   --border-default:  var(--color-gray-300);
 
   /* --- PLAYFUL radius scale (all larger than os) --------------------- */
-  --radius-xs: 8px; --radius-sm: 12px; --radius-md: 18px; --radius-lg: 24px;
-  --radius-xl: 32px; --radius-2xl: 40px; --radius-full: 999px;
+  --puds-radius-xs: 8px; --puds-radius-sm: 12px; --puds-radius-md: 18px; --puds-radius-lg: 24px;
+  --puds-radius-xl: 32px; --puds-radius-2xl: 40px; --puds-radius-full: 999px;
 
   /* --- density metrics (same as os) ---------------------------------- */
   --row-h-compact: 44px;

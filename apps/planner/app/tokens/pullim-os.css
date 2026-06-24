@@ -38,8 +38,8 @@
   --border-default:  var(--color-gray-300);
 
   /* --- SHARP radius scale -------------------------------------------- */
-  --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
-  --radius-xl: 16px; --radius-2xl: 20px; --radius-full: 999px;
+  --puds-radius-xs: 4px; --puds-radius-sm: 6px; --puds-radius-md: 8px; --puds-radius-lg: 12px;
+  --puds-radius-xl: 16px; --puds-radius-2xl: 20px; --puds-radius-full: 999px;
 
   /* --- density metrics (from variant-b spacious scale) --------------- */
   --row-h-compact: 44px;
