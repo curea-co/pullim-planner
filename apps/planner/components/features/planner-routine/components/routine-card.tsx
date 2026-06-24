@@ -1,7 +1,7 @@
 'use client';
 
 import { Pencil, Trash2, Clock } from 'lucide-react';
-import { blockTypeMeta, subjectLabels, formatWeekdays, type Routine } from '@/lib/mock';
+import { blockTypeMeta, routineSubjectLabel, formatWeekdays, type Routine } from '@/lib/mock';
 import { BLOCK_TYPE_STRIPE } from '@/lib/planner/block-type-style';
 import { cn } from '@/lib/utils';
 
@@ -31,7 +31,7 @@ export function RoutineCard({ routine, onEdit, onDelete }: RoutineCardProps) {
       <div className="min-w-0 flex-1">
         <div className="text-pullim-slate-900 truncate text-sm font-bold">{routine.title}</div>
         <div className="text-pullim-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs">
-          <span>{subjectLabels[routine.subject]}</span>
+          <span>{routineSubjectLabel(routine.subject)}</span>
           <span className="text-pullim-slate-300">·</span>
           <span>{blockTypeMeta[routine.type].label}</span>
           <span className="text-pullim-slate-300">·</span>

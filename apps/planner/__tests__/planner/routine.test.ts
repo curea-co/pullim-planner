@@ -1,11 +1,19 @@
 import {
-  formatWeekdays, minutesBetween,
+  formatWeekdays, minutesBetween, routineSubjectLabel, ROUTINE_SUBJECTS,
   addRoutine, updateRoutine, removeRoutine, restoreRoutine, findRoutine, getRoutines, resetMockRoutines,
   type Weekday,
 } from '@/lib/mock/routine';
 
 describe('routine mock', () => {
   afterEach(() => resetMockRoutines());
+
+  describe('과목 (표준 + 기타)', () => {
+    it('ROUTINE_SUBJECTS 끝에 etc(기타) 포함', () => {
+      expect(ROUTINE_SUBJECTS).toContain('etc');
+      expect(routineSubjectLabel('etc')).toBe('기타');
+      expect(routineSubjectLabel('math')).toBe('수학');
+    });
+  });
 
   describe('formatWeekdays', () => {
     it.each<[Weekday[], string]>([
