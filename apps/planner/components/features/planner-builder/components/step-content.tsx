@@ -31,7 +31,7 @@ type Props = {
   setForm: (next: PlannerForm) => void;
 };
 
-const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'history'];
+const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'etc'];
 
 /* ─── Step 1 — 목표 (시험 종류 탭 + 단일/범위 일자) ─── */
 const TODAY_ISO = '2026-04-28';
@@ -214,24 +214,15 @@ function TargetField({ form, setForm }: Props) {
   if (kind === 'grade') {
     return (
       <div>
-        <label className="text-pullim-slate-700 mb-1 block text-xs font-bold">목표 등급</label>
-        <div className="grid grid-cols-4 gap-1">
-          {[1, 2, 3, 4].map(g => (
-            <button
-              key={g}
-              type="button"
-              onClick={() => setForm({ ...form, targetGrade: g as PlannerForm['targetGrade'] })}
-              className={cn(
-                'rounded-lg border-2 py-2 text-xs font-bold transition-colors',
-                form.targetGrade === g
-                  ? 'border-pullim-blue-500 bg-pullim-blue-50 text-pullim-blue-700'
-                  : 'border-pullim-slate-200 text-pullim-slate-600 hover:border-pullim-slate-300',
-              )}
-            >
-              {g}등급
-            </button>
-          ))}
-        </div>
+        <label htmlFor="target-grade" className="text-pullim-slate-700 mb-1 block text-xs font-bold">목표 등급</label>
+        <input
+          id="target-grade"
+          type="text"
+          value={form.targetGrade}
+          onChange={e => setForm({ ...form, targetGrade: e.target.value })}
+          placeholder="(예) 1등급"
+          className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
+        />
       </div>
     );
   }
@@ -895,7 +886,7 @@ function ToggleRow({
 /* ─── Step 8 — 미리보기 + 활성화 ─── */
 function formatTarget(form: PlannerForm): string {
   const kind = examTypeMeta[form.examType ?? 'mock'].targetKind;
-  if (kind === 'grade') return `${form.targetGrade}등급`;
+  if (kind === 'grade') return form.targetGrade?.trim() || '미설정';
   if (kind === 'score') return `${form.targetScore ?? 0}점`;
   return form.targetGoal?.trim() || '미설정';
 }

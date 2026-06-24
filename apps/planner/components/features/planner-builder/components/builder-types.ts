@@ -35,7 +35,7 @@ export type PlannerForm = {
   examName: string;
   examStartDate: string;       // YYYY-MM-DD — 단일일자 시 이 필드만 사용
   examEndDate: string;         // YYYY-MM-DD — 범위 시험에서만 의미. 단일이면 start와 동일.
-  targetGrade: 1 | 2 | 3 | 4;  // 모의·수능
+  targetGrade: string;         // 모의·수능 — 자유 입력 (예: "1등급"). 5등급 체제 대응
   targetScore: number;         // 중간·기말 (0–100)
   targetGoal: string;          // 기타 (자유 텍스트)
   motto: string;
@@ -70,17 +70,13 @@ export const initialPlannerForm: PlannerForm = {
   examName: '',
   examStartDate: '',
   examEndDate: '',
-  targetGrade: 1,
+  targetGrade: '',
   targetScore: 90,
   targetGoal: '',
   motto: '',
   weekdayHours: { start: 18, end: 23 },
   weekendHours: { start: 10, end: 22 },
-  subjectUnits: {
-    math:    ['미적분', '확률과 통계'],
-    english: ['독해', '수능특강 영어 3강'],          // 자유 입력 예시
-    science: ['역학과 에너지'],
-  },
+  subjectUnits: {},
   blockPattern: 'focused',
   routineIds: [],
   weaknessAutoReflect: true,
@@ -122,7 +118,7 @@ export function plannerToForm(p: Planner): PlannerForm {
     examName: p.examLabel || p.name,
     examStartDate: p.examStartDate,
     examEndDate: p.examEndDate,
-    targetGrade: (p.target.kind === 'grade' ? p.target.value : 1) as PlannerForm['targetGrade'],
+    targetGrade: p.target.kind === 'grade' ? `${p.target.value}등급` : '',
     targetScore: p.target.kind === 'score' ? Number(p.target.value) : 90,
     targetGoal: p.target.kind === 'free' ? String(p.target.value) : '',
     motto: p.motto,
@@ -146,7 +142,7 @@ export function plannerToForm(p: Planner): PlannerForm {
 export function formToPlannerPatch(form: PlannerForm): Omit<Planner, 'id' | 'active' | 'archived' | 'createdAt' | 'updatedAt'> {
   const kind = examTypeMeta[form.examType ?? 'mock'].targetKind;
   const target =
-    kind === 'grade' ? { kind: 'grade' as const, value: form.targetGrade }
+    kind === 'grade' ? { kind: 'grade' as const, value: parseInt(form.targetGrade, 10) || 1 }
     : kind === 'score' ? { kind: 'score' as const, value: form.targetScore }
     : { kind: 'free' as const, value: form.targetGoal };
 

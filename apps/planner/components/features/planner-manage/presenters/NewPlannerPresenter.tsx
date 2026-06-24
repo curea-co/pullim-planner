@@ -27,7 +27,7 @@ export default function NewPlannerPresenter({
   return (
     <div className="space-y-5">
       <PageHeader
-        title="내 맞춤 플래너 만들기"
+        title="내 맞춤 시간표 만들기"
         action={
           <button
             type="button"

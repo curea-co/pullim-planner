@@ -17,21 +17,15 @@ export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'] as const;
 export const WEEKDAY_ORDER: Weekday[] = [0, 1, 2, 3, 4, 5, 6];
 
-/**
- * 루틴 과목 — 공유 `SubjectKey`(6종) + 라이브러리 전용 `'etc'`(기타).
- * 루틴은 사용자 단위 라이브러리라 특정 플래너 과목에 매이지 않아 "기타"를 허용한다.
- */
-export type RoutineSubject = SubjectKey | 'etc';
+/** 루틴 과목 — 공유 `SubjectKey`(국어/수학/영어/과학/사회/한국사/기타). */
+export type RoutineSubject = SubjectKey;
 
-/** 폼 드롭다운용 과목 옵션 (표준 6종 + 기타). */
-export const ROUTINE_SUBJECTS: RoutineSubject[] = [
-  ...(Object.keys(subjectLabels) as SubjectKey[]),
-  'etc',
-];
+/** 폼 드롭다운용 과목 옵션 (subjectLabels 전체). */
+export const ROUTINE_SUBJECTS: RoutineSubject[] = Object.keys(subjectLabels) as SubjectKey[];
 
-/** 루틴 과목 라벨 — 표준은 `subjectLabels`, `'etc'`는 "기타". */
+/** 루틴 과목 라벨. */
 export function routineSubjectLabel(subject: RoutineSubject): string {
-  return subject === 'etc' ? '기타' : subjectLabels[subject];
+  return subjectLabels[subject];
 }
 
 export type Routine = {
