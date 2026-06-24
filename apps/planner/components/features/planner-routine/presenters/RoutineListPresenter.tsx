@@ -36,7 +36,7 @@ export default function RoutineListPresenter({
       <PageHeader
         eyebrow={{ icon: Repeat2, text: '루틴' }}
         title="내 루틴"
-        description="반복하는 행동을 등록해 두면, 새 시간표 만들 때 골라서 넣을 수 있어요."
+        description="반복하는 행동을 등록해 두세요. 새 시간표 만들기에 곧 연결돼요."
         action={addButton}
       />
 
@@ -45,7 +45,7 @@ export default function RoutineListPresenter({
           <Repeat2 className="text-pullim-slate-400 h-8 w-8" aria-hidden />
           <p className="text-pullim-slate-700 text-sm font-bold">아직 루틴이 없어요</p>
           <p className="text-pullim-slate-500 text-xs">
-            매일 반복하는 행동을 등록하면, 새 시간표를 만들 때 바로 불러올 수 있어요.
+            매일 반복하는 행동을 등록해 두세요. 새 시간표 만들기에 곧 연결돼요.
           </p>
           <div className="mt-2">{addButton}</div>
         </div>

@@ -69,7 +69,7 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
     } else {
       addRoutine(payload);
       toast.success('루틴을 저장했어요', {
-        description: '새 시간표 만들 때 골라 쓸 수 있어요',
+        description: '새 시간표 만들기에 곧 연결돼요',
       });
     }
     router.push('/planner/routine');
