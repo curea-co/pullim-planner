@@ -9,8 +9,8 @@
  * 변형별 토큰은 variant-a.css, variant-b.css, variant-c.css 가 덮어씁니다.
  * ===================================================================== */
 
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css");
-@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap");
+/* 폰트 @import는 globals.css 최상단에 둠 (CSS @import는 모든 규칙보다 먼저여야 — Turbopack 엄격).
+ * Pretendard는 globals.css에서 import. Noto Serif(serif-kr)는 플래너 미사용이라 시스템 폴백. */
 
 :root {
   /* --- font stacks ----------------------------------------------------- */
