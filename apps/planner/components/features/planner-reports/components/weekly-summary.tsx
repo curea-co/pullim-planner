@@ -10,7 +10,7 @@ import {
   weeklyConditionTrend, weeklyBurnoutTrend, conditionMeta,
 } from '@/lib/mock';
 import { WeeklyChart } from '@/components/features/planner-home/components/weekly-chart';
-import { Donut } from '@/components/ui/charts/donut';
+import { Donut } from '@/components/charts/donut';
 import { AccuracyTrendChart } from './accuracy-trend-chart';
 import { WeeklyInsights } from './weekly-insights';
 import { cn } from '@/lib/utils';

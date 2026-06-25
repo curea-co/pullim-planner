@@ -4,14 +4,12 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Donut — center-labeled ring chart.
- * PUDS(@puds/donut) vendoring — Phase 2 파일럿. (원본: pullim-design-system/packages/ui/charts/donut.tsx)
- * 플래너 정합 조정: `@/lib/cn` → `@/lib/utils`. 그 외 무수정(순수 SVG, --text-*·--chart-cat-* 토큰만).
- * 색은 호출부에서 명시(`segment.color`) 권장 — --chart-cat-* 미정의 시 default 비움 방지.
+ * Donut — center-labeled ring chart. (순수 SVG, no Recharts · --text-* 토큰만 · SSR-safe)
  *
- *  - Pure SVG, no Recharts
- *  - Center slot for headline number + label
- *  - Tokens-only, SSR-safe
+ * PUDS(@puds/donut) **vendoring** — Phase 2 차트 도입 파일럿.
+ * 원본: pullim-design-system/packages/ui/charts/donut.tsx
+ * 재싱크 절차: 원본을 cp → ① `@/lib/cn`→`@/lib/utils` ② `defaultColors`를 플래너 PUDS 토큰으로 교체
+ *   (원본의 `--chart-cat-*`는 플래너 미정의) 재적용. 업스트림 변경 시 위 2개만 다시 맞추면 됨.
  */
 
 export interface DonutSegment {
@@ -55,15 +53,17 @@ function arcPath(cx: number, cy: number, r: number, rInner: number, start: numbe
   ].join(" ");
 }
 
+// 플래너 정합: 원본 PUDS는 `--chart-cat-1..8`을 쓰는데 플래너엔 그 토큰이 없어
+// color 누락 시 segment가 투명해진다 → 플래너에 존재하는 PUDS 토큰으로 폴백 교체(footgun 제거).
 const defaultColors = [
-  "var(--chart-cat-1)",
-  "var(--chart-cat-2)",
-  "var(--chart-cat-3)",
-  "var(--chart-cat-4)",
-  "var(--chart-cat-5)",
-  "var(--chart-cat-6)",
-  "var(--chart-cat-7)",
-  "var(--chart-cat-8)",
+  "var(--color-primary-600)",
+  "var(--color-secondary-500)",
+  "var(--color-success-600)",
+  "var(--color-warning-600)",
+  "var(--color-danger-600)",
+  "var(--color-primary-300)",
+  "var(--color-gray-500)",
+  "var(--color-gray-300)",
 ];
 
 export const Donut = React.forwardRef<HTMLDivElement, DonutProps>(
