@@ -75,13 +75,15 @@ export function navForRole(_role: Role): NavGroup[] {
   return studentNav;
 }
 
-/** 모바일 하단 탭 — 플래너 5 섹션 (홈 / 관리 / 리포트 / 공유 / 소개) */
+/**
+ * 모바일 하단 탭 — 플래너 4 섹션 (홈 / 관리 / 리포트 / 공유).
+ * OI-1 확정(2026-06-24): '소개/안내'는 하단탭에서 빼고 프로필 메뉴(헤더 ProfileMenu)로 내림 → 공유 승격.
+ */
 export const studentBottomTabs = [
-  { href: '/planner',            label: '홈',      icon: Home,     matchPrefix: ['/', '/planner'] },
-  { href: '/planner/manage',     label: '관리',    icon: Wrench,   matchPrefix: ['/planner/manage'] },
-  { href: '/planner/reports',    label: '리포트',  icon: FileText, matchPrefix: ['/planner/reports'] },
-  { href: '/planner/share',      label: '공유',    icon: Share2,   matchPrefix: ['/planner/share'] },
-  { href: '/planner/onboarding', label: '안내',    icon: BookOpen, matchPrefix: ['/planner/onboarding'] },
+  { href: '/planner',        label: '홈',      icon: Home,     matchPrefix: ['/', '/planner'] },
+  { href: '/planner/manage', label: '관리',    icon: Wrench,   matchPrefix: ['/planner/manage'] },
+  { href: '/planner/reports', label: '리포트', icon: FileText, matchPrefix: ['/planner/reports'] },
+  { href: '/planner/share',  label: '공유',    icon: Share2,   matchPrefix: ['/planner/share'] },
 ] as const;
 
 /** 현재 pathname이 어떤 섹션 안에 있는지 — sidebar swap 판단 */

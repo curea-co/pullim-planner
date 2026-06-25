@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, Flame, LogOut } from 'lucide-react';
+import { Bell, Search, Flame, LogOut, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth/auth-context';
 import { PullimLogo } from '@/components/brand/logo';
@@ -111,6 +111,17 @@ function ProfileMenu() {
             <div className="text-pullim-slate-900 text-sm font-bold">{name}</div>
             <div className="text-pullim-slate-500 text-[11px] font-normal">{sub}</div>
           </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          {/* OI-1: '소개/안내'를 하단탭에서 프로필 메뉴로 내림 */}
+          <DropdownMenuItem
+            onClick={() => router.push('/planner/onboarding')}
+            className="gap-1.5 px-2 py-1.5 text-sm"
+          >
+            <BookOpen className="h-4 w-4" />
+            서비스 소개
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
