@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
-import { centralLoginUrl } from '@/lib/auth/central-login';
+import { centralLoginUrl, isSsoCapableHost } from '@/lib/auth/central-login';
 
 /**
  * `/login` — 자체 로그인 폼 폐기, **중앙 로그인(SSO)으로 위임**.
@@ -26,7 +26,12 @@ export function LoginContainer() {
       window.location.assign('/planner');
     } else if (status === 'unauthenticated') {
       // 미인증만 중앙 로그인으로. next 는 앱 진입점(/planner) — /login 자기참조 루프 방지.
-      window.location.assign(centralLoginUrl(`${window.location.origin}/planner`));
+      // localhost(SSO 불가)면 앱으로 보내 RequireAuth 의 안내를 재사용(SSO 루프 방지).
+      if (isSsoCapableHost()) {
+        window.location.assign(centralLoginUrl(`${window.location.origin}/planner`));
+      } else {
+        window.location.assign('/planner');
+      }
     }
     // loading: 판정 대기 / error: 아래 재시도 UI — 둘 다 리다이렉트 안 함.
   }, [status]);

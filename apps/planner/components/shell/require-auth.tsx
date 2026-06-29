@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
-import { centralLoginUrl } from '@/lib/auth/central-login';
+import { centralLoginUrl, isSsoCapableHost } from '@/lib/auth/central-login';
 
 /**
  * 로그인 월 가드 (스펙 §가드).
@@ -26,12 +26,29 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const onOnboarding = pathname?.startsWith('/planner/onboarding') ?? false;
 
   useEffect(() => {
-    // 미인증 → 자체 /login 폼 대신 **중앙 OS 로그인**으로 위임(SSO). 외부 호스트라 window.location 사용.
+    // 미인증 → 자체 /login 폼 대신 **중앙 로그인**으로 위임(SSO). 외부 호스트라 window.location 사용.
     // OS가 ?next= 로 돌려보내면 쿠키 세션으로 자동 복원된다.
-    if (status === 'unauthenticated') window.location.assign(centralLoginUrl());
+    // ⚠️ localhost 는 SSO 쿠키 공유 불가 → 보내면 복귀 후 못 읽고 무한 루프. 가드 후 아래 안내 렌더.
+    if (status === 'unauthenticated' && isSsoCapableHost())
+      window.location.assign(centralLoginUrl());
     else if (status === 'onboarding' && !onOnboarding)
       router.replace('/planner/onboarding');
   }, [status, onOnboarding, router]);
+
+  if (status === 'unauthenticated' && !isSsoCapableHost()) {
+    // localhost 미인증 — SSO 불가 호스트. 루프 대신 정규 호스트/우회 안내.
+    return (
+      <div className="bg-pullim-slate-50 flex h-screen flex-col items-center justify-center gap-2 px-4 text-center">
+        <p className="text-pullim-slate-700 text-sm">
+          로컬 <code>localhost</code> 에선 중앙 로그인(SSO)이 동작하지 않아요.
+        </p>
+        <p className="text-pullim-slate-500 text-xs">
+          <code>planner.pullim.local</code> 로 접속하거나, 화면 확인용이면{' '}
+          <code>NEXT_PUBLIC_DEV_AUTH_BYPASS=1</code> 을 켜주세요.
+        </p>
+      </div>
+    );
+  }
 
   if (status === 'error') {
     return (

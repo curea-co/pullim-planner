@@ -13,6 +13,18 @@
  */
 const LOGIN_BASE = process.env.NEXT_PUBLIC_PULLIM_LOGIN_URL;
 
+/** localhost 계열 — eTLD(public suffix) 라 SSO 쿠키 공유 불가(`auth-context` 의 bypass 가드와 동일 집합). */
+const LOCAL_HOSTS = /^(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)$/;
+
+/**
+ * 현재 호스트가 SSO 가능(쿠키 공유)한가 — `*.pullim.local`/apex 면 true, `localhost` 계열이면 false.
+ * localhost 에서 중앙 로그인으로 보내면 복귀 후 쿠키를 못 읽어 **무한 루프**가 나므로, 호출부에서 가드한다.
+ * (SSR(window 없음)에선 false — 'loading' 단계라 리다이렉트 분기에 도달하지 않음.)
+ */
+export function isSsoCapableHost(): boolean {
+  return typeof window !== 'undefined' && !LOCAL_HOSTS.test(window.location.hostname);
+}
+
 /**
  * 현재 위치(또는 지정 `next`)를 `?next=` 로 실은 **중앙 로그인 절대 URL**.
  * client 전용(window 사용) — 서버에선 fallback 경로만.
