@@ -12,8 +12,13 @@ import { cn } from '@/lib/utils';
 export function BottomNav() {
   const pathname = usePathname();
 
+  // 하단탭이 아닌 '메뉴 라우트'(프로필 메뉴로 이동) — 홈의 `/planner` prefix가 잘못 잡아 오표시되는 걸 막는다.
+  // OI-1: 소개/안내(/planner/onboarding)를 탭에서 프로필 메뉴로 내림 → 이 화면에선 어떤 탭도 active 아님.
+  const MENU_ROUTES = ['/planner/onboarding'];
+
   // 가장 긴 matchPrefix를 가진 탭 1개만 active — `/planner/manage` 진입 시 "홈" 탭과 동시 active 회귀 방지
   const activeIdx = (() => {
+    if (MENU_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))) return -1;
     let bestIdx = -1;
     let bestLen = -1;
     studentBottomTabs.forEach((tab, i) => {
