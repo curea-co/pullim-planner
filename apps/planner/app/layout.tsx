@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { DevResetButton } from '@/components/shell/dev-reset-button';
 import './globals.css';
+import './os-topbar.css'; // OS 공통 헤더(topbar) vendored — .os-root 스코프
 
 // Pretendard는 globals.css의 CDN @import로 로드 (한글 가변폰트).
 // 영문 모노스페이스는 next/font로 자체 호스팅.

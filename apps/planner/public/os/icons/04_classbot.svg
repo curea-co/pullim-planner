@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pullim ClassBot">
+  <title>풀림 클래스봇</title>
+  <rect x="4" y="4" width="92" height="92" rx="18" fill="#0362DA"/>
+  <!-- head outline -->
+  <rect x="30" y="30" width="40" height="8" fill="#FFFFFF"/>
+  <rect x="30" y="62" width="40" height="8" fill="#FFFFFF"/>
+  <rect x="30" y="38" width="8" height="24" fill="#FFFFFF"/>
+  <rect x="62" y="38" width="8" height="24" fill="#FFFFFF"/>
+  <!-- eyes -->
+  <rect x="38" y="46" width="8" height="8" fill="#FFFFFF"/>
+  <rect x="54" y="46" width="8" height="8" fill="#FFFFFF"/>
+  <!-- mouth -->
+  <rect x="46" y="54" width="8" height="8" fill="#FFFFFF"/>
+  <!-- antenna lemon -->
+  <rect x="46" y="22" width="8" height="8" fill="#E6FF4C"/>
+</svg>
