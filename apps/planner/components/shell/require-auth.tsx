@@ -36,14 +36,15 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }, [status, onOnboarding, router]);
 
   if (status === 'unauthenticated' && !isSsoCapableHost()) {
-    // localhost 미인증 — SSO 불가 호스트. 루프 대신 정규 호스트/우회 안내.
+    // SSO 불가 호스트(localhost·preview·임의 호스트) 미인증 — 쿠키 공유가 안 돼 루프가 나므로
+    // 리다이렉트 대신 정규 호스트/우회 안내.
     return (
       <div className="bg-pullim-slate-50 flex h-screen flex-col items-center justify-center gap-2 px-4 text-center">
         <p className="text-pullim-slate-700 text-sm">
-          로컬 <code>localhost</code> 에선 중앙 로그인(SSO)이 동작하지 않아요.
+          이 호스트에선 중앙 로그인(SSO)이 동작하지 않아요 (쿠키 공유 불가).
         </p>
         <p className="text-pullim-slate-500 text-xs">
-          <code>planner.pullim.local</code> 로 접속하거나, 화면 확인용이면{' '}
+          <code>planner.pullim.local</code>(로컬) 또는 정규 도메인으로 접속하거나, 화면 확인용이면{' '}
           <code>NEXT_PUBLIC_DEV_AUTH_BYPASS=1</code> 을 켜주세요.
         </p>
       </div>

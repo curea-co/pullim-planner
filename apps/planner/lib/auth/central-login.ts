@@ -13,16 +13,22 @@
  */
 const LOGIN_BASE = process.env.NEXT_PUBLIC_PULLIM_LOGIN_URL;
 
-/** localhost 계열 — eTLD(public suffix) 라 SSO 쿠키 공유 불가(`auth-context` 의 bypass 가드와 동일 집합). */
-const LOCAL_HOSTS = /^(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)$/;
+/**
+ * SSO 쿠키 공유 가능한 **등록도메인 화이트리스트**. 쿠키는 `Domain=.pullim.ai`/`.pullim.local` 로 묶이므로
+ * 이 도메인(apex 또는 서브도메인)만 공유된다. blocklist(localhost만 제외)로는 `*.vercel.app`·임의 호스트가
+ * SSO 가능으로 잘못 분류돼 복귀 후 쿠키를 못 읽고 `/login` 루프가 난다(Codex) → 명시적 allowlist.
+ */
+const SSO_HOST_DOMAINS = ['pullim.ai', 'pullim.local'];
 
 /**
- * 현재 호스트가 SSO 가능(쿠키 공유)한가 — `*.pullim.local`/apex 면 true, `localhost` 계열이면 false.
- * localhost 에서 중앙 로그인으로 보내면 복귀 후 쿠키를 못 읽어 **무한 루프**가 나므로, 호출부에서 가드한다.
- * (SSR(window 없음)에선 false — 'loading' 단계라 리다이렉트 분기에 도달하지 않음.)
+ * 현재 호스트가 SSO 가능(쿠키 공유)한가 — `pullim.ai`/`pullim.local`(apex·서브도메인)이면 true.
+ * 그 외(localhost·`*.vercel.app`·임의 호스트)는 false: 중앙 로그인으로 보내면 복귀 후 쿠키를 못 읽어
+ * **무한 루프**가 나므로 호출부에서 가드한다. (SSR(window 없음)에선 false — 'loading' 단계라 분기 미도달.)
  */
 export function isSsoCapableHost(): boolean {
-  return typeof window !== 'undefined' && !LOCAL_HOSTS.test(window.location.hostname);
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return SSO_HOST_DOMAINS.some((d) => host === d || host.endsWith('.' + d));
 }
 
 /**
