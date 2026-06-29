@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth/auth-context';
+import { centralLoginUrl } from '@/lib/auth/central-login';
 
 /**
  * 로그인 월 가드 (스펙 §가드).
@@ -25,7 +26,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const onOnboarding = pathname?.startsWith('/planner/onboarding') ?? false;
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.replace('/login');
+    // 미인증 → 자체 /login 폼 대신 **중앙 OS 로그인**으로 위임(SSO). 외부 호스트라 window.location 사용.
+    // OS가 ?next= 로 돌려보내면 쿠키 세션으로 자동 복원된다.
+    if (status === 'unauthenticated') window.location.assign(centralLoginUrl());
     else if (status === 'onboarding' && !onOnboarding)
       router.replace('/planner/onboarding');
   }, [status, onOnboarding, router]);
