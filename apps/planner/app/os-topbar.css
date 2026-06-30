@@ -271,4 +271,13 @@
 @media (max-width: 760px) {
   .os-root.topbar { gap: 10px; padding: 0 14px; }
   .os-root .switcher-trigger .sn { display: none; }
+  /* 330px 고정 메뉴가 좁은 화면(320~360px)에서 오른쪽으로 잘리지 않게 — 뷰포트 기준 좌우 14px inset */
+  .os-root .switcher-menu {
+    position: fixed;
+    top: calc(var(--topbar-h) + 6px);
+    left: 14px;
+    right: 14px;
+    width: auto;
+    max-width: 360px;
+  }
 }
