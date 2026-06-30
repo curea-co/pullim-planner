@@ -150,6 +150,76 @@ export interface PullimBlock {
   completedAt?: string;
 }
 
+// ── 루틴(반복 학습 블록 라이브러리) ──────────────────────────────────────────
+
+/**
+ * 루틴 (`RoutineResponseDto`) — 사용자 단위 반복 학습 블록 라이브러리 항목.
+ * `weekdayMask`: 요일 비트마스크(bit0=월 … bit6=일, 1~127). FE 의 `weekdays[]`(0=월…6=일)와는
+ * `weekdaysToMask`/`maskToWeekdays` 로 변환한다(경계 변환 — FE 는 배열, BE 는 마스크).
+ */
+export interface PullimRoutine {
+  id: string;
+  title: string;
+  subject: string;
+  type: string;
+  /** HH:MM. */
+  startTime: string;
+  endTime: string;
+  expectedMinutes: number;
+  /** 요일 비트마스크(bit0=월 … bit6=일, 1~127). */
+  weekdayMask: number;
+  engines: string[];
+  enabled: boolean;
+  /** ISO. */
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 루틴 생성 입력 (`RoutineWriteDto`). `engines`/`enabled` 는 선택(BE 기본 `[]`/`true`). */
+export interface PullimRoutineWrite {
+  title: string;
+  subject: string;
+  type: string;
+  startTime: string;
+  endTime: string;
+  expectedMinutes: number;
+  weekdayMask: number;
+  engines?: string[];
+  enabled?: boolean;
+}
+
+/** 루틴 부분 수정 입력 (`RoutinePatchDto`) — 제공한 필드만 갱신한다. */
+export type PullimRoutinePatch = Partial<PullimRoutineWrite>;
+
+/**
+ * 새 시간표 생성 시 적용할 루틴 (`RoutineApplicationDto`).
+ * `endRange`: indefinite(상시) / exam(시험 종료까지) — 현재 BE 는 둘 다 시간표 범위(examEndDate)로 cap.
+ */
+export interface PullimRoutineApplication {
+  routineId: string;
+  endRange: "indefinite" | "exam";
+}
+
+/**
+ * FE `weekdays[]`(0=월 … 6=일) → 요일 비트마스크(bit0=월 … bit6=일, 1~127).
+ * 유효 범위(0~6 정수) 밖 값은 무시해 항상 7비트 마스크(0~127)만 만든다 — 잘못된 입력이 범위 밖
+ * 마스크로 새지 않게(빈 배열이면 0 — BE `@Min(1)` 가 거부).
+ */
+export function weekdaysToMask(weekdays: number[]): number {
+  return weekdays.reduce(
+    (mask, d) =>
+      Number.isInteger(d) && d >= 0 && d <= 6 ? mask | (1 << d) : mask,
+    0,
+  );
+}
+
+/** 요일 비트마스크 → `weekdays[]`(0=월 … 6=일, 오름차순). */
+export function maskToWeekdays(mask: number): number[] {
+  const days: number[] = [];
+  for (let d = 0; d < 7; d++) if ((mask >> d) & 1) days.push(d);
+  return days;
+}
+
 export type PullimPlannerClientConfig = CookieHttpConfig;
 
 export interface PullimPlannerClient {
