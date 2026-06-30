@@ -271,6 +271,8 @@
 @media (max-width: 760px) {
   .os-root.topbar { gap: 10px; padding: 0 14px; }
   .os-root .switcher-trigger .sn { display: none; }
+  /* 좁은 화면: mast 글리프 여백 축소(브랜드/햄버거/우측 액션이 320px 안에 들어오게) */
+  .os-root .mast { gap: 7px; }
   /* 330px 고정 메뉴가 좁은 화면(320~360px)에서 오른쪽으로 잘리지 않게 — 뷰포트 기준 좌우 14px inset */
   .os-root .switcher-menu {
     position: fixed;
@@ -280,4 +282,13 @@
     width: auto;
     max-width: 360px;
   }
+}
+
+/* 초소형 폭(≤420px): sub 라벨 숨김 + 패딩·gap·액션 압축 — 320px 에서도 가로 오버플로 없게(브랜드/햄버거/액션 유지) */
+@media (max-width: 420px) {
+  .os-root .mast .sub { display: none; }
+  .os-root.topbar { padding: 0 10px; gap: 8px; }
+  .os-root .tb-actions { gap: 2px; }
+  .os-root .icon-btn { width: 34px; height: 34px; }
+  .os-root .avatar { width: 32px; height: 32px; }
 }
