@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pullim Q">
+  <title>풀림 문제Q</title>
+  <rect x="4" y="4" width="92" height="92" rx="18" fill="#0362DA"/>
+  <!-- top arc -->
+  <rect x="30" y="22" width="40" height="8" fill="#FFFFFF"/>
+  <!-- left top corner -->
+  <rect x="30" y="30" width="8" height="8" fill="#FFFFFF"/>
+  <!-- right top corner -->
+  <rect x="62" y="30" width="8" height="8" fill="#FFFFFF"/>
+  <!-- curve down -->
+  <rect x="54" y="38" width="8" height="8" fill="#FFFFFF"/>
+  <!-- transition (dead center) -->
+  <rect x="46" y="46" width="8" height="8" fill="#FFFFFF"/>
+  <!-- stem -->
+  <rect x="46" y="54" width="8" height="8" fill="#FFFFFF"/>
+  <!-- dot accent -->
+  <rect x="46" y="70" width="8" height="8" fill="#E6FF4C"/>
+</svg>
