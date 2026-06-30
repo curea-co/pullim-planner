@@ -14,21 +14,23 @@ function Glyph({ service }: { service: PullimService }) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={service.icon.img} alt="" aria-hidden />;
   }
+  // 문자형 글리프 — 스타일은 os-topbar.css `.sg-char`(인라인 style 금지: CLAUDE.md)
+  return <span className="sg-char">{service.icon.char}</span>;
+}
+
+/** 서비스 메뉴 항목 내부(글리프 + 이름/설명 + 준비중 배지) */
+function ServiceItemBody({ service }: { service: PullimService }) {
   return (
-    <span
-      style={{
-        width: '100%',
-        height: '100%',
-        background: 'var(--pullim-blue)',
-        color: '#fff',
-        display: 'grid',
-        placeItems: 'center',
-        fontSize: 15,
-        borderRadius: 'var(--r-sm)',
-      }}
-    >
-      {service.icon.char}
-    </span>
+    <>
+      <span className="sg">
+        <Glyph service={service} />
+      </span>
+      <div>
+        <div className="sm-name">{service.name}</div>
+        <div className="sm-desc">{service.desc}</div>
+      </div>
+      {service.soon && <span className="badge soft sm-meta">준비 중</span>}
+    </>
   );
 }
 
@@ -76,24 +78,29 @@ export function ServiceSwitcher() {
 
       <div className="switcher-menu" role="menu">
         <div className="sm-head">서비스 전환</div>
-        {PULLIM_SERVICES.map((s) => (
-          <a
-            key={s.key}
-            href={s.href}
-            role="menuitem"
-            className={`sm-item${s.current ? ' is-current' : ''}${s.soon ? ' is-soon' : ''}`}
-            aria-current={s.current ? 'page' : undefined}
-          >
-            <span className="sg">
-              <Glyph service={s} />
-            </span>
-            <div>
-              <div className="sm-name">{s.name}</div>
-              <div className="sm-desc">{s.desc}</div>
+        {PULLIM_SERVICES.map((s) =>
+          // 준비 중 서비스는 진입 차단(레포 정책) — 링크가 아닌 비활성 항목으로 렌더.
+          s.soon ? (
+            <div
+              key={s.key}
+              role="menuitem"
+              aria-disabled
+              className="sm-item is-soon"
+            >
+              <ServiceItemBody service={s} />
             </div>
-            {s.soon && <span className="badge soft sm-meta">준비 중</span>}
-          </a>
-        ))}
+          ) : (
+            <a
+              key={s.key}
+              href={s.href}
+              role="menuitem"
+              className={`sm-item${s.current ? ' is-current' : ''}`}
+              aria-current={s.current ? 'page' : undefined}
+            >
+              <ServiceItemBody service={s} />
+            </a>
+          ),
+        )}
       </div>
     </div>
   );

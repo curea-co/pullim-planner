@@ -198,7 +198,20 @@
 .os-root .sm-item .sm-name { letter-spacing: -0.02em; font-size: 14px; font-weight: 700; color: var(--ink); }
 .os-root .sm-item .sm-desc { color: var(--ink-4); font-size: 12px; }
 .os-root .sm-item .sm-meta { margin-left: auto; }
-.os-root .sm-item.is-soon { opacity: 0.55; }
+/* 준비 중 — 흐리게 + 진입 차단(레포 정책: 준비중 = 클릭 불가) */
+.os-root .sm-item.is-soon { opacity: 0.55; pointer-events: none; cursor: default; }
+
+/* OS 홈 글리프(문자형) — 인라인 style 금지(CLAUDE.md) 대체 클래스 */
+.os-root .sg-char {
+  width: 100%;
+  height: 100%;
+  background: var(--pullim-blue);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  border-radius: var(--r-sm);
+}
 
 /* service glyph (sg) — switcher trigger & menu */
 .os-root .sg {
