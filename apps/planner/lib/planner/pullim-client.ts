@@ -4,6 +4,7 @@ import {
   type PullimPlanner,
   type PullimPlannerClient,
   type PullimPlannerWrite,
+  type PullimRoutineClient,
 } from '@pullim-planner/api-client';
 
 import { notifyPullimSessionExpired } from '@/lib/auth/pullim-session-client';
@@ -51,7 +52,7 @@ function on401<A extends unknown[], R>(
  * SSO(브라우저 자동 첨부)라 토큰을 클라가 들지 않고, 상태변경은 CSRF double-submit
  * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 401 에서 세션 만료를 통지한다.
  */
-export const pullimPlannerClient: PullimPlannerClient = {
+export const pullimPlannerClient: PullimPlannerClient & PullimRoutineClient = {
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
   create: on401(rawPullimPlannerClient.create),
@@ -62,6 +63,10 @@ export const pullimPlannerClient: PullimPlannerClient = {
   unarchive: on401(rawPullimPlannerClient.unarchive),
   duplicate: on401(rawPullimPlannerClient.duplicate),
   updateCustomization: on401(rawPullimPlannerClient.updateCustomization),
+  routines: on401(rawPullimPlannerClient.routines),
+  createRoutine: on401(rawPullimPlannerClient.createRoutine),
+  updateRoutine: on401(rawPullimPlannerClient.updateRoutine),
+  deleteRoutine: on401(rawPullimPlannerClient.deleteRoutine),
 };
 
 /**

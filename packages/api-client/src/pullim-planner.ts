@@ -220,6 +220,33 @@ export function maskToWeekdays(mask: number): number[] {
   return days;
 }
 
+/**
+ * 시간표 **생성** 입력 — 편집 필드(`PullimPlannerWrite`) + 생성 시 bake 할 루틴 목록(선택).
+ * `routineApplications` 는 **생성 전용**이라 수정(`update`)에는 두지 않는다(수정은 `PullimPlannerWrite`).
+ */
+export interface PullimPlannerCreate extends PullimPlannerWrite {
+  routineApplications?: PullimRoutineApplication[];
+}
+
+/**
+ * 루틴(사용자 단위 라이브러리) 클라이언트 — planner 클라와 같은 cookie-http/CSRF 위에 동작한다.
+ * `createPullimPlannerClient` 가 planner 메서드와 함께 반환한다(같은 base·CSRF 공유). planner 자원과
+ * 분리된 인터페이스라 `PullimPlannerClient` 소비자(예: FE 어댑터)는 영향받지 않는다.
+ */
+export interface PullimRoutineClient {
+  /** 내 루틴 목록(최신순). `GET /planner/routines`. */
+  routines(): Promise<PullimRoutine[]>;
+  /** 루틴 생성. `POST /planner/routines`. */
+  createRoutine(input: PullimRoutineWrite): Promise<PullimRoutine>;
+  /** 루틴 부분 수정(제공 필드만). `PATCH /planner/routines/:routineId`. */
+  updateRoutine(
+    routineId: string,
+    patch: PullimRoutinePatch,
+  ): Promise<PullimRoutine>;
+  /** 루틴 삭제. `DELETE /planner/routines/:routineId`. */
+  deleteRoutine(routineId: string): Promise<void>;
+}
+
 export type PullimPlannerClientConfig = CookieHttpConfig;
 
 export interface PullimPlannerClient {
@@ -231,8 +258,8 @@ export interface PullimPlannerClient {
    * (`BlocksQueryDto @IsOptional` + 핸들러 `query.date ?? todayKstIsoDate()`).
    */
   blocks(plannerId: string, date?: string): Promise<PullimBlock[]>;
-  /** 생성(비활성). `POST /planner/planners`. */
-  create(input: PullimPlannerWrite): Promise<PullimPlanner>;
+  /** 생성(비활성). `POST /planner/planners`. 생성 전용 입력(루틴 적용 포함). */
+  create(input: PullimPlannerCreate): Promise<PullimPlanner>;
   /** 수정(편집 필드 교체). `PATCH /planner/planners/:id`. */
   update(id: string, input: PullimPlannerWrite): Promise<PullimPlanner>;
   /** 삭제(활성이면 409). `DELETE /planner/planners/:id`. */
@@ -273,7 +300,7 @@ function isCsrfRejection(error: unknown): boolean {
  */
 export function createPullimPlannerClient(
   config: PullimPlannerClientConfig,
-): PullimPlannerClient {
+): PullimPlannerClient & PullimRoutineClient {
   // CSRF double-submit 토큰 관리 — 메모리 캐시 + single-flight(pullim-session ensureCsrf 동형).
   // 토큰을 부트스트랩해 **명시 동봉**하므로 SSR/test(브라우저 `document.cookie` 부재)에서도 동작하고,
   // 매 mutation 마다 일부러 403 을 한 번 맞고 재시도하는 구조를 피한다. cookie 자동회수에 의존하지 않음.
@@ -368,6 +395,26 @@ export function createPullimPlannerClient(
         "PATCH",
         { customization },
       );
+    },
+
+    routines() {
+      return cookieRequest<PullimRoutine[]>(config, "/planner/routines");
+    },
+
+    createRoutine(input) {
+      return mutate<PullimRoutine>("/planner/routines", "POST", input);
+    },
+
+    updateRoutine(routineId, patch) {
+      return mutate<PullimRoutine>(
+        `/planner/routines/${routineId}`,
+        "PATCH",
+        patch,
+      );
+    },
+
+    deleteRoutine(routineId) {
+      return mutate<void>(`/planner/routines/${routineId}`, "DELETE");
     },
   };
 }
