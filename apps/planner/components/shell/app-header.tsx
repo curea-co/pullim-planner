@@ -57,20 +57,26 @@ export function AppHeader({ role }: { role: Role }) {
 
 /** 인증 시 아바타(프로필 메뉴), 비인증 시 '로그인'(중앙 로그인) — OS 헤더와 동일. */
 function AuthCluster() {
-  const { user } = useAuth();
-  if (user) return <ProfileMenu />;
-  return (
-    <button
-      type="button"
-      className="btn btn-soft"
-      onClick={() => {
-        const url = canCentralLogin() ? centralLoginUrl() : null;
-        window.location.assign(url ?? '/login');
-      }}
-    >
-      로그인
-    </button>
-  );
+  // user 유무가 아니라 status 로 판정 — authenticated/onboarding 은 프로필이 아직 null 이어도
+  // '로그인된' 상태다(login 직후·온보딩 404 경로). user 기준이면 그 사이 로그인 버튼이 떠 루프(Codex).
+  const { status } = useAuth();
+  if (status === 'authenticated' || status === 'onboarding') return <ProfileMenu />;
+  if (status === 'unauthenticated') {
+    return (
+      <button
+        type="button"
+        className="btn btn-soft"
+        onClick={() => {
+          const url = canCentralLogin() ? centralLoginUrl() : null;
+          window.location.assign(url ?? '/login');
+        }}
+      >
+        로그인
+      </button>
+    );
+  }
+  // loading / error / forbidden → RequireAuth 가 처리(스피너·안내). 헤더 액션은 비운다.
+  return null;
 }
 
 function ProfileMenu() {
