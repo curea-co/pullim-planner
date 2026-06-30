@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ApiError } from '@pullim-planner/api-client';
+import { ApiError, type PullimRoutineApplication } from '@pullim-planner/api-client';
 import {
   initialPlannerForm, formToPlannerPatch,
   type PlannerForm,
@@ -34,11 +34,17 @@ export default function NewPlannerContainer() {
     }
     // create 와 activate 를 분리해 부분 성공을 구분한다 — 한 catch 로 뭉치면 create 성공 후
     // activate 만 실패해도 "생성 실패"로 보여 사용자가 재시도 → 동일 플래너가 중복 생성된다 (codex).
+    // 위저드 5단계에서 고른 루틴 → 생성 시 bake 할 routineApplications.
+    // endRange 는 위저드가 따로 받지 않으므로 상시(indefinite) 기본. 빈 배열이면 미전달.
+    const routineApplications: PullimRoutineApplication[] = submitted.routineIds.map(
+      (routineId) => ({ routineId, endRange: 'indefinite' }),
+    );
     let planner;
     try {
-      planner = await plannerClient.create(
-        toWriteInput(formToPlannerPatch(submitted)),
-      );
+      planner = await plannerClient.create({
+        ...toWriteInput(formToPlannerPatch(submitted)),
+        ...(routineApplications.length > 0 ? { routineApplications } : {}),
+      });
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : '시간표 생성 실패');
       return;

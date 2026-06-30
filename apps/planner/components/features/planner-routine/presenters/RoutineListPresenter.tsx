@@ -1,19 +1,21 @@
 'use client';
 
-import { Plus, Repeat2 } from 'lucide-react';
+import { Plus, Repeat2, AlertCircle } from 'lucide-react';
 import { WEEKDAY_LABELS, WEEKDAY_ORDER, type Routine } from '@/lib/mock';
 import { PageHeader } from '@/components/shell/page-header';
 import { RoutineCard } from '../components/routine-card';
 
 interface RoutineListPresenterProps {
   routines: Routine[];
+  loading?: boolean;
+  loadError?: boolean;
   onAdd: () => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
 export default function RoutineListPresenter({
-  routines, onAdd, onEdit, onDelete,
+  routines, loading = false, loadError = false, onAdd, onEdit, onDelete,
 }: RoutineListPresenterProps) {
   // 요일별 걸린 루틴 수 — 요약 띠 도트
   const counts = WEEKDAY_ORDER.map(
@@ -39,7 +41,18 @@ export default function RoutineListPresenter({
         action={addButton}
       />
 
-      {routines.length === 0 ? (
+      {loading ? (
+        <div className="border-pullim-slate-200 bg-pullim-slate-50/50 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-16 text-center">
+          <Repeat2 className="text-pullim-slate-300 h-8 w-8 animate-pulse" aria-hidden />
+          <p className="text-pullim-slate-500 text-sm">루틴을 불러오는 중…</p>
+        </div>
+      ) : loadError ? (
+        <div className="border-pullim-danger/30 bg-pullim-danger-bg/40 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-16 text-center">
+          <AlertCircle className="text-pullim-danger h-8 w-8" aria-hidden />
+          <p className="text-pullim-slate-700 text-sm font-bold">루틴을 불러오지 못했어요</p>
+          <p className="text-pullim-slate-500 text-xs">잠시 후 다시 시도해 주세요.</p>
+        </div>
+      ) : routines.length === 0 ? (
         <div className="border-pullim-slate-200 bg-pullim-slate-50/50 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-16 text-center">
           <Repeat2 className="text-pullim-slate-400 h-8 w-8" aria-hidden />
           <p className="text-pullim-slate-700 text-sm font-bold">아직 루틴이 없어요</p>
