@@ -55,7 +55,8 @@ function DialogContent({
         className={cn(
           // 외부 컨테이너 — flex 컬럼, 자체 스크롤 없음 (스크롤은 DialogBody가 담당)
           // 그래야 sticky footer 대신 진짜 fixed footer로 동작 — CTA가 스크롤 범위 밖.
-          "fixed top-1/2 left-1/2 z-50 flex w-full max-w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // PUDS 오버레이 — radius-lg(24px) + shadow-lg(부유감). surface/색은 bg-popover(=PUDS surface) 유지.
+          "fixed top-1/2 left-1/2 z-50 flex w-full max-w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[var(--puds-radius-lg)] bg-popover text-sm text-popover-foreground shadow-[var(--shadow-lg)] ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
@@ -128,7 +129,7 @@ function DialogFooter({
       data-slot="dialog-footer"
       className={cn(
         // 스크롤 범위 밖 — shrink-0 + border-t로 본문과 분리. bg-muted로 시각 격리.
-        "shrink-0 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted px-4 py-3 sm:flex-row sm:justify-end",
+        "shrink-0 flex flex-col-reverse gap-2 rounded-b-[var(--puds-radius-lg)] border-t bg-muted px-4 py-3 sm:flex-row sm:justify-end",
         className
       )}
       {...props}
