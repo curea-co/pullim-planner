@@ -45,6 +45,8 @@ export type {
   PullimLayoutId,
   PullimWeekLayoutId,
   PullimPaletteId,
+  PullimPlannerCreate,
+  PullimRoutineClient,
   PullimRoutine,
   PullimRoutineWrite,
   PullimRoutinePatch,
