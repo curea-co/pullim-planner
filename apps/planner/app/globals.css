@@ -4,8 +4,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* PUDS (Pullim Design System) 토큰 — gray/semantic ramp(_base) + pullim-jr 테마(primary·lemon·radius).
- * 소비: <html data-theme="pullim-jr">. 플래너 토큰은 아래 @theme에서 PUDS 토큰에 별칭(re-skin). */
+/* PUDS (Pullim Design System) 토큰 — gray/semantic ramp(_base) + 서비스 테마(pullim-os / pullim-jr).
+ * 소비: <html data-theme="pullim-os"> — 플래너 기본 = OS 미감(radius 8/12px). os↔jr 전환 시 radius·색·shadow 가
+ * 아래 @theme 별칭을 통해 토큰으로 함께 따라감. (os/jr 두 테마 CSS 모두 import — 활성은 data-theme 로 선택) */
 @import "./tokens/_base.css";
 @import "./tokens/pullim-os.css";
 @import "./tokens/pullim-jr.css";
@@ -188,12 +189,13 @@
   --sidebar-border: var(--border-default);
   --sidebar-ring: var(--focus-ring-color);
 
-  /* 풀림 그림자 */
-  --shadow-pullim-xs: 0 1px 2px rgba(18, 22, 39, 0.04);
-  --shadow-pullim-sm: 0 1px 3px rgba(18, 22, 39, 0.06), 0 1px 2px rgba(18, 22, 39, 0.04);
-  --shadow-pullim-md: 0 4px 12px rgba(18, 22, 39, 0.06), 0 2px 4px rgba(18, 22, 39, 0.04);
-  --shadow-pullim-lg: 0 12px 24px rgba(18, 22, 39, 0.08), 0 4px 8px rgba(18, 22, 39, 0.04);
-  --shadow-pullim-glow: 0 0 0 4px rgba(59, 111, 246, 0.15);
+  /* 풀림 그림자 → PUDS elevation 토큰 별칭 (data-theme별 스케일 따라감 — os↔jr 전환 시 elevation도 전환).
+   * shadow-pullim-* 유틸(카드 다수)이 하드코딩이던 것을 theme-responsive PUDS --shadow-* 로 수렴. */
+  --shadow-pullim-xs: var(--shadow-sm);
+  --shadow-pullim-sm: var(--shadow-sm);
+  --shadow-pullim-md: var(--shadow-md);
+  --shadow-pullim-lg: var(--shadow-lg);
+  --shadow-pullim-glow: 0 0 0 3px color-mix(in oklch, var(--focus-ring-color) 22%, transparent);
 }
 
 .dark {
