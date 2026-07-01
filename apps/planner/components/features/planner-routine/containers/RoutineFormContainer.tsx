@@ -48,9 +48,17 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
 
   // 편집 진입 — 목록을 fetch 해 대상 routine 을 찾고 폼에 채운다(없으면 안내).
   useEffect(() => {
-    if (mode !== 'edit' || !routineId) return;
     let cancelled = false;
     void (async () => {
+      // create 모드(인스턴스 재사용 edit→new 포함) — 이전 편집 값 잔존 방지로 기본값·상태 리셋 후 종료.
+      if (mode !== 'edit' || !routineId) {
+        if (!cancelled) {
+          setForm(DEFAULT_FORM);
+          setNotFound(false);
+          setLoadError(false);
+        }
+        return;
+      }
       // 재fetch 시작 시 상태 초기화 — 같은 인스턴스가 다른 routineId 로 재사용될 때 이전 notFound/loadError
       // 잔존 방지. (effect 본문 동기 setState 는 cascading-render 린트 위반이라 async IIFE 안에서 리셋.)
       setLoading(true);

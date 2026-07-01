@@ -34,6 +34,8 @@ export default function RoutineListContainer() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      // 재조회 시작 시 로딩 표시 — pathname/tick 재진입 시 이전 목록을 stale 로 잠깐 렌더하지 않게.
+      setLoading(true);
       if (DEV_AUTH_BYPASS) {
         if (!cancelled) {
           setRoutines([...getRoutines()]);
