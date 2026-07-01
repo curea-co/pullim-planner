@@ -9,7 +9,9 @@ prod는 `*.pullim.ai` 가 같은 site → `Domain=.pullim.ai` 쿠키가 서브�
 
 ## STEP 1 — `/etc/hosts` (sudo) ※ 사용자
 ```bash
-echo '127.0.0.1 pullim.local os.pullim.local api.pullim.local planner.pullim.local' | sudo tee -a /etc/hosts
+# idempotent — 이미 있으면 append 안 함(재실행 시 중복 누적 방지)
+LINE='127.0.0.1 pullim.local os.pullim.local api.pullim.local planner.pullim.local'
+grep -qxF "$LINE" /etc/hosts || echo "$LINE" | sudo tee -a /etc/hosts
 ```
 **확인할 것**:
 - `planner.pullim.local` **포함**됐는지(규칙: SSO 합류 앱 서브도메인을 같은 줄에 덧붙임).
