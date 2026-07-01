@@ -1,13 +1,20 @@
 import {
   ApiError,
   createPullimPlannerClient,
+  maskToWeekdays,
+  weekdaysToMask,
   type PullimPlanner,
   type PullimPlannerClient,
   type PullimPlannerWrite,
+  type PullimRoutine,
+  type PullimRoutineClient,
+  type PullimRoutineWrite,
+  type PullimRoutinePatch,
 } from '@pullim-planner/api-client';
 
 import { notifyPullimSessionExpired } from '@/lib/auth/pullim-session-client';
-import type { Planner } from '@/lib/mock';
+import { minutesBetween, type Planner, type Routine, type RoutineSubject } from '@/lib/mock';
+import type { BlockType } from '@/lib/mock';
 
 /**
  * pullim-api(흡수형 planner) base/CSRF — `pullim-session-client` 와 동일 규칙.
@@ -51,7 +58,7 @@ function on401<A extends unknown[], R>(
  * SSO(브라우저 자동 첨부)라 토큰을 클라가 들지 않고, 상태변경은 CSRF double-submit
  * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 401 에서 세션 만료를 통지한다.
  */
-export const pullimPlannerClient: PullimPlannerClient = {
+export const pullimPlannerClient: PullimPlannerClient & PullimRoutineClient = {
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
   create: on401(rawPullimPlannerClient.create),
@@ -62,6 +69,10 @@ export const pullimPlannerClient: PullimPlannerClient = {
   unarchive: on401(rawPullimPlannerClient.unarchive),
   duplicate: on401(rawPullimPlannerClient.duplicate),
   updateCustomization: on401(rawPullimPlannerClient.updateCustomization),
+  routines: on401(rawPullimPlannerClient.routines),
+  createRoutine: on401(rawPullimPlannerClient.createRoutine),
+  updateRoutine: on401(rawPullimPlannerClient.updateRoutine),
+  deleteRoutine: on401(rawPullimPlannerClient.deleteRoutine),
 };
 
 /**
@@ -92,4 +103,43 @@ export function toPullimWrite(
     ...patch,
     subjectUnits,
   } as PullimPlannerWrite;
+}
+
+/**
+ * pullim-api 루틴(`PullimRoutine`) → FE 뷰 `Routine` 어댑터.
+ * 요일은 비트마스크(`weekdayMask`) → 배열(`maskToWeekdays`, 0=월…6=일)로 변환한다.
+ * subject/type 은 BE 가 string 이지만 BE 가 FE enum 집합으로만 발급하므로 뷰 union 으로 단언한다.
+ */
+export function pullimToRoutine(r: PullimRoutine): Routine {
+  return {
+    id: r.id,
+    title: r.title,
+    subject: r.subject as RoutineSubject,
+    type: r.type as BlockType,
+    startTime: r.startTime,
+    endTime: r.endTime,
+    weekdays: maskToWeekdays(r.weekdayMask) as Routine['weekdays'],
+  };
+}
+
+/** 루틴 폼값(id 제외) → pullim-api 쓰기 본문(`PullimRoutineWrite`). */
+export function toRoutineWrite(
+  form: Omit<Routine, 'id'>,
+): PullimRoutineWrite {
+  return {
+    title: form.title,
+    subject: form.subject,
+    type: form.type,
+    startTime: form.startTime,
+    endTime: form.endTime,
+    expectedMinutes: minutesBetween(form.startTime, form.endTime),
+    weekdayMask: weekdaysToMask(form.weekdays),
+  };
+}
+
+/** 루틴 폼값(부분) → pullim-api 부분 수정 본문(`PullimRoutinePatch`). */
+export function toRoutinePatch(
+  form: Omit<Routine, 'id'>,
+): PullimRoutinePatch {
+  return toRoutineWrite(form);
 }
