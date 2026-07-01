@@ -102,9 +102,9 @@ export default function RoutineListContainer() {
       return;
     }
     // 실 API — BE 에 restore 엔드포인트가 없어 되돌리기 없이 단순 삭제 + 토스트.
+    setDeleteTarget(null); // 확인 시 다이얼로그는 항상 먼저 닫는다(in-flight 재확인 시 안 닫히는 회귀 방지).
     if (deletingIds.has(id)) return; // in-flight 중복 삭제 방어(연속 탭 → 성공 뒤 404 실패 토스트 방지).
     setDeletingIds((s) => new Set(s).add(id));
-    setDeleteTarget(null);
     void (async () => {
       try {
         await pullimPlannerClient.deleteRoutine(id);
