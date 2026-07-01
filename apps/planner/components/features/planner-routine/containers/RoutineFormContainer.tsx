@@ -12,6 +12,7 @@ import {
   pullimPlannerClient, pullimToRoutine, toRoutineWrite, toRoutinePatch,
 } from '@/lib/planner/pullim-client';
 import RoutineFormPresenter, { type RoutineFormState } from '../presenters/RoutineFormPresenter';
+import { RoutineDeleteConfirmDialog } from '../components/routine-delete-confirm-dialog';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
@@ -45,6 +46,8 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
   const [loadError, setLoadError] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
   const [saving, setSaving] = useState(false);
+  // 삭제 confirm 다이얼로그 — 즉시 삭제 대신 확인을 거친다.
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // 편집 진입 — 목록을 fetch 해 대상 routine 을 찾고 폼에 채운다(없으면 안내).
   useEffect(() => {
@@ -164,14 +167,30 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
         }
         router.push('/planner/routine');
       } catch (e) {
+        // 404 = 이미 삭제된 루틴 — 일시 장애("저장 실패")와 구분해 안내 + 목록 이동.
+        if (e instanceof ApiError && e.statusCode === 404) {
+          toast.error('이미 삭제된 루틴이에요', {
+            description: '목록으로 돌아갑니다',
+          });
+          router.push('/planner/routine');
+          return;
+        }
         toast.error(e instanceof ApiError ? e.message : '루틴 저장 실패');
         setSaving(false);
       }
     })();
   }, [saving, form, mode, routineId, router]);
 
+  // 편집 화면 삭제 요청 — 즉시 삭제하지 않고 confirm 다이얼로그를 연다.
   const onDelete = useCallback(() => {
     if (!routineId || saving) return;
+    setShowDeleteConfirm(true);
+  }, [routineId, saving]);
+
+  // confirm 후 실제 삭제 — bypass=mock, real=API(+404 구분). 다이얼로그를 먼저 닫는다.
+  const confirmDelete = useCallback(() => {
+    if (!routineId || saving) return;
+    setShowDeleteConfirm(false);
     if (DEV_AUTH_BYPASS) {
       removeRoutine(routineId);
       toast('🗑 루틴 삭제됨');
@@ -185,6 +204,14 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
         toast('🗑 루틴 삭제됨');
         router.push('/planner/routine');
       } catch (e) {
+        // 404 = 이미 삭제된 루틴 — 일시 장애("삭제 실패")와 구분해 안내 + 목록 이동.
+        if (e instanceof ApiError && e.statusCode === 404) {
+          toast.error('이미 삭제된 루틴이에요', {
+            description: '목록으로 돌아갑니다',
+          });
+          router.push('/planner/routine');
+          return;
+        }
         toast.error(e instanceof ApiError ? e.message : '루틴 삭제 실패');
         setSaving(false);
       }
@@ -233,15 +260,28 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
   }
 
   return (
-    <RoutineFormPresenter
-      mode={mode}
-      form={form}
-      onChange={onChange}
-      onToggleWeekday={onToggleWeekday}
-      canSave={canSave}
-      onSave={onSave}
-      onCancel={onCancel}
-      onDelete={mode === 'edit' ? onDelete : undefined}
-    />
+    <>
+      <RoutineFormPresenter
+        mode={mode}
+        form={form}
+        onChange={onChange}
+        onToggleWeekday={onToggleWeekday}
+        canSave={canSave}
+        onSave={onSave}
+        onCancel={onCancel}
+        onDelete={mode === 'edit' ? onDelete : undefined}
+      />
+      <RoutineDeleteConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        // Form 은 routineId·title 만 보유 — 다이얼로그 표시용 최소 Routine 형상.
+        target={
+          routineId
+            ? ({ ...form, id: routineId, title: form.title } as Routine)
+            : null
+        }
+        onConfirm={confirmDelete}
+      />
+    </>
   );
 }
