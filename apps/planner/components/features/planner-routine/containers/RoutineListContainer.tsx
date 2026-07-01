@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@pullim-planner/api-client';
 import {
@@ -21,6 +21,9 @@ const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
  */
 export default function RoutineListContainer() {
   const router = useRouter();
+  // new/edit 페이지에서 저장 후 목록으로 복귀 시 재fetch — App Router 인스턴스 재사용 방어.
+  // pathname 이 /planner/routine 로 재진입할 때마다 effect 를 다시 태워 stale 목록을 갱신한다.
+  const pathname = usePathname();
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -57,7 +60,7 @@ export default function RoutineListContainer() {
     return () => {
       cancelled = true;
     };
-  }, [tick]);
+  }, [tick, pathname]);
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
