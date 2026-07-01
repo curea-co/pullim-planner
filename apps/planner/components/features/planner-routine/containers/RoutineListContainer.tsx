@@ -9,6 +9,7 @@ import {
 } from '@/lib/mock';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
 import RoutineListPresenter from '../presenters/RoutineListPresenter';
+import { RoutineDeleteConfirmDialog } from '../components/routine-delete-confirm-dialog';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
@@ -28,6 +29,8 @@ export default function RoutineListContainer() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
+  // 삭제 confirm 다이얼로그 타깃 — null 이면 닫힘. 즉시 영구 삭제 대신 확인을 거친다(ManagePlannersContainer 미러).
+  const [deleteTarget, setDeleteTarget] = useState<Routine | null>(null);
   // 실 API 삭제 in-flight id 집합 — 같은 카드 연속 탭 시 deleteRoutine 중복 호출(성공→404 실패 토스트) 방어.
   const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
 
@@ -71,10 +74,19 @@ export default function RoutineListContainer() {
   const onAdd = useCallback(() => router.push('/planner/routine/new'), [router]);
   const onEdit = useCallback((id: string) => router.push(`/planner/routine/${id}`), [router]);
 
+  // 카드 삭제 요청 — 즉시 삭제하지 않고 confirm 다이얼로그를 연다(타깃 세팅).
   const onDelete = useCallback((id: string) => {
+    setDeleteTarget(routines.find((r) => r.id === id) ?? findRoutine(id) ?? null);
+  }, [routines]);
+
+  // confirm 후 실제 삭제 — bypass=mock+되돌리기, real=in-flight 가드+API+refresh. 완료 시 다이얼로그 닫음.
+  const confirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    const { id, title } = deleteTarget;
     // dev 우회 — 공유 mock store 에서 삭제 + 되돌리기 UX 유지 (엔티티 동일성 보존).
     if (DEV_AUTH_BYPASS) {
       const removed = removeRoutine(id);
+      setDeleteTarget(null);
       if (!removed) return;
       refresh();
       toast(`🗑 ${removed.routine.title} 삭제됨`, {
@@ -90,13 +102,13 @@ export default function RoutineListContainer() {
       return;
     }
     // 실 API — BE 에 restore 엔드포인트가 없어 되돌리기 없이 단순 삭제 + 토스트.
+    setDeleteTarget(null); // 확인 시 다이얼로그는 항상 먼저 닫는다(in-flight 재확인 시 안 닫히는 회귀 방지).
     if (deletingIds.has(id)) return; // in-flight 중복 삭제 방어(연속 탭 → 성공 뒤 404 실패 토스트 방지).
-    const target = routines.find((r) => r.id === id) ?? findRoutine(id);
     setDeletingIds((s) => new Set(s).add(id));
     void (async () => {
       try {
         await pullimPlannerClient.deleteRoutine(id);
-        toast(`🗑 ${target?.title ?? '루틴'} 삭제됨`);
+        toast(`🗑 ${title} 삭제됨`);
       } catch (e) {
         toast.error(e instanceof ApiError ? e.message : '루틴 삭제 실패');
       } finally {
@@ -108,16 +120,24 @@ export default function RoutineListContainer() {
         refresh();
       }
     })();
-  }, [refresh, routines, deletingIds]);
+  }, [deleteTarget, refresh, deletingIds]);
 
   return (
-    <RoutineListPresenter
-      routines={routines}
-      loading={loading}
-      loadError={loadError}
-      onAdd={onAdd}
-      onEdit={onEdit}
-      onDelete={onDelete}
-    />
+    <>
+      <RoutineListPresenter
+        routines={routines}
+        loading={loading}
+        loadError={loadError}
+        onAdd={onAdd}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+      <RoutineDeleteConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        target={deleteTarget}
+        onConfirm={confirmDelete}
+      />
+    </>
   );
 }
