@@ -7,7 +7,7 @@
 import type { PaletteId } from '@/lib/tokens/palettes';
 import type { TonePresetId, Visibility } from '@/lib/mock/studygram';
 
-export type { TonePresetId, Visibility, FriendshipStatus, ProofSnapshot, StudyProof, StudygramSetting, Friend } from '@/lib/mock/studygram';
+export type { TonePresetId, Visibility, FriendshipStatus, ProofSnapshot, StudyProof, StudygramSetting, Friend, DiscoverableUser } from '@/lib/mock/studygram';
 
 /** 톤 프리셋 UI 표현 (emoji·label·description — UI 전용) */
 export type TonePreset = {

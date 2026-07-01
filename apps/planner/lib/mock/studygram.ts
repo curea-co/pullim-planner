@@ -234,6 +234,42 @@ export const mockFriends: Friend[] = [
   },
 ];
 
+/**
+ * 친구 찾기(디스커버리) 후보 — 닉네임으로 검색해 요청을 보낼 수 있는 공개 프로필.
+ * 피어 안전(미성년): 실명·학년 미노출, 식별은 닉네임 + 활동(인증 수)만.
+ */
+export type DiscoverableUser = {
+  userId: string;
+  /** 닉네임 — 피어 식별(실명·grade 미노출) */
+  name: string;
+  proofCount: number;
+};
+
+export const mockDiscoverableUsers: DiscoverableUser[] = [
+  { userId: 'user-a', name: '햇살가득', proofCount: 34 },
+  { userId: 'user-b', name: '도토리', proofCount: 27 },
+  { userId: 'user-c', name: '민트초코', proofCount: 15 },
+  { userId: 'user-d', name: '새벽공부', proofCount: 41 },
+  { userId: 'user-e', name: '수학요정', proofCount: 9 },
+  { userId: 'user-f', name: '지우개', proofCount: 20 },
+];
+
+/**
+ * 닉네임 부분일치 검색(대소문자 무시). excludeUserIds(이미 친구·요청받은 사람·나)는 제외.
+ * 빈 검색어는 빈 배열(프롬프트 상태 유도).
+ */
+export function searchDiscoverableUsers(
+  query: string,
+  excludeUserIds: string[] = [],
+): DiscoverableUser[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const exclude = new Set(excludeUserIds);
+  return mockDiscoverableUsers.filter(
+    (u) => !exclude.has(u.userId) && u.name.toLowerCase().includes(q),
+  );
+}
+
 /** 친구 중 수락된 close-friends 피드용 인증카드 샘플 */
 export const mockFriendProofs: StudyProof[] = [
   {
