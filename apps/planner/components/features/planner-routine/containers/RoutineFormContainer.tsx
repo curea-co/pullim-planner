@@ -1,18 +1,32 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { ApiError } from '@pullim-planner/api-client';
 import {
   findRoutine, addRoutine, updateRoutine, removeRoutine, minutesBetween,
-  type Weekday,
+  type Routine, type Weekday,
 } from '@/lib/mock';
+import {
+  pullimPlannerClient, pullimToRoutine, toRoutineWrite, toRoutinePatch,
+} from '@/lib/planner/pullim-client';
 import RoutineFormPresenter, { type RoutineFormState } from '../presenters/RoutineFormPresenter';
+
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
 const DEFAULT_FORM: RoutineFormState = {
   title: '', subject: 'math', type: 'concept',
   startTime: '19:00', endTime: '19:50', weekdays: [0, 1, 2, 3, 4],
 };
+
+function toFormState(r: Routine): RoutineFormState {
+  return {
+    title: r.title, subject: r.subject, type: r.type,
+    startTime: r.startTime, endTime: r.endTime,
+    weekdays: [...r.weekdays],
+  };
+}
 
 interface RoutineFormContainerProps {
   /** 있으면 편집 모드, 없으면 생성 */
@@ -21,18 +35,50 @@ interface RoutineFormContainerProps {
 
 export default function RoutineFormContainer({ routineId }: RoutineFormContainerProps) {
   const router = useRouter();
-  const existing = routineId ? findRoutine(routineId) : undefined;
   const mode: 'create' | 'edit' = routineId ? 'edit' : 'create';
 
-  const [form, setForm] = useState<RoutineFormState>(() =>
-    existing
-      ? {
-          title: existing.title, subject: existing.subject, type: existing.type,
-          startTime: existing.startTime, endTime: existing.endTime,
-          weekdays: [...existing.weekdays],
+  const [form, setForm] = useState<RoutineFormState>(DEFAULT_FORM);
+  // 편집 모드: 목록 fetch 후 대상 routine 을 찾는다. create 면 로딩 불필요.
+  const [loading, setLoading] = useState(mode === 'edit');
+  const [notFound, setNotFound] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // 편집 진입 — 목록을 fetch 해 대상 routine 을 찾고 폼에 채운다(없으면 안내).
+  useEffect(() => {
+    if (mode !== 'edit' || !routineId) return;
+    let cancelled = false;
+    void (async () => {
+      if (DEV_AUTH_BYPASS) {
+        const found = findRoutine(routineId);
+        if (!cancelled) {
+          if (found) setForm(toFormState(found));
+          else setNotFound(true);
+          setLoading(false);
         }
-      : DEFAULT_FORM,
-  );
+        return;
+      }
+      try {
+        const list = await pullimPlannerClient.routines();
+        const found = list.map(pullimToRoutine).find((r) => r.id === routineId);
+        if (!cancelled) {
+          if (found) setForm(toFormState(found));
+          else setNotFound(true);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setNotFound(true);
+          toast.error(
+            e instanceof ApiError ? e.message : '루틴을 불러오지 못했어요',
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, routineId]);
 
   const onChange = useCallback(
     <K extends keyof RoutineFormState>(key: K, value: RoutineFormState[K]) => {
@@ -51,6 +97,7 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
   }, []);
 
   const canSave =
+    !saving &&
     form.title.trim().length > 0 &&
     form.weekdays.length > 0 &&
     minutesBetween(form.startTime, form.endTime) > 0;
@@ -58,32 +105,86 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
   const onCancel = useCallback(() => router.push('/planner/routine'), [router]);
 
   const onSave = useCallback(() => {
-    if (!canSave) return;
-    const payload = {
+    if (saving) return;
+    if (
+      form.title.trim().length === 0 ||
+      form.weekdays.length === 0 ||
+      minutesBetween(form.startTime, form.endTime) <= 0
+    ) {
+      return;
+    }
+    const formValue: Omit<Routine, 'id'> = {
       title: form.title.trim(), subject: form.subject, type: form.type,
       startTime: form.startTime, endTime: form.endTime, weekdays: form.weekdays,
     };
-    if (mode === 'edit' && routineId) {
-      updateRoutine(routineId, payload);
-      toast.success('루틴을 저장했어요');
-    } else {
-      addRoutine(payload);
-      toast.success('루틴을 저장했어요', {
-        description: '새 시간표 만들기에 곧 연결돼요',
-      });
+
+    // dev 우회 — 공유 mock store. 화면/위저드가 같은 store 를 읽어 일관.
+    if (DEV_AUTH_BYPASS) {
+      if (mode === 'edit' && routineId) {
+        updateRoutine(routineId, formValue);
+        toast.success('루틴을 저장했어요');
+      } else {
+        addRoutine(formValue);
+        toast.success('루틴을 저장했어요', {
+          description: '새 시간표 만들기에 곧 연결돼요',
+        });
+      }
+      router.push('/planner/routine');
+      return;
     }
-    router.push('/planner/routine');
-  }, [canSave, form, mode, routineId, router]);
+
+    setSaving(true);
+    void (async () => {
+      try {
+        if (mode === 'edit' && routineId) {
+          await pullimPlannerClient.updateRoutine(routineId, toRoutinePatch(formValue));
+          toast.success('루틴을 저장했어요');
+        } else {
+          await pullimPlannerClient.createRoutine(toRoutineWrite(formValue));
+          toast.success('루틴을 저장했어요', {
+            description: '새 시간표 만들기에 곧 연결돼요',
+          });
+        }
+        router.push('/planner/routine');
+      } catch (e) {
+        toast.error(e instanceof ApiError ? e.message : '루틴 저장 실패');
+        setSaving(false);
+      }
+    })();
+  }, [saving, form, mode, routineId, router]);
 
   const onDelete = useCallback(() => {
-    if (!routineId) return;
-    removeRoutine(routineId);
-    toast('🗑 루틴 삭제됨');
-    router.push('/planner/routine');
-  }, [routineId, router]);
+    if (!routineId || saving) return;
+    if (DEV_AUTH_BYPASS) {
+      removeRoutine(routineId);
+      toast('🗑 루틴 삭제됨');
+      router.push('/planner/routine');
+      return;
+    }
+    setSaving(true);
+    void (async () => {
+      try {
+        await pullimPlannerClient.deleteRoutine(routineId);
+        toast('🗑 루틴 삭제됨');
+        router.push('/planner/routine');
+      } catch (e) {
+        toast.error(e instanceof ApiError ? e.message : '루틴 삭제 실패');
+        setSaving(false);
+      }
+    })();
+  }, [routineId, saving, router]);
+
+  // 편집 로딩 중 — 폼이 채워지기 전 간단한 안내.
+  if (mode === 'edit' && loading) {
+    return (
+      <div className="text-pullim-slate-500 py-20 text-center text-sm">
+        루틴을 불러오는 중…
+      </div>
+    );
+  }
 
   // 편집 진입했는데 대상이 없으면(삭제됨/잘못된 id) 안내
-  if (mode === 'edit' && !existing) {
+  if (mode === 'edit' && notFound) {
     return (
       <div className="text-pullim-slate-500 py-20 text-center text-sm">
         루틴을 찾을 수 없어요.{' '}
