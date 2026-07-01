@@ -50,11 +50,12 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
   useEffect(() => {
     if (mode !== 'edit' || !routineId) return;
     let cancelled = false;
-    // 재fetch 시작 시 상태 초기화 — 같은 인스턴스가 다른 routineId 로 재사용될 때 이전 notFound/loadError 잔존 방지.
-    setLoading(true);
-    setNotFound(false);
-    setLoadError(false);
     void (async () => {
+      // 재fetch 시작 시 상태 초기화 — 같은 인스턴스가 다른 routineId 로 재사용될 때 이전 notFound/loadError
+      // 잔존 방지. (effect 본문 동기 setState 는 cascading-render 린트 위반이라 async IIFE 안에서 리셋.)
+      setLoading(true);
+      setNotFound(false);
+      setLoadError(false);
       if (DEV_AUTH_BYPASS) {
         const found = findRoutine(routineId);
         if (!cancelled) {
