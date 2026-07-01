@@ -28,6 +28,8 @@ export default function RoutineListContainer() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
+  // 실 API 삭제 in-flight id 집합 — 같은 카드 연속 탭 시 deleteRoutine 중복 호출(성공→404 실패 토스트) 방어.
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -86,7 +88,9 @@ export default function RoutineListContainer() {
       return;
     }
     // 실 API — BE 에 restore 엔드포인트가 없어 되돌리기 없이 단순 삭제 + 토스트.
+    if (deletingIds.has(id)) return; // in-flight 중복 삭제 방어(연속 탭 → 성공 뒤 404 실패 토스트 방지).
     const target = routines.find((r) => r.id === id) ?? findRoutine(id);
+    setDeletingIds((s) => new Set(s).add(id));
     void (async () => {
       try {
         await pullimPlannerClient.deleteRoutine(id);
@@ -94,10 +98,15 @@ export default function RoutineListContainer() {
       } catch (e) {
         toast.error(e instanceof ApiError ? e.message : '루틴 삭제 실패');
       } finally {
+        setDeletingIds((s) => {
+          const next = new Set(s);
+          next.delete(id);
+          return next;
+        });
         refresh();
       }
     })();
-  }, [refresh, routines]);
+  }, [refresh, routines, deletingIds]);
 
   return (
     <RoutineListPresenter

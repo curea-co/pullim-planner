@@ -41,12 +41,19 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
   // 편집 모드: 목록 fetch 후 대상 routine 을 찾는다. create 면 로딩 불필요.
   const [loading, setLoading] = useState(mode === 'edit');
   const [notFound, setNotFound] = useState(false);
+  // 로드 실패(일시 장애)와 not-found(대상 없음)를 분리 — 네트워크·401·500 을 "삭제됨"으로 오인하지 않게.
+  const [loadError, setLoadError] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
   const [saving, setSaving] = useState(false);
 
   // 편집 진입 — 목록을 fetch 해 대상 routine 을 찾고 폼에 채운다(없으면 안내).
   useEffect(() => {
     if (mode !== 'edit' || !routineId) return;
     let cancelled = false;
+    // 재fetch 시작 시 상태 초기화 — 같은 인스턴스가 다른 routineId 로 재사용될 때 이전 notFound/loadError 잔존 방지.
+    setLoading(true);
+    setNotFound(false);
+    setLoadError(false);
     void (async () => {
       if (DEV_AUTH_BYPASS) {
         const found = findRoutine(routineId);
@@ -66,7 +73,8 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
         }
       } catch (e) {
         if (!cancelled) {
-          setNotFound(true);
+          // 일시 장애(네트워크·401·500)는 "삭제됨(notFound)" 이 아니라 재시도 가능한 로드 실패로 구분.
+          setLoadError(true);
           toast.error(
             e instanceof ApiError ? e.message : '루틴을 불러오지 못했어요',
           );
@@ -78,7 +86,7 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
     return () => {
       cancelled = true;
     };
-  }, [mode, routineId]);
+  }, [mode, routineId, reloadTick]);
 
   const onChange = useCallback(
     <K extends keyof RoutineFormState>(key: K, value: RoutineFormState[K]) => {
@@ -179,6 +187,22 @@ export default function RoutineFormContainer({ routineId }: RoutineFormContainer
     return (
       <div className="text-pullim-slate-500 py-20 text-center text-sm">
         루틴을 불러오는 중…
+      </div>
+    );
+  }
+
+  // 편집 로드가 일시 장애로 실패 — "삭제됨(notFound)"과 구분해 재시도 제공(존재하는 루틴을 못 여는 상황 방지).
+  if (mode === 'edit' && loadError) {
+    return (
+      <div className="text-pullim-slate-500 py-20 text-center text-sm">
+        루틴을 불러오지 못했어요.{' '}
+        <button
+          type="button"
+          onClick={() => setReloadTick((t) => t + 1)}
+          className="text-pullim-blue-600 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+        >
+          다시 시도
+        </button>
       </div>
     );
   }
