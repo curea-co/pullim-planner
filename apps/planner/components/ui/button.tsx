@@ -22,16 +22,19 @@ const buttonVariants = cva(
           "bg-[var(--color-danger-500)] text-white shadow-sm hover:bg-[var(--color-danger-600)]",
         link: "text-[var(--color-action-primary)] underline-offset-4 hover:underline",
       },
+      // default/lg/icon/icon-lg = OS 스케일(button-h 토큰). xs/sm/icon-xs/icon-sm = 기존 컴팩트 계약 유지
+      // (dense UI·닫기버튼 등 밀집 호출부 회귀 방지 — Codex #102 대응). radius는 os 테마 토큰(min으로 작게 유지).
       size: {
         default:
           "h-[var(--button-h)] gap-2 rounded-[var(--puds-radius-md)] px-5 text-[length:var(--text-base)]",
-        xs: "h-8 gap-1 rounded-[var(--puds-radius-sm)] px-2.5 text-[length:var(--text-sm)] [&_svg:not([class*='size-'])]:size-3.5",
-        sm: "h-[var(--button-h-sm)] gap-1.5 rounded-[var(--puds-radius-md)] px-4 text-[length:var(--text-sm)]",
+        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-[var(--button-h-lg)] gap-2 rounded-[var(--puds-radius-md)] px-7 text-[length:var(--text-md)]",
         icon: "size-[var(--button-h)] rounded-[var(--puds-radius-md)] p-0",
         "icon-xs":
-          "size-8 rounded-[var(--puds-radius-sm)] p-0 [&_svg:not([class*='size-'])]:size-4",
-        "icon-sm": "size-[var(--button-h-sm)] rounded-[var(--puds-radius-md)] p-0",
+          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm":
+          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-[var(--button-h-lg)] rounded-[var(--puds-radius-md)] p-0",
       },
     },
