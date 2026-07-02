@@ -8,9 +8,11 @@ import {
   plannerToForm, formToPlannerPatch,
   type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
-import type { Planner } from '@/lib/mock';
+import type { Planner, Routine } from '@/lib/mock';
+import { getRoutines } from '@/lib/mock';
 import { findPlanner, updatePlanner } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient, toWriteInput } from '@/lib/planner/client';
+import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
 import { usePlannerForm } from '../hooks/use-planner-form';
 import EditPlannerPresenter from '../presenters/EditPlannerPresenter';
 
@@ -114,6 +116,18 @@ function EditPlannerForm({
     searchParams.get('tab') === 'layout' ? 'layout' : 'config';
   const [tab, setTab] = useState<EditTab>(initialTab);
 
+  // STEP5·미리보기용 루틴 — bypass는 mock(초기값), 배포는 실 API로 교체(dev QA #4).
+  const [routines, setRoutines] = useState<Routine[]>(() => (DEV_AUTH_BYPASS ? getRoutines() : []));
+  useEffect(() => {
+    if (DEV_AUTH_BYPASS) return;
+    let alive = true;
+    pullimPlannerClient
+      .routines()
+      .then((list) => { if (alive) setRoutines(list.map(pullimToRoutine)); })
+      .catch(() => { if (alive) setRoutines([]); });
+    return () => { alive = false; };
+  }, []);
+
   const formState = usePlannerForm(
     planner ? plannerToForm(planner) : ({} as PlannerForm),
     planner?.name ?? '시간표',
@@ -160,6 +174,7 @@ function EditPlannerForm({
       onJump={formState.jumpTo}
       onSaveDraft={formState.saveDraft}
       onSave={handleSave}
+      routines={routines}
     />
   );
 }
