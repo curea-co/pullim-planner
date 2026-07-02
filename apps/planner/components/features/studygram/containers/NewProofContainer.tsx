@@ -23,6 +23,9 @@ import NewProofPresenter from '../presenters/NewProofPresenter';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
+// 공유 설정(온보딩) 라우트 — SetupContainer 가 걸린 경로(app/(student)/planner/share/setup).
+const SETUP_ROUTE = '/planner/share/setup';
+
 const TODAY = todayKST();
 
 // 미리보기용 FE 추정 스냅샷 — 실제 객관 지표(snapshot)는 게시 시 BE 가 그날 학습에서 조립한다.
@@ -46,14 +49,18 @@ export default function NewProofContainer() {
   const [tonePresetId, setTonePresetId] = useState<TonePresetId>(
     mockStudygramSetting.tonePresetId,
   );
-  // 톤(설정) 로드 상태 — real 모드는 실제 톤이 로드돼야 게시를 허용한다(로드 실패 시 mock 톤으로
-  // 조용히 오염 게시 금지). bypass 는 즉시 준비 완료.
+  // 톤(설정) 로드 상태 — real 모드는 실제 설정이 로드돼야 게시를 허용한다(로드 실패·미온보딩 시 mock
+  // 톤으로 조용히 오염 게시 금지). bypass 는 즉시 준비 완료.
   const [toneReady, setToneReady] = useState(DEV_AUTH_BYPASS);
   const [toneLoadError, setToneLoadError] = useState(false);
+  // 미온보딩(getSetting null) — 공유 설정을 먼저 완료해야 게시할 수 있다(409 사전 차단). 게시 화면 대신
+  // 안내를 띄운다(직접 URL 진입 사용자가 활성 버튼·mock 톤 미리보기를 보고 클릭해야 409 받는 회귀 방지).
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   // 게시 in-flight — 더블 게시(더블클릭·직접 URL 재진입) 방어.
   const [posting, setPosting] = useState(false);
 
-  // 실 API: 톤 프리셋을 설정에서 읽어 미리보기 카드에 반영한다(bypass 는 mock 톤 사용).
+  // 실 API: 설정을 읽어 톤을 미리보기에 반영한다(bypass 는 mock 톤 사용). getSetting 3분기:
+  // 설정 존재→게시 허용, null→미온보딩(게시 차단·안내), throw→로드 실패(게시 차단·재시도).
   // effect 본문 동기 setState 금지(cascading-render 린트) → async IIFE 안에서만 세팅(R3b 교훈).
   useEffect(() => {
     if (DEV_AUTH_BYPASS) return;
@@ -61,15 +68,21 @@ export default function NewProofContainer() {
     void (async () => {
       setToneReady(false);
       setToneLoadError(false);
+      setNeedsOnboarding(false);
       try {
         const setting = await pullimPlannerClient.getSetting();
         if (!cancelled) {
-          if (setting) setTonePresetId(pullimToStudygramSetting(setting).tonePresetId);
-          // 설정 로드 성공(설정 있거나 null=미온보딩) — 게시 허용. 미온보딩은 BE 가 409 로 방어한다.
-          setToneReady(true);
+          if (setting) {
+            // 설정 존재 — 실제 톤을 실어 정상 게시 허용.
+            setTonePresetId(pullimToStudygramSetting(setting).tonePresetId);
+            setToneReady(true);
+          } else {
+            // null = 미온보딩 — 게시 차단(mock 톤으로 게시하지 않음). 설정 완료를 안내한다.
+            setNeedsOnboarding(true);
+          }
         }
       } catch {
-        // 톤 로드 실패 — mock 톤으로 오염 게시하지 않도록 게시를 막는다(안내 후 재시도 유도).
+        // 로드 실패 — mock 톤으로 오염 게시하지 않도록 게시를 막는다(안내 후 재시도 유도).
         if (!cancelled) setToneLoadError(true);
       }
     })();
@@ -101,8 +114,13 @@ export default function NewProofContainer() {
   const handlePost = useCallback(() => {
     if (posting) return;
 
-    // 톤(설정) 로드 실패 시 게시 차단 — mock 톤으로 오염 게시하지 않는다.
+    // 미온보딩·톤(설정) 로드 실패 시 게시 차단 — mock 톤으로 오염 게시하지 않는다.
     if (!DEV_AUTH_BYPASS && !toneReady) {
+      if (needsOnboarding) {
+        toast.error('공유 설정을 먼저 완료하세요');
+        router.push(SETUP_ROUTE);
+        return;
+      }
       toast.error('설정을 불러오지 못했어요', {
         description: '잠시 후 다시 시도해 주세요',
       });
@@ -157,10 +175,27 @@ export default function NewProofContainer() {
         setPosting(false);
       }
     })();
-  }, [posting, toneReady, router, previewProof, tonePresetId, caption, visibility]);
+  }, [posting, toneReady, needsOnboarding, router, previewProof, tonePresetId, caption, visibility]);
 
   const handleCaptionChange = useCallback((c: string) => setCaption(c), []);
   const handleVisibilityChange = useCallback((v: Visibility) => setVisibility(v), []);
+
+  // 미온보딩 — 게시 화면 대신 설정 완료 안내(직접 URL 진입 사용자가 mock 톤 미리보기·활성 버튼을 보고
+  // 클릭해야 409 를 받는 회귀 차단). DEV_AUTH_BYPASS 는 이 분기에 안 걸린다(needsOnboarding=false).
+  if (needsOnboarding) {
+    return (
+      <div className="text-pullim-slate-500 py-20 text-center text-sm">
+        공유 설정을 먼저 완료하세요.{' '}
+        <button
+          type="button"
+          onClick={() => router.push(SETUP_ROUTE)}
+          className="text-pullim-blue-600 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+        >
+          설정하러 가기
+        </button>
+      </div>
+    );
+  }
 
   // 게시 차단 = 톤(설정) 로드 실패 또는 아직 로드 중(real). bypass 는 항상 준비 완료.
   const postDisabled = !DEV_AUTH_BYPASS && !toneReady;

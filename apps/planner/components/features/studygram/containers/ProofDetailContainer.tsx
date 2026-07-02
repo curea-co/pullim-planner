@@ -41,7 +41,6 @@ export default function ProofDetailContainer({ proofId }: ProofDetailContainerPr
         return;
       }
       // mine·friends 를 독립 처리(allSettled) — 내 카드 상세는 friends 피드 실패와 무관하게 떠야 한다.
-      // 둘 다 실패해야 loadError, 하나라도 성공하면 성공분에서 find.
       const [mineRes, friendsRes] = await Promise.allSettled([
         pullimPlannerClient.getProofs('mine'),
         pullimPlannerClient.getProofs('friends'),
@@ -50,20 +49,35 @@ export default function ProofDetailContainer({ proofId }: ProofDetailContainerPr
 
       const mine = mineRes.status === 'fulfilled' ? mineRes.value : [];
       const friends = friendsRes.status === 'fulfilled' ? friendsRes.value : [];
-
-      if (mineRes.status === 'rejected' && friendsRes.status === 'rejected') {
-        setLoadError(true);
-        const err = mineRes.reason;
-        toast.error(err instanceof ApiError ? err.message : '인증카드를 불러오지 못했어요');
-        setLoading(false);
-        return;
-      }
+      const anyRejected =
+        mineRes.status === 'rejected' || friendsRes.status === 'rejected';
 
       const found = [...mine, ...friends]
         .map(pullimToStudyProof)
         .find((p) => p.id === proofId);
-      if (found) setProof(found);
-      else setNotFoundProof(true);
+
+      // ① 찾으면 그 카드 렌더(어느 scope 가 실패했든 무관).
+      if (found) {
+        setProof(found);
+        setLoading(false);
+        return;
+      }
+      // ② 못 찾았는데 하나라도 실패 — 못 찾은 카드가 실패한 scope 에 있었을 수 있으므로 not-found 로
+      //    단정하지 않고 loadError(재시도). (부분 실패를 '없는 카드'로 오인 금지.)
+      if (anyRejected) {
+        setLoadError(true);
+        const err =
+          mineRes.status === 'rejected'
+            ? mineRes.reason
+            : friendsRes.status === 'rejected'
+              ? friendsRes.reason
+              : undefined;
+        toast.error(err instanceof ApiError ? err.message : '인증카드를 불러오지 못했어요');
+        setLoading(false);
+        return;
+      }
+      // ③ 전 scope 성공 + 미발견 — 그때만 진짜 not-found.
+      setNotFoundProof(true);
       setLoading(false);
     })();
     return () => {
