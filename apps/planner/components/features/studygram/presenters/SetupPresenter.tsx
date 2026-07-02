@@ -10,12 +10,17 @@ export type SetupStep = 'topic' | 'tone' | 'goal';
 /** 세팅 스텝 순서 — Container/Presenter 단일 출처 */
 export const SETUP_STEPS: SetupStep[] = ['topic', 'tone', 'goal'];
 
+/** 닉네임 최대 길이 — BE 계약(1~20자)과 일치. */
+export const NICKNAME_MAX_LEN = 20;
+
 interface SetupPresenterProps {
   step: SetupStep;
+  nickname: string;
   topicLine: string;
   tonePresetId: TonePresetId;
   goalHorizonDays: number;
   goalPostsPerDay: number;
+  onNicknameChange: (v: string) => void;
   onTopicChange: (v: string) => void;
   onToneChange: (v: TonePresetId) => void;
   onHorizonChange: (v: number) => void;
@@ -36,10 +41,12 @@ const POSTS_OPTIONS = [1, 2, 3];
 
 export default function SetupPresenter({
   step,
+  nickname,
   topicLine,
   tonePresetId,
   goalHorizonDays,
   goalPostsPerDay,
+  onNicknameChange,
   onTopicChange,
   onToneChange,
   onHorizonChange,
@@ -50,6 +57,12 @@ export default function SetupPresenter({
 }: SetupPresenterProps) {
   const stepIdx = SETUP_STEPS.indexOf(step);
   const isLast = step === 'goal';
+  // 첫 스텝(닉네임+주제) 진행 게이트 — 닉네임 1~20자·주제 비어있지 않아야 다음/저장.
+  const topicStepInvalid =
+    step === 'topic' &&
+    (nickname.trim().length === 0 ||
+      nickname.trim().length > NICKNAME_MAX_LEN ||
+      topicLine.trim().length === 0);
 
   return (
     <>
@@ -82,21 +95,45 @@ export default function SetupPresenter({
       </div>
 
       <div className="space-y-6 pt-2">
-        {/* Step 1 — 주제 */}
+        {/* Step 1 — 닉네임 + 주제 */}
         {step === 'topic' && (
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-foreground">
-              나의 공유 주제를 한 문장으로
-            </label>
-            <textarea
-              value={topicLine}
-              onChange={(e) => onTopicChange(e.target.value)}
-              maxLength={60}
-              rows={3}
-              placeholder="예: 2027 수능 국어·영어 매일 2시간"
-              className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
-            />
-            <div className="text-right text-xs text-muted-foreground">{topicLine.length}/60</div>
+          <div className="space-y-6">
+            {/* 닉네임(피어 식별) — BE 계약 1~20자, 최초 생성 필수 */}
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-foreground">
+                친구에게 보이는 이름(닉네임)
+              </label>
+              <input
+                type="text"
+                value={nickname}
+                onChange={(e) => onNicknameChange(e.target.value)}
+                maxLength={NICKNAME_MAX_LEN}
+                placeholder="예: 풀림러"
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+              />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>피드·친구 목록에 표시돼요(실명 대신).</span>
+                <span>
+                  {nickname.length}/{NICKNAME_MAX_LEN}
+                </span>
+              </div>
+            </div>
+
+            {/* 주제 한 줄 */}
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-foreground">
+                나의 공유 주제를 한 문장으로
+              </label>
+              <textarea
+                value={topicLine}
+                onChange={(e) => onTopicChange(e.target.value)}
+                maxLength={60}
+                rows={3}
+                placeholder="예: 2027 수능 국어·영어 매일 2시간"
+                className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+              />
+              <div className="text-right text-xs text-muted-foreground">{topicLine.length}/60</div>
+            </div>
           </div>
         )}
 
@@ -201,7 +238,7 @@ export default function SetupPresenter({
           <button
             type="button"
             onClick={isLast ? onSubmit : onNext}
-            disabled={step === 'topic' && topicLine.trim().length === 0}
+            disabled={topicStepInvalid}
             className="flex-1 rounded-xl bg-pullim-blue-600 py-3 text-sm font-bold text-white shadow-pullim-sm hover:bg-pullim-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 disabled:opacity-40"
           >
             {isLast ? '저장하고 시작하기' : '다음'}

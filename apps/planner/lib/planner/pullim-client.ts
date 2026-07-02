@@ -10,11 +10,22 @@ import {
   type PullimRoutineClient,
   type PullimRoutineWrite,
   type PullimRoutinePatch,
+  type PullimStudygramClient,
+  type PullimStudygramSetting,
+  type PullimStudygramSettingWrite,
+  type PullimStudyProof,
+  type PullimStudyProofCreateInput,
 } from '@pullim-planner/api-client';
 
 import { notifyPullimSessionExpired } from '@/lib/auth/pullim-session-client';
 import { minutesBetween, type Planner, type Routine, type RoutineSubject } from '@/lib/mock';
 import type { BlockType } from '@/lib/mock';
+import type {
+  StudyProof,
+  StudygramSetting,
+  TonePresetId,
+  Visibility,
+} from '@/lib/mock/studygram';
 
 /**
  * pullim-api(흡수형 planner) base/CSRF — `pullim-session-client` 와 동일 규칙.
@@ -58,7 +69,17 @@ function on401<A extends unknown[], R>(
  * SSO(브라우저 자동 첨부)라 토큰을 클라가 들지 않고, 상태변경은 CSRF double-submit
  * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 401 에서 세션 만료를 통지한다.
  */
-export const pullimPlannerClient: PullimPlannerClient & PullimRoutineClient = {
+export const pullimPlannerClient: PullimPlannerClient &
+  PullimRoutineClient &
+  Pick<
+    PullimStudygramClient,
+    | 'getSetting'
+    | 'updateSetting'
+    | 'getProofs'
+    | 'createProof'
+    | 'updateProof'
+    | 'deleteProof'
+  > = {
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
   create: on401(rawPullimPlannerClient.create),
@@ -73,6 +94,15 @@ export const pullimPlannerClient: PullimPlannerClient & PullimRoutineClient = {
   createRoutine: on401(rawPullimPlannerClient.createRoutine),
   updateRoutine: on401(rawPullimPlannerClient.updateRoutine),
   deleteRoutine: on401(rawPullimPlannerClient.deleteRoutine),
+  // studygram(공유) — routine 메서드와 동형으로 401 세션 만료를 통지한다.
+  // Friends/close-friend/reaction 메서드는 이 PR 범위(설정·인증카드) 밖이라 노출하지 않는다
+  // (필요 시점에 한 줄씩 추가 — 최소 변경 지향).
+  getSetting: on401(rawPullimPlannerClient.getSetting),
+  updateSetting: on401(rawPullimPlannerClient.updateSetting),
+  getProofs: on401(rawPullimPlannerClient.getProofs),
+  createProof: on401(rawPullimPlannerClient.createProof),
+  updateProof: on401(rawPullimPlannerClient.updateProof),
+  deleteProof: on401(rawPullimPlannerClient.deleteProof),
 };
 
 /**
@@ -142,4 +172,87 @@ export function toRoutinePatch(
   form: Omit<Routine, 'id'>,
 ): PullimRoutinePatch {
   return toRoutineWrite(form);
+}
+
+/**
+ * pullim-api 인증카드(`PullimStudyProof`) → FE 뷰 `StudyProof` 어댑터.
+ * 두 타입은 구조가 동일하다(snapshot/date/caption/reactionCount). tonePresetId·visibility·condition 은
+ * BE 가 string/number 로 폭넓게 두지만 BE 가 FE union 집합으로만 발급하므로 뷰 union 으로 단언한다.
+ */
+export function pullimToStudyProof(p: PullimStudyProof): StudyProof {
+  return {
+    id: p.id,
+    userId: p.userId,
+    date: p.date,
+    snapshot: {
+      ...p.snapshot,
+      condition: p.snapshot.condition as StudyProof['snapshot']['condition'],
+    },
+    tonePresetId: p.tonePresetId as TonePresetId,
+    caption: p.caption,
+    visibility: p.visibility as Visibility,
+    createdAt: p.createdAt,
+    reactionCount: p.reactionCount,
+  };
+}
+
+/**
+ * pullim-api 설정(`PullimStudygramSetting`) → FE `StudygramSetting`(mock) 투영 어댑터.
+ * FE 뷰는 id/createdAt/updatedAt 을 갖지 않으므로(설정 폼이 다루는 필드만) 나머지 6필드로 투영한다.
+ * nickname(피어 식별)은 설정 폼이 편집하는 값이라 그대로 실어 prefill 에 쓴다.
+ */
+export function pullimToStudygramSetting(
+  s: PullimStudygramSetting,
+): StudygramSetting {
+  return {
+    nickname: s.nickname,
+    topicLine: s.topicLine,
+    tonePresetId: s.tonePresetId as TonePresetId,
+    goalHorizonDays: s.goalHorizonDays,
+    goalPostsPerDay: s.goalPostsPerDay,
+    consentGiven: s.consentGiven,
+  };
+}
+
+/**
+ * 설정 폼값 → pullim-api 부분 수정 본문(`PullimStudygramSettingWrite`).
+ * 첫 생성(미온보딩)은 BE 가 nickname(1~20자)+tonePresetId 를 필수로 요구하므로(400), Setup 폼이
+ * nickname 을 전용 필드로 받아 필수 검증(1~20자, presenter)한 실제 값을 그대로 싣는다.
+ */
+export function toStudygramSettingWrite(
+  form: Omit<StudygramSetting, 'consentGiven'> & { consentGiven?: boolean },
+): PullimStudygramSettingWrite {
+  return {
+    nickname: form.nickname,
+    topicLine: form.topicLine,
+    tonePresetId: form.tonePresetId,
+    goalHorizonDays: form.goalHorizonDays,
+    goalPostsPerDay: form.goalPostsPerDay,
+    ...(form.consentGiven !== undefined
+      ? { consentGiven: form.consentGiven }
+      : {}),
+  };
+}
+
+/**
+ * 인증카드 게시 폼값 → pullim-api 생성 입력(`PullimStudyProofCreateInput`).
+ * 객관 지표(snapshot)는 BE 가 해당 날짜 학습에서 조립하므로 FE 는 보내지 않는다 — date·tone·caption·
+ * visibility·reflectionLine 만 싣는다.
+ */
+export function toProofCreateInput(form: {
+  date: string;
+  tonePresetId: TonePresetId;
+  caption?: string;
+  visibility?: Visibility;
+  reflectionLine?: string;
+}): PullimStudyProofCreateInput {
+  return {
+    date: form.date,
+    tonePresetId: form.tonePresetId,
+    ...(form.caption !== undefined ? { caption: form.caption } : {}),
+    ...(form.visibility !== undefined ? { visibility: form.visibility } : {}),
+    ...(form.reflectionLine !== undefined
+      ? { reflectionLine: form.reflectionLine }
+      : {}),
+  };
 }
