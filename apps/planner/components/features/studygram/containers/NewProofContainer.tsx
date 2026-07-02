@@ -42,10 +42,14 @@ export default function NewProofContainer() {
 
   const [caption, setCaption] = useState('');
   const [visibility, setVisibility] = useState<Visibility>('close_friends');
-  // 카드 톤 — bypass=mock 즉시, real=getSetting 로드(미온보딩이면 mock 톤 유지).
+  // 카드 톤 — bypass=mock 즉시, real=getSetting 로드.
   const [tonePresetId, setTonePresetId] = useState<TonePresetId>(
     mockStudygramSetting.tonePresetId,
   );
+  // 톤(설정) 로드 상태 — real 모드는 실제 톤이 로드돼야 게시를 허용한다(로드 실패 시 mock 톤으로
+  // 조용히 오염 게시 금지). bypass 는 즉시 준비 완료.
+  const [toneReady, setToneReady] = useState(DEV_AUTH_BYPASS);
+  const [toneLoadError, setToneLoadError] = useState(false);
   // 게시 in-flight — 더블 게시(더블클릭·직접 URL 재진입) 방어.
   const [posting, setPosting] = useState(false);
 
@@ -55,13 +59,18 @@ export default function NewProofContainer() {
     if (DEV_AUTH_BYPASS) return;
     let cancelled = false;
     void (async () => {
+      setToneReady(false);
+      setToneLoadError(false);
       try {
         const setting = await pullimPlannerClient.getSetting();
-        if (!cancelled && setting) {
-          setTonePresetId(pullimToStudygramSetting(setting).tonePresetId);
+        if (!cancelled) {
+          if (setting) setTonePresetId(pullimToStudygramSetting(setting).tonePresetId);
+          // 설정 로드 성공(설정 있거나 null=미온보딩) — 게시 허용. 미온보딩은 BE 가 409 로 방어한다.
+          setToneReady(true);
         }
       } catch {
-        // 톤 로드 실패는 조용히 mock 톤 유지 — 게시 흐름을 막지 않는다.
+        // 톤 로드 실패 — mock 톤으로 오염 게시하지 않도록 게시를 막는다(안내 후 재시도 유도).
+        if (!cancelled) setToneLoadError(true);
       }
     })();
     return () => {
@@ -91,6 +100,14 @@ export default function NewProofContainer() {
 
   const handlePost = useCallback(() => {
     if (posting) return;
+
+    // 톤(설정) 로드 실패 시 게시 차단 — mock 톤으로 오염 게시하지 않는다.
+    if (!DEV_AUTH_BYPASS && !toneReady) {
+      toast.error('설정을 불러오지 못했어요', {
+        description: '잠시 후 다시 시도해 주세요',
+      });
+      return;
+    }
 
     // dev 우회 — 공유 배열에 새 카드를 추가해 허브의 목록·CTA 숨김·목표 진행도에 반영한다.
     // BR-2: 하루 1포스트 — 이미 오늘 카드가 있으면 중복 삽입하지 않고 허브로만 이동.
@@ -140,10 +157,13 @@ export default function NewProofContainer() {
         setPosting(false);
       }
     })();
-  }, [posting, router, previewProof, tonePresetId, caption, visibility]);
+  }, [posting, toneReady, router, previewProof, tonePresetId, caption, visibility]);
 
   const handleCaptionChange = useCallback((c: string) => setCaption(c), []);
   const handleVisibilityChange = useCallback((v: Visibility) => setVisibility(v), []);
+
+  // 게시 차단 = 톤(설정) 로드 실패 또는 아직 로드 중(real). bypass 는 항상 준비 완료.
+  const postDisabled = !DEV_AUTH_BYPASS && !toneReady;
 
   return (
     <NewProofPresenter
@@ -154,6 +174,10 @@ export default function NewProofContainer() {
       onCaptionChange={handleCaptionChange}
       onVisibilityChange={handleVisibilityChange}
       onPost={handlePost}
+      postDisabled={postDisabled}
+      postDisabledNote={
+        toneLoadError ? '설정을 불러오지 못해 지금은 게시할 수 없어요.' : undefined
+      }
     />
   );
 }

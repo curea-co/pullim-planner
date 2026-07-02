@@ -14,6 +14,10 @@ interface NewProofPresenterProps {
   onCaptionChange: (caption: string) => void;
   onVisibilityChange: (v: Visibility) => void;
   onPost: () => void;
+  /** 게시 불가(설정/톤 로드 실패 등) 시 버튼 비활성 + 안내. */
+  postDisabled?: boolean;
+  /** 게시 불가 사유 안내 문구(있을 때만 노출). */
+  postDisabledNote?: string;
 }
 
 export default function NewProofPresenter({
@@ -24,6 +28,8 @@ export default function NewProofPresenter({
   onCaptionChange,
   onVisibilityChange,
   onPost,
+  postDisabled = false,
+  postDisabledNote,
 }: NewProofPresenterProps) {
   return (
     <>
@@ -93,10 +99,17 @@ export default function NewProofPresenter({
           내가 고른 친구에게만 보여요. 언제든 비공개로 바꿀 수 있어요.
         </div>
 
+        {postDisabled && postDisabledNote && (
+          <div className="rounded-xl bg-red-50 px-4 py-3 text-xs text-red-500">
+            {postDisabledNote}
+          </div>
+        )}
+
         <button
           type="button"
           onClick={onPost}
-          className="w-full rounded-xl bg-pullim-blue-600 py-3.5 text-sm font-bold text-white shadow-pullim-sm hover:bg-pullim-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+          disabled={postDisabled}
+          className="w-full rounded-xl bg-pullim-blue-600 py-3.5 text-sm font-bold text-white shadow-pullim-sm hover:bg-pullim-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 disabled:opacity-40"
         >
           인증하기
         </button>

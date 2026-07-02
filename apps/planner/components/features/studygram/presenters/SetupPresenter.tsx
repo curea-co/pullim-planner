@@ -20,14 +20,18 @@ interface SetupPresenterProps {
   tonePresetId: TonePresetId;
   goalHorizonDays: number;
   goalPostsPerDay: number;
+  consentGiven: boolean;
   onNicknameChange: (v: string) => void;
   onTopicChange: (v: string) => void;
   onToneChange: (v: TonePresetId) => void;
   onHorizonChange: (v: number) => void;
   onPostsChange: (v: number) => void;
+  onConsentChange: (v: boolean) => void;
   onNext: () => void;
   onBack: () => void;
   onSubmit: () => void;
+  /** 로드 실패 등으로 저장을 막아야 할 때(외부 게이트). true 면 마지막 스텝 저장 비활성. */
+  submitDisabled?: boolean;
 }
 
 const STEP_LABELS: Record<SetupStep, string> = {
@@ -46,14 +50,17 @@ export default function SetupPresenter({
   tonePresetId,
   goalHorizonDays,
   goalPostsPerDay,
+  consentGiven,
   onNicknameChange,
   onTopicChange,
   onToneChange,
   onHorizonChange,
   onPostsChange,
+  onConsentChange,
   onNext,
   onBack,
   onSubmit,
+  submitDisabled = false,
 }: SetupPresenterProps) {
   const stepIdx = SETUP_STEPS.indexOf(step);
   const isLast = step === 'goal';
@@ -63,6 +70,9 @@ export default function SetupPresenter({
     (nickname.trim().length === 0 ||
       nickname.trim().length > NICKNAME_MAX_LEN ||
       topicLine.trim().length === 0);
+  // 마지막(목표) 스텝 저장 게이트 — 공유 동의(opt-in, BE BR-4) 필수 + 외부 게이트(로드 실패 등).
+  // 동의하지 않으면 공유기능 목적 자체가 불성립하므로 저장을 막는다.
+  const submitBlocked = isLast && (!consentGiven || submitDisabled);
 
   return (
     <>
@@ -221,6 +231,22 @@ export default function SetupPresenter({
               </span>{' '}
               인증을 목표로 합니다.
             </div>
+
+            {/* 공유 동의(opt-in, BE BR-4) — 필수. 미동의면 저장 버튼 비활성. */}
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-background px-4 py-3">
+              <input
+                type="checkbox"
+                checked={consentGiven}
+                onChange={(e) => onConsentChange(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-pullim-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+              />
+              <span className="text-sm text-foreground">
+                학습 기록을 친구에게 공유하는 데 동의합니다.
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  동의해야 인증카드를 게시할 수 있어요. 언제든 설정에서 변경할 수 있어요.
+                </span>
+              </span>
+            </label>
           </div>
         )}
 
@@ -238,7 +264,7 @@ export default function SetupPresenter({
           <button
             type="button"
             onClick={isLast ? onSubmit : onNext}
-            disabled={topicStepInvalid}
+            disabled={topicStepInvalid || submitBlocked}
             className="flex-1 rounded-xl bg-pullim-blue-600 py-3 text-sm font-bold text-white shadow-pullim-sm hover:bg-pullim-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 disabled:opacity-40"
           >
             {isLast ? '저장하고 시작하기' : '다음'}

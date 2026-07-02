@@ -40,26 +40,31 @@ export default function ProofDetailContainer({ proofId }: ProofDetailContainerPr
         }
         return;
       }
-      try {
-        const [mine, friends] = await Promise.all([
-          pullimPlannerClient.getProofs('mine'),
-          pullimPlannerClient.getProofs('friends'),
-        ]);
-        const found = [...mine, ...friends]
-          .map(pullimToStudyProof)
-          .find((p) => p.id === proofId);
-        if (!cancelled) {
-          if (found) setProof(found);
-          else setNotFoundProof(true);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setLoadError(true);
-          toast.error(e instanceof ApiError ? e.message : '인증카드를 불러오지 못했어요');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+      // mine·friends 를 독립 처리(allSettled) — 내 카드 상세는 friends 피드 실패와 무관하게 떠야 한다.
+      // 둘 다 실패해야 loadError, 하나라도 성공하면 성공분에서 find.
+      const [mineRes, friendsRes] = await Promise.allSettled([
+        pullimPlannerClient.getProofs('mine'),
+        pullimPlannerClient.getProofs('friends'),
+      ]);
+      if (cancelled) return;
+
+      const mine = mineRes.status === 'fulfilled' ? mineRes.value : [];
+      const friends = friendsRes.status === 'fulfilled' ? friendsRes.value : [];
+
+      if (mineRes.status === 'rejected' && friendsRes.status === 'rejected') {
+        setLoadError(true);
+        const err = mineRes.reason;
+        toast.error(err instanceof ApiError ? err.message : '인증카드를 불러오지 못했어요');
+        setLoading(false);
+        return;
       }
+
+      const found = [...mine, ...friends]
+        .map(pullimToStudyProof)
+        .find((p) => p.id === proofId);
+      if (found) setProof(found);
+      else setNotFoundProof(true);
+      setLoading(false);
     })();
     return () => {
       cancelled = true;
