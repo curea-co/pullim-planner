@@ -197,8 +197,16 @@ export function nextActiveBlock(blocks: TimeBlock[] = todayBlocks): TimeBlock | 
   return blocks.find(b => b.status === 'doing') ?? blocks.find(b => b.status === 'todo');
 }
 
-/** day-view 날짜 네비게이션 기준일 — 데모 플랜이 존재하는 유일한 날(서연의 저녁 학습). */
-export const planBaseDate = '2026-04-24';
+/**
+ * 오늘(Asia/Seoul, 고정 UTC+9·DST 없음) YYYY-MM-DD.
+ * 하드코딩 데모일 대신 접속 시점의 실제 날짜를 기준으로 홈·D-day가 동작하도록.
+ */
+export function todayISO(): string {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** day-view 날짜 네비게이션 기준일 — 접속 시점의 실제 오늘(KST). */
+export const planBaseDate = todayISO();
 
 /** todayBlocks(서연 데모)를 소유한 플래너 — 다른 시간표 활성 시 블록은 미생성. */
 const DEMO_BLOCKS_PLANNER_ID = 'pl_001';

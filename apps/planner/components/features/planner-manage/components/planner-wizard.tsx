@@ -9,6 +9,7 @@ import {
 import {
   plannerStepConfig, type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
+import type { Routine } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
 /**
@@ -27,6 +28,8 @@ interface PlannerWizardProps {
   mode: 'create' | 'edit';
   onActivate: (submitted: PlannerForm) => void;
   finishHint: string;
+  /** 실 루틴(컨테이너 fetch) — STEP5 선택·STEP8 미리보기에 사용. 미주입 시 mock. */
+  routines?: Routine[];
 }
 
 export function PlannerWizard({
@@ -34,6 +37,7 @@ export function PlannerWizard({
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
   mode, onActivate, finishHint,
+  routines,
 }: PlannerWizardProps) {
   const stepInfo = plannerStepConfig[currentStep - 1];
   const StepIcon = stepInfo.icon;
@@ -72,11 +76,11 @@ export function PlannerWizard({
           {stepInfo.key === 'hours'      && <PStep2Hours form={form} setForm={setForm} />}
           {stepInfo.key === 'subjects'   && <PStep3Subjects form={form} setForm={setForm} />}
           {stepInfo.key === 'pattern'    && <PStep4Pattern form={form} setForm={setForm} />}
-          {stepInfo.key === 'routine'    && <PStep5Routine form={form} setForm={setForm} />}
+          {stepInfo.key === 'routine'    && <PStep5Routine form={form} setForm={setForm} routines={routines} />}
           {stepInfo.key === 'weakness'   && <PStep5Weakness form={form} setForm={setForm} />}
           {stepInfo.key === 'motivation' && <PStep6Motivation form={form} setForm={setForm} />}
           {stepInfo.key === 'reminder'   && <PStep7Reminder form={form} setForm={setForm} />}
-          {stepInfo.key === 'activate'   && <PStep8Activate form={form} mode={mode} onActivate={onActivate} />}
+          {stepInfo.key === 'activate'   && <PStep8Activate form={form} mode={mode} onActivate={onActivate} routines={routines} />}
         </div>
 
         <footer className="mt-5 flex items-center justify-between border-t pt-4">

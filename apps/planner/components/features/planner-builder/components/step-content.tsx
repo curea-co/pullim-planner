@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Calendar, Bell, Sparkles, Check, AlertCircle, X, Plus,
-  MessageSquare, Smartphone, Users, BookOpenCheck, Sunrise,
+  Smartphone, Users, BookOpenCheck, Sunrise,
   Lightbulb, AlertTriangle, Target, PencilLine, BookOpen, Brain,
   Coffee, FileText, Mic, MessageCircle, ChevronLeft, ChevronRight,
   type LucideIcon,
@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   subjectLabels, type SubjectKey, getWeakNodes, allCurricula,
-  type BlockType,
+  type BlockType, type Routine,
   getRoutines, findRoutine, routineSubjectLabel, formatWeekdays, blockTypeMeta,
 } from '@/lib/mock';
 import { BLOCK_TYPE_STRIPE } from '@/lib/planner/block-type-style';
@@ -34,7 +34,8 @@ type Props = {
 const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'etc'];
 
 /* ─── Step 1 — 목표 (시험 종류 탭 + 단일/범위 일자) ─── */
-const TODAY_ISO = '2026-04-28';
+// 접속 시점의 실제 오늘(KST) — D-day를 하드코딩 데모일이 아닌 현재 날짜 기준으로 계산.
+const TODAY_ISO = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 const examTypeOrder: ExamType[] = ['mock', 'suneung', 'midterm', 'final', 'other'];
 
@@ -657,8 +658,9 @@ export function PStep4Pattern({ form, setForm }: Props) {
 
 /* ─── Step 5 — 약점 자동 반영 ─── */
 /* ─── Step 5 — 루틴(반복 행동) 적용 ─── */
-export function PStep5Routine({ form, setForm }: Props) {
-  const routines = getRoutines();
+export function PStep5Routine({ form, setForm, routines: routinesProp }: Props & { routines?: Routine[] }) {
+  // 실 루틴(컨테이너 주입) 우선, 미주입 시 mock fallback — dev QA #4(실 API 루틴 노출).
+  const routines = routinesProp ?? getRoutines();
   const selected = new Set(form.routineIds);
 
   function toggle(id: string) {
@@ -825,13 +827,8 @@ export function PStep6Motivation({ form, setForm }: Props) {
 export function PStep7Reminder({ form, setForm }: Props) {
   return (
     <div className="space-y-2">
-      <ToggleRow
-        Icon={MessageSquare}
-        label="카카오톡 알림"
-        description="블록 시작 알림. 부모 동의 필요 (만 14세 미만)."
-        value={form.remindKakao}
-        onToggle={() => setForm({ ...form, remindKakao: !form.remindKakao })}
-      />
+      {/* 카카오톡 알림 — 발송 API/연동 미구현(kakao는 OAuth 로그인 용도뿐, 알림 발송 백엔드 없음)이라
+          동작하지 않는 UI를 숨긴다. 실제 카카오 알림 발송이 연동되면 복원할 것. (dev QA 2026-07-02) */}
       <ToggleRow
         Icon={Smartphone}
         label="앱 푸시"
@@ -967,9 +964,12 @@ type PreviewDay = {
   items: PreviewItem[];
 };
 
-function generatePreview(form: PlannerForm, todayISO: string): PreviewDay[] {
+function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine[]): PreviewDay[] {
   const subjectKeys = Object.keys(form.subjectUnits ?? {}) as SubjectKey[];
   if (subjectKeys.length === 0) return [];
+
+  // 실 루틴(주입) 있으면 그 맵으로, 없으면 mock findRoutine — dev QA #4.
+  const routineMap = routines ? new Map(routines.map((r) => [r.id, r])) : null;
 
   const blockMinutes =
     form.blockPattern === 'pomodoro' ? 25
@@ -1029,7 +1029,7 @@ function generatePreview(form: PlannerForm, todayISO: string): PreviewDay[] {
     const winEnd = endHour * 60;
     const routineDay = (dt.weekday + 6) % 7; // jsDay(0=일) → routine weekday(0=월)
     for (const id of form.routineIds) {
-      const r = findRoutine(id);
+      const r = routineMap ? routineMap.get(id) : findRoutine(id);
       if (!r || !r.weekdays.some(w => w === routineDay)) continue;
       const rs = toMin(r.startTime);
       const re = toMin(r.endTime);
@@ -1069,15 +1069,17 @@ type Step8Props = {
    * 미주입 시 toast + router.push('/planner') 기본 동작.
    */
   onActivate?: (form: PlannerForm) => void;
+  /** 실 루틴(컨테이너 주입) — 미주입 시 mock. 미리보기의 루틴 반영에 사용. */
+  routines?: Routine[];
 };
 
-export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props) {
+export function PStep8Activate({ form, mode = 'create', onActivate, routines }: Step8Props) {
   const router = useRouter();
   const [previewIdx, setPreviewIdx] = useState(0);
   const weekdayHours = form.weekdayHours.end - form.weekdayHours.start;
   const weekly = weekdayHours * 5 + (form.weekendHours.end - form.weekendHours.start) * 2;
 
-  const previews = useMemo(() => generatePreview(form, TODAY_ISO), [form]);
+  const previews = useMemo(() => generatePreview(form, TODAY_ISO, routines), [form, routines]);
   const safeIdx = Math.min(previewIdx, Math.max(0, previews.length - 1));
   const current = previews[safeIdx];
   const totalMinutesToday = current?.items.reduce((s, it) => {
@@ -1139,7 +1141,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props
           <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(시간 맞는 요일만 미리보기 반영)</span></li>
           <li>· 동기 스타일: {motivationStyleMeta[form.motivationStyle].label}</li>
           <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON' : 'OFF'}</li>
-          <li>· 알림: {[form.remindKakao && '카톡', form.remindPush && '푸시', form.remindBefore5min && '5분 전', form.parentDailyReport && '부모 보고'].filter(Boolean).join(', ') || '없음'}</li>
+          <li>· 알림: {[form.remindPush && '푸시', form.remindBefore5min && '5분 전', form.parentDailyReport && '부모 보고'].filter(Boolean).join(', ') || '없음'}</li>
         </ul>
       </section>
 

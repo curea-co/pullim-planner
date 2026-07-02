@@ -6,6 +6,7 @@ import {
   Pencil, Copy, Archive, Trash2, Sparkles, Palette, Share2,
 } from 'lucide-react';
 import { type Planner } from '@/lib/mock';
+import { todayISO } from '@/lib/mock/planner';
 import { examTypeMeta, blockPatternMeta } from '@/components/features/planner-builder/components/builder-types';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -23,10 +24,12 @@ type Props = {
   onShare: (id: string) => void;
 };
 
-/** 일수 차이 — 음수면 과거 */
-function diffDays(targetISO: string, today = new Date('2026-04-24')): number {
-  const target = new Date(targetISO);
-  return Math.ceil((target.getTime() - today.getTime()) / 86400000);
+/** 일수 차이(달력일 기준) — 음수면 과거. 오늘(KST)·목표일 모두 날짜-only(로컬 자정)로 정규화해
+ *  시각 혼용 off-by-one(시험 당일 오전 D-1 오표시)을 없앤다. (Codex #106) */
+function diffDays(targetISO: string): number {
+  const t = new Date(`${todayISO()}T00:00:00`).getTime();
+  const target = new Date(`${targetISO}T00:00:00`).getTime();
+  return Math.round((target - t) / 86400000);
 }
 
 function formatDday(d: number): string {
@@ -35,7 +38,7 @@ function formatDday(d: number): string {
   return `D+${Math.abs(d)}`;
 }
 
-function formatRelativeUpdate(iso: string, today = new Date('2026-04-24')): string {
+function formatRelativeUpdate(iso: string, today = new Date()): string {
   const ms = today.getTime() - new Date(iso).getTime();
   const day = Math.floor(ms / 86400000);
   if (day < 1) return '오늘 갱신';

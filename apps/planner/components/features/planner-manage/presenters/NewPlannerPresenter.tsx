@@ -3,6 +3,7 @@
 import { Save } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
+import type { Routine } from '@/lib/mock';
 import { PlannerWizard } from '../components/planner-wizard';
 
 interface NewPlannerPresenterProps {
@@ -16,6 +17,7 @@ interface NewPlannerPresenterProps {
   onJump: (n: number) => void;
   onSaveDraft: () => void;
   onActivate: (submitted: PlannerForm) => void;
+  routines?: Routine[];
 }
 
 export default function NewPlannerPresenter({
@@ -23,6 +25,7 @@ export default function NewPlannerPresenter({
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
   onSaveDraft, onActivate,
+  routines,
 }: NewPlannerPresenterProps) {
   return (
     <div className="space-y-5">
@@ -52,6 +55,7 @@ export default function NewPlannerPresenter({
         mode="create"
         onActivate={onActivate}
         finishHint="↑ 위 [플래너 활성화] 클릭으로 완료"
+        routines={routines}
       />
     </div>
   );

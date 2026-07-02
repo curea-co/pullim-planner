@@ -82,7 +82,7 @@ export const initialPlannerForm: PlannerForm = {
   routineIds: [],
   weaknessAutoReflect: true,
   motivationStyle: 'guided',
-  remindKakao: true,
+  remindKakao: false, // 카카오 알림 발송 미연동 — UI 숨김 상태와 정합(dev QA #5). 실 연동 시 복원.
   remindPush: true,
   remindBefore5min: true,
   parentDailyReport: false,
@@ -137,7 +137,7 @@ export function plannerToForm(p: Planner): PlannerForm {
     weaknessAutoReflect: p.weaknessAutoReflect,
     motivationStyle: p.motivationStyle,
     // 알림 설정은 Planner 메타에 미보존 — 기본값 사용 (별도 사용자 설정으로 분리 예정)
-    remindKakao: true,
+    remindKakao: false, // 카카오 알림 발송 미연동 — UI 숨김 상태와 정합(dev QA #5). 실 연동 시 복원.
     remindPush: true,
     remindBefore5min: true,
     parentDailyReport: false,

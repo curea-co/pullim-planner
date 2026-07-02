@@ -14,7 +14,7 @@ interface WelcomeModalProps {
 }
 
 const FEATURES = [
-  { icon: CalendarClock, title: '일·주·월 시간표', desc: '학습 블록이 하루·이번 주·이번 달로 자동 배치돼요.' },
+  { icon: CalendarClock, title: '일·주·월 시간표', desc: '일·주·월 단위로 학습 블록을 계획하고 관리해요.' },
   // 루틴은 출시 게이트(ROUTINE_ENABLED) 따라 노출 — prod 차단 시 잘못된 안내 방지
   ...(ROUTINE_ENABLED
     ? [{ icon: Repeat2, title: '루틴', desc: '반복 블록을 설정해 매일 자동 채워요.' }]
@@ -30,7 +30,7 @@ export function WelcomeModal({ open, onClose }: WelcomeModalProps) {
         <DialogHeader>
           <DialogTitle className="text-base font-bold">풀림 플래너 시작하기</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            AI가 학습 블록을 자동 배치하고, 오늘 결과가 내일 플랜에 반영돼요.
+            시험 목표부터 매일 학습까지, 한곳에서 계획하고 기록해요.
           </DialogDescription>
         </DialogHeader>
 

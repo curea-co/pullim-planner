@@ -1,10 +1,8 @@
-import { CalendarClock, Calendar, PlayCircle, Smile, HeartPulse, Brain, PencilLine, BookOpen } from 'lucide-react';
+import { CalendarClock, Calendar, PlayCircle, Smile, PencilLine } from 'lucide-react';
 import { OnboardingTemplate } from '@/components/shell/onboarding-template';
 import { MockBrowser } from '@/components/shell/mock-browser';
 import { SideTimeline24 } from '@/components/features/planner-home/components/side-timeline-24';
 import { ConditionSlider } from '@/components/features/planner-home/components/condition-slider';
-import { BurnoutCard } from '@/components/features/planner-home/components/burnout-card';
-import { PedagogyTag } from '@/components/features/planner-home/components/pedagogy-tag';
 import { todayBlocks } from '@/lib/mock';
 
 interface OnboardingPresenterProps {
@@ -16,14 +14,14 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
     <OnboardingTemplate
       featureName="풀림 플래너"
       Icon={CalendarClock}
-      identity="시간표 앱이 아닌 자기조절 도구. 7대 학습과학을 자동 적용하고, 오늘 결과(정답률·감정·시간)가 내일 플랜에 자동 반영되는 매일 재최적화 플라이휠."
+      identity="시험 목표부터 매일 학습까지 한곳에서 계획하고 기록하는 학습 플래너 — 일·주·월 시간표, 루틴, 성장 리포트, 공부 공유."
       estimatedMin={5}
       steps={[
         {
           Icon: Calendar,
           title: '일/주/월 캘린더로 학습 일정 보기',
           description:
-            '시간 블록 단위로 오늘·이번 주·이번 달 학습이 자동 배치돼요. 일간은 24시간 사이드 트래커로, 주간은 요일×블록 타입 그리드, 월간은 30일 히트맵.',
+            '시간 블록 단위로 오늘·이번 주·이번 달 학습을 계획해요. 일간은 24시간 사이드 트래커, 주간은 요일×블록 타입 그리드, 월간은 30일 히트맵.',
           bullets: [
             '일간: 24시간 사이드 트래커 — 30분 단위 셀에 학습 시간이 형광펜처럼 채워짐',
             '주간: 7일 그리드 — 오늘 열은 파랑 강조',
@@ -74,46 +72,6 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           screenshot: (
             <MockBrowser label="컨디션 입력">
               <ConditionSlider initial={3} />
-            </MockBrowser>
-          ),
-        },
-        {
-          Icon: HeartPulse,
-          title: '번아웃 지수 + "쉴래요" 1-tap',
-          description:
-            '5개 지표(수면·완료율·감정·휴식 수용·쉴래요 빈도) 가중 평균. 임계값 아래 3일 지속 시 시스템이 먼저 휴식 제안.',
-          bullets: ['"오늘은 쉴래요" 누르면 오늘 블록 자동 이월', '내일 난이도 20% 하향'],
-          screenshotCaption: '실제 번아웃 카드 + 레몬 CTA',
-          screenshot: (
-            <MockBrowser label="번아웃 모니터링">
-              <BurnoutCard />
-            </MockBrowser>
-          ),
-        },
-        {
-          Icon: Brain,
-          title: '7대 교육학 엔진 자동 적용',
-          description:
-            '블록 카드에 "간격 복습 / 포모도로 / 인지 부하 관리" 같은 엔진 태그가 붙어요. 클릭하면 "왜 이 엔진?"으로 원리 확인 — 교육적 투명성.',
-          screenshotCaption: '엔진 태그 — 클릭 시 원리 모달',
-          screenshot: (
-            <MockBrowser label="블록 카드 — 엔진 태그">
-              <div className="space-y-2">
-                <div className="text-pullim-slate-700 inline-flex items-center gap-1 text-xs font-bold">
-                  <BookOpen aria-hidden className="h-3.5 w-3.5" />
-                  미분 기본 공식 시각화
-                </div>
-                <div className="text-pullim-slate-500 text-[10px]">
-                  <span className="font-mono">17:30–18:10</span> · 40분 · 수학
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <PedagogyTag engineId="cognitive_load" size="md" />
-                  <PedagogyTag engineId="active_recall" size="md" />
-                </div>
-                <p className="text-pullim-slate-500 mt-2 text-[10px]">
-                  태그 클릭 → 원리·예시 모달 (교육적 투명성)
-                </p>
-              </div>
             </MockBrowser>
           ),
         },
