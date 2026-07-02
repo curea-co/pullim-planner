@@ -56,11 +56,13 @@ export default function NewProofContainer() {
   // 미온보딩(getSetting null) — 공유 설정을 먼저 완료해야 게시할 수 있다(409 사전 차단). 게시 화면 대신
   // 안내를 띄운다(직접 URL 진입 사용자가 활성 버튼·mock 톤 미리보기를 보고 클릭해야 409 받는 회귀 방지).
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  // 설정은 있으나 공유 동의(consentGiven) 해제 상태 — BR-4 로 게시 불가. 설정에서 동의를 켜도록 안내한다.
+  const [needsConsent, setNeedsConsent] = useState(false);
   // 게시 in-flight — 더블 게시(더블클릭·직접 URL 재진입) 방어.
   const [posting, setPosting] = useState(false);
 
-  // 실 API: 설정을 읽어 톤을 미리보기에 반영한다(bypass 는 mock 톤 사용). getSetting 3분기:
-  // 설정 존재→게시 허용, null→미온보딩(게시 차단·안내), throw→로드 실패(게시 차단·재시도).
+  // 실 API: 설정을 읽어 톤을 미리보기에 반영한다(bypass 는 mock 톤 사용). getSetting 분기:
+  // 설정+동의→게시 허용, 설정+미동의→needsConsent(게시 차단), null→미온보딩(게시 차단), throw→로드 실패.
   // effect 본문 동기 setState 금지(cascading-render 린트) → async IIFE 안에서만 세팅(R3b 교훈).
   useEffect(() => {
     if (DEV_AUTH_BYPASS) return;
@@ -69,13 +71,20 @@ export default function NewProofContainer() {
       setToneReady(false);
       setToneLoadError(false);
       setNeedsOnboarding(false);
+      setNeedsConsent(false);
       try {
         const setting = await pullimPlannerClient.getSetting();
         if (!cancelled) {
           if (setting) {
-            // 설정 존재 — 실제 톤을 실어 정상 게시 허용.
-            setTonePresetId(pullimToStudygramSetting(setting).tonePresetId);
-            setToneReady(true);
+            const view = pullimToStudygramSetting(setting);
+            setTonePresetId(view.tonePresetId);
+            if (view.consentGiven) {
+              // 설정 존재 + 동의 — 정상 게시 허용.
+              setToneReady(true);
+            } else {
+              // 설정 존재 + 미동의 — BR-4 게시 차단. 설정에서 동의를 켜도록 안내(409 사전 차단).
+              setNeedsConsent(true);
+            }
           } else {
             // null = 미온보딩 — 게시 차단(mock 톤으로 게시하지 않음). 설정 완료를 안내한다.
             setNeedsOnboarding(true);
@@ -114,10 +123,15 @@ export default function NewProofContainer() {
   const handlePost = useCallback(() => {
     if (posting) return;
 
-    // 미온보딩·톤(설정) 로드 실패 시 게시 차단 — mock 톤으로 오염 게시하지 않는다.
+    // 미온보딩·미동의·톤(설정) 로드 실패 시 게시 차단 — mock 톤으로 오염 게시하지 않는다.
     if (!DEV_AUTH_BYPASS && !toneReady) {
       if (needsOnboarding) {
         toast.error('공유 설정을 먼저 완료하세요');
+        router.push(SETUP_ROUTE);
+        return;
+      }
+      if (needsConsent) {
+        toast.error('공유 동의를 켜야 인증할 수 있어요');
         router.push(SETUP_ROUTE);
         return;
       }
@@ -175,7 +189,7 @@ export default function NewProofContainer() {
         setPosting(false);
       }
     })();
-  }, [posting, toneReady, needsOnboarding, router, previewProof, tonePresetId, caption, visibility]);
+  }, [posting, toneReady, needsOnboarding, needsConsent, router, previewProof, tonePresetId, caption, visibility]);
 
   const handleCaptionChange = useCallback((c: string) => setCaption(c), []);
   const handleVisibilityChange = useCallback((v: Visibility) => setVisibility(v), []);
@@ -192,6 +206,22 @@ export default function NewProofContainer() {
           className="text-pullim-blue-600 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
         >
           설정하러 가기
+        </button>
+      </div>
+    );
+  }
+
+  // 미동의(설정 존재 + consentGiven=false) — 게시 화면 대신 동의 켜기 안내(BR-4). 설정에서 켜도록 유도.
+  if (needsConsent) {
+    return (
+      <div className="text-pullim-slate-500 py-20 text-center text-sm">
+        공유 동의를 켜야 인증할 수 있어요.{' '}
+        <button
+          type="button"
+          onClick={() => router.push(SETUP_ROUTE)}
+          className="text-pullim-blue-600 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+        >
+          설정에서 켜기
         </button>
       </div>
     );

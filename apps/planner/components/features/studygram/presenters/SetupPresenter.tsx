@@ -70,9 +70,10 @@ export default function SetupPresenter({
     (nickname.trim().length === 0 ||
       nickname.trim().length > NICKNAME_MAX_LEN ||
       topicLine.trim().length === 0);
-  // 마지막(목표) 스텝 저장 게이트 — 공유 동의(opt-in, BE BR-4) 필수 + 외부 게이트(로드 실패 등).
-  // 동의하지 않으면 공유기능 목적 자체가 불성립하므로 저장을 막는다.
-  const submitBlocked = isLast && (!consentGiven || submitDisabled);
+  // 마지막(목표) 스텝 저장 게이트 — 형식 검증(위 topicStepInvalid) + 외부 게이트(로드 실패 등)만 본다.
+  // consentGiven 은 저장 조건이 아니라 게시(BR-4)의 게이트다: 동의 true/false 어느 쪽이든 저장 가능
+  // (미동의 저장 = 나중에 게시하려면 켜라는 안내만, 이미 동의한 사용자의 철회 저장도 허용).
+  const submitBlocked = isLast && submitDisabled;
 
   return (
     <>
@@ -232,7 +233,7 @@ export default function SetupPresenter({
               인증을 목표로 합니다.
             </div>
 
-            {/* 공유 동의(opt-in, BE BR-4) — 필수. 미동의면 저장 버튼 비활성. */}
+            {/* 공유 동의(opt-in, BE BR-4) — 게시(인증)의 게이트. 저장은 동의 무관 가능(철회 허용). */}
             <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-background px-4 py-3">
               <input
                 type="checkbox"

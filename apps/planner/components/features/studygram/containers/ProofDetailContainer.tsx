@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, notFound } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@pullim-planner/api-client';
 import { mockStudyProofs, mockFriendProofs, type StudyProof } from '@/lib/mock/studygram';
@@ -102,6 +102,7 @@ export default function ProofDetailContainer({ proofId }: ProofDetailContainerPr
     );
   }
 
+  // 일시 장애(네트워크·부분 실패 후 미발견) — 404 가 아니라 재시도 가능한 inline 안내(200).
   if (loadError) {
     return (
       <div className="text-pullim-slate-500 py-20 text-center text-sm">
@@ -117,19 +118,10 @@ export default function ProofDetailContainer({ proofId }: ProofDetailContainerPr
     );
   }
 
+  // 진짜 미발견(전 scope 성공 + 미발견, 또는 bypass mock 미발견) — Next 404. 잘못된 링크를
+  // 정상 페이지(200)로 보여주지 않는다(원래 동작 복원).
   if (notFoundProof || !proof) {
-    return (
-      <div className="text-pullim-slate-500 py-20 text-center text-sm">
-        인증카드를 찾을 수 없어요.{' '}
-        <button
-          type="button"
-          onClick={handleBack}
-          className="text-pullim-blue-600 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
-        >
-          공유로
-        </button>
-      </div>
-    );
+    notFound();
   }
 
   return <ProofDetailPresenter proof={proof} onBack={handleBack} />;
