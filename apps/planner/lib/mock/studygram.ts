@@ -35,6 +35,8 @@ export type StudyProof = {
 };
 
 export type StudygramSetting = {
+  /** 피드 노출 닉네임(피어 식별) — BE 계약 1~20자. topicLine 과 별개 의미. */
+  nickname: string;
   topicLine: string;
   tonePresetId: TonePresetId;
   goalHorizonDays: number;
@@ -72,6 +74,7 @@ function daysAgo(n: number): string {
 }
 
 export const mockStudygramSetting: StudygramSetting = {
+  nickname: '풀림러',
   topicLine: '2027 수능 국어·영어 매일 2시간',
   tonePresetId: 'classic',
   goalHorizonDays: 100,
