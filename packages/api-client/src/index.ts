@@ -51,6 +51,16 @@ export type {
   PullimRoutineWrite,
   PullimRoutinePatch,
   PullimRoutineApplication,
+  PullimStudygramClient,
+  PullimStudygramSetting,
+  PullimStudyProofSnapshot,
+  PullimStudyProof,
+  PullimFriend,
+  PullimFriendship,
+  PullimStudygramSettingWrite,
+  PullimStudyProofCreateInput,
+  PullimStudyProofPatch,
+  PullimFriendAction,
 } from "./pullim-planner";
 export { nullTokenStore } from "./token-store";
 export type { TokenStore } from "./token-store";
