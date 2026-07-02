@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Calendar, Bell, Sparkles, Check, AlertCircle, X, Plus,
-  MessageSquare, Smartphone, Users, BookOpenCheck, Sunrise,
+  Smartphone, Users, BookOpenCheck, Sunrise,
   Lightbulb, AlertTriangle, Target, PencilLine, BookOpen, Brain,
   Coffee, FileText, Mic, MessageCircle, ChevronLeft, ChevronRight,
   type LucideIcon,
@@ -34,7 +34,8 @@ type Props = {
 const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'etc'];
 
 /* ─── Step 1 — 목표 (시험 종류 탭 + 단일/범위 일자) ─── */
-const TODAY_ISO = '2026-04-28';
+// 접속 시점의 실제 오늘(KST) — D-day를 하드코딩 데모일이 아닌 현재 날짜 기준으로 계산.
+const TODAY_ISO = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 const examTypeOrder: ExamType[] = ['mock', 'suneung', 'midterm', 'final', 'other'];
 
@@ -825,13 +826,8 @@ export function PStep6Motivation({ form, setForm }: Props) {
 export function PStep7Reminder({ form, setForm }: Props) {
   return (
     <div className="space-y-2">
-      <ToggleRow
-        Icon={MessageSquare}
-        label="카카오톡 알림"
-        description="블록 시작 알림. 부모 동의 필요 (만 14세 미만)."
-        value={form.remindKakao}
-        onToggle={() => setForm({ ...form, remindKakao: !form.remindKakao })}
-      />
+      {/* 카카오톡 알림 — 발송 API/연동 미구현(kakao는 OAuth 로그인 용도뿐, 알림 발송 백엔드 없음)이라
+          동작하지 않는 UI를 숨긴다. 실제 카카오 알림 발송이 연동되면 복원할 것. (dev QA 2026-07-02) */}
       <ToggleRow
         Icon={Smartphone}
         label="앱 푸시"

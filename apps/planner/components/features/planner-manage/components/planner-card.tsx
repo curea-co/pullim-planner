@@ -23,8 +23,8 @@ type Props = {
   onShare: (id: string) => void;
 };
 
-/** 일수 차이 — 음수면 과거 */
-function diffDays(targetISO: string, today = new Date('2026-04-24')): number {
+/** 일수 차이 — 음수면 과거. 기준은 하드코딩 데모일이 아닌 실제 오늘. */
+function diffDays(targetISO: string, today = new Date()): number {
   const target = new Date(targetISO);
   return Math.ceil((target.getTime() - today.getTime()) / 86400000);
 }
@@ -35,7 +35,7 @@ function formatDday(d: number): string {
   return `D+${Math.abs(d)}`;
 }
 
-function formatRelativeUpdate(iso: string, today = new Date('2026-04-24')): string {
+function formatRelativeUpdate(iso: string, today = new Date()): string {
   const ms = today.getTime() - new Date(iso).getTime();
   const day = Math.floor(ms / 86400000);
   if (day < 1) return '오늘 갱신';
