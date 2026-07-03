@@ -149,15 +149,17 @@ export function buildMonthDays(
   });
 }
 
-/** 주간 `WeekDay[]` → 요일별 학습 시간(bar-week·주간 메타용). */
+/**
+ * 주간 `WeekDay[]` → 요일별 계획 시간(bar-week 실데이터용).
+ * 목표(goal)는 실 표면 미보유라 **반환하지 않는다** — 소비자(bar-week)가 목표 기반 UI
+ * (목표선·달성률·달성색)를 숨긴다(실적/실적=항상 100% 오도 방지, B4b 에서 목표 표면 연동).
+ */
 export function weekDaysToHours(
   days: WeekDay[],
-): { day: string; hours: number; goal: number }[] {
+): { day: string; hours: number }[] {
   return days.map((d) => ({
     day: d.day,
     hours: Math.round((d.totalMinutes / 60) * 10) / 10,
-    // 실데이터 목표(goal)는 별도 표면 미보유 — 계획 시간 자체를 목표로 둔다(B4b 에서 목표 표면 연동).
-    goal: Math.round((d.totalMinutes / 60) * 10) / 10,
   }));
 }
 

@@ -15,17 +15,20 @@ import { cn } from '@/lib/utils';
 type Props = {
   paletteId?: PaletteId;
   compact?: boolean;
-  /** 실데이터(B4) — 주입 시 요일별 시간을 실 집계에서 산출(목표=계획 시간, B4b 에서 목표 표면 연동). */
+  /** 실데이터(B4) — 주입 시 요일별 *계획 시간*만 표시. 목표 표면 미보유라 목표선·달성률·달성색은 숨김(오도 방지, B4b). */
   days?: WeekDay[];
 };
 
 export function BarWeekLayout({ paletteId, compact, days }: Props) {
-  const hoursByDay = days ? weekDaysToHours(days) : weeklyStudyHours;
-  const goal = hoursByDay[0]?.goal ?? 4;
-  const maxValue = Math.max(1, ...hoursByDay.map(d => Math.max(d.hours, d.goal)));
+  const isReal = days !== undefined;
+  const hoursByDay: { day: string; hours: number; goal?: number }[] = isReal
+    ? weekDaysToHours(days)
+    : weeklyStudyHours;
+  const goal = isReal ? null : (weeklyStudyHours[0]?.goal ?? 4);
+  const maxValue = Math.max(1, ...hoursByDay.map(d => Math.max(d.hours, d.goal ?? 0)));
   const total = hoursByDay.reduce((s, d) => s + d.hours, 0);
-  const goalTotal = hoursByDay.reduce((s, d) => s + d.goal, 0);
-  const pct = goalTotal === 0 ? 0 : Math.round((total / goalTotal) * 100);
+  const goalTotal = isReal ? null : weeklyStudyHours.reduce((s, d) => s + d.goal, 0);
+  const pct = goalTotal ? Math.round((total / goalTotal) * 100) : null;
   const barColor = getBlockColor('concept', paletteId);
   const goalColor = getBlockColor('break', paletteId);
 
@@ -35,28 +38,34 @@ export function BarWeekLayout({ paletteId, compact, days }: Props) {
     <section className="bg-card overflow-hidden rounded-2xl border p-3">
       {!compact && (
         <header className="mb-2 flex items-baseline justify-between">
-          <h3 className="text-pullim-slate-900 text-sm font-bold">이번 주 학습 시간</h3>
+          <h3 className="text-pullim-slate-900 text-sm font-bold">
+            {isReal ? '이번 주 계획 시간' : '이번 주 학습 시간'}
+          </h3>
           <div className="text-right">
             <span className="text-pullim-slate-900 font-mono text-base font-bold">{total.toFixed(1)}h</span>
-            <span className="text-pullim-slate-600 ml-1 text-xs">/ {goalTotal}h ({pct}%)</span>
+            {goalTotal !== null && pct !== null && (
+              <span className="text-pullim-slate-600 ml-1 text-xs">/ {goalTotal}h ({pct}%)</span>
+            )}
           </div>
         </header>
       )}
 
       {/* 차트 영역 */}
       <div className="relative flex items-end gap-1.5" style={{ height: chartHeight }}>
-        {/* 목표선 (수평) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute right-0 left-0 border-t border-dashed"
-          style={{
-            bottom: `${(goal / maxValue) * 100}%`,
-            borderColor: goalColor,
-          }}
-        />
+        {/* 목표선 (수평) — 목표 표면 있는 mock 모드만 */}
+        {goal !== null && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute right-0 left-0 border-t border-dashed"
+            style={{
+              bottom: `${(goal / maxValue) * 100}%`,
+              borderColor: goalColor,
+            }}
+          />
+        )}
         {hoursByDay.map(d => {
           const barPct = Math.round((d.hours / maxValue) * 100);
-          const hitGoal = d.hours >= d.goal;
+          const hitGoal = d.goal !== undefined && d.hours >= d.goal;
           return (
             <div key={d.day} className="flex flex-1 flex-col items-center gap-1">
               <div className="relative flex w-full flex-1 items-end">
@@ -65,9 +74,13 @@ export function BarWeekLayout({ paletteId, compact, days }: Props) {
                   style={{
                     height: `${barPct}%`,
                     background: barColor,
-                    opacity: hitGoal ? 0.95 : 0.55,
+                    opacity: isReal || hitGoal ? 0.95 : 0.55,
                   }}
-                  title={`${d.day} · ${d.hours.toFixed(1)}h / 목표 ${d.goal}h`}
+                  title={
+                    d.goal !== undefined
+                      ? `${d.day} · ${d.hours.toFixed(1)}h / 목표 ${d.goal}h`
+                      : `${d.day} · 계획 ${d.hours.toFixed(1)}h`
+                  }
                 />
               </div>
               <div className={cn(
@@ -83,7 +96,7 @@ export function BarWeekLayout({ paletteId, compact, days }: Props) {
         })}
       </div>
 
-      {!compact && (
+      {!compact && goal !== null && (
         <p className="text-pullim-slate-500 mt-2 text-[10px]">
           점선 = 목표({goal}h). 채워진 막대 = 목표 달성한 날.
         </p>
