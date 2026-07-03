@@ -9,13 +9,15 @@
  */
 
 import {
-  weekView, blockTypeMeta, getBlockColor, type BlockType, type PaletteId,
+  weekView, blockTypeMeta, getBlockColor, type BlockType, type PaletteId, type WeekDay,
 } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
 type Props = {
   paletteId?: PaletteId;
   compact?: boolean;
+  /** 실데이터(B4) — 미주입이면 mock 데모(weekView) 폴백. */
+  days?: WeekDay[];
 };
 
 const PERIOD_COUNT = 9;
@@ -56,9 +58,9 @@ function buildDaySchedule(blocks: { type: BlockType; count: number; minutes: num
   return slots;
 }
 
-export function SchoolGridLayout({ paletteId, compact }: Props) {
+export function SchoolGridLayout({ paletteId, compact, days: daysProp }: Props) {
   // 각 요일을 9교시 슬롯으로 변환
-  const days = weekView.map(d => ({
+  const days = (daysProp ?? weekView).map(d => ({
     day: d.day,
     date: d.date,
     isToday: d.isToday,

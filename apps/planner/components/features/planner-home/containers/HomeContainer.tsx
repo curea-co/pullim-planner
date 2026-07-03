@@ -6,11 +6,19 @@ import type { CalendarView } from '../components/calendar-shell';
 import {
   currentPersona, getDday, plannerProgress, getActivePlanner,
   todayBurnout, getBlocksForDayOffset,
+  type MonthDay, type TimeBlock, type WeekDay,
 } from '@/lib/mock';
+import {
+  buildMonthDays, buildWeekDays, ddayFrom, monthDatesFor, monthLabelOf,
+  shiftIsoDate, weekDatesFor,
+} from '@/lib/planner/home-data';
 import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
+import { useHomeBlocks } from '../hooks/use-home-blocks';
 import HomePresenter from '../presenters/HomePresenter';
 import { WelcomeModal } from '../components/welcome-modal';
+
+const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
 const VALID_VIEWS: CalendarView[] = ['day', 'week', 'month'];
 const WELCOME_STORAGE_KEY = 'pullim:welcome-shown';
@@ -83,17 +91,64 @@ export default function HomeContainer() {
     [router],
   );
 
-  const active = getActivePlanner();
-  const dday = getDday(currentPersona);
-  const daySummary = plannerProgress(getBlocksForDayOffset(offset));
-  const weekMeta = getWeekMeta(offset);
-  const monthMeta = getMonthMeta(offset);
+  // 실데이터(B4) — 배포 환경은 pullim-api 활성 플래너·블록, dev bypass 는 기존 mock 경로 유지.
+  const real = useHomeBlocks(!DEV_AUTH_BYPASS, view, offset);
+
+  let examName: string;
+  let dday: number;
+  let daySummary: { done: number; total: number };
+  let weekMeta: { totalHours: number; completedHours: number };
+  let monthMeta: { totalBlocks: number };
+  let dayBlocks: TimeBlock[] | undefined;
+  let weekDays: WeekDay[] | undefined;
+  let monthDays: MonthDay[] | undefined;
+  let monthLabel: string | undefined;
+
+  if (DEV_AUTH_BYPASS) {
+    const active = getActivePlanner();
+    examName = active.name;
+    dday = getDday(currentPersona);
+    daySummary = plannerProgress(getBlocksForDayOffset(offset));
+    weekMeta = getWeekMeta(offset);
+    monthMeta = getMonthMeta(offset);
+  } else {
+    const { active, blocksByDate, todayIso } = real;
+    examName = active?.examLabel || active?.name || '';
+    dday = active ? ddayFrom(todayIso, active.examStartDate) : 0;
+    dayBlocks = blocksByDate[shiftIsoDate(todayIso, offset)] ?? [];
+    weekDays =
+      view === 'week'
+        ? buildWeekDays(weekDatesFor(todayIso, offset), blocksByDate, todayIso)
+        : undefined;
+    const monthDates = monthDatesFor(todayIso, offset);
+    monthDays =
+      view === 'month'
+        ? buildMonthDays(monthDates, blocksByDate, todayIso, active
+            ? { startDate: active.examStartDate, label: active.examLabel }
+            : undefined)
+        : undefined;
+    monthLabel = view === 'month' ? monthLabelOf(monthDates[0]) : undefined;
+    daySummary = plannerProgress(dayBlocks);
+    weekMeta = weekDays
+      ? {
+          totalHours:
+            Math.round(weekDays.reduce((s, d) => s + d.totalMinutes, 0) / 6) / 10,
+          completedHours:
+            Math.round(
+              weekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
+            ) / 10,
+        }
+      : { totalHours: 0, completedHours: 0 };
+    monthMeta = monthDays
+      ? { totalBlocks: monthDays.reduce((s, d) => s + d.blockCount, 0) }
+      : { totalBlocks: 0 };
+  }
 
   return (
     <>
       <HomePresenter
         view={view}
-        examName={active.name}
+        examName={examName}
         dday={dday}
         burnoutScore={todayBurnout.score}
         daySummary={daySummary}
@@ -105,6 +160,10 @@ export default function HomeContainer() {
         onReset={handleReset}
         onJumpOffset={handleJump}
         onChangeView={onChangeView}
+        dayBlocks={dayBlocks}
+        weekDays={weekDays}
+        monthDays={monthDays}
+        monthLabel={monthLabel}
       />
       <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
     </>

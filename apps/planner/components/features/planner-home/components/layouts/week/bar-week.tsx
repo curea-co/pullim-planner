@@ -8,20 +8,24 @@
  * 색상: 활성 팔레트의 `concept` 색을 막대 채우기에 사용 (학습 시간은 단일 차원이라 타입별 색이 의미 없음).
  */
 
-import { weeklyStudyHours, getBlockColor, type PaletteId } from '@/lib/mock';
+import { weeklyStudyHours, getBlockColor, type PaletteId, type WeekDay } from '@/lib/mock';
+import { weekDaysToHours } from '@/lib/planner/home-data';
 import { cn } from '@/lib/utils';
 
 type Props = {
   paletteId?: PaletteId;
   compact?: boolean;
+  /** 실데이터(B4) — 주입 시 요일별 시간을 실 집계에서 산출(목표=계획 시간, B4b 에서 목표 표면 연동). */
+  days?: WeekDay[];
 };
 
-export function BarWeekLayout({ paletteId, compact }: Props) {
-  const goal = weeklyStudyHours[0]?.goal ?? 4;
-  const maxValue = Math.max(...weeklyStudyHours.map(d => Math.max(d.hours, d.goal)));
-  const total = weeklyStudyHours.reduce((s, d) => s + d.hours, 0);
-  const goalTotal = weeklyStudyHours.reduce((s, d) => s + d.goal, 0);
-  const pct = Math.round((total / goalTotal) * 100);
+export function BarWeekLayout({ paletteId, compact, days }: Props) {
+  const hoursByDay = days ? weekDaysToHours(days) : weeklyStudyHours;
+  const goal = hoursByDay[0]?.goal ?? 4;
+  const maxValue = Math.max(1, ...hoursByDay.map(d => Math.max(d.hours, d.goal)));
+  const total = hoursByDay.reduce((s, d) => s + d.hours, 0);
+  const goalTotal = hoursByDay.reduce((s, d) => s + d.goal, 0);
+  const pct = goalTotal === 0 ? 0 : Math.round((total / goalTotal) * 100);
   const barColor = getBlockColor('concept', paletteId);
   const goalColor = getBlockColor('break', paletteId);
 
@@ -50,7 +54,7 @@ export function BarWeekLayout({ paletteId, compact }: Props) {
             borderColor: goalColor,
           }}
         />
-        {weeklyStudyHours.map(d => {
+        {hoursByDay.map(d => {
           const barPct = Math.round((d.hours / maxValue) * 100);
           const hitGoal = d.hours >= d.goal;
           return (

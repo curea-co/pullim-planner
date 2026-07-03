@@ -14,10 +14,19 @@ const weekHeader = ['월', '화', '수', '목', '금', '토', '일'];
  *
  * 셀 클릭 — 과거/오늘은 일간 뷰로 drill-down. 미래는 "초안 미리보기" 토스트.
  */
-export function MonthHeatmap() {
+export function MonthHeatmap({
+  days: daysProp,
+  monthLabel,
+}: {
+  /** 실데이터(B4) — 미주입이면 mock 데모(monthView) 폴백. */
+  days?: MonthDay[];
+  /** 실데이터 월 라벨("7월"). 미주입=데모 라벨. */
+  monthLabel?: string;
+} = {}) {
   const router = useRouter();
+  const month = daysProp ?? monthView;
   // 그리드 시작 — 첫 날의 weekday로 빈 셀 padding
-  const firstWeekdayIdx = weekHeader.indexOf(monthView[0].weekday);
+  const firstWeekdayIdx = weekHeader.indexOf(month[0].weekday);
   const padBefore = firstWeekdayIdx;
 
   function onCell(d: MonthDay) {
@@ -38,7 +47,7 @@ export function MonthHeatmap() {
           월간 학습 캘린더
         </p>
         <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
-          4월 학습 분포
+          {monthLabel ?? '4월'} 학습 분포
         </h2>
         <p className="text-pullim-slate-500 mt-0.5 inline-flex flex-wrap items-center gap-1 text-[11px]">
           <span>색 농도 = 블록 수 · 외곽선 = 완료율 ·</span>
@@ -60,7 +69,7 @@ export function MonthHeatmap() {
           {Array.from({ length: padBefore }, (_, i) => (
             <div key={`pad-${i}`} aria-hidden />
           ))}
-          {monthView.map(d => <DayCell key={d.date} day={d} onSelect={() => onCell(d)} />)}
+          {month.map(d => <DayCell key={d.date} day={d} onSelect={() => onCell(d)} />)}
         </div>
 
         {/* 범례 */}
