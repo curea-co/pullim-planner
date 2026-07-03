@@ -23,6 +23,7 @@ type WeekGridProps = {
  */
 export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps = {}) {
   const router = useRouter();
+  const isReal = daysProp !== undefined;
   const week = daysProp ?? weekView;
   const activePalette = paletteId ?? getActiveCustomization().paletteId;
   // 셀 색상 강도 산출용(블록 없으면 1로 나눗셈 방어)
@@ -31,6 +32,14 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
   function openDay(day: WeekDay) {
     if (day.isToday) {
       router.push('/planner/calendar?view=day');
+      return;
+    }
+    if (isReal) {
+      // 실데이터 — 다른 요일도 데이터는 있으나 일간 뷰 날짜 딥링크(offset URL) 미지원.
+      // 거짓 안내("오늘만 데이터") 대신 요약 toast 만(딥링크는 후속 — B4b).
+      toast.info(`📅 ${day.day}요일 (${day.date}일)`, {
+        description: `계획 ${Math.round(day.totalMinutes / 60 * 10) / 10}h · 완료 ${day.completionPct}% — 일간 이동은 상단 날짜 이동으로 볼 수 있어요.`,
+      });
       return;
     }
     toast.info(`📅 ${day.day}요일 (${day.date}일)`, {

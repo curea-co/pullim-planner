@@ -26,7 +26,11 @@ export function BarWeekLayout({ paletteId, compact, days }: Props) {
     : weeklyStudyHours;
   const goal = isReal ? null : (weeklyStudyHours[0]?.goal ?? 4);
   const maxValue = Math.max(1, ...hoursByDay.map(d => Math.max(d.hours, d.goal ?? 0)));
-  const total = hoursByDay.reduce((s, d) => s + d.hours, 0);
+  // 합계는 원본 분(minutes)에서 1회만 반올림 — 일별 반올림값 재합산의 오차(CalendarShell weekMeta 와
+  // 불일치) 방지(codex). mock 은 시간 단위 원본이라 그대로 합산.
+  const total = isReal
+    ? Math.round(days.reduce((s, d) => s + d.totalMinutes, 0) / 6) / 10
+    : hoursByDay.reduce((s, d) => s + d.hours, 0);
   const goalTotal = isReal ? null : weeklyStudyHours.reduce((s, d) => s + d.goal, 0);
   const pct = goalTotal ? Math.round((total / goalTotal) * 100) : null;
   const barColor = getBlockColor('concept', paletteId);
