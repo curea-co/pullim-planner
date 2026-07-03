@@ -37,17 +37,21 @@ interface DayViewProps {
   dayOffset?: number;
   /** 빈 상태에서 "오늘 계획 보기" — offset 0으로 리셋 */
   onResetToday?: () => void;
+  /** 실데이터(B4) — 미주입(dev bypass)이면 mock 폴백. */
+  blocks?: TimeBlock[];
+  /** 실데이터 D-day — blocks 와 함께 주입(미주입이면 mock persona 기준). */
+  dday?: number;
 }
 
 /** 일간 캘린더 본문 — 24h 시계 + 자기보고 패널 + 블록 리스트. */
-export function DayView({ dayOffset = 0, onResetToday }: DayViewProps) {
+export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp }: DayViewProps) {
   const [condition, setCondition] = useState<ConditionLevel>(3);
   const [showLegend, setShowLegend] = useState(false);
   const [trimTimeline, setTrimTimeline] = useState(true);
   const [completingBlock, setCompletingBlock] = useState<TimeBlock | null>(null);
-  const dday = getDday(currentPersona);
+  const dday = ddayProp ?? getDday(currentPersona);
   const ddayLabel = dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY' : `D+${Math.abs(dday)}`;
-  const blocks = getBlocksForDayOffset(dayOffset);
+  const blocks = blocksProp ?? getBlocksForDayOffset(dayOffset);
   const next = nextActiveBlock(blocks);
   const qAccess = hasQAccess();
   const { layoutId, paletteId } = getActiveCustomization();

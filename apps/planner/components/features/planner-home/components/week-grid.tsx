@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { weekView, blockTypeMeta, getBlockColor, type BlockType, type PaletteId } from '@/lib/mock';
+import { weekView, blockTypeMeta, getBlockColor, type BlockType, type PaletteId, type WeekDay } from '@/lib/mock';
 import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
 import { cn } from '@/lib/utils';
 
@@ -13,21 +13,33 @@ type WeekGridProps = {
   paletteId?: PaletteId;
   /** 컴팩트 모드 — 미리보기 영역에서 헤더/범례 축소 */
   compact?: boolean;
+  /** 실데이터(B4) 주간 집계 — 미주입이면 mock 데모(weekView) 폴백. */
+  days?: WeekDay[];
 };
 
 /**
  * 주간 그리드 — 7열 × 블록 타입 행. 각 셀: 블록 수 + 색상 강도(분 단위).
  * 핸드오프 4.4 (주간 뷰 단순화 버전).
  */
-export function WeekGrid({ paletteId, compact }: WeekGridProps = {}) {
+export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps = {}) {
   const router = useRouter();
+  const isReal = daysProp !== undefined;
+  const week = daysProp ?? weekView;
   const activePalette = paletteId ?? getActiveCustomization().paletteId;
-  // 셀 색상 강도 산출용
-  const maxMinutes = Math.max(...weekView.flatMap(d => d.blocks.map(b => b.minutes)));
+  // 셀 색상 강도 산출용(블록 없으면 1로 나눗셈 방어)
+  const maxMinutes = Math.max(1, ...week.flatMap(d => d.blocks.map(b => b.minutes)));
 
-  function openDay(day: typeof weekView[number]) {
+  function openDay(day: WeekDay) {
     if (day.isToday) {
       router.push('/planner/calendar?view=day');
+      return;
+    }
+    if (isReal) {
+      // 실데이터 — 다른 요일도 데이터는 있으나 일간 뷰 날짜 딥링크(offset URL) 미지원.
+      // 거짓 안내("오늘만 데이터") 대신 요약 toast 만(딥링크는 후속 — B4b).
+      toast.info(`📅 ${day.day}요일 (${day.date}일)`, {
+        description: `계획 ${Math.round(day.totalMinutes / 60 * 10) / 10}h · 완료 ${day.completionPct}% — 일간 이동은 상단 날짜 이동으로 볼 수 있어요.`,
+      });
       return;
     }
     toast.info(`📅 ${day.day}요일 (${day.date}일)`, {
@@ -73,7 +85,7 @@ export function WeekGrid({ paletteId, compact }: WeekGridProps = {}) {
           <thead>
             <tr className="text-pullim-slate-700 text-[10px]">
               <th className="bg-pullim-slate-50 px-2 py-2 text-left font-semibold">타입</th>
-              {weekView.map(d => (
+              {week.map(d => (
                 <th
                   key={d.day}
                   className={cn(
@@ -113,7 +125,7 @@ export function WeekGrid({ paletteId, compact }: WeekGridProps = {}) {
                     <MetaIcon aria-hidden className="h-3.5 w-3.5 shrink-0 text-pullim-slate-500" />
                     <span className="truncate">{meta.label}</span>
                   </th>
-                  {weekView.map(d => {
+                  {week.map(d => {
                     const block = d.blocks.find(b => b.type === type);
                     const intensity = block ? block.minutes / maxMinutes : 0;
                     return (
@@ -130,7 +142,7 @@ export function WeekGrid({ paletteId, compact }: WeekGridProps = {}) {
               <th scope="row" className="text-pullim-slate-700 px-2 py-1.5 text-left text-[11px] font-bold">
                 합계
               </th>
-              {weekView.map(d => (
+              {week.map(d => (
                 <td
                   key={d.day}
                   className="border-pullim-slate-100 border-l py-1.5 text-center"

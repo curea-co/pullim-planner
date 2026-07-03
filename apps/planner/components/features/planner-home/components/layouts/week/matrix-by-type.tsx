@@ -6,13 +6,15 @@
  */
 
 import { WeekGrid } from '@/components/features/planner-home/components/week-grid';
-import type { PaletteId } from '@/lib/mock';
+import type { PaletteId, WeekDay } from '@/lib/mock';
 
 type Props = {
   paletteId?: PaletteId;
   compact?: boolean;
+  /** 실데이터(B4) — 미주입이면 mock 폴백. */
+  days?: WeekDay[];
 };
 
-export function MatrixByTypeLayout({ paletteId, compact }: Props) {
-  return <WeekGrid paletteId={paletteId} compact={compact} />;
+export function MatrixByTypeLayout({ paletteId, compact, days }: Props) {
+  return <WeekGrid paletteId={paletteId} compact={compact} days={days} />;
 }

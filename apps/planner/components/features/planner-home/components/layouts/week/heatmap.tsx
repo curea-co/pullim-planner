@@ -8,12 +8,14 @@
  * 색상: 활성 팔레트의 `concept` 색을 강도별 opacity로 적용.
  */
 
-import { weekView, getBlockColor, type PaletteId } from '@/lib/mock';
+import { weekView, getBlockColor, type PaletteId, type WeekDay } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
 type Props = {
   paletteId?: PaletteId;
   compact?: boolean;
+  /** 실데이터(B4) — 미주입이면 mock 데모(weekView) 폴백. */
+  days?: WeekDay[];
 };
 
 const HOUR_SLOTS = [
@@ -45,9 +47,9 @@ function dayToSlotIntensities(totalMinutes: number, isWeekend: boolean): number[
   return slotMinutes.map(m => Math.min(1, m / 120));
 }
 
-export function HeatmapLayout({ paletteId, compact }: Props) {
+export function HeatmapLayout({ paletteId, compact, days: daysProp }: Props) {
   const baseColor = getBlockColor('concept', paletteId);
-  const days = weekView.map(d => ({
+  const days = (daysProp ?? weekView).map(d => ({
     day: d.day,
     date: d.date,
     isToday: d.isToday,

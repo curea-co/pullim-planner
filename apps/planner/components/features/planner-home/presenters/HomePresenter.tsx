@@ -7,7 +7,7 @@ import { DayView } from '../components/views/day-view';
 import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
 import { composeDDayChipProps } from '@/lib/planner/d-day-tier';
-import { planBaseDate } from '@/lib/mock/planner';
+import { planBaseDate, type MonthDay, type TimeBlock, type WeekDay } from '@/lib/mock/planner';
 import {
   formatDayNavLabel, formatDayTitle, formatDayRelLabel,
   formatWeekNavLabel, formatWeekTitle,
@@ -33,6 +33,12 @@ interface HomePresenterProps {
   /** 날짜 점프 — 기준일 대비 offset 으로 이동 (일간 달력 선택) */
   onJumpOffset: (offset: number) => void;
   onChangeView: (next: CalendarView) => void;
+  /** 실데이터(B4) — 미주입(dev bypass)이면 각 뷰가 mock 폴백. */
+  dayBlocks?: TimeBlock[];
+  weekDays?: WeekDay[];
+  monthDays?: MonthDay[];
+  /** 실데이터 월간 헤더 라벨("7월") — 미주입이면 mock 데모 라벨. */
+  monthLabel?: string;
 }
 
 export default function HomePresenter({
@@ -49,6 +55,10 @@ export default function HomePresenter({
   onReset,
   onJumpOffset,
   onChangeView,
+  dayBlocks,
+  weekDays,
+  monthDays,
+  monthLabel,
 }: HomePresenterProps) {
   const switchAction = (
     <Link
@@ -145,9 +155,9 @@ export default function HomePresenter({
         }
         action={switchAction}
       >
-        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} />}
-        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} />}
-        {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} />}
+        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} />}
+        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} />}
+        {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} />}
       </CalendarShell>
     </>
   );
