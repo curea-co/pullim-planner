@@ -40,7 +40,7 @@ export function WeekGrid({ paletteId, compact }: WeekGridProps = {}) {
       {!compact && (
         <header className="border-b p-4">
           <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
-            주간 그리드
+            주간 학습표
           </p>
           <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
             이번 주 학습 분포
