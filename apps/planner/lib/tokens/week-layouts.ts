@@ -40,7 +40,7 @@ export const weekLayouts: Record<WeekLayoutId, WeekLayoutMeta> = {
   },
   heatmap: {
     id: 'heatmap',
-    label: '시간×요일 색 채움표',
+    label: '시간×요일 학습 캘린더',
     description: '2시간 칸 × 요일. 칸 색이 진할수록 많이 공부한 시간. 언제 얼마나를 한눈에.',
     glyph: '🔥',
   },

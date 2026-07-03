@@ -21,14 +21,14 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           Icon: Calendar,
           title: '일/주/월 캘린더로 학습 일정 보기',
           description:
-            '시간 블록 단위로 오늘·이번 주·이번 달 학습을 계획해요. 하루는 24시간 시간 막대로, 한 주는 요일별 표로, 한 달은 학습량 달력으로 봐요.',
+            '시간 블록 단위로 오늘·이번 주·이번 달 학습을 계획해요. 하루는 24시간 시간표로, 한 주는 요일별 표로, 한 달은 학습 캘린더로 봐요.',
           bullets: [
-            '하루: 24시간 시간 막대 — 30분 칸에 공부한 시간이 형광펜처럼 채워져요',
+            '하루: 24시간 시간표 — 30분 칸에 공부한 시간이 형광펜처럼 채워져요',
             '한 주: 7일 표 — 오늘 칸은 파랗게 강조돼요',
-            '한 달: 30일 학습량 달력 — 시험 날짜는 깃발로 표시돼요',
+            '한 달: 30일 학습 캘린더 — 시험 날짜는 깃발로 표시돼요',
           ],
           cta: { label: '캘린더 보기', href: '/planner/calendar' },
-          screenshotCaption: '24시간 시간 막대 — 공부한 시간이 한눈에',
+          screenshotCaption: '24시간 시간표 — 공부한 시간이 한눈에',
           screenshot: (
             <MockBrowser label="study/planner/day">
               <div className="bg-pullim-slate-50/40 rounded-lg p-3">
