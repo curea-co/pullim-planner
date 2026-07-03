@@ -105,6 +105,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 두어 마운트 effect 의 동기 setState 경고를 피한다.
   // - 부트스트랩/재시도: fallback='error' (세션 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
   // - login 직후: fallback='authenticated' (쿠키 방금 발급 — 프로필만 best-effort)
+  // 헤더 배지 실명(ADR-048) — owner-only `GET /me` 의 `name`(KCB 실명, 미보유 시 서버가
+  // displayName 폴백)을 best-effort 로 얹는다. 실패(네트워크 등)는 무시 — projection
+  // 표시명으로 표시 연속성 유지. 로그아웃·프로필 교체 레이스는 prev/id 가드로 무해.
+  // 세션 확정(resolveSession)과 온보딩 완료(completeOnboarding) 양 경로 모두에서 호출.
+  const enrichRealName = useCallback((profileId: string) => {
+    void pullimSession.accountMe().then(
+      (account) => {
+        if (!account.name) return;
+        setUser((prev) =>
+          prev && prev.id === profileId ? { ...prev, name: account.name } : prev,
+        );
+      },
+      () => {},
+    );
+  }, []);
+
   const resolveSession = useCallback(
     (fallbackStatus: AuthStatus) =>
       // pullim-api 세션 확인 = GET /planner/me (쿠키 인증).
@@ -112,20 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (profile) => {
           setUser(profile);
           setStatus('authenticated');
-          // 헤더 배지 실명(ADR-048) — owner-only `GET /me` 의 `name`(KCB 실명, 미보유 시 서버가
-          // displayName 폴백)을 best-effort 로 얹는다. 실패(네트워크 등)는 무시 — projection
-          // 표시명으로 표시 연속성 유지. 로그아웃 레이스는 prev null 가드로 무해.
-          void pullimSession.accountMe().then(
-            (account) => {
-              if (!account.name) return;
-              setUser((prev) =>
-                prev && prev.id === profile.id
-                  ? { ...prev, name: account.name }
-                  : prev,
-              );
-            },
-            () => {},
-          );
+          enrichRealName(profile.id);
         },
         (error: unknown) => {
           setUser(null);
@@ -152,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setStatus(fallbackStatus);
         },
       ),
-    [],
+    [enrichRealName],
   );
 
   // 부트스트랩/재시도용 — 세션 확정 불가 시 'error'.
@@ -253,6 +256,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profile = await pullimSession.updateProfile(input);
         setUser(profile);
         setStatus('authenticated');
+        // 온보딩 완료 직후에도 실명 보강 — resolveSession 경로와 배지 일관(Codex #109).
+        enrichRealName(profile.id);
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
           // 세션 만료 — 재시도가 아니라 /login 으로 회복한다. 호출부가 재시도 UI 를 안 띄우게 swallow.
@@ -263,7 +268,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error; // 일시 오류 — 호출부(OnboardingContainer)가 재시도 UI 를 보인다.
       }
     },
-    [],
+    [enrichRealName],
   );
 
   // 'error' 상태에서 사용자가 재시도. 클릭 핸들러라 동기 setState 가 안전하다.
