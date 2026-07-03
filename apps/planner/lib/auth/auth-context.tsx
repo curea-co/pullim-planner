@@ -112,6 +112,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (profile) => {
           setUser(profile);
           setStatus('authenticated');
+          // 헤더 배지 실명(ADR-048) — owner-only `GET /me` 의 `name`(KCB 실명, 미보유 시 서버가
+          // displayName 폴백)을 best-effort 로 얹는다. 실패(네트워크 등)는 무시 — projection
+          // 표시명으로 표시 연속성 유지. 로그아웃 레이스는 prev null 가드로 무해.
+          void pullimSession.accountMe().then(
+            (account) => {
+              if (!account.name) return;
+              setUser((prev) =>
+                prev && prev.id === profile.id
+                  ? { ...prev, name: account.name }
+                  : prev,
+              );
+            },
+            () => {},
+          );
         },
         (error: unknown) => {
           setUser(null);
