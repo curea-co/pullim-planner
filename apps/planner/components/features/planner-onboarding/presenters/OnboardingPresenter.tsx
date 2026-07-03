@@ -4,6 +4,7 @@ import { MockBrowser } from '@/components/shell/mock-browser';
 import { SideTimeline24 } from '@/components/features/planner-home/components/side-timeline-24';
 import { ConditionSlider } from '@/components/features/planner-home/components/condition-slider';
 import { AccuracyTrendChart } from '@/components/features/planner-reports/components/accuracy-trend-chart';
+import { REPORTS_ENABLED } from '@/lib/flags';
 import { todayBlocks } from '@/lib/mock';
 
 interface OnboardingPresenterProps {
@@ -77,16 +78,21 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           ),
         },
         {
+          // 성장 리포트 — soft open 게이트(REPORTS_ENABLED)에 따라 오픈/출시 예정 문구 분기 (welcome-modal과 정합, codex)
           Icon: BarChart2,
-          title: '성장 리포트 — 출시 예정',
-          description:
-            '하루·한 주·한 달 공부를 돌아보는 회고 화면을 준비하고 있어요. 완료율과 학습 시간, 정답률이 어떻게 변했는지 흐름으로 보여 드려요. 열리면 왼쪽 메뉴에 나타나요.',
+          title: REPORTS_ENABLED ? '성장 리포트로 돌아보기' : '성장 리포트 — 출시 예정',
+          description: REPORTS_ENABLED
+            ? '하루·한 주·한 달 공부를 회고 화면에서 돌아봐요. 완료율과 학습 시간, 정답률이 어떻게 변했는지 흐름으로 보여 드려요.'
+            : '하루·한 주·한 달 공부를 돌아보는 회고 화면을 준비하고 있어요. 완료율과 학습 시간, 정답률이 어떻게 변했는지 흐름으로 보여 드려요. 열리면 왼쪽 메뉴에 나타나요.',
           bullets: [
             '오늘 회고: 완료율·컨디션을 한 줄로 기록해요',
             '주간 회고: 학습 시간과 정답률 추세를 그래프로 봐요',
             '월간 회고: 한 달 성장을 모아 부모님과 공유할 수 있어요',
           ],
-          screenshotCaption: '성장 리포트 미리보기 — 정답률 추세 (출시 예정)',
+          ...(REPORTS_ENABLED ? { cta: { label: '성장 리포트 보기', href: '/planner/reports' } } : {}),
+          screenshotCaption: REPORTS_ENABLED
+            ? '성장 리포트 — 정답률 추세'
+            : '성장 리포트 미리보기 — 정답률 추세 (출시 예정)',
           screenshot: (
             <MockBrowser label="study/planner/reports">
               <AccuracyTrendChart />
