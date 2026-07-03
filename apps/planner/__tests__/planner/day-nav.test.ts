@@ -1,3 +1,10 @@
+// planBaseDate 가 실제 오늘(todayISO)로 바뀜(#106) — 라벨 포맷 검증은 결정론이 필요해
+// 기준일을 2026-04-24(금)로 고정한다. 포맷 로직 자체는 기준일과 무관.
+jest.mock('@/lib/mock', () => ({
+  ...jest.requireActual('@/lib/mock'),
+  planBaseDate: '2026-04-24',
+}));
+
 import {
   formatDayNavLabel, formatDayTitle, formatDayRelLabel,
   formatWeekNavLabel, formatWeekTitle,
