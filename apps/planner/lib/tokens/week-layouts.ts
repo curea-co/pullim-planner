@@ -22,7 +22,7 @@ export type WeekLayoutMeta = {
 export const weekLayouts: Record<WeekLayoutId, WeekLayoutMeta> = {
   matrix_by_type: {
     id: 'matrix_by_type',
-    label: '타입×요일 매트릭스',
+    label: '블록 타입×요일 표',
     description: '행=블록 타입, 열=요일, 칸=학습 시간 막대. 풀림 기본형.',
     glyph: '▦',
   },
