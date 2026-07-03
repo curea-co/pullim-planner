@@ -62,6 +62,20 @@ export interface PullimMeProfile {
 }
 
 /**
+ * auth 계정 me (`GET /me` = auth `MeResponseDto` 의 FE 소비 뷰) — **owner-only**.
+ * ADR-048: KCB 실명(`name`)은 이 표면에서만 본인-한정 노출(복호 실패·미인증 시 서버가
+ * `displayName` 폴백으로 채워 항상 string). 로그·토큰·캐시 비탑재 대상 — 표시 용도로만 소비.
+ */
+export interface PullimAccountMe {
+  /** 로그인 이메일(평문 PII — owner-only 표면). */
+  email: string;
+  /** 비PII 표시명(이메일 파생 등 — ProfileProjection 계약과 동일 값). */
+  displayName: string;
+  /** KCB 실명(복호, 본인-한정 — ADR-048). 미보유·복호 실패 시 displayName 폴백. */
+  name: string;
+}
+
+/**
  * 학습 프로필 upsert 입력 (`PATCH /planner/me` = `UpsertMeDto`). 온보딩 입력. 전 필드 **선택**:
  * 행 없으면 생성(서버가 joinedAt/streakDays 채움), 있으면 제공한 필드만 덮어쓴다(부분 PATCH).
  */
@@ -91,6 +105,11 @@ export interface PullimSessionClient {
   logout(): Promise<void>;
   /** planner 세션 확인 — 200 프로필 / 401 미인증 / 403 엔타이틀먼트 미보유 / 404 온보딩 미완. */
   session(): Promise<PullimMeProfile>;
+  /**
+   * auth 계정 me (`GET /me`) — owner-only KCB 실명(`name`, ADR-048) 포함. 헤더 배지 등
+   * 본인 표시 용도. 401 미인증.
+   */
+  accountMe(): Promise<PullimAccountMe>;
   /**
    * 학습 프로필 멱등 upsert (`PATCH /planner/me`) — 온보딩 완료. CSRF 동봉 PATCH.
    * 성공 시 갱신된 프로필(=`session()` shape). 이후 `session()` 200(404 limbo 해소).
@@ -191,6 +210,11 @@ export function createPullimSessionClient(
     session() {
       // GET — CSRF 면제. 쿠키(access)로 인증.
       return cookieRequest<PullimMeProfile>(config, "/planner/me");
+    },
+
+    accountMe() {
+      // GET — CSRF 면제. owner-only 실명(name, ADR-048) 포함 — 표시 용도로만 소비(로그·저장 금지).
+      return cookieRequest<PullimAccountMe>(config, "/me");
     },
 
     updateProfile(input) {
