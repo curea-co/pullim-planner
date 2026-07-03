@@ -1,8 +1,9 @@
-import { CalendarClock, Calendar, PlayCircle, Smile, PencilLine } from 'lucide-react';
+import { CalendarClock, Calendar, PlayCircle, Smile, PencilLine, BarChart2 } from 'lucide-react';
 import { OnboardingTemplate } from '@/components/shell/onboarding-template';
 import { MockBrowser } from '@/components/shell/mock-browser';
 import { SideTimeline24 } from '@/components/features/planner-home/components/side-timeline-24';
 import { ConditionSlider } from '@/components/features/planner-home/components/condition-slider';
+import { AccuracyTrendChart } from '@/components/features/planner-reports/components/accuracy-trend-chart';
 import { todayBlocks } from '@/lib/mock';
 
 interface OnboardingPresenterProps {
@@ -72,6 +73,23 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           screenshot: (
             <MockBrowser label="컨디션 입력">
               <ConditionSlider initial={3} />
+            </MockBrowser>
+          ),
+        },
+        {
+          Icon: BarChart2,
+          title: '성장 리포트 — 출시 예정',
+          description:
+            '하루·한 주·한 달 공부를 돌아보는 회고 화면을 준비하고 있어요. 완료율과 학습 시간, 정답률이 어떻게 변했는지 흐름으로 보여 드려요. 열리면 왼쪽 메뉴에 나타나요.',
+          bullets: [
+            '오늘 회고: 완료율·컨디션을 한 줄로 기록해요',
+            '주간 회고: 학습 시간과 정답률 추세를 그래프로 봐요',
+            '월간 회고: 한 달 성장을 모아 부모님과 공유할 수 있어요',
+          ],
+          screenshotCaption: '성장 리포트 미리보기 — 정답률 추세 (출시 예정)',
+          screenshot: (
+            <MockBrowser label="study/planner/reports">
+              <AccuracyTrendChart />
             </MockBrowser>
           ),
         },
