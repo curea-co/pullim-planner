@@ -34,7 +34,7 @@ export function AppHeader({ role }: { role: Role }) {
         <Link href="/" className="flex items-center gap-2 shrink-0 no-underline">
           <PullimLogo size={22} />
           <span className="text-foreground text-[17px] font-extrabold tracking-[-.02em]">풀림</span>
-          <span className="bg-muted text-muted-foreground hidden whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold min-[380px]:inline-block">
+          <span className="bg-muted text-secondary-foreground hidden whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold min-[380px]:inline-block">
             플래너
           </span>
         </Link>
