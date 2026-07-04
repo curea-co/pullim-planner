@@ -94,9 +94,9 @@
   --color-pullim-lvl-5: var(--color-primary-800);
 
   /* 레몬 — PUDS pullim-os secondary(lemon) */
-  --color-pullim-lemon: var(--color-secondary-500);
-  --color-pullim-lemon-soft: oklch(0.97 0.09 116);
-  --color-pullim-lemon-ink: oklch(0.45 0.10 116);
+  --color-pullim-lemon: #E6FF4C;
+  --color-pullim-lemon-soft: #F5FFB8;
+  --color-pullim-lemon-ink: #5C6B0A;
 
   /* 보조 색 — 블록 타입별 아이콘 컨테이너 */
   --color-pullim-violet-50: #F5F3FF;
