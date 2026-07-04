@@ -60,7 +60,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#3B6FF6',
+  themeColor: '#0362da',
 };
 
 export default function RootLayout({
@@ -69,6 +69,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
+      data-theme="pullim-os"
       className={`${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
