@@ -3,6 +3,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* PUDS canonical 토큰 — 코치(writing/admissions)와 동일 소비. 값 권위 원본. */
+@import "./tokens/_base.css";
+@import "./tokens/pullim-os.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -12,7 +15,7 @@
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
   --font-heading: var(--font-sans);
 
-  /* shadcn 시맨틱 → 풀림 매핑 */
+  /* shadcn 시맨틱 → 풀림 매핑 (값은 아래 :root에서 PUDS 토큰으로 바인딩) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -45,95 +48,95 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* 풀림 브랜드 블루 */
-  --color-pullim-blue-50: #EEF3FF;
-  --color-pullim-blue-100: #DCE6FF;
-  --color-pullim-blue-200: #B8CDFF;
-  --color-pullim-blue-300: #8BAEFF;
-  --color-pullim-blue-400: #5A8BFF;
-  --color-pullim-blue-500: #3B6FF6;
-  --color-pullim-blue-600: #2854D8;
-  --color-pullim-blue-700: #1D3FA8;
-  --color-pullim-blue-800: #152E7A;
-  --color-pullim-blue-900: #0E1F54;
-  --color-pullim-blue-950: #070F2C;
+  /* 풀림 브랜드 블루 — PUDS pullim-os primary 램프(hue-258)로 재지정. 코치와 동일 블루. */
+  --color-pullim-blue-50:  var(--color-primary-50);
+  --color-pullim-blue-100: var(--color-primary-100);
+  --color-pullim-blue-200: var(--color-primary-200);
+  --color-pullim-blue-300: var(--color-primary-300);
+  --color-pullim-blue-400: var(--color-primary-400);
+  --color-pullim-blue-500: var(--color-primary-500);
+  --color-pullim-blue-600: var(--color-primary-600);
+  --color-pullim-blue-700: var(--color-primary-700);
+  --color-pullim-blue-800: var(--color-primary-800);
+  --color-pullim-blue-900: var(--color-primary-900);
+  --color-pullim-blue-950: var(--color-primary-950);
 
-  /* 풀림 슬레이트 (쿨한 중립색) */
-  --color-pullim-slate-0:   #FFFFFF;
-  --color-pullim-slate-25:  #FBFCFE;
-  --color-pullim-slate-50:  #F5F7FB;
-  --color-pullim-slate-100: #EDF0F5;
-  --color-pullim-slate-200: #DDE2EC;
-  --color-pullim-slate-300: #C4CBDA;
-  --color-pullim-slate-400: #97A0B4;
-  --color-pullim-slate-500: #6B7489;
-  --color-pullim-slate-600: #4A536A;
-  --color-pullim-slate-700: #343B50;
-  --color-pullim-slate-800: #20263A;
-  --color-pullim-slate-900: #121627;
-  --color-pullim-slate-950: #080B18;
+  /* 풀림 슬레이트 — PUDS 중립 hue(286) oklch 램프. 기존 L 스텝 유지(대비 보존) + PUDS 그레이 family로 정합. */
+  --color-pullim-slate-0:   #ffffff;
+  --color-pullim-slate-25:  oklch(0.985 0.002 286);
+  --color-pullim-slate-50:  oklch(0.968 0.003 286);
+  --color-pullim-slate-100: oklch(0.940 0.004 286);
+  --color-pullim-slate-200: oklch(0.888 0.006 286);
+  --color-pullim-slate-300: oklch(0.808 0.010 286);
+  --color-pullim-slate-400: oklch(0.660 0.014 286);
+  --color-pullim-slate-500: oklch(0.520 0.016 286);
+  --color-pullim-slate-600: oklch(0.410 0.018 286);
+  --color-pullim-slate-700: oklch(0.320 0.018 286);
+  --color-pullim-slate-800: oklch(0.235 0.016 286);
+  --color-pullim-slate-900: oklch(0.175 0.014 286);
+  --color-pullim-slate-950: oklch(0.120 0.012 286);
 
-  /* 시맨틱 */
+  /* 시맨틱 상태 — 플래너 AA 튠 유지(코치도 도메인 시맨틱은 자체 유지). */
   --color-pullim-success: #12B26B;
   --color-pullim-success-bg: #E6F7EE;
-  --color-pullim-success-strong: #0E8C56; /* 흰글자 위 success 텍스트 안전 값 (AA) */
+  --color-pullim-success-strong: #0E8C56;
   --color-pullim-warn: #F59E0B;
   --color-pullim-warn-bg: #FEF3DB;
-  --color-pullim-warn-cta-bg: #D97706;    /* 흰글자 위 warn CTA 배경 전용 (AA — #F59E0B+흰글자 2.6:1 회피) */
+  --color-pullim-warn-cta-bg: #D97706;
   --color-pullim-danger: #E5484D;
   --color-pullim-danger-bg: #FCE9EA;
 
-  /* IRT 난이도 5단계 */
-  --color-pullim-lvl-1: #E5EEFF;
-  --color-pullim-lvl-2: #A9C4FF;
-  --color-pullim-lvl-3: #5A8BFF;
-  --color-pullim-lvl-4: #2854D8;
-  --color-pullim-lvl-5: #152E7A;
+  /* IRT 난이도 5단계 — 새 블루 램프에 정합 */
+  --color-pullim-lvl-1: var(--color-primary-100);
+  --color-pullim-lvl-2: var(--color-primary-300);
+  --color-pullim-lvl-3: var(--color-primary-400);
+  --color-pullim-lvl-4: var(--color-primary-600);
+  --color-pullim-lvl-5: var(--color-primary-800);
 
-  /* 풀림 레몬 — 강조·CTA·스트릭 (플래너 핸드오프 12.1) */
-  --color-pullim-lemon: #E6FF4C;
-  --color-pullim-lemon-soft: #F5FFB8;
-  --color-pullim-lemon-ink: #5C6B0A;
+  /* 레몬 — PUDS pullim-os secondary(lemon) */
+  --color-pullim-lemon: var(--color-secondary-500);
+  --color-pullim-lemon-soft: oklch(0.97 0.09 116);
+  --color-pullim-lemon-ink: oklch(0.45 0.10 116);
 
-  /* 보조 색 — 블록 타입별 아이콘 컨테이너 (11-planner-design § 5.1) */
+  /* 보조 색 — 블록 타입별 아이콘 컨테이너 */
   --color-pullim-violet-50: #F5F3FF;
   --color-pullim-violet-600: #7C3AED;
   --color-pullim-teal-50:   #ECFDF5;
   --color-pullim-teal-600:  #0D9488;
 
-  /* 학습 히트맵 6단계 */
-  --color-pullim-heat-0: #F0F3F9;
-  --color-pullim-heat-1: #D9E5FB;
-  --color-pullim-heat-2: #A9C4FF;
-  --color-pullim-heat-3: #5A8BFF;
-  --color-pullim-heat-4: #2854D8;
-  --color-pullim-heat-5: #0E1F54;
+  /* 학습 히트맵 6단계 — 새 블루 램프 정합 */
+  --color-pullim-heat-0: var(--color-primary-50);
+  --color-pullim-heat-1: var(--color-primary-100);
+  --color-pullim-heat-2: var(--color-primary-300);
+  --color-pullim-heat-3: var(--color-primary-400);
+  --color-pullim-heat-4: var(--color-primary-600);
+  --color-pullim-heat-5: var(--color-primary-900);
 
-  /* 라운드 */
+  /* 라운드 — pullim-os SHARP 스케일 */
   --radius-xs: 4px;
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-pill: 9999px;
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* 모션 — duration / easing 토큰 (08-design-system § 10) */
+  /* 모션 */
   --pullim-duration-fast: 120ms;
   --pullim-duration-base: 200ms;
   --pullim-duration-slow: 320ms;
   --pullim-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --pullim-ease-emphasis: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --pullim-ease-emphasis: cubic-bezier(0.32, 0.72, 0, 1);
 
-  /* 레이아웃 — 셸 골격 (08-design-system § 6.5) */
-  --pullim-header-height-desktop: 56px;
-  --pullim-header-height-mobile: 52px;
+  /* 레이아웃 — 셸 골격 (코치 DashboardShell 정합: 헤더 60 / 콘텐츠 1180) */
+  --pullim-header-height-desktop: 60px;
+  --pullim-header-height-mobile: 56px;
   --pullim-sidebar-width-full: 240px;
   --pullim-sidebar-width-compact: 64px;
   --pullim-tabbar-height: 64px;
-  --pullim-content-maxwidth: 1280px;
+  --pullim-content-maxwidth: 1180px;
   --pullim-content-gutter-desktop: 24px;
   --pullim-content-gutter-mobile: 16px;
   --pullim-fab-offset-bottom: calc(var(--pullim-tabbar-height) + 24px);
@@ -141,88 +144,88 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem; /* 8px — pullim-os md */
 
-  /* 라이트 테마 — 풀림 매핑 */
-  --background: #FFFFFF;
-  --foreground: #121627;
-  --card: #FFFFFF;
-  --card-foreground: #121627;
-  --popover: #FFFFFF;
-  --popover-foreground: #121627;
-  --primary: #3B6FF6;
+  /* 라이트 — PUDS 시맨틱 토큰 바인딩 */
+  --background: var(--surface-canvas);
+  --foreground: var(--text-primary);
+  --card: var(--surface-raised);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--color-primary-600);
   --primary-foreground: #FFFFFF;
-  --secondary: #EDF0F5;
-  --secondary-foreground: #20263A;
-  --muted: #F5F7FB;
-  --muted-foreground: #6B7489;
-  --accent: #EEF3FF;
-  --accent-foreground: #1D3FA8;
+  --secondary: var(--surface-sunken);
+  --secondary-foreground: var(--text-secondary);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--text-tertiary);
+  --accent: var(--color-primary-50);
+  --accent-foreground: var(--color-primary-700);
   --destructive: #E5484D;
-  --border: #DDE2EC;
-  --input: #DDE2EC;
-  --ring: #3B6FF6;
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--color-primary-600);
 
-  /* 차트 — IRT 5단계 톤 */
-  --chart-1: #3B6FF6;
-  --chart-2: #5A8BFF;
-  --chart-3: #2854D8;
-  --chart-4: #1D3FA8;
-  --chart-5: #8BAEFF;
+  /* 차트 — 블루 램프 톤 */
+  --chart-1: var(--color-primary-600);
+  --chart-2: var(--color-primary-400);
+  --chart-3: var(--color-primary-800);
+  --chart-4: var(--color-primary-300);
+  --chart-5: var(--color-primary-500);
 
-  /* 사이드바 (학생 shell의 하단 탭 / 교사 사이드바 공용) */
-  --sidebar: #FBFCFE;
-  --sidebar-foreground: #121627;
-  --sidebar-primary: #3B6FF6;
+  /* 사이드바 */
+  --sidebar: var(--surface-raised);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--color-primary-600);
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #EEF3FF;
-  --sidebar-accent-foreground: #1D3FA8;
-  --sidebar-border: #DDE2EC;
-  --sidebar-ring: #3B6FF6;
+  --sidebar-accent: var(--color-primary-50);
+  --sidebar-accent-foreground: var(--color-primary-700);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--color-primary-600);
 
-  /* 풀림 그림자 */
-  --shadow-pullim-xs: 0 1px 2px rgba(18, 22, 39, 0.04);
-  --shadow-pullim-sm: 0 1px 3px rgba(18, 22, 39, 0.06), 0 1px 2px rgba(18, 22, 39, 0.04);
-  --shadow-pullim-md: 0 4px 12px rgba(18, 22, 39, 0.06), 0 2px 4px rgba(18, 22, 39, 0.04);
-  --shadow-pullim-lg: 0 12px 24px rgba(18, 22, 39, 0.08), 0 4px 8px rgba(18, 22, 39, 0.04);
-  --shadow-pullim-glow: 0 0 0 4px rgba(59, 111, 246, 0.15);
+  /* 풀림 그림자 — PUDS ink 값(rgba 13,26,31) */
+  --shadow-pullim-xs: 0 1px 2px rgba(13, 26, 31, 0.06);
+  --shadow-pullim-sm: 0 1px 3px rgba(13, 26, 31, 0.08), 0 1px 2px rgba(13, 26, 31, 0.05);
+  --shadow-pullim-md: 0 2px 8px rgba(13, 26, 31, 0.08), 0 2px 4px rgba(13, 26, 31, 0.05);
+  --shadow-pullim-lg: 0 12px 40px rgba(3, 98, 218, 0.12), 0 4px 8px rgba(13, 26, 31, 0.05);
+  --shadow-pullim-glow: 0 0 0 4px var(--color-primary-a4, rgba(3, 98, 218, 0.15));
 }
 
 .dark {
-  /* 다크 — 풀림 슬레이트 900 베이스 (학생 야간 학습 모드 대비) */
-  --background: #080B18;
-  --foreground: #FBFCFE;
-  --card: #121627;
-  --card-foreground: #FBFCFE;
-  --popover: #121627;
-  --popover-foreground: #FBFCFE;
-  --primary: #5A8BFF;
-  --primary-foreground: #070F2C;
-  --secondary: #20263A;
-  --secondary-foreground: #FBFCFE;
-  --muted: #20263A;
-  --muted-foreground: #97A0B4;
-  --accent: #1D3FA8;
-  --accent-foreground: #DCE6FF;
+  /* 다크 — 휴면(토글 미배선). PUDS gray-950 베이스로 패리티만 유지. */
+  --background: var(--color-gray-950);
+  --foreground: var(--color-gray-50);
+  --card: var(--color-gray-900);
+  --card-foreground: var(--color-gray-50);
+  --popover: var(--color-gray-900);
+  --popover-foreground: var(--color-gray-50);
+  --primary: var(--color-primary-400);
+  --primary-foreground: var(--color-primary-950);
+  --secondary: var(--color-gray-800);
+  --secondary-foreground: var(--color-gray-50);
+  --muted: var(--color-gray-800);
+  --muted-foreground: var(--color-gray-400);
+  --accent: var(--color-primary-900);
+  --accent-foreground: var(--color-primary-100);
   --destructive: #E5484D;
   --border: rgba(255, 255, 255, 0.08);
   --input: rgba(255, 255, 255, 0.10);
-  --ring: #5A8BFF;
+  --ring: var(--color-primary-400);
 
-  --chart-1: #5A8BFF;
-  --chart-2: #8BAEFF;
-  --chart-3: #3B6FF6;
-  --chart-4: #B8CDFF;
-  --chart-5: #2854D8;
+  --chart-1: var(--color-primary-400);
+  --chart-2: var(--color-primary-300);
+  --chart-3: var(--color-primary-600);
+  --chart-4: var(--color-primary-200);
+  --chart-5: var(--color-primary-500);
 
-  --sidebar: #121627;
-  --sidebar-foreground: #FBFCFE;
-  --sidebar-primary: #5A8BFF;
-  --sidebar-primary-foreground: #070F2C;
-  --sidebar-accent: #20263A;
-  --sidebar-accent-foreground: #DCE6FF;
+  --sidebar: var(--color-gray-900);
+  --sidebar-foreground: var(--color-gray-50);
+  --sidebar-primary: var(--color-primary-400);
+  --sidebar-primary-foreground: var(--color-primary-950);
+  --sidebar-accent: var(--color-gray-800);
+  --sidebar-accent-foreground: var(--color-primary-100);
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #5A8BFF;
+  --sidebar-ring: var(--color-primary-400);
 }
 
 @layer components {
@@ -250,13 +253,8 @@
     margin-top: 0;
     transition: transform 120ms ease;
   }
-  .dual-range::-webkit-slider-thumb:hover {
-    transform: scale(1.1);
-  }
-  .dual-range::-webkit-slider-thumb:active {
-    cursor: grabbing;
-    transform: scale(1.15);
-  }
+  .dual-range::-webkit-slider-thumb:hover { transform: scale(1.1); }
+  .dual-range::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.15); }
   .dual-range::-moz-range-thumb {
     width: 18px;
     height: 18px;
@@ -268,29 +266,12 @@
     pointer-events: auto;
     transition: transform 120ms ease;
   }
-  .dual-range::-moz-range-thumb:hover {
-    transform: scale(1.1);
-  }
-  .dual-range::-moz-range-thumb:active {
-    cursor: grabbing;
-    transform: scale(1.15);
-  }
-  .dual-range::-webkit-slider-runnable-track {
-    background: transparent;
-    height: 100%;
-  }
-  .dual-range::-moz-range-track {
-    background: transparent;
-    height: 100%;
-  }
-  .dual-range:focus-visible::-webkit-slider-thumb {
-    outline: 2px solid var(--color-pullim-blue-400);
-    outline-offset: 2px;
-  }
-  .dual-range:focus-visible::-moz-range-thumb {
-    outline: 2px solid var(--color-pullim-blue-400);
-    outline-offset: 2px;
-  }
+  .dual-range::-moz-range-thumb:hover { transform: scale(1.1); }
+  .dual-range::-moz-range-thumb:active { cursor: grabbing; transform: scale(1.15); }
+  .dual-range::-webkit-slider-runnable-track { background: transparent; height: 100%; }
+  .dual-range::-moz-range-track { background: transparent; height: 100%; }
+  .dual-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--color-pullim-blue-400); outline-offset: 2px; }
+  .dual-range:focus-visible::-moz-range-thumb { outline: 2px solid var(--color-pullim-blue-400); outline-offset: 2px; }
 }
 
 @layer base {
@@ -301,12 +282,10 @@
     @apply bg-background text-foreground antialiased;
     font-feature-settings: 'tnum' 1, 'cv11' 1;
     letter-spacing: -0.01em;
-    /* 디스플레이 깨짐 방지 — 320px 미만에서는 가로 스크롤 */
     min-width: 320px;
   }
   html {
     @apply font-sans;
   }
-  /* 학생 화면은 모바일 우선 → 폰트 크기 살짝 키움 */
   h1, h2, h3 { letter-spacing: -0.02em; }
 }
