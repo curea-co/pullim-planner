@@ -96,8 +96,9 @@
   --color-pullim-lvl-4: #2854D8;
   --color-pullim-lvl-5: #152E7A;
 
-  /* 풀림 레몬 — PUDS secondary(레몬 액센트) 별칭. soft/ink는 PUDS 미보유라 hex 유지 */
-  --color-pullim-lemon: var(--color-secondary-500);
+  /* 풀림 레몬 — 코치(writing/admissions)와 동일한 vivid #E6FF4C.
+     PUDS secondary-500(oklch 0.967…)은 sRGB 클램프 시 창백해져 CTA 어포던스가 약함 → 코치와 어긋남. soft/ink는 hex 유지 */
+  --color-pullim-lemon: #E6FF4C;
   --color-pullim-lemon-soft: #F4FFB8;
   --color-pullim-lemon-ink: #5C6B0A;
 
