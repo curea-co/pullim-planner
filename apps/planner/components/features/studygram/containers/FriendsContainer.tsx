@@ -92,6 +92,8 @@ export default function FriendsContainer() {
           }
         } catch (e) {
           if (!cancelled) {
+            // 이전 쿼리 결과 잔존 방지(Codex #115-3) — 실패 토스트와 옛 결과가 함께 보이는 혼란 제거.
+            setRealSearchResults([]);
             toast.error(e instanceof ApiError ? e.message : '친구 검색에 실패했어요');
           }
         }
