@@ -191,42 +191,13 @@
   --shadow-pullim-glow: 0 0 0 4px var(--color-primary-a4, rgba(3, 98, 218, 0.15));
 }
 
-.dark {
-  /* 다크 — 휴면(토글 미배선). PUDS gray-950 베이스로 패리티만 유지. */
-  --background: var(--color-gray-950);
-  --foreground: var(--color-gray-50);
-  --card: var(--color-gray-900);
-  --card-foreground: var(--color-gray-50);
-  --popover: var(--color-gray-900);
-  --popover-foreground: var(--color-gray-50);
-  --primary: var(--color-primary-400);
-  --primary-foreground: var(--color-primary-950);
-  --secondary: var(--color-gray-800);
-  --secondary-foreground: var(--color-gray-50);
-  --muted: var(--color-gray-800);
-  --muted-foreground: var(--color-gray-400);
-  --accent: var(--color-primary-900);
-  --accent-foreground: var(--color-primary-100);
-  --destructive: #E5484D;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.10);
-  --ring: var(--color-primary-400);
-
-  --chart-1: var(--color-primary-400);
-  --chart-2: var(--color-primary-300);
-  --chart-3: var(--color-primary-600);
-  --chart-4: var(--color-primary-200);
-  --chart-5: var(--color-primary-500);
-
-  --sidebar: var(--color-gray-900);
-  --sidebar-foreground: var(--color-gray-50);
-  --sidebar-primary: var(--color-primary-400);
-  --sidebar-primary-foreground: var(--color-primary-950);
-  --sidebar-accent: var(--color-gray-800);
-  --sidebar-accent-foreground: var(--color-primary-100);
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: var(--color-primary-400);
-}
+/* 다크 모드 — 별 트랙(미배선). 의도적으로 이 PR에 다크 오버라이드를 두지 않는다.
+   이유: 앱은 `<html data-theme="pullim-os">`(브랜드 축)로 렌더되고 컬러 모드 토글은 없다.
+   과거의 `.dark` 블록은 shadcn 레이어(--background 등)만 덮고 _base.css가 직접 쓰는
+   베이스 토큰(--surface-canvas/--text-primary/--border-default …)은 덮지 못해, 활성화 시
+   토큰 계층이 어긋났다(Codex 리뷰 지적).
+   다크 도입 시: 브랜드 축(data-theme)과 컬러 모드 축을 분리하고, shadcn 매핑과 _base 베이스
+   토큰을 같은 선택자에서 함께 재정의할 것. */
 
 @layer components {
   /* Dual-thumb range slider — 트랙 클릭은 무시, 핸들만 드래그 가능 */

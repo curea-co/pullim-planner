@@ -28,7 +28,7 @@ export function AppHeader({ role }: { role: Role }) {
 
   return (
     <header className="bg-card/85 sticky top-0 z-30 border-b backdrop-blur-md">
-      <div className="flex h-[60px] items-center gap-2 px-3 md:px-4">
+      <div className="flex h-14 items-center gap-2 px-3 md:h-[60px] md:px-4">
         <MobileDrawer role={role} />
 
         <Link href="/" className="flex items-center gap-2 shrink-0 no-underline">
