@@ -445,9 +445,9 @@
       <div class="tier tier-top">
         <div class="tier-label">
           <span class="name">중앙 로그인 (SSO)</span>
-          <span class="tech">pullim.ai/login?next=</span>
+          <span class="tech">$NEXT_PUBLIC_PULLIM_LOGIN_URL/login?next=</span>
         </div>
-        <p class="tier-desc">플랫폼이 소유한 로그인(apex). 성공하면 공유 세션 쿠키를 세팅하고 <code>?next=</code> 로 복귀시킨다. 플래너는 자체 비밀번호 폼이 없다 — <code>lib/auth/central-login.ts</code> 는 SSO 가능 호스트 allowlist 검사 후 리다이렉트만 한다.</p>
+        <p class="tier-desc">플랫폼이 소유한 로그인. 성공하면 공유 세션 쿠키를 세팅하고 <code>?next=</code> 로 복귀시킨다. 플래너는 자체 비밀번호 폼이 없다 — <code>lib/auth/central-login.ts</code> 는 SSO 가능 호스트 allowlist 검사 후 리다이렉트만 한다. <span style="color:var(--muted)">로그인 호스트는 <b>환경별</b>(<code>NEXT_PUBLIC_PULLIM_LOGIN_URL</code>) — prod <code>pullim.ai</code> · 로컬 <code>pullim.local:3001</code>.</span></p>
       </div>
 
       <div class="connector"><span class="rail-note">세션 쿠키 발급</span></div>
@@ -742,12 +742,14 @@
       </div>
       <div class="step">
         <div class="sn">2</div>
-        <div class="st-body"><b>중앙 로그인으로 위임.</b> <code>pullim.ai/login?next=&lt;현재 URL&gt;</code> 로 리다이렉트.</div>
+        <div class="st-body"><b>중앙 로그인으로 위임.</b> <code>&lt;로그인 호스트&gt;/login?next=&lt;현재 URL&gt;</code> 로 리다이렉트.
+          <span class="sub">로그인 호스트는 <code>NEXT_PUBLIC_PULLIM_LOGIN_URL</code> 로 환경마다 다르다 — prod 는 <code>pullim.ai</code>, 로컬은 <code>pullim.local:3001</code>. 고정 URL 이 아니다.</span>
+        </div>
       </div>
       <div class="step">
         <div class="sn">3</div>
         <div class="st-body"><b>세션 쿠키 발급.</b> 성공 시 플랫폼이 <code>Domain=.pullim.ai</code> 스코프의 HttpOnly 쿠키를 세팅하고 <code>next</code> 로 복귀시킨다.
-          <span class="sub">플래너가 그 등록도메인을 공유하므로 쿠키는 same-site — 자동으로 함께 실려 간다. 로컬에선 <code>*.pullim.local</code>(<code>/etc/hosts</code> 매핑)이 이를 흉내 낸다. 반면 맨 <code>localhost</code> 는 public suffix 라 서브도메인이 cross-site 가 되고 쿠키가 버려진다.</span>
+          <span class="sub">플래너가 그 등록도메인을 공유하므로 쿠키는 same-site — 자동으로 함께 실려 간다. 로컬에선 <code>*.pullim.local</code>(<code>/etc/hosts</code> 매핑)이 <b>상위 도메인을 공유하는 서브도메인</b> 구성을 만들어 이를 흉내 낸다. 반면 맨 <code>localhost</code> 로는 그런 공통 상위 도메인의 서브도메인 구성(<code>os.·api.·planner.</code>)을 세울 수 없어, 서비스 간 쿠키 공유(SSO)를 재현하지 못한다.</span>
         </div>
       </div>
       <div class="step">
