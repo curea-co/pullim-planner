@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, notFound } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@pullim-planner/api-client';
@@ -9,6 +9,9 @@ import { pullimPlannerClient, pullimToStudyProof } from '@/lib/planner/pullim-cl
 import ProofDetailPresenter from '../presenters/ProofDetailPresenter';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
+
+// 응원 이모지 — 단일 프리셋(BE 계약 emoji 1~8자, per-user·per-emoji 멱등).
+const REACTION_EMOJI = '🔥';
 
 interface ProofDetailContainerProps {
   proofId: string;
@@ -22,6 +25,11 @@ export default function ProofDetailContainer({ proofId }: ProofDetailContainerPr
   // 로드 실패(일시 장애)와 not-found(대상 없음)를 분리 — 네트워크·401·500 을 "없는 카드"로 오인하지 않게.
   const [loadError, setLoadError] = useState(false);
   const [notFoundProof, setNotFoundProof] = useState(false);
+  // 내 응원 여부 — BE 가 내 리액션 목록을 내리지 않아 세션 내 로컬 추적(초기 false). add/remove 는
+  // per-user·per-emoji 멱등이라 과거 응원과 겹쳐도 서버 상태는 안전하다.
+  const [reacted, setReacted] = useState(false);
+  // 응원 토글 in-flight — 더블탭에 낙관 갱신이 겹치지 않게(멱등 BE 지만 카운트 이중 반영 방지).
+  const reactionInFlight = useRef(false);
 
   // 단건 조회 엔드포인트가 없어(GET /proofs?scope 만) mine+friends 를 fetch 해 id 로 찾는다.
   // effect 본문 동기 setState 금지(cascading-render 린트) → async IIFE 안에서만 세팅(R3b 교훈).
@@ -85,6 +93,31 @@ export default function ProofDetailContainer({ proofId }: ProofDetailContainerPr
     };
   }, [proofId]);
 
+  // 응원 토글 — 낙관 갱신(reactionCount ±1) 후 실 API, 실패 시 롤백+토스트. bypass 는 로컬 흉내만.
+  const handleToggleReaction = useCallback(() => {
+    if (!proof || reactionInFlight.current) return;
+    const next = !reacted;
+    const apply = (p: StudyProof | null, delta: number): StudyProof | null =>
+      p && { ...p, reactionCount: Math.max(0, p.reactionCount + delta) };
+    setReacted(next);
+    setProof((prev) => apply(prev, next ? 1 : -1));
+    if (DEV_AUTH_BYPASS) return; // mock — 서버 없이 로컬 상태만(기존 bypass 동작 유지).
+    reactionInFlight.current = true;
+    void (async () => {
+      try {
+        if (next) await pullimPlannerClient.addReaction(proof.id, REACTION_EMOJI);
+        else await pullimPlannerClient.removeReaction(proof.id, REACTION_EMOJI);
+      } catch (e) {
+        // 롤백 — 404(미가시·미존재 비구분, enumeration 저항) 포함 실패 사유는 generic 안내.
+        setReacted(!next);
+        setProof((prev) => apply(prev, next ? -1 : 1));
+        toast.error(e instanceof ApiError ? e.message : '응원을 반영하지 못했어요');
+      } finally {
+        reactionInFlight.current = false;
+      }
+    })();
+  }, [proof, reacted]);
+
   // 히스토리가 없으면(직접 URL 진입 / 새 탭) 공유 허브로 fallback
   const handleBack = useCallback(() => {
     if (window.history.length > 1) {
@@ -124,5 +157,12 @@ export default function ProofDetailContainer({ proofId }: ProofDetailContainerPr
     notFound();
   }
 
-  return <ProofDetailPresenter proof={proof} onBack={handleBack} />;
+  return (
+    <ProofDetailPresenter
+      proof={proof}
+      onBack={handleBack}
+      reacted={reacted}
+      onToggleReaction={handleToggleReaction}
+    />
+  );
 }

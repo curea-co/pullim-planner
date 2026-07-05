@@ -73,7 +73,9 @@ export default function FriendsPresenter({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground">{u.name}</p>
-                      <p className="text-xs text-muted-foreground">인증 {u.proofCount}회</p>
+                      {u.proofCount !== undefined && (
+                        <p className="text-xs text-muted-foreground">인증 {u.proofCount}회</p>
+                      )}
                     </div>
                     {requested ? (
                       <span className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground">
@@ -108,7 +110,7 @@ export default function FriendsPresenter({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground">{f.name}</p>
-                    <p className="text-xs text-muted-foreground">{f.grade}</p>
+                    {f.grade && <p className="text-xs text-muted-foreground">{f.grade}</p>}
                   </div>
                   <div className="flex gap-1.5">
                     <button
@@ -158,7 +160,7 @@ export default function FriendsPresenter({
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {f.grade} · 인증 {f.proofCount}회
+                      {f.grade && `${f.grade} · `}인증 {f.proofCount}회
                       {f.latestProofDate && ` · 최근 ${f.latestProofDate}`}
                     </p>
                   </div>

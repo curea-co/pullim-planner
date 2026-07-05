@@ -12,6 +12,11 @@ export type ShareTab = 'mine' | 'friends';
 
 interface SharePresenterProps {
   setting: StudygramSetting | null;
+  /**
+   * 설정 로드 실패(미지수) — null(미온보딩 확정)과 구분한다. true 면 온보딩 EmptyState 를 띄우지
+   * 않고(온보딩 완료 사용자 오유도 방지) 목표/CTA 만 생략한 채 피드는 그대로 렌더한다(부분실패 격리).
+   */
+  settingUnknown?: boolean;
   friendProofs: StudyProof[];
   acceptedFriends: Friend[];
   goalProgress: { posted: number; goalTotal: number; remainDays: number; streakDays: number } | null;
@@ -22,6 +27,7 @@ interface SharePresenterProps {
 
 export default function SharePresenter({
   setting,
+  settingUnknown = false,
   friendProofs,
   acceptedFriends,
   goalProgress,
@@ -55,11 +61,11 @@ export default function SharePresenter({
       />
 
       <div className="space-y-4">
-        {!setting ? (
+        {!setting && !settingUnknown ? (
           <EmptyState variant="no-setting" />
         ) : (
           <>
-            {goalProgress && (
+            {setting && goalProgress && (
               <GoalProgressWidget
                 posted={goalProgress.posted}
                 goalTotal={goalProgress.goalTotal}
@@ -69,7 +75,7 @@ export default function SharePresenter({
               />
             )}
 
-            {!hasTodayProof && (
+            {setting && !hasTodayProof && (
               <Link
                 href="/planner/share/proof/new"
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-pullim-blue-300 bg-pullim-blue-50 py-4 text-sm font-bold text-pullim-blue-600 hover:bg-pullim-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
@@ -97,14 +103,9 @@ export default function SharePresenter({
               ))}
             </div>
 
+            {/* 피드가 있으면 친구 목록 조회 실패(빈 acceptedFriends)와 무관하게 그리드를 그린다(부분실패 격리). */}
             {activeTab === 'friends' && (
-              acceptedFriends.length === 0 ? (
-                <EmptyState variant="no-friends" />
-              ) : friendProofs.length === 0 ? (
-                <div className="py-10 text-center text-xs text-muted-foreground">
-                  친구들이 아직 오늘 인증을 안 했어요
-                </div>
-              ) : (
+              friendProofs.length > 0 ? (
                 <div className="grid grid-cols-2 gap-2">
                   {friendProofs.map((proof) => {
                     const friend = acceptedFriends.find((f) => f.userId === proof.userId);
@@ -117,6 +118,12 @@ export default function SharePresenter({
                       />
                     );
                   })}
+                </div>
+              ) : acceptedFriends.length === 0 ? (
+                <EmptyState variant="no-friends" />
+              ) : (
+                <div className="py-10 text-center text-xs text-muted-foreground">
+                  친구들이 아직 오늘 인증을 안 했어요
                 </div>
               )
             )}
