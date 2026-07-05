@@ -52,14 +52,14 @@ export function BurnoutThresholdBanner({ score }: Props) {
         <button
           type="button"
           onClick={onReduceBlock}
-          className="bg-pullim-warn-cta-bg hover:bg-pullim-warn-cta-bg/90 inline-flex items-center rounded-lg px-2.5 py-1.5 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-warn-cta-bg/40"
+          className="bg-pullim-warn-cta-bg hover:bg-pullim-warn-cta-bg/90 inline-flex items-center rounded-lg px-2.5 py-2.5 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-warn-cta-bg/40"
         >
           블록 줄이기
         </button>
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="text-pullim-slate-700 hover:bg-pullim-slate-100 inline-flex items-center rounded-lg px-2.5 py-1.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+          className="text-pullim-slate-700 hover:bg-pullim-slate-100 inline-flex items-center rounded-lg px-2.5 py-2.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
         >
           그대로 가기
         </button>
@@ -74,9 +74,9 @@ export function BurnoutThresholdBanner({ score }: Props) {
           type="button"
           aria-label="배너 닫기"
           onClick={() => setDismissed(true)}
-          className="text-pullim-slate-500 hover:bg-pullim-slate-100 hover:text-pullim-slate-700 inline-flex h-7 w-7 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+          className="text-pullim-slate-500 hover:bg-pullim-slate-100 hover:text-pullim-slate-700 inline-flex h-10 w-10 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
         >
-          <X className="h-3.5 w-3.5" aria-hidden />
+          <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
     </aside>

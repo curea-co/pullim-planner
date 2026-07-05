@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import {
-  FileText, CalendarClock, CalendarRange, Grid3x3,
+  CalendarClock, CalendarRange, Grid3x3,
   type LucideIcon,
 } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
@@ -33,7 +33,7 @@ type Props = {
 
 const titleByView: Record<ReportsView, string> = {
   day:   '오늘의 회고',
-  week:  '이번 주 회고',
+  week:  '성장 리포트',
   month: '이번 달 회고',
 };
 
@@ -45,7 +45,6 @@ export function ReportsShell({ view, onChangeView, description, action, children
   return (
     <div className="space-y-4">
       <PageHeader
-        eyebrow={{ icon: FileText, text: '성장 리포트' }}
         title={titleByView[view]}
         description={description}
         action={action}

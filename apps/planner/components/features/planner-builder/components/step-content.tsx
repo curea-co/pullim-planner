@@ -4,34 +4,39 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Calendar, Bell, Sparkles, Check, AlertCircle, X, Plus,
-  MessageSquare, Smartphone, Users, BookOpenCheck, Sunrise,
+  Smartphone, Users, BookOpenCheck, Sunrise,
   Lightbulb, AlertTriangle, Target, PencilLine, BookOpen, Brain,
   Coffee, FileText, Mic, MessageCircle, ChevronLeft, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WEAKNESS_ENABLED } from '@/lib/flags';
 import {
   subjectLabels, type SubjectKey, getWeakNodes, allCurricula,
-  type BlockType,
+  type BlockType, type Routine,
+  getRoutines, findRoutine, routineSubjectLabel, formatWeekdays, blockTypeMeta,
 } from '@/lib/mock';
+import { BLOCK_TYPE_STRIPE } from '@/lib/planner/block-type-style';
 import {
   type PlannerForm, blockPatternMeta, motivationStyleMeta,
   type ExamType, examTypeMeta,
 } from './builder-types';
 import { RequiredMark } from '@/components/shell/required-mark';
 import { UnitEditorModal } from './unit-editor-modal';
-import { Pencil } from 'lucide-react';
+import { Pencil, Repeat2 } from 'lucide-react';
 
 type Props = {
   form: PlannerForm;
   setForm: (next: PlannerForm) => void;
 };
 
-const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'history'];
+const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'etc'];
 
 /* ─── Step 1 — 목표 (시험 종류 탭 + 단일/범위 일자) ─── */
-const TODAY_ISO = '2026-04-28';
+// 접속 시점의 실제 오늘(KST) — D-day를 하드코딩 데모일이 아닌 현재 날짜 기준으로 계산.
+const TODAY_ISO = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 const examTypeOrder: ExamType[] = ['mock', 'suneung', 'midterm', 'final', 'other'];
 
@@ -172,15 +177,7 @@ export function PStep1Goal({ form, setForm }: Props) {
           placeholder="예: 영어 빈칸 추론 1등급 사수"
           className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
         />
-        <p className="text-pullim-slate-500 mt-1 text-[10px]">
-          힘들 때 봇이 너의 다짐을 떠올려줘요. 짧을수록 좋음.
-        </p>
       </div>
-
-      <aside className="bg-pullim-blue-50 text-pullim-blue-700 inline-flex w-full items-start gap-1.5 rounded-xl p-3 text-[11px] leading-relaxed">
-        <Lightbulb aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        <span>{meta.hint}</span>
-      </aside>
     </div>
   );
 }
@@ -219,24 +216,15 @@ function TargetField({ form, setForm }: Props) {
   if (kind === 'grade') {
     return (
       <div>
-        <label className="text-pullim-slate-700 mb-1 block text-xs font-bold">목표 등급</label>
-        <div className="grid grid-cols-4 gap-1">
-          {[1, 2, 3, 4].map(g => (
-            <button
-              key={g}
-              type="button"
-              onClick={() => setForm({ ...form, targetGrade: g as PlannerForm['targetGrade'] })}
-              className={cn(
-                'rounded-lg border-2 py-2 text-xs font-bold transition-colors',
-                form.targetGrade === g
-                  ? 'border-pullim-blue-500 bg-pullim-blue-50 text-pullim-blue-700'
-                  : 'border-pullim-slate-200 text-pullim-slate-600 hover:border-pullim-slate-300',
-              )}
-            >
-              {g}등급
-            </button>
-          ))}
-        </div>
+        <label htmlFor="target-grade" className="text-pullim-slate-700 mb-1 block text-xs font-bold">목표 등급</label>
+        <input
+          id="target-grade"
+          type="text"
+          value={form.targetGrade}
+          onChange={e => setForm({ ...form, targetGrade: e.target.value })}
+          placeholder="(예) 1등급"
+          className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
+        />
       </div>
     );
   }
@@ -469,7 +457,11 @@ function resolveUnitLabel(unitStringOrId: string): string {
 
 export function PStep3Subjects({ form, setForm }: Props) {
   const unitsObj = form.subjectUnits ?? {};
-  const selectedSubjects = subjectOrder.filter(s => s in unitsObj);
+  // 이미 단원이 있는 과목은 picker 순서에 없어도(예: 기존 한국사) 모두 노출 — 편집 시 데이터 누락 방지
+  const selectedSubjects: SubjectKey[] = [
+    ...subjectOrder.filter(s => s in unitsObj),
+    ...(Object.keys(unitsObj) as SubjectKey[]).filter(s => !subjectOrder.includes(s)),
+  ];
   const availableSubjects = subjectOrder.filter(s => !(s in unitsObj));
   const totalUnits = Object.values(unitsObj).reduce((a, b) => a + (b?.length ?? 0), 0);
   const empty = selectedSubjects.length === 0;
@@ -666,8 +658,113 @@ export function PStep4Pattern({ form, setForm }: Props) {
 }
 
 /* ─── Step 5 — 약점 자동 반영 ─── */
+/* ─── Step 5 — 루틴(반복 행동) 적용 ─── */
+export function PStep5Routine({ form, setForm, routines: routinesProp }: Props & { routines?: Routine[] }) {
+  // 실 루틴(컨테이너 주입) 우선, 미주입 시 mock fallback — dev QA #4(실 API 루틴 노출).
+  const routines = routinesProp ?? getRoutines();
+  const selected = new Set(form.routineIds);
+
+  function toggle(id: string) {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setForm({ ...form, routineIds: [...next] });
+  }
+
+  if (routines.length === 0) {
+    return (
+      <div className="border-pullim-slate-200 bg-pullim-slate-50/50 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-12 text-center">
+        <Repeat2 className="text-pullim-slate-400 h-7 w-7" aria-hidden />
+        <p className="text-pullim-slate-700 text-sm font-bold">등록된 루틴이 없어요</p>
+        <p className="text-pullim-slate-500 text-xs">
+          반복하는 행동을 먼저 등록하면 여기서 골라 넣을 수 있어요. (건너뛰어도 돼요)
+        </p>
+        <Link
+          href="/planner/routine"
+          className="text-pullim-blue-700 hover:bg-pullim-blue-50 mt-1 inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+        >
+          루틴 관리로
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-pullim-slate-500 text-xs">
+        이 시간표에 넣을 반복 행동을 골라요. 시간이 맞는 요일은 마지막 단계 미리보기에 들어가요(기존 블록과 겹치면 제외). 건너뛰어도 돼요.
+      </p>
+      <ul className="space-y-2">
+        {routines.map((r) => {
+          const checked = selected.has(r.id);
+          const TypeIcon = blockTypeMeta[r.type].Icon;
+          return (
+            <li key={r.id}>
+              <label
+                className={cn(
+                  'relative flex cursor-pointer items-center gap-3 overflow-hidden rounded-xl border p-3 pl-4 transition-colors',
+                  checked
+                    ? 'border-pullim-blue-300 bg-pullim-blue-50/50'
+                    : 'border-pullim-slate-200 bg-card hover:border-pullim-blue-200',
+                )}
+              >
+                <span className={cn('absolute inset-y-0 left-0 w-1', BLOCK_TYPE_STRIPE[r.type])} aria-hidden />
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(r.id)}
+                  className="accent-pullim-blue-600 h-4 w-4 shrink-0"
+                  aria-label={`${r.title} 적용`}
+                />
+                <span className="bg-pullim-blue-50 text-pullim-blue-700 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" aria-hidden>
+                  <TypeIcon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-pullim-slate-900 truncate text-sm font-bold">{r.title}</div>
+                  <div className="text-pullim-slate-500 flex flex-wrap items-center gap-x-1.5 text-[11px]">
+                    <span>{routineSubjectLabel(r.subject)}</span>
+                    <span className="text-pullim-slate-300">·</span>
+                    <span className="font-mono">{r.startTime}–{r.endTime}</span>
+                    <span className="text-pullim-slate-300">·</span>
+                    <span>{formatWeekdays(r.weekdays)}</span>
+                  </div>
+                </div>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+      <Link
+        href="/planner/routine"
+        className="text-pullim-blue-700 hover:bg-pullim-blue-50 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+      >
+        + 루틴 관리
+      </Link>
+    </div>
+  );
+}
+
+/* ─── Step 6 — 약점 자동 반영 ─── */
 export function PStep5Weakness({ form, setForm }: Props) {
   const weak = getWeakNodes(0.5).slice(0, 3);
+
+  // 분석 BE 미구현(WEAKNESS_ENABLED off) — mock 약점 목록 대신 출시 예정 예고만.
+  // 값은 initialPlannerForm·plannerToForm 에서 false 로 고정돼 저장에 켜진 채 남지 않는다.
+  if (!WEAKNESS_ENABLED) {
+    return (
+      <div className="bg-card border-pullim-slate-200 rounded-xl border border-dashed p-4">
+        <div className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+          출시 예정
+        </div>
+        <h4 className="text-pullim-slate-900 mt-0.5 text-sm font-bold">약점 자동 반영 — 준비 중이에요</h4>
+        <p className="text-pullim-slate-500 mt-1 text-[11px] leading-relaxed">
+          풀림 분석이 공부 기록에서 약한 단원을 찾아내면, 시간표를 만들 때 그 단원을
+          먼저 배정해 드리는 기능이에요. 열리면 이 단계에서 켤 수 있어요. 지금은
+          다음 단계로 넘어가면 돼요.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -749,13 +846,8 @@ export function PStep6Motivation({ form, setForm }: Props) {
 export function PStep7Reminder({ form, setForm }: Props) {
   return (
     <div className="space-y-2">
-      <ToggleRow
-        Icon={MessageSquare}
-        label="카카오톡 알림"
-        description="블록 시작 알림. 부모 동의 필요 (만 14세 미만)."
-        value={form.remindKakao}
-        onToggle={() => setForm({ ...form, remindKakao: !form.remindKakao })}
-      />
+      {/* 카카오톡 알림 — 발송 API/연동 미구현(kakao는 OAuth 로그인 용도뿐, 알림 발송 백엔드 없음)이라
+          동작하지 않는 UI를 숨긴다. 실제 카카오 알림 발송이 연동되면 복원할 것. (dev QA 2026-07-02) */}
       <ToggleRow
         Icon={Smartphone}
         label="앱 푸시"
@@ -814,7 +906,7 @@ function ToggleRow({
 /* ─── Step 8 — 미리보기 + 활성화 ─── */
 function formatTarget(form: PlannerForm): string {
   const kind = examTypeMeta[form.examType ?? 'mock'].targetKind;
-  if (kind === 'grade') return `${form.targetGrade}등급`;
+  if (kind === 'grade') return form.targetGrade?.trim() || '미설정';
   if (kind === 'score') return `${form.targetScore ?? 0}점`;
   return form.targetGoal?.trim() || '미설정';
 }
@@ -878,6 +970,8 @@ type PreviewItem = {
   subjectLabel: string;
   type: BlockType;
   unitLabel: string;
+  /** 5단계에서 고른 루틴으로 들어간 블록 */
+  isRoutine?: boolean;
 };
 
 type PreviewDay = {
@@ -889,9 +983,12 @@ type PreviewDay = {
   items: PreviewItem[];
 };
 
-function generatePreview(form: PlannerForm, todayISO: string): PreviewDay[] {
+function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine[]): PreviewDay[] {
   const subjectKeys = Object.keys(form.subjectUnits ?? {}) as SubjectKey[];
   if (subjectKeys.length === 0) return [];
+
+  // 실 루틴(주입) 있으면 그 맵으로, 없으면 mock findRoutine — dev QA #4.
+  const routineMap = routines ? new Map(routines.map((r) => [r.id, r])) : null;
 
   const blockMinutes =
     form.blockPattern === 'pomodoro' ? 25
@@ -944,6 +1041,27 @@ function generatePreview(form: PlannerForm, todayISO: string): PreviewDay[] {
       });
     }
 
+    // 5단계에서 고른 루틴을 해당 요일 미리보기에 반영 (mock — 실제 적용·영속은 06-30 실 BE)
+    // 가용 시간(2단계) 밖이거나 기존 블록과 겹치면 보류한다(수동/자동 우선 — OI-3).
+    const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+    const winStart = startHour * 60;
+    const winEnd = endHour * 60;
+    const routineDay = (dt.weekday + 6) % 7; // jsDay(0=일) → routine weekday(0=월)
+    for (const id of form.routineIds) {
+      const r = routineMap ? routineMap.get(id) : findRoutine(id);
+      if (!r || !r.weekdays.some(w => w === routineDay)) continue;
+      const rs = toMin(r.startTime);
+      const re = toMin(r.endTime);
+      if (rs < winStart || re > winEnd) continue;                       // 가용 시간 밖
+      if (items.some(it => rs < toMin(it.end) && toMin(it.start) < re)) continue; // 겹침 보류
+      items.push({
+        start: r.startTime, end: r.endTime,
+        subjectLabel: routineSubjectLabel(r.subject),
+        type: r.type, unitLabel: r.title, isRoutine: true,
+      });
+    }
+    items.sort((a, b) => a.start.localeCompare(b.start));
+
     days.push({
       offset: i,
       monthDay: `${dt.m}/${dt.d}`,
@@ -970,15 +1088,17 @@ type Step8Props = {
    * 미주입 시 toast + router.push('/planner') 기본 동작.
    */
   onActivate?: (form: PlannerForm) => void;
+  /** 실 루틴(컨테이너 주입) — 미주입 시 mock. 미리보기의 루틴 반영에 사용. */
+  routines?: Routine[];
 };
 
-export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props) {
+export function PStep8Activate({ form, mode = 'create', onActivate, routines }: Step8Props) {
   const router = useRouter();
   const [previewIdx, setPreviewIdx] = useState(0);
   const weekdayHours = form.weekdayHours.end - form.weekdayHours.start;
   const weekly = weekdayHours * 5 + (form.weekendHours.end - form.weekendHours.start) * 2;
 
-  const previews = useMemo(() => generatePreview(form, TODAY_ISO), [form]);
+  const previews = useMemo(() => generatePreview(form, TODAY_ISO, routines), [form, routines]);
   const safeIdx = Math.min(previewIdx, Math.max(0, previews.length - 1));
   const current = previews[safeIdx];
   const totalMinutesToday = current?.items.reduce((s, it) => {
@@ -995,6 +1115,13 @@ export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props
     if (!form.examStartDate) {
       toast.error('1단계에서 시험 날짜를 선택해주세요');
       return;
+    }
+    if (examTypeMeta[form.examType ?? 'mock'].targetKind === 'grade') {
+      const n = parseInt(form.targetGrade, 10);
+      if (!Number.isFinite(n) || n < 1 || n > 9) {
+        toast.error('1단계에서 목표 등급을 숫자로 입력해주세요 (예: 1등급)');
+        return;
+      }
     }
     const subjectCount = Object.keys(form.subjectUnits ?? {}).length;
     if (subjectCount === 0) {
@@ -1030,9 +1157,10 @@ export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props
           <li>· 학습 범위: <strong className="text-white font-mono">{Object.keys(form.subjectUnits ?? {}).length}개 과목 · {Object.values(form.subjectUnits ?? {}).reduce((a, b) => a + (b?.length ?? 0), 0)}개 단원</strong>{form.weaknessAutoReflect ? ' (+ 약점 단원 자동)' : ''}</li>
           <li>· 시간 분배: <span className="text-pullim-slate-400">AI 자동 (단원 수 + 약점 + D-day 기반)</span></li>
           <li>· 블록 패턴: {blockPatternMeta[form.blockPattern].label} <span className="text-pullim-slate-500">({blockPatternMeta[form.blockPattern].spec})</span></li>
+          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(시간 맞는 요일만 미리보기 반영)</span></li>
           <li>· 동기 스타일: {motivationStyleMeta[form.motivationStyle].label}</li>
           <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON' : 'OFF'}</li>
-          <li>· 알림: {[form.remindKakao && '카톡', form.remindPush && '푸시', form.remindBefore5min && '5분 전', form.parentDailyReport && '부모 보고'].filter(Boolean).join(', ') || '없음'}</li>
+          <li>· 알림: {[form.remindPush && '푸시', form.remindBefore5min && '5분 전', form.parentDailyReport && '부모 보고'].filter(Boolean).join(', ') || '없음'}</li>
         </ul>
       </section>
 
@@ -1138,7 +1266,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate }: Step8Props
           )}
 
           <p className="text-pullim-slate-500 mt-1.5 text-[10px]">
-            ↑ 자동 생성 예시 — 3단계 단원·4단계 패턴·5단계 약점 설정이 그대로 반영돼요.
+            ↑ 자동 생성 예시 — 단원·블록 패턴·루틴·약점 설정이 그대로 반영돼요.
           </p>
         </section>
       )}
@@ -1165,6 +1293,11 @@ function PreviewBlock({ item }: { item: PreviewItem }) {
       <span className="bg-pullim-blue-50 text-pullim-blue-700 rounded-full px-2 py-0.5 font-bold">
         {item.subjectLabel}
       </span>
+      {item.isRoutine && (
+        <span className="bg-pullim-slate-100 text-pullim-slate-600 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
+          루틴
+        </span>
+      )}
       <span className="text-pullim-slate-700 inline-flex items-center gap-1 font-semibold">
         <Icon aria-hidden className="h-3 w-3" />
         {blockTypeShortLabel[item.type]}

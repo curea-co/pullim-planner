@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { Wrench, Save, Palette, ListChecks } from 'lucide-react';
+import { Save, Palette, ListChecks } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { FlywheelNote } from '@/components/shell/flywheel-note';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
-import type { Planner } from '@/lib/mock';
+import type { Planner, Routine } from '@/lib/mock';
 import { PlannerWizard } from '../components/planner-wizard';
 import { DecorateSection } from '../components/decorate-section';
 import type { EditTab } from '../containers/EditPlannerContainer';
@@ -25,6 +25,7 @@ interface EditPlannerPresenterProps {
   onJump: (n: number) => void;
   onSaveDraft: () => void;
   onSave: (submitted: PlannerForm) => void;
+  routines?: Routine[];
 }
 
 export default function EditPlannerPresenter({
@@ -33,6 +34,7 @@ export default function EditPlannerPresenter({
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
   onSaveDraft, onSave,
+  routines,
 }: EditPlannerPresenterProps) {
   if (!planner) {
     return (
@@ -52,7 +54,6 @@ export default function EditPlannerPresenter({
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow={{ icon: Wrench, text: '시간표 수정' }}
         title={`${planner.name} 수정하기`}
         description={tab === 'config'
           ? '기존 설정 그대로 불러왔어요. 변경 후 마지막 단계에서 [변경 사항 저장] 클릭.'
@@ -73,7 +74,7 @@ export default function EditPlannerPresenter({
         {(['config', 'layout'] as const).map(t => {
           const isCurrent = tab === t;
           const Icon = t === 'config' ? ListChecks : Palette;
-          const label = t === 'config' ? '설정 (8단계)' : '꾸미기';
+          const label = t === 'config' ? '설정 (9단계)' : '꾸미기';
           return (
             <button
               key={t}
@@ -110,6 +111,7 @@ export default function EditPlannerPresenter({
             mode="edit"
             onActivate={onSave}
             finishHint="↑ 위 [변경 사항 저장] 클릭으로 완료"
+            routines={routines}
           />
 
           <FlywheelNote>

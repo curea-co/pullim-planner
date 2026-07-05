@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { Clock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  todayBlocks, currentPersona, getDday, nextActiveBlock,
-  blockTypeMeta, subjectLabels, getFeatureRoute, conditionMeta,
+  getBlocksForDayOffset, currentPersona, getDday, nextActiveBlock,
+  blockTypeMeta, conditionMeta,
   hasQAccess, getBlockColor,
   type ConditionLevel, type BlockType, type TimeBlock,
 } from '@/lib/mock';
@@ -16,14 +15,16 @@ import { ActiveDayLayout } from '@/components/features/planner-home/components/l
 import { ConditionBurnoutPanel } from '@/components/features/planner-home/components/condition-burnout-panel';
 import { BlockCard } from '@/components/features/planner-home/components/block-card';
 import { BlockCompleteDialog } from '@/components/features/planner-home/components/block-complete-dialog';
+import { NextBlockHero } from '@/components/features/planner-home/components/next-block-hero';
+import { PeriodEmptyState } from '@/components/features/planner-home/components/period-empty-state';
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 
 /** 완료한 블록 다음의 첫 학습 블록(휴식 제외, todo/doing) — 모달 CTA 라우팅용 */
-function findFollowing(block: TimeBlock): TimeBlock | null {
-  const idx = todayBlocks.findIndex(b => b.id === block.id);
+function findFollowing(block: TimeBlock, blocks: TimeBlock[]): TimeBlock | null {
+  const idx = blocks.findIndex(b => b.id === block.id);
   if (idx < 0) return null;
-  for (let i = idx + 1; i < todayBlocks.length; i++) {
-    const b = todayBlocks[i];
+  for (let i = idx + 1; i < blocks.length; i++) {
+    const b = blocks[i];
     if (b.type !== 'break' && (b.status === 'todo' || b.status === 'doing')) return b;
   }
   return null;
@@ -31,16 +32,27 @@ function findFollowing(block: TimeBlock): TimeBlock | null {
 
 const legendTypes: BlockType[] = ['concept', 'practice', 'review', 'memorize', 'mock', 'tutor', 'self_explain'];
 
+interface DayViewProps {
+  /** 날짜 이동 offset (0=기준일). 0 외에는 데모 플랜이 없어 빈 상태. */
+  dayOffset?: number;
+  /** 빈 상태에서 "오늘 계획 보기" — offset 0으로 리셋 */
+  onResetToday?: () => void;
+  /** 실데이터(B4) — 미주입(dev bypass)이면 mock 폴백. */
+  blocks?: TimeBlock[];
+  /** 실데이터 D-day — blocks 와 함께 주입(미주입이면 mock persona 기준). */
+  dday?: number;
+}
+
 /** 일간 캘린더 본문 — 24h 시계 + 자기보고 패널 + 블록 리스트. */
-export function DayView() {
+export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp }: DayViewProps) {
   const [condition, setCondition] = useState<ConditionLevel>(3);
   const [showLegend, setShowLegend] = useState(false);
   const [trimTimeline, setTrimTimeline] = useState(true);
   const [completingBlock, setCompletingBlock] = useState<TimeBlock | null>(null);
-  const dday = getDday(currentPersona);
+  const dday = ddayProp ?? getDday(currentPersona);
   const ddayLabel = dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY' : `D+${Math.abs(dday)}`;
-  const next = nextActiveBlock();
-  const NextIcon = next ? blockTypeMeta[next.type].Icon : null;
+  const blocks = blocksProp ?? getBlocksForDayOffset(dayOffset);
+  const next = nextActiveBlock(blocks);
   const qAccess = hasQAccess();
   const { layoutId, paletteId } = getActiveCustomization();
 
@@ -61,6 +73,21 @@ export function DayView() {
     });
   }
 
+  if (blocks.length === 0) {
+    // 기준일(offset 0)인데 비어 있으면 = 활성 시간표에 아직 블록이 없음(신규 — mock 미생성).
+    // 잘못된 데모 블록을 보여주지 않고 정직한 빈 상태로 안내한다(실제 생성은 BE materialize).
+    if (dayOffset === 0) {
+      return (
+        <PeriodEmptyState
+          message="아직 학습 블록이 없어요"
+          subMessage="활성화한 시간표의 블록은 곧 채워질 거예요."
+        />
+      );
+    }
+    // 기준일 외 날짜 — 데모 플랜이 없어 빈 상태. BE 연동 시 그날 블록으로 대체.
+    return <PeriodEmptyState message="이 날짜엔 아직 계획이 없어요" onReset={onResetToday} />;
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[420px_1fr]">
@@ -75,7 +102,7 @@ export function DayView() {
                     type="button"
                     onClick={() => setTrimTimeline(t => !t)}
                     aria-pressed={!trimTimeline}
-                    className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
+                    className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
                   >
                     <Clock className="h-3 w-3" />
                     {trimTimeline ? '전체 24h' : '핵심 시간만'}
@@ -86,7 +113,7 @@ export function DayView() {
                   onClick={() => setShowLegend(s => !s)}
                   aria-expanded={showLegend}
                   aria-controls="day-clock-legend"
-                  className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
+                  className="text-pullim-slate-500 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
                 >
                   {showLegend ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                   색상 범례
@@ -95,51 +122,19 @@ export function DayView() {
             </header>
 
             <ActiveDayLayout
-              blocks={todayBlocks}
+              blocks={blocks}
               ddayLabel={ddayLabel}
               layoutId={layoutId}
               paletteId={paletteId}
               trimToBlocks={trimTimeline}
             />
 
-            {next && NextIcon && (
-              <div className="bg-pullim-blue-50 border-pullim-blue-100 mt-4 flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="bg-pullim-blue-100 text-pullim-blue-700 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" aria-hidden>
-                    <NextIcon className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-pullim-blue-700 text-[10px] font-bold tracking-wider uppercase">
-                      다음 블록
-                    </div>
-                    <div className="text-pullim-slate-900 truncate text-sm font-bold">{next.title}</div>
-                    <div className="text-pullim-slate-500 text-[11px]">
-                      <span className="font-mono">{next.start}</span>
-                      <span className="mx-1">·</span>
-                      {next.subject !== 'rest' && subjectLabels[next.subject]}
-                      <span className="mx-1">·</span>
-                      {next.expectedMinutes}분
-                    </div>
-                  </div>
-                </div>
-                {qAccess ? (
-                  <Link
-                    href={next.linkedFeatureSlug ? getFeatureRoute(next.linkedFeatureSlug) : '#'}
-                    className="bg-pullim-blue-600 inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-sm sm:w-auto"
-                  >
-                    지금 시작
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={notifyQNoAccess}
-                    aria-label="풀림 Q 미구독 — 클릭하면 구독 안내가 떠요"
-                    className="bg-pullim-blue-600 inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-sm sm:w-auto"
-                  >
-                    지금 시작
-                  </button>
-                )}
-              </div>
+            {next && (
+              <NextBlockHero
+                next={next}
+                qAccess={qAccess}
+                onNoAccess={notifyQNoAccess}
+              />
             )}
 
             {showLegend && (
@@ -148,7 +143,7 @@ export function DayView() {
                 className="border-pullim-slate-100 mt-3 flex flex-wrap gap-2 border-t pt-3"
               >
                 {legendTypes.map(t => (
-                  <span key={t} className="inline-flex items-center gap-1 text-[10px] text-pullim-slate-500">
+                  <span key={t} className="inline-flex items-center gap-1 text-xs text-pullim-slate-500">
                     <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: getBlockColor(t, paletteId) }} />
                     {blockTypeMeta[t].label}
                   </span>
@@ -166,10 +161,9 @@ export function DayView() {
         <section>
           <SectionHeading
             title="오늘의 학습 블록"
-            description="7대 교육학 엔진이 자동 적용된 학습 단위"
             action={
               <span
-                className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[11px] font-semibold"
+                className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-xs font-semibold"
                 title="드래그 정렬은 곧 열려요. 지금은 빌더에서 시간대를 조정하세요."
               >
                 드래그 정렬 곧 열려요
@@ -177,7 +171,7 @@ export function DayView() {
             }
           />
           <ol className="space-y-1.5">
-            {todayBlocks.map(b => (
+            {blocks.map(b => (
               <li key={b.id}>
                 <BlockCard block={b} onComplete={setCompletingBlock} variant="compact" />
               </li>
@@ -192,7 +186,7 @@ export function DayView() {
 
       <BlockCompleteDialog
         block={completingBlock}
-        nextBlock={completingBlock ? findFollowing(completingBlock) : null}
+        nextBlock={completingBlock ? findFollowing(completingBlock, blocks) : null}
         onClose={() => setCompletingBlock(null)}
       />
     </div>

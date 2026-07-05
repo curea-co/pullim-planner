@@ -3,9 +3,10 @@
 import { useRouter } from 'next/navigation';
 import {
   CalendarClock, Clock, BookOpen, MoreVertical, CheckCircle2,
-  Pencil, Copy, Archive, Trash2, Sparkles, Palette,
+  Pencil, Copy, Archive, Trash2, Sparkles, Palette, Share2,
 } from 'lucide-react';
 import { type Planner } from '@/lib/mock';
+import { todayISO } from '@/lib/mock/planner';
 import { examTypeMeta, blockPatternMeta } from '@/components/features/planner-builder/components/builder-types';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -20,12 +21,15 @@ type Props = {
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
   onDecorate: (id: string) => void;
+  onShare: (id: string) => void;
 };
 
-/** 일수 차이 — 음수면 과거 */
-function diffDays(targetISO: string, today = new Date('2026-04-24')): number {
-  const target = new Date(targetISO);
-  return Math.ceil((target.getTime() - today.getTime()) / 86400000);
+/** 일수 차이(달력일 기준) — 음수면 과거. 오늘(KST)·목표일 모두 날짜-only(로컬 자정)로 정규화해
+ *  시각 혼용 off-by-one(시험 당일 오전 D-1 오표시)을 없앤다. (Codex #106) */
+function diffDays(targetISO: string): number {
+  const t = new Date(`${todayISO()}T00:00:00`).getTime();
+  const target = new Date(`${targetISO}T00:00:00`).getTime();
+  return Math.round((target - t) / 86400000);
 }
 
 function formatDday(d: number): string {
@@ -34,7 +38,7 @@ function formatDday(d: number): string {
   return `D+${Math.abs(d)}`;
 }
 
-function formatRelativeUpdate(iso: string, today = new Date('2026-04-24')): string {
+function formatRelativeUpdate(iso: string, today = new Date()): string {
   const ms = today.getTime() - new Date(iso).getTime();
   const day = Math.floor(ms / 86400000);
   if (day < 1) return '오늘 갱신';
@@ -42,7 +46,7 @@ function formatRelativeUpdate(iso: string, today = new Date('2026-04-24')): stri
   return `${Math.floor(day / 7)}주 전 갱신`;
 }
 
-export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDelete, onDecorate }: Props) {
+export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDelete, onDecorate, onShare }: Props) {
   const router = useRouter();
   const dday = diffDays(planner.examStartDate);
   const subjectCount = Object.keys(planner.subjectUnits).length;
@@ -69,13 +73,13 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
     >
       {/* 활성 배지 */}
       {isActive && (
-        <span className="bg-pullim-blue-600 absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase text-white shadow-pullim-sm">
+        <span className="bg-pullim-blue-600 absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase text-white shadow-pullim-sm">
           <CheckCircle2 className="h-3 w-3" />
           활성
         </span>
       )}
       {isArchived && (
-        <span className="bg-pullim-slate-300 text-pullim-slate-700 absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase shadow-pullim-sm">
+        <span className="bg-pullim-slate-300 text-pullim-slate-700 absolute -top-2.5 left-4 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider uppercase shadow-pullim-sm">
           <Archive className="h-3 w-3" />
           지난 시간표
         </span>
@@ -87,7 +91,7 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
           <h3 className="text-pullim-slate-900 truncate text-base font-bold">
             {planner.name}
           </h3>
-          <p className="text-pullim-slate-500 mt-0.5 text-[11px]">
+          <p className="text-pullim-slate-500 mt-0.5 text-xs">
             {examTypeLabel}
             {planner.motto && (
               <>
@@ -101,7 +105,7 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label={`${planner.name} 메뉴`}
-            className="text-pullim-slate-400 hover:bg-pullim-slate-100 hover:text-pullim-slate-700 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+            className="text-pullim-slate-400 hover:bg-pullim-slate-100 hover:text-pullim-slate-700 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
           >
             <MoreVertical className="h-4 w-4" aria-hidden />
           </DropdownMenuTrigger>
@@ -133,6 +137,10 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
               <Archive className="text-pullim-warn" />
               아카이브
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onShare(planner.id)}>
+              <Share2 className="text-pullim-blue-600" />
+              공유
+            </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
               onClick={() => onDelete(planner.id)}
@@ -154,21 +162,21 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
       </div>
 
       <footer className="border-pullim-slate-100 mt-3 flex items-center justify-between gap-2 border-t pt-3">
-        <span className="text-pullim-slate-500 text-[10px]">
+        <span className="text-pullim-slate-500 text-xs">
           {formatRelativeUpdate(planner.updatedAt)}
         </span>
         {!isActive && !isArchived && (
           <button
             type="button"
             onClick={() => onActivate(planner.id)}
-            className="bg-pullim-blue-600 hover:bg-pullim-blue-700 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+            className="bg-pullim-blue-600 hover:bg-pullim-blue-700 inline-flex items-center gap-1 rounded-lg px-3 py-2.5 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
           >
             <CheckCircle2 className="h-3 w-3" />
             이 시간표 활성화
           </button>
         )}
         {isActive && (
-          <span className="text-pullim-blue-700 text-[11px] font-bold">
+          <span className="text-pullim-blue-700 text-xs font-bold">
             지금 사용 중
           </span>
         )}
@@ -188,7 +196,7 @@ function Metric({
 }) {
   return (
     <div className="bg-pullim-slate-50 rounded-md p-2">
-      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-xs font-bold tracking-wider uppercase">
         <Icon className="h-3 w-3" />
         {label}
       </div>
@@ -200,7 +208,7 @@ function Metric({
       >
         {value}
       </div>
-      <div className="text-pullim-slate-500 break-words text-[10px] sm:truncate">{sub}</div>
+      <div className="text-pullim-slate-500 break-words text-xs sm:truncate">{sub}</div>
     </div>
   );
 }

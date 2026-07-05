@@ -3,16 +3,17 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StepIndicator } from '@/components/features/planner-builder/components/step-indicator';
 import {
-  PStep1Goal, PStep2Hours, PStep3Subjects, PStep4Pattern,
+  PStep1Goal, PStep2Hours, PStep3Subjects, PStep4Pattern, PStep5Routine,
   PStep5Weakness, PStep6Motivation, PStep7Reminder, PStep8Activate,
 } from '@/components/features/planner-builder/components/step-content';
 import {
   plannerStepConfig, type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
+import type { Routine } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
 /**
- * 8단계 위저드 마크업 — new/edit 페이지 공유.
+ * 9단계 프로세스 마크업 — new/edit 페이지 공유.
  * 상태/이벤트는 props로 받기만 (presentation).
  */
 interface PlannerWizardProps {
@@ -27,6 +28,8 @@ interface PlannerWizardProps {
   mode: 'create' | 'edit';
   onActivate: (submitted: PlannerForm) => void;
   finishHint: string;
+  /** 실 루틴(컨테이너 fetch) — STEP5 선택·STEP8 미리보기에 사용. 미주입 시 mock. */
+  routines?: Routine[];
 }
 
 export function PlannerWizard({
@@ -34,6 +37,7 @@ export function PlannerWizard({
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
   mode, onActivate, finishHint,
+  routines,
 }: PlannerWizardProps) {
   const stepInfo = plannerStepConfig[currentStep - 1];
   const StepIcon = stepInfo.icon;
@@ -53,26 +57,30 @@ export function PlannerWizard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
-              Step {currentStep} / 8
+              Step {currentStep} / {plannerStepConfig.length}
             </div>
             <h2 className="text-pullim-slate-900 mt-0.5 text-lg font-bold tracking-tight">
               {stepInfo.title}
             </h2>
-            <p className="text-pullim-slate-600 mt-1 text-xs leading-relaxed">
-              {stepInfo.description}
-            </p>
+            {stepInfo.description && (
+              <p className="text-pullim-slate-600 mt-1 text-xs leading-relaxed">
+                {stepInfo.description}
+              </p>
+            )}
           </div>
         </header>
 
         <div className="min-h-[280px]">
-          {currentStep === 1 && <PStep1Goal form={form} setForm={setForm} />}
-          {currentStep === 2 && <PStep2Hours form={form} setForm={setForm} />}
-          {currentStep === 3 && <PStep3Subjects form={form} setForm={setForm} />}
-          {currentStep === 4 && <PStep4Pattern form={form} setForm={setForm} />}
-          {currentStep === 5 && <PStep5Weakness form={form} setForm={setForm} />}
-          {currentStep === 6 && <PStep6Motivation form={form} setForm={setForm} />}
-          {currentStep === 7 && <PStep7Reminder form={form} setForm={setForm} />}
-          {currentStep === 8 && <PStep8Activate form={form} mode={mode} onActivate={onActivate} />}
+          {/* 단계 번호가 아니라 key로 렌더 — 루틴 게이트로 단계 수가 8/9로 달라져도 안전 */}
+          {stepInfo.key === 'goal'       && <PStep1Goal form={form} setForm={setForm} />}
+          {stepInfo.key === 'hours'      && <PStep2Hours form={form} setForm={setForm} />}
+          {stepInfo.key === 'subjects'   && <PStep3Subjects form={form} setForm={setForm} />}
+          {stepInfo.key === 'pattern'    && <PStep4Pattern form={form} setForm={setForm} />}
+          {stepInfo.key === 'routine'    && <PStep5Routine form={form} setForm={setForm} routines={routines} />}
+          {stepInfo.key === 'weakness'   && <PStep5Weakness form={form} setForm={setForm} />}
+          {stepInfo.key === 'motivation' && <PStep6Motivation form={form} setForm={setForm} />}
+          {stepInfo.key === 'reminder'   && <PStep7Reminder form={form} setForm={setForm} />}
+          {stepInfo.key === 'activate'   && <PStep8Activate form={form} mode={mode} onActivate={onActivate} routines={routines} />}
         </div>
 
         <footer className="mt-5 flex items-center justify-between border-t pt-4">
@@ -92,7 +100,7 @@ export function PlannerWizard({
           </button>
 
           <div className="text-pullim-slate-500 hidden sm:block text-[10px] font-mono">
-            {currentStep}/8 — {stepInfo.label}
+            {currentStep}/{plannerStepConfig.length} — {stepInfo.label}
           </div>
 
           {canNext ? (

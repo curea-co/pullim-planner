@@ -53,3 +53,10 @@ next-env.d.ts
 
 # daily outcome reports (PM 개인 일일 보고)
 daily_outcome/
+
+# Claude Code 개인 설정 (세션별 자동누적 allowlist — 팀 공유 안 함)
+# settings.local.json 은 팀 큐레이션 최소 allowlist 로 추적 유지
+.claude/settings.json
+
+# 기획 산출물 (대용량 PDF·스크린샷 — Drive/Notion 공유, git 제외)
+proc/screendoc/

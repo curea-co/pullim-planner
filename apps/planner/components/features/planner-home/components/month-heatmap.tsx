@@ -12,18 +12,30 @@ const weekHeader = ['월', '화', '수', '목', '금', '토', '일'];
  * 월간 히트맵 — 일별 블록 수 색 강도 + D-day 마일스톤 표시.
  * 핸드오프 4.4 (월간 뷰).
  *
- * 셀 클릭 — 과거/오늘은 일간 뷰로 drill-down. 미래는 "초안 미리보기" 토스트.
+ * 미래 날짜도 색 강도·개수를 그대로 그린다(점선 외곽선으로 '예정'만 구분) — materialize
+ * 이후 미래 블록은 초안이 아니라 확정 계획이라, 투명 처리하면 시험까지의 계획이
+ * 전부 비어 보인다(2026-07-05 검수: "월간 뷰 7월 이후 안 보임").
+ * 셀 클릭 — 과거/오늘은 일간 뷰로 drill-down. 미래는 예정 안내 토스트.
  */
-export function MonthHeatmap() {
+export function MonthHeatmap({
+  days: daysProp,
+  monthLabel,
+}: {
+  /** 실데이터(B4) — 미주입이면 mock 데모(monthView) 폴백. */
+  days?: MonthDay[];
+  /** 실데이터 월 라벨("7월"). 미주입=데모 라벨. */
+  monthLabel?: string;
+} = {}) {
   const router = useRouter();
+  const month = daysProp ?? monthView;
   // 그리드 시작 — 첫 날의 weekday로 빈 셀 padding
-  const firstWeekdayIdx = weekHeader.indexOf(monthView[0].weekday);
+  const firstWeekdayIdx = weekHeader.indexOf(month[0].weekday);
   const padBefore = firstWeekdayIdx;
 
   function onCell(d: MonthDay) {
     if (d.isFuture) {
-      toast.info(`📅 ${d.date}일 초안`, {
-        description: `예상 ${d.blockCount}개 블록 — 활성화 후 일간 뷰에서 확인할 수 있어요.`,
+      toast.info(`📅 ${d.date}일 예정`, {
+        description: `예정 ${d.blockCount}개 블록 — 그날이 되면 일간 뷰에서 진행할 수 있어요.`,
       });
       return;
     }
@@ -35,10 +47,10 @@ export function MonthHeatmap() {
     <section className="bg-card overflow-hidden rounded-2xl border">
       <header className="border-b p-4">
         <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
-          월간 히트맵
+          월간 학습 캘린더
         </p>
         <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
-          4월 학습 분포
+          {monthLabel ?? '4월'} 학습 분포
         </h2>
         <p className="text-pullim-slate-500 mt-0.5 inline-flex flex-wrap items-center gap-1 text-[11px]">
           <span>색 농도 = 블록 수 · 외곽선 = 완료율 ·</span>
@@ -60,7 +72,7 @@ export function MonthHeatmap() {
           {Array.from({ length: padBefore }, (_, i) => (
             <div key={`pad-${i}`} aria-hidden />
           ))}
-          {monthView.map(d => <DayCell key={d.date} day={d} onSelect={() => onCell(d)} />)}
+          {month.map(d => <DayCell key={d.date} day={d} onSelect={() => onCell(d)} />)}
         </div>
 
         {/* 범례 */}
@@ -88,8 +100,8 @@ export function MonthHeatmap() {
 }
 
 function heatColor(count: number, isFuture: boolean): string {
-  if (isFuture) return 'transparent';
-  if (count === 0) return 'var(--color-pullim-heat-0)';
+  // 계획 없는 미래만 투명(점선 테두리만). 블록 있는 미래는 과거와 동일 강도 스케일.
+  if (count === 0) return isFuture ? 'transparent' : 'var(--color-pullim-heat-0)';
   if (count <= 3)  return 'var(--color-pullim-heat-1)';
   if (count <= 5)  return 'var(--color-pullim-heat-2)';
   if (count <= 7)  return 'var(--color-pullim-heat-3)';
@@ -135,7 +147,7 @@ function DayCell({ day, onSelect }: { day: MonthDay; onSelect: () => void }) {
         >
           {day.date}
         </span>
-        {day.blockCount > 0 && !day.isFuture && (
+        {day.blockCount > 0 && (
           <span
             className={cn(
               'text-[8px] font-mono mt-0.5 font-semibold',

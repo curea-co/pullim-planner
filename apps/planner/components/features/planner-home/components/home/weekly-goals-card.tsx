@@ -9,6 +9,7 @@ import {
   weeklyStudyHours, weekView, dailyReflection, getWeakNodes,
   type ReflectionInsight,
 } from '@/lib/mock';
+import { REPORTS_ENABLED } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
 const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: string; bg: string }> = {
@@ -146,15 +147,18 @@ export function WeeklyGoalsCard() {
         </ul>
       </section>
 
-      <footer className="mt-auto pt-4">
-        <Link
-          href="/planner/reports?view=week"
-          className="text-pullim-blue-600 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
-        >
-          주간 리포트 자세히
-          <ArrowRight className="h-3 w-3" />
-        </Link>
-      </footer>
+      {/* 리포트 CTA — soft open 게이트(REPORTS_ENABLED) off면 숨김(redirect 홈 이동 방지, codex) */}
+      {REPORTS_ENABLED && (
+        <footer className="mt-auto pt-4">
+          <Link
+            href="/planner/reports?view=week"
+            className="text-pullim-blue-600 hover:text-pullim-blue-700 inline-flex items-center gap-1 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
+          >
+            주간 리포트 자세히
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </footer>
+      )}
     </section>
   );
 }

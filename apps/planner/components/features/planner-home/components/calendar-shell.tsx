@@ -6,22 +6,21 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { cn } from '@/lib/utils';
+import { DateJumpPopover } from './date-jump-popover';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
 type ViewMeta = {
   label: string;
   icon: LucideIcon;
-  /** 헤더 eyebrow 텍스트 */
-  eyebrow: string;
   /** 시간 이동 단위 */
   navUnit: '하루' | '주' | '월';
 };
 
 const viewMeta: Record<CalendarView, ViewMeta> = {
-  day:   { label: '일간', icon: CalendarClock, eyebrow: '일간 캘린더', navUnit: '하루' },
-  week:  { label: '주간', icon: CalendarRange, eyebrow: '주간 캘린더', navUnit: '주' },
-  month: { label: '월간', icon: Grid3x3,       eyebrow: '월간 캘린더', navUnit: '월' },
+  day:   { label: '일간', icon: CalendarClock, navUnit: '하루' },
+  week:  { label: '주간', icon: CalendarRange, navUnit: '주' },
+  month: { label: '월간', icon: Grid3x3,       navUnit: '월' },
 };
 
 type Props = {
@@ -37,13 +36,11 @@ type Props = {
   prevLabel?: string;
   /** 우측 next 버튼 라벨 (선택) */
   nextLabel?: string;
-  /**
-   * prev/next 클릭 핸들러.
-   * 둘 다 미전달이면 자동으로 disabled + navLabel 옆 `(데모)` chip을 노출해
-   * 사용자에게 "시간 이동은 아직 데모"임을 명시한다 (audit #6 fix).
-   */
+  /** prev/next 클릭 핸들러. 미전달 시 버튼 disabled. */
   onPrev?: () => void;
   onNext?: () => void;
+  /** 날짜 점프 달력 — 전달 시 navLabel이 클릭하면 달력이 열린다(일간 전용). */
+  datePicker?: { baseISO: string; currentOffset: number; onPick: (offset: number) => void };
   /** 추가 우측 액션 (예: '오늘로' 버튼) */
   action?: ReactNode;
   /** view 본문 */
@@ -57,16 +54,15 @@ type Props = {
 export function CalendarShell({
   view, onChangeView,
   title, description, navLabel,
-  prevLabel, nextLabel, onPrev, onNext, action,
+  prevLabel, nextLabel, onPrev, onNext, datePicker, action,
   children,
 }: Props) {
   const meta = viewMeta[view];
-  const isDemoNav = !onPrev && !onNext;
+  const navDisabled = !onPrev && !onNext;
 
   return (
     <div className="space-y-4">
       <PageHeader
-        eyebrow={{ icon: meta.icon, text: meta.eyebrow }}
         title={title}
         description={description}
         action={action}
@@ -82,28 +78,38 @@ export function CalendarShell({
             onClick={onPrev}
             disabled={!onPrev}
             aria-label={prevLabel ?? `이전 ${meta.navUnit}`}
-            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold"
+            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
           >
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">{prevLabel ?? `이전 ${meta.navUnit}`}</span>
           </button>
-          <span className="text-pullim-slate-700 px-2 text-xs font-bold">
-            {navLabel}
-            {isDemoNav && (
-              <span
-                className="text-pullim-slate-500 ml-1 font-mono text-[10px] font-semibold"
-                title="시간 이동은 데모 단계에서는 비활성 — 이번 주 데이터만 채워져 있어요"
-              >
-                (데모)
-              </span>
-            )}
-          </span>
+          {datePicker ? (
+            <DateJumpPopover
+              baseISO={datePicker.baseISO}
+              currentOffset={datePicker.currentOffset}
+              onPick={datePicker.onPick}
+            >
+              {navLabel}
+            </DateJumpPopover>
+          ) : (
+            <span className="text-pullim-slate-700 px-2 text-xs font-bold">
+              {navLabel}
+              {navDisabled && (
+                <span
+                  className="text-pullim-slate-400 ml-1 text-xs font-normal"
+                  aria-label="기간 이동은 아직 지원하지 않아요"
+                >
+                  (이번 기간만)
+                </span>
+              )}
+            </span>
+          )}
           <button
             type="button"
             onClick={onNext}
             disabled={!onNext}
             aria-label={nextLabel ?? `다음 ${meta.navUnit}`}
-            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold"
+            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
           >
             <span className="hidden sm:inline">{nextLabel ?? `다음 ${meta.navUnit}`}</span>
             <ChevronRight className="h-4 w-4" />
@@ -131,7 +137,7 @@ function ViewToggle({ view, onChange }: { view: CalendarView; onChange: (v: Cale
             aria-selected={selected}
             onClick={() => onChange(v)}
             className={cn(
-              'inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors',
+              'inline-flex items-center gap-1 rounded-md px-2.5 py-2 text-xs font-bold transition-colors',
               selected
                 ? 'bg-card text-pullim-blue-700 shadow-pullim-sm'
                 : 'text-pullim-slate-500 hover:text-pullim-slate-700',

@@ -5,6 +5,7 @@
 export * from './persona';
 export * from './curriculum';
 export * from './planner';
+export * from './routine';
 export * from './family';
 export * from './features';
 export * from './subscriptions';

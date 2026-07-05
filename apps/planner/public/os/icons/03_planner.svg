@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pullim Planner">
+  <title>풀림 플래너</title>
+  <rect x="4" y="4" width="92" height="92" rx="18" fill="#0362DA"/>
+  <!-- calendar outline -->
+  <rect x="22" y="30" width="56" height="8" fill="#FFFFFF"/>
+  <rect x="22" y="70" width="56" height="8" fill="#FFFFFF"/>
+  <rect x="22" y="38" width="8" height="32" fill="#FFFFFF"/>
+  <rect x="70" y="38" width="8" height="32" fill="#FFFFFF"/>
+  <!-- 3x3 day grid -->
+  <rect x="30" y="46" width="8" height="8" fill="#FFFFFF"/>
+  <rect x="46" y="46" width="8" height="8" fill="#FFFFFF"/>
+  <rect x="62" y="46" width="8" height="8" fill="#FFFFFF"/>
+  <rect x="30" y="54" width="8" height="8" fill="#FFFFFF"/>
+  <rect x="46" y="54" width="8" height="8" fill="#E6FF4C"/>
+  <rect x="62" y="54" width="8" height="8" fill="#FFFFFF"/>
+  <rect x="30" y="62" width="8" height="8" fill="#FFFFFF"/>
+  <rect x="46" y="62" width="8" height="8" fill="#FFFFFF"/>
+  <rect x="62" y="62" width="8" height="8" fill="#FFFFFF"/>
+</svg>
