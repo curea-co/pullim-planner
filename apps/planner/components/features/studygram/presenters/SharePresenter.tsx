@@ -19,6 +19,12 @@ interface SharePresenterProps {
   settingUnknown?: boolean;
   friendProofs: StudyProof[];
   acceptedFriends: Friend[];
+  /**
+   * 친구 조회 실패(미지수) — 빈 acceptedFriends(친구 없음 확정)와 구분한다. true 면 '친구 없음'
+   * empty state(초대 CTA)로 오유도하지 않고 소프트 안내만 띄운다(settingUnknown 동형 — 부분실패
+   * 격리, Codex #115 R2). 피드(friendProofs)가 있으면 기존처럼 그리드 우선.
+   */
+  friendsUnknown?: boolean;
   goalProgress: { posted: number; goalTotal: number; remainDays: number; streakDays: number } | null;
   activeTab: ShareTab;
   hasTodayProof: boolean;
@@ -30,6 +36,7 @@ export default function SharePresenter({
   settingUnknown = false,
   friendProofs,
   acceptedFriends,
+  friendsUnknown = false,
   goalProgress,
   activeTab,
   hasTodayProof,
@@ -118,6 +125,11 @@ export default function SharePresenter({
                       />
                     );
                   })}
+                </div>
+              ) : friendsUnknown ? (
+                // 친구 조회 실패(미지수) — '친구 없음'(초대 CTA)으로 단정하지 않는 소프트 안내.
+                <div className="py-10 text-center text-xs text-muted-foreground">
+                  친구 정보를 불러오지 못했어요
                 </div>
               ) : acceptedFriends.length === 0 ? (
                 <EmptyState variant="no-friends" />

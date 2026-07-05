@@ -44,6 +44,9 @@ export default function ShareContainer() {
     DEV_AUTH_BYPASS ? mockFriendProofs : [],
   );
   const [friends, setFriends] = useState<Friend[]>(DEV_AUTH_BYPASS ? mockFriends : []);
+  // 친구 조회 실패(미지수) — 빈 목록(친구 없음 확정)과 구분해 '친구 없음' empty state 오표시를
+  // 막는다(settingFailed 와 동형 — Codex #115 R2).
+  const [friendsFailed, setFriendsFailed] = useState(false);
   const [loading, setLoading] = useState(!DEV_AUTH_BYPASS);
   // 전 소스 실패에만 전면 loadError+재시도 — 부분 실패는 성공분으로 화면을 세운다(부분실패 격리).
   const [loadError, setLoadError] = useState(false);
@@ -95,6 +98,9 @@ export default function ShareContainer() {
       }
       if (friendsRes.status === 'fulfilled') {
         setFriends(friendsRes.value.map(pullimToFriend));
+        setFriendsFailed(false);
+      } else {
+        setFriendsFailed(true);
       }
       if (results.some((r) => r.status === 'rejected')) {
         toast.error('일부 데이터를 불러오지 못했어요');
@@ -152,6 +158,7 @@ export default function ShareContainer() {
       settingUnknown={settingFailed}
       friendProofs={friendProofs}
       acceptedFriends={acceptedFriends}
+      friendsUnknown={friendsFailed}
       goalProgress={goalProgress}
       activeTab={activeTab}
       hasTodayProof={todayProof}
