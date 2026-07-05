@@ -48,7 +48,8 @@ export type Friend = {
   id: string;
   userId: string;
   name: string;
-  grade: string;
+  /** 학년 — BE 는 내리지 않는다(또래 미노출, 피어 안전 정책). mock 전용 optional — 있을 때만 표시. */
+  grade?: string;
   isCloseFriend: boolean;
   status: FriendshipStatus;
   proofCount: number;
@@ -245,7 +246,8 @@ export type DiscoverableUser = {
   userId: string;
   /** 닉네임 — 피어 식별(실명·grade 미노출) */
   name: string;
-  proofCount: number;
+  /** 인증 수 — BE discover 계약(userId·nickname만)에 없다. mock 전용 optional — 있을 때만 표시. */
+  proofCount?: number;
 };
 
 export const mockDiscoverableUsers: DiscoverableUser[] = [

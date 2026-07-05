@@ -3,6 +3,8 @@ import {
   createPullimPlannerClient,
   maskToWeekdays,
   weekdaysToMask,
+  type PullimDiscoverUser,
+  type PullimFriend,
   type PullimPlanner,
   type PullimPlannerClient,
   type PullimPlannerWrite,
@@ -21,6 +23,9 @@ import { notifyPullimSessionExpired } from '@/lib/auth/pullim-session-client';
 import { minutesBetween, type Planner, type Routine, type RoutineSubject } from '@/lib/mock';
 import type { BlockType } from '@/lib/mock';
 import type {
+  DiscoverableUser,
+  Friend,
+  FriendshipStatus,
   StudyProof,
   StudygramSetting,
   TonePresetId,
@@ -79,6 +84,15 @@ export const pullimPlannerClient: PullimPlannerClient &
     | 'createProof'
     | 'updateProof'
     | 'deleteProof'
+    | 'discoverUsers'
+    | 'getFriends'
+    | 'sendFriendRequest'
+    | 'respondFriend'
+    | 'getCloseFriends'
+    | 'setCloseFriend'
+    | 'removeCloseFriend'
+    | 'addReaction'
+    | 'removeReaction'
   > = {
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
@@ -95,14 +109,22 @@ export const pullimPlannerClient: PullimPlannerClient &
   updateRoutine: on401(rawPullimPlannerClient.updateRoutine),
   deleteRoutine: on401(rawPullimPlannerClient.deleteRoutine),
   // studygram(공유) — routine 메서드와 동형으로 401 세션 만료를 통지한다.
-  // Friends/close-friend/reaction 메서드는 이 PR 범위(설정·인증카드) 밖이라 노출하지 않는다
-  // (필요 시점에 한 줄씩 추가 — 최소 변경 지향).
   getSetting: on401(rawPullimPlannerClient.getSetting),
   updateSetting: on401(rawPullimPlannerClient.updateSetting),
   getProofs: on401(rawPullimPlannerClient.getProofs),
   createProof: on401(rawPullimPlannerClient.createProof),
   updateProof: on401(rawPullimPlannerClient.updateProof),
   deleteProof: on401(rawPullimPlannerClient.deleteProof),
+  // studygram 친구·close-friend·응원 — 공유 FE 마지막 조각(친구·피드·응원 실전환)에서 노출.
+  discoverUsers: on401(rawPullimPlannerClient.discoverUsers),
+  getFriends: on401(rawPullimPlannerClient.getFriends),
+  sendFriendRequest: on401(rawPullimPlannerClient.sendFriendRequest),
+  respondFriend: on401(rawPullimPlannerClient.respondFriend),
+  getCloseFriends: on401(rawPullimPlannerClient.getCloseFriends),
+  setCloseFriend: on401(rawPullimPlannerClient.setCloseFriend),
+  removeCloseFriend: on401(rawPullimPlannerClient.removeCloseFriend),
+  addReaction: on401(rawPullimPlannerClient.addReaction),
+  removeReaction: on401(rawPullimPlannerClient.removeReaction),
 };
 
 /**
@@ -231,6 +253,37 @@ export function toStudygramSettingWrite(
     ...(form.consentGiven !== undefined
       ? { consentGiven: form.consentGiven }
       : {}),
+  };
+}
+
+/**
+ * pullim-api 친구(`PullimFriend`) → FE 뷰 `Friend` 어댑터.
+ * BE 는 `grade` 를 내리지 않는다(또래 미노출 — 피어 안전 정책, `FriendResponseDto`)
+ * — FE `Friend.grade` 는 optional 로 완화돼 있어 미세팅(프리젠터가 있을 때만 표시).
+ * status 는 BE 가 FE union(pending|accepted) 집합으로만 발급하므로 뷰 union 으로 단언한다.
+ * latestProofDate 는 API nullable → 뷰 optional 로 정렬한다.
+ */
+export function pullimToFriend(f: PullimFriend): Friend {
+  return {
+    id: f.id,
+    userId: f.userId,
+    name: f.name,
+    isCloseFriend: f.isCloseFriend,
+    status: f.status as FriendshipStatus,
+    proofCount: f.proofCount,
+    ...(f.latestProofDate !== null ? { latestProofDate: f.latestProofDate } : {}),
+  };
+}
+
+/**
+ * pullim-api 발견 결과(`PullimDiscoverUser`) → FE 뷰 `DiscoverableUser` 어댑터.
+ * BE 는 userId·nickname 만 노출한다(피어 안전 — grade·PII 없음). mock 의 proofCount 는 BE 계약에
+ * 없으므로 미세팅(뷰 optional — 프리젠터가 있을 때만 표시).
+ */
+export function pullimToDiscoverableUser(u: PullimDiscoverUser): DiscoverableUser {
+  return {
+    userId: u.userId,
+    name: u.nickname,
   };
 }
 

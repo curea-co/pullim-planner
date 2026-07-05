@@ -8,9 +8,18 @@ import { ProofCard } from '../components/proof-card';
 interface ProofDetailPresenterProps {
   proof: StudyProof;
   onBack: () => void;
+  /** 내가 응원했는지(세션 내) — 버튼 활성 표시. */
+  reacted?: boolean;
+  /** 응원 토글 — 미제공이면 버튼을 노출하지 않는다(시그니처 하위호환). */
+  onToggleReaction?: () => void;
 }
 
-export default function ProofDetailPresenter({ proof, onBack }: ProofDetailPresenterProps) {
+export default function ProofDetailPresenter({
+  proof,
+  onBack,
+  reacted = false,
+  onToggleReaction,
+}: ProofDetailPresenterProps) {
   const { snapshot } = proof;
 
   return (
@@ -40,7 +49,23 @@ export default function ProofDetailPresenter({ proof, onBack }: ProofDetailPrese
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">받은 반응</span>
-          <span className="font-medium text-foreground">{proof.reactionCount}개</span>
+          <span className="flex items-center gap-2">
+            <span className="font-medium text-foreground">{proof.reactionCount}개</span>
+            {onToggleReaction && (
+              <button
+                type="button"
+                onClick={onToggleReaction}
+                aria-pressed={reacted}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 ${
+                  reacted
+                    ? 'border-pullim-blue-300 bg-pullim-blue-50 text-pullim-blue-700'
+                    : 'border-border text-muted-foreground hover:bg-pullim-slate-50'
+                }`}
+              >
+                {reacted ? '🔥 응원함' : '🔥 응원하기'}
+              </button>
+            )}
+          </span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">컨디션</span>
