@@ -28,12 +28,13 @@ export function AppHeader({ role }: { role: Role }) {
 
   return (
     <header className="bg-card/85 sticky top-0 z-30 border-b backdrop-blur-md">
-      <div className="flex h-14 items-center gap-2 px-3 md:px-4">
+      <div className="flex h-14 items-center gap-2 px-3 md:h-[60px] md:px-4">
         <MobileDrawer role={role} />
 
-        <Link href="/" className="flex items-center gap-1.5 shrink-0">
-          <PullimLogo size={22} />
-          <span className="text-pullim-slate-500 hidden text-[10px] font-bold uppercase md:inline">
+        <Link href="/" className="flex items-center gap-2 shrink-0 no-underline">
+          <PullimLogo size={22} iconOnly />
+          <span className="text-foreground text-[17px] font-extrabold tracking-[-.02em]">풀림</span>
+          <span className="bg-muted text-secondary-foreground hidden whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold min-[380px]:inline-block">
             플래너
           </span>
         </Link>
