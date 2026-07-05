@@ -397,6 +397,17 @@ export type PullimStudyProofPatch = Partial<{
 export type PullimFriendAction = "accept" | "block";
 
 /**
+ * 사용자 발견 결과 1행 (`DiscoverUserResponseDto`) — 친구 요청 대상 검색.
+ * 피어 안전: userId(uuid)·nickname 만 노출(grade·PII 없음 — `PullimFriend` 동형 정책).
+ */
+export interface PullimDiscoverUser {
+  /** 사용자 sub(uuid) — `sendFriendRequest(addresseeId)` 에 그대로 사용. */
+  userId: string;
+  /** 스터디그램 닉네임(피어 식별, 1~20자). */
+  nickname: string;
+}
+
+/**
  * 스터디그램(공유 학습 인증 피드) 클라이언트 — planner 클라와 같은 cookie-http/CSRF 위에 동작한다.
  * `createPullimPlannerClient` 가 planner·routine 메서드와 함께 반환한다(같은 base·CSRF 공유).
  * planner 자원과 분리된 인터페이스라 `PullimPlannerClient` 소비자는 영향받지 않는다.
@@ -421,6 +432,11 @@ export interface PullimStudygramClient {
   deleteProof(id: string): Promise<void>;
   /** 내 친구 목록. `GET /planner/studygram/friends`. */
   getFriends(): Promise<PullimFriend[]>;
+  /**
+   * 닉네임으로 친구 요청 대상 검색(부분일치·대소문자 무시, 본인·차단관계 제외, 최대 20).
+   * `GET /planner/studygram/discover?q=`. `q` 는 trim 1~20자(위반 400).
+   */
+  discoverUsers(q: string): Promise<PullimDiscoverUser[]>;
   /** 친구 요청 보내기. `POST /planner/studygram/friends`. */
   sendFriendRequest(addresseeId: string): Promise<PullimFriendship>;
   /** 친구 요청 응답(수락/차단). `PATCH /planner/studygram/friends/:id`. */
@@ -629,6 +645,14 @@ export function createPullimPlannerClient(
       return cookieRequest<PullimFriend[]>(
         config,
         "/planner/studygram/friends",
+      );
+    },
+
+    discoverUsers(q) {
+      return cookieRequest<PullimDiscoverUser[]>(
+        config,
+        "/planner/studygram/discover",
+        { query: { q } },
       );
     },
 
