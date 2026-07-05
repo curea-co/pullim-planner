@@ -1,10 +1,10 @@
-import { CalendarClock, Calendar, PlayCircle, Smile, PencilLine, BarChart2 } from 'lucide-react';
+import { CalendarClock, Calendar, PlayCircle, Smile, PencilLine, BarChart2, AlertCircle } from 'lucide-react';
 import { OnboardingTemplate } from '@/components/shell/onboarding-template';
 import { MockBrowser } from '@/components/shell/mock-browser';
 import { SideTimeline24 } from '@/components/features/planner-home/components/side-timeline-24';
 import { ConditionSlider } from '@/components/features/planner-home/components/condition-slider';
 import { AccuracyTrendChart } from '@/components/features/planner-reports/components/accuracy-trend-chart';
-import { REPORTS_ENABLED } from '@/lib/flags';
+import { REPORTS_ENABLED, WEAKNESS_ENABLED } from '@/lib/flags';
 import { todayBlocks } from '@/lib/mock';
 
 interface OnboardingPresenterProps {
@@ -96,6 +96,45 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           screenshot: (
             <MockBrowser label="study/planner/reports">
               <AccuracyTrendChart />
+            </MockBrowser>
+          ),
+        },
+        {
+          // 약점 자동 반영 — 분석 BE 게이트(WEAKNESS_ENABLED)에 따라 오픈/출시 예정 분기
+          Icon: AlertCircle,
+          title: WEAKNESS_ENABLED ? '약점 단원 자동 반영' : '약점 자동 반영 — 출시 예정',
+          description: WEAKNESS_ENABLED
+            ? '풀림 분석이 공부 기록에서 약한 단원을 찾아내면, 시간표를 만들 때 그 단원을 먼저 배정해 드려요. 시간표 만들기 6단계에서 켜고 끌 수 있어요(기본은 꺼짐).'
+            : '풀림 분석이 공부 기록에서 약한 단원을 찾아내면, 시간표를 만들 때 그 단원을 먼저 배정해 드리는 기능을 준비하고 있어요. 열리면 시간표 만들기 6단계에서 켤 수 있어요.',
+          bullets: [
+            '풀림 분석: 문제 풀이 기록에서 약한 단원을 찾아요',
+            '켜 두면: 약한 단원이 시간표 앞쪽에 먼저 배정돼요',
+            '원치 않으면 끄고 직접 단원을 고르면 돼요',
+          ],
+          screenshotCaption: WEAKNESS_ENABLED
+            ? '감지된 약점 단원 — 풀림 분석'
+            : '감지된 약점 단원 미리보기 (출시 예정)',
+          screenshot: (
+            <MockBrowser label="시간표 만들기 · 6단계">
+              <div className="bg-pullim-warn-bg rounded-xl p-3">
+                <div className="text-pullim-warn flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+                  <AlertCircle className="h-3 w-3" />
+                  현재 감지된 약점 단원 — 풀림 분석
+                </div>
+                <ul className="mt-1.5 space-y-1">
+                  {[
+                    { label: '수학 · 미분', mastery: 42 },
+                    { label: '영어 · 빈칸추론', mastery: 48 },
+                    { label: '수학 · 수열', mastery: 55 },
+                  ].map(node => (
+                    <li key={node.label} className="text-pullim-slate-700 flex items-center gap-2 text-[11px]">
+                      <span className="bg-pullim-warn h-1.5 w-1.5 rounded-full" />
+                      <span className="font-semibold">{node.label}</span>
+                      <span className="text-pullim-slate-500 ml-auto font-mono">정복도 {node.mastery}%</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </MockBrowser>
           ),
         },

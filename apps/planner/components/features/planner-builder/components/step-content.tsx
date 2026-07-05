@@ -12,6 +12,7 @@ import {
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WEAKNESS_ENABLED } from '@/lib/flags';
 import {
   subjectLabels, type SubjectKey, getWeakNodes, allCurricula,
   type BlockType, type Routine,
@@ -746,6 +747,24 @@ export function PStep5Routine({ form, setForm, routines: routinesProp }: Props &
 /* ─── Step 6 — 약점 자동 반영 ─── */
 export function PStep5Weakness({ form, setForm }: Props) {
   const weak = getWeakNodes(0.5).slice(0, 3);
+
+  // 분석 BE 미구현(WEAKNESS_ENABLED off) — mock 약점 목록 대신 출시 예정 예고만.
+  // 값은 initialPlannerForm·plannerToForm 에서 false 로 고정돼 저장에 켜진 채 남지 않는다.
+  if (!WEAKNESS_ENABLED) {
+    return (
+      <div className="bg-card border-pullim-slate-200 rounded-xl border border-dashed p-4">
+        <div className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+          출시 예정
+        </div>
+        <h4 className="text-pullim-slate-900 mt-0.5 text-sm font-bold">약점 자동 반영 — 준비 중이에요</h4>
+        <p className="text-pullim-slate-500 mt-1 text-[11px] leading-relaxed">
+          풀림 분석이 공부 기록에서 약한 단원을 찾아내면, 시간표를 만들 때 그 단원을
+          먼저 배정해 드리는 기능이에요. 열리면 이 단계에서 켤 수 있어요. 지금은
+          다음 단계로 넘어가면 돼요.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

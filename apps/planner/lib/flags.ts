@@ -17,3 +17,13 @@ export const ROUTINE_ENABLED = process.env.NEXT_PUBLIC_ROUTINE_ENABLED === '1';
  * - dev·prod 기본: 미설정 → **차단**(safe-by-default). BE 준비 후 플래그로 오픈
  */
 export const REPORTS_ENABLED = process.env.NEXT_PUBLIC_REPORTS_ENABLED === '1';
+
+/**
+ * 약점 자동 반영(풀림 분석) — BE 미구현: `weaknessAutoReflect` 플래그는 저장만 되고
+ * 약점(mastery) 분석 표면·스케줄 엔진 소비가 없다(2026-07-05 실사). off면 위저드
+ * STEP 6이 mock 약점 목록 대신 "출시 예정" 예고를 보여주고 항상 false 로 저장한다.
+ * 온보딩 가이드 5번 카드로만 예고. 켜지더라도 **기본 상태는 체크 해제**(사용자 확정).
+ * - 로컬/preview 확인용: `NEXT_PUBLIC_WEAKNESS_ENABLED=1`
+ * - dev·prod 기본: 미설정 → **차단**(safe-by-default). 분석 BE 준비 후 플래그로 오픈
+ */
+export const WEAKNESS_ENABLED = process.env.NEXT_PUBLIC_WEAKNESS_ENABLED === '1';
