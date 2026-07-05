@@ -43,6 +43,9 @@ export default function ShareContainer() {
   const [friendProofs, setFriendProofs] = useState<StudyProof[]>(
     DEV_AUTH_BYPASS ? mockFriendProofs : [],
   );
+  // 피드 조회 실패(미지수) — 빈 피드('친구들이 아직 미인증' 정상)와 구분해 오해 안내를 막는다
+  // (Codex #115 R3).
+  const [feedFailed, setFeedFailed] = useState(false);
   const [friends, setFriends] = useState<Friend[]>(DEV_AUTH_BYPASS ? mockFriends : []);
   // 친구 조회 실패(미지수) — 빈 목록(친구 없음 확정)과 구분해 '친구 없음' empty state 오표시를
   // 막는다(settingFailed 와 동형 — Codex #115 R2).
@@ -80,26 +83,35 @@ export default function ShareContainer() {
         return;
       }
 
+      // rejected 소스는 이전 성공 값을 유지하지 않고 비운다(Codex #115 R3) — 재시도/재방문에서
+      // stale 값이 "현재"처럼 남지 않게. fulfilled 소스만 최신 값, 실패는 unknown/안내로 구분.
       if (settingRes.status === 'fulfilled') {
         // null = 미온보딩 — 프리젠터가 온보딩 EmptyState(no-setting)로 유도한다(기존 UI 재사용).
         setSetting(settingRes.value ? pullimToStudygramSetting(settingRes.value) : null);
         setSettingFailed(false);
       } else {
+        setSetting(null); // settingUnknown 경로가 렌더 — 예전 목표 위젯·CTA 잔존 제거.
         setSettingFailed(true);
       }
       if (mineRes.status === 'fulfilled') {
         setMyProofs(mineRes.value.map(pullimToStudyProof));
         setMyProofsFailed(false);
       } else {
+        setMyProofs([]); // goalProgress 는 myProofsFailed 로 이미 숨김 — 값도 비워 일관.
         setMyProofsFailed(true);
       }
       if (feedRes.status === 'fulfilled') {
         setFriendProofs(feedRes.value.map(pullimToStudyProof));
+        setFeedFailed(false);
+      } else {
+        setFriendProofs([]); // 빈 그리드가 '오늘 미인증'으로 오해되지 않게 feedUnknown 안내로 구분.
+        setFeedFailed(true);
       }
       if (friendsRes.status === 'fulfilled') {
         setFriends(friendsRes.value.map(pullimToFriend));
         setFriendsFailed(false);
       } else {
+        setFriends([]);
         setFriendsFailed(true);
       }
       if (results.some((r) => r.status === 'rejected')) {
@@ -157,6 +169,7 @@ export default function ShareContainer() {
       setting={setting}
       settingUnknown={settingFailed}
       friendProofs={friendProofs}
+      feedUnknown={feedFailed}
       acceptedFriends={acceptedFriends}
       friendsUnknown={friendsFailed}
       goalProgress={goalProgress}

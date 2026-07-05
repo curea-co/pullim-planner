@@ -18,6 +18,12 @@ interface SharePresenterProps {
    */
   settingUnknown?: boolean;
   friendProofs: StudyProof[];
+  /**
+   * 피드 조회 실패(미지수) — 빈 피드('친구들이 아직 오늘 미인증' 정상)와 구분한다. true 면 미인증
+   * 안내 대신 소프트 실패 안내를 띄운다(컨테이너가 실패 시 피드를 비워 전달 — stale 값 없음,
+   * Codex #115 R3).
+   */
+  feedUnknown?: boolean;
   acceptedFriends: Friend[];
   /**
    * 친구 조회 실패(미지수) — 빈 acceptedFriends(친구 없음 확정)와 구분한다. true 면 '친구 없음'
@@ -35,6 +41,7 @@ export default function SharePresenter({
   setting,
   settingUnknown = false,
   friendProofs,
+  feedUnknown = false,
   acceptedFriends,
   friendsUnknown = false,
   goalProgress,
@@ -125,6 +132,11 @@ export default function SharePresenter({
                       />
                     );
                   })}
+                </div>
+              ) : feedUnknown ? (
+                // 피드 조회 실패(미지수) — 빈 그리드를 '오늘 미인증'으로 오해하지 않게 소프트 안내.
+                <div className="py-10 text-center text-xs text-muted-foreground">
+                  친구 인증카드를 불러오지 못했어요
                 </div>
               ) : friendsUnknown ? (
                 // 친구 조회 실패(미지수) — '친구 없음'(초대 CTA)으로 단정하지 않는 소프트 안내.
