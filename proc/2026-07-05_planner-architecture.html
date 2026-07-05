@@ -405,6 +405,38 @@
     .layer .lyr-name { border-right: none; border-bottom: 1px solid var(--be-hair); }
     .sec-head .note { margin-left: 0; text-align: left; }
   }
+
+  /* ---------- SVG diagrams (도식) ---------- */
+  .diagram-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    background: var(--panel);
+    padding: 20px 18px;
+    margin-bottom: 14px;
+  }
+  .diagram-scroll svg { display: block; width: 100%; height: auto; }
+  .dgm-cap {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+  svg text { fill: var(--ink); font-family: var(--sans); }
+  svg .bt { font-size: 13px; font-weight: 640; }
+  svg .bs { font-size: 10.5px; fill: var(--muted); font-family: var(--mono); }
+  svg .el { font-size: 10.5px; fill: var(--faint); font-family: var(--mono); }
+  svg .gl { font-size: 11px; fill: var(--faint); font-weight: 600; letter-spacing: 0.02em; }
+  svg .num { font-size: 10.5px; fill: #fff; font-weight: 700; font-family: var(--mono); }
+  svg .edge { stroke: var(--hair-strong); stroke-width: 1.6; fill: none; }
+  svg .edge-ac { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  svg .ret { stroke: var(--faint); stroke-width: 1.4; fill: none; stroke-dasharray: 5 4; }
+  svg .grp { fill: none; stroke: var(--hair-strong); stroke-dasharray: 6 5; stroke-width: 1.3; }
+  svg .life { stroke: var(--hair-strong); stroke-width: 1.2; stroke-dasharray: 4 5; }
+  svg .port { stroke-dasharray: 5 3; }
 </style>
 </head>
 <body>
@@ -427,6 +459,266 @@
   <div class="callout" style="border-left-color:var(--warn);background:var(--warn-bg)">
     <b>두 개의 백엔드 — 혼동 주의.</b> 이 문서가 그리는 BE는 <b>pullim-api 플래너 도메인</b>(라이브 <code>dev-api.pullim.ai</code>, 흡수 대상 상태)이다. 이와 별도로 <b>이 리포 자체의 <code>apps/backend</code></b> 는 흡수 이전 단계의 <b>placeholder</b> 로, 아직 이 그림과 다르다 — 컨트롤러는 <code>me · planners · blocks</code> 뿐(routines·studygram·curriculum·dev-seed 없음), PK 는 <b>Drizzle 시대 <code>text</code></b>(uuid 아님), <b>Redis 미도입</b>(refresh-token 블랙리스트를 Postgres 테이블로 대체). 아래 uuid·Redis·플랫폼 가드·studygram 표면은 모두 <b>pullim-api</b> 기준이며 <code>apps/backend</code> 현행이 아니다.
   </div>
+
+  <!-- ============ 00. DIAGRAMS ============ -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">00</span>
+      <h2>도식 — 시각 개요</h2>
+      <span class="note">박스·화살표 스키마 4종<br>아래 01~05 는 상세 레퍼런스</span>
+    </div>
+
+    <!-- ---- Diagram 1: System architecture ---- -->
+    <div class="diagram-scroll">
+      <p class="dgm-cap">시스템 아키텍처 — 요청 경로</p>
+      <svg viewBox="0 0 880 400" role="img" aria-label="시스템 아키텍처 도식" style="min-width:720px">
+        <defs>
+          <marker id="ah-sys" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L7.5,3 L0,6 Z" fill="#8A94A0"/>
+          </marker>
+          <marker id="ah-sys-ac" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L7.5,3 L0,6 Z" fill="#2C57CE"/>
+          </marker>
+        </defs>
+
+        <!-- group frames -->
+        <rect class="grp" x="45" y="120" width="300" height="250" rx="8"/>
+        <text class="gl" x="52" y="112">pullim-planner 리포 (프런트엔드)</text>
+        <rect class="grp" x="535" y="120" width="305" height="250" rx="8"/>
+        <text class="gl" x="542" y="112">pullim 플랫폼 · pullim-api (흡수 대상)</text>
+
+        <!-- nodes -->
+        <rect x="248" y="34" width="184" height="56" rx="6" fill="#F4F6F9" stroke="#CDD5DE" stroke-width="1.4"/>
+        <text class="bt" x="340" y="58" text-anchor="middle">브라우저 — 학생</text>
+        <text class="bs" x="340" y="76" text-anchor="middle">:3030 기본 dev</text>
+
+        <rect x="600" y="34" width="212" height="56" rx="6" fill="#EAF0FC" stroke="#2C57CE" stroke-width="1.4"/>
+        <text class="bt" x="706" y="58" text-anchor="middle">중앙 로그인 (SSO)</text>
+        <text class="bs" x="706" y="76" text-anchor="middle">$LOGIN_URL/login</text>
+
+        <rect x="70" y="158" width="250" height="62" rx="6" fill="#EEF3FD" stroke="#2C57CE" stroke-width="1.4"/>
+        <text class="bt" x="195" y="184" text-anchor="middle">플래너 FE</text>
+        <text class="bs" x="195" y="202" text-anchor="middle">apps/planner · Next.js 16</text>
+
+        <rect x="70" y="296" width="250" height="62" rx="6" fill="#F0EEFB" stroke="#5B4BC4" stroke-width="1.4"/>
+        <text class="bt" x="195" y="322" text-anchor="middle">api-client</text>
+        <text class="bs" x="195" y="340" text-anchor="middle">packages/* · 쿠키·CSRF 전송</text>
+
+        <rect x="558" y="158" width="262" height="62" rx="6" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.4"/>
+        <text class="bt" x="689" y="184" text-anchor="middle">pullim-api 플래너 도메인</text>
+        <text class="bs" x="689" y="202" text-anchor="middle">@Controller('planner') + 가드</text>
+
+        <rect x="558" y="300" width="128" height="58" rx="6" fill="#F5F0E6" stroke="#8A6D3B" stroke-width="1.4"/>
+        <text class="bt" x="622" y="324" text-anchor="middle">Postgres 16</text>
+        <text class="bs" x="622" y="342" text-anchor="middle">schema=planner</text>
+
+        <rect x="700" y="300" width="120" height="58" rx="6" fill="#F5F0E6" stroke="#8A6D3B" stroke-width="1.4"/>
+        <text class="bt" x="760" y="324" text-anchor="middle">Redis</text>
+        <text class="bs" x="760" y="342" text-anchor="middle">세션/캐시</text>
+
+        <!-- edges -->
+        <path class="edge" d="M300,90 L205,155" marker-end="url(#ah-sys)"/>
+        <text class="el" x="232" y="128">요청</text>
+
+        <path class="edge-ac" d="M432,52 L598,52" marker-end="url(#ah-sys-ac)"/>
+        <text class="el" x="515" y="42" text-anchor="middle" fill="#2C57CE">미인증 → redirect ?next=</text>
+        <path class="ret" d="M598,72 L434,72" marker-end="url(#ah-sys)"/>
+        <text class="el" x="516" y="90" text-anchor="middle">세션 쿠키 · next 복귀</text>
+
+        <path class="edge" d="M195,220 L195,294" marker-end="url(#ah-sys)"/>
+        <text class="el" x="212" y="262">import</text>
+
+        <path class="edge-ac" d="M320,322 L556,200" marker-end="url(#ah-sys-ac)"/>
+        <text class="el" x="438" y="248" text-anchor="middle" fill="#2C57CE">쿠키 + X-CSRF-Token</text>
+
+        <path class="edge" d="M620,220 L622,296" marker-end="url(#ah-sys)"/>
+        <text class="el" x="592" y="262" text-anchor="end">TypeORM</text>
+
+        <path class="edge" d="M760,220 L760,296" marker-end="url(#ah-sys)"/>
+        <text class="el" x="778" y="262">세션/캐시</text>
+      </svg>
+    </div>
+
+    <!-- ---- Diagram 2: Clean architecture flow ---- -->
+    <div class="diagram-scroll">
+      <p class="dgm-cap">BE 모듈 — 클린 아키텍처 흐름 (pullim-api)</p>
+      <svg viewBox="0 0 880 210" role="img" aria-label="클린 아키텍처 흐름 도식" style="min-width:720px">
+        <defs>
+          <marker id="ah-ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L7.5,3 L0,6 Z" fill="#8A94A0"/>
+          </marker>
+        </defs>
+
+        <rect x="12"  y="66" width="122" height="54" rx="6" fill="#F4F6F9" stroke="#CDD5DE" stroke-width="1.4"/>
+        <text class="bs" x="73"  y="90" text-anchor="middle" fill="#12171E" style="font-size:12px;font-weight:640">HTTP</text>
+        <text class="bs" x="73"  y="107" text-anchor="middle">요청·응답</text>
+
+        <rect x="152" y="66" width="122" height="54" rx="6" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.4"/>
+        <text class="bs" x="213" y="97" text-anchor="middle" fill="#0b5a5e" style="font-size:12px;font-weight:640">controller</text>
+
+        <rect x="292" y="66" width="122" height="54" rx="6" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.4"/>
+        <text class="bs" x="353" y="97" text-anchor="middle" fill="#0b5a5e" style="font-size:12px;font-weight:640">use-cases</text>
+
+        <rect x="432" y="66" width="122" height="54" rx="6" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.4"/>
+        <text class="bs" x="493" y="97" text-anchor="middle" fill="#0b5a5e" style="font-size:12px;font-weight:640">service</text>
+
+        <rect class="port" x="572" y="66" width="122" height="54" rx="6" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.4"/>
+        <text class="bs" x="633" y="90" text-anchor="middle" fill="#0b5a5e" style="font-size:12px;font-weight:640">interface</text>
+        <text class="bs" x="633" y="107" text-anchor="middle">포트(계약)</text>
+
+        <rect x="712" y="66" width="122" height="54" rx="6" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.4"/>
+        <text class="bs" x="773" y="90" text-anchor="middle" fill="#0b5a5e" style="font-size:12px;font-weight:640">infrastructure</text>
+        <text class="bs" x="773" y="107" text-anchor="middle">TypeORM 어댑터</text>
+
+        <rect x="712" y="158" width="122" height="42" rx="6" fill="#F5F0E6" stroke="#8A6D3B" stroke-width="1.4"/>
+        <text class="bs" x="773" y="184" text-anchor="middle" fill="#6e5629" style="font-size:12px;font-weight:640">Postgres</text>
+
+        <!-- sequential arrows -->
+        <path class="edge" d="M134,93 L150,93" marker-end="url(#ah-ar)"/>
+        <path class="edge" d="M274,93 L290,93" marker-end="url(#ah-ar)"/>
+        <path class="edge" d="M414,93 L430,93" marker-end="url(#ah-ar)"/>
+        <path class="edge" d="M554,93 L570,93" marker-end="url(#ah-ar)"/>
+        <path class="edge" d="M694,93 L710,93" marker-end="url(#ah-ar)"/>
+        <path class="edge" d="M773,120 L773,156" marker-end="url(#ah-ar)"/>
+        <text class="el" x="788" y="142">쿼리</text>
+
+        <!-- dependency inversion -->
+        <path class="ret" d="M773,66 Q703,26 633,66" marker-end="url(#ah-ar)"/>
+        <text class="el" x="703" y="22" text-anchor="middle">infra ▸ 포트 구현 (의존성 역전)</text>
+      </svg>
+    </div>
+
+    <!-- ---- Diagram 3: ER ---- -->
+    <div class="diagram-scroll">
+      <p class="dgm-cap">도메인 모델 — 엔티티 관계 (pullim-api · schema=planner)</p>
+      <svg viewBox="0 0 880 430" role="img" aria-label="엔티티 관계 도식" style="min-width:760px">
+        <defs>
+          <marker id="ah-er" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#8A94A0"/>
+          </marker>
+        </defs>
+
+        <text class="gl" x="55" y="30">핵심 플래닝</text>
+        <text class="gl" x="300" y="30">학습자 상태</text>
+        <text class="gl" x="520" y="30">공유 (studygram)</text>
+
+        <!-- core -->
+        <rect x="55"  y="44" width="160" height="46" rx="5" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.3"/>
+        <text class="bs" x="135" y="72" text-anchor="middle" fill="#0b5a5e" style="font-size:12px;font-weight:640">planner</text>
+        <rect x="55"  y="150" width="160" height="46" rx="5" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.3"/>
+        <text class="bs" x="135" y="178" text-anchor="middle" fill="#0b5a5e" style="font-size:12px;font-weight:640">time-block</text>
+        <rect x="55"  y="256" width="185" height="46" rx="5" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.3"/>
+        <text class="bs" x="147" y="284" text-anchor="middle" fill="#0b5a5e" style="font-size:12px;font-weight:640">block-completion</text>
+
+        <path class="edge" d="M135,90 L135,148" marker-end="url(#ah-er)"/>
+        <text class="el" x="152" y="122">1 : N</text>
+        <path class="edge" d="M135,196 L135,254" marker-end="url(#ah-er)"/>
+        <text class="el" x="152" y="228">1 : N</text>
+
+        <!-- learner state -->
+        <rect x="285" y="44" width="160" height="46" rx="5" fill="#F5F0E6" stroke="#8A6D3B" stroke-width="1.3"/>
+        <text class="bs" x="365" y="72" text-anchor="middle" fill="#6e5629" style="font-size:12px;font-weight:640">user-profile</text>
+        <rect x="285" y="120" width="160" height="46" rx="5" fill="#F5F0E6" stroke="#8A6D3B" stroke-width="1.3"/>
+        <text class="bs" x="365" y="148" text-anchor="middle" fill="#6e5629" style="font-size:12px;font-weight:640">daily-condition</text>
+        <rect x="285" y="196" width="160" height="46" rx="5" fill="#F5F0E6" stroke="#8A6D3B" stroke-width="1.3"/>
+        <text class="bs" x="365" y="224" text-anchor="middle" fill="#6e5629" style="font-size:12px;font-weight:640">routine</text>
+
+        <!-- studygram -->
+        <rect x="515" y="44" width="165" height="46" rx="5" fill="#F0EEFB" stroke="#5B4BC4" stroke-width="1.3"/>
+        <text class="bs" x="597" y="72" text-anchor="middle" fill="#443a94" style="font-size:12px;font-weight:640">study-proof</text>
+        <rect x="515" y="150" width="165" height="46" rx="5" fill="#F0EEFB" stroke="#5B4BC4" stroke-width="1.3"/>
+        <text class="bs" x="597" y="178" text-anchor="middle" fill="#443a94" style="font-size:12px;font-weight:640">proof-reaction</text>
+        <rect x="515" y="256" width="180" height="46" rx="5" fill="#F0EEFB" stroke="#5B4BC4" stroke-width="1.3"/>
+        <text class="bs" x="605" y="284" text-anchor="middle" fill="#443a94" style="font-size:12px;font-weight:640">studygram-setting</text>
+
+        <rect x="712" y="44" width="150" height="46" rx="5" fill="#F0EEFB" stroke="#5B4BC4" stroke-width="1.3"/>
+        <text class="bs" x="787" y="72" text-anchor="middle" fill="#443a94" style="font-size:12px;font-weight:640">friendship</text>
+        <rect x="712" y="150" width="150" height="60" rx="5" fill="#F0EEFB" stroke="#5B4BC4" stroke-width="1.3"/>
+        <text class="bs" x="787" y="174" text-anchor="middle" fill="#443a94" style="font-size:11px;font-weight:640">close-friend-</text>
+        <text class="bs" x="787" y="190" text-anchor="middle" fill="#443a94" style="font-size:11px;font-weight:640">designation</text>
+
+        <path class="edge" d="M597,90 L597,148" marker-end="url(#ah-er)"/>
+        <text class="el" x="614" y="122">1 : N</text>
+        <path class="edge" d="M787,90 L787,148" marker-end="url(#ah-er)"/>
+        <text class="el" x="732" y="122" text-anchor="end">accepted 전제</text>
+
+        <text class="el" x="55" y="360">PK = uuid · userId → auth.users.id (ID-참조, cross-schema FK 없음)</text>
+        <text class="el" x="55" y="382">friendship = 무방향 승인제 (least,greatest) 유니크 · study-proof.snapshot = jsonb 동결</text>
+      </svg>
+    </div>
+
+    <!-- ---- Diagram 4: Auth sequence ---- -->
+    <div class="diagram-scroll">
+      <p class="dgm-cap">인증 시퀀스 — 미인증 진입부터 변경 요청까지</p>
+      <svg viewBox="0 0 880 430" role="img" aria-label="인증 시퀀스 도식" style="min-width:760px">
+        <defs>
+          <marker id="ah-sq" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L7.5,3 L0,6 Z" fill="#8A94A0"/>
+          </marker>
+          <marker id="ah-sq-ac" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L7.5,3 L0,6 Z" fill="#2C57CE"/>
+          </marker>
+        </defs>
+
+        <!-- actor heads -->
+        <rect x="40"  y="24" width="140" height="40" rx="6" fill="#F4F6F9" stroke="#CDD5DE" stroke-width="1.3"/>
+        <text class="bs" x="110" y="49" text-anchor="middle" fill="#12171E" style="font-size:12px;font-weight:640">브라우저</text>
+        <rect x="256" y="24" width="168" height="40" rx="6" fill="#EEF3FD" stroke="#2C57CE" stroke-width="1.3"/>
+        <text class="bs" x="340" y="49" text-anchor="middle" fill="#234a9e" style="font-size:11.5px;font-weight:640">플래너 FE · RequireAuth</text>
+        <rect x="486" y="24" width="150" height="40" rx="6" fill="#EAF0FC" stroke="#2C57CE" stroke-width="1.3"/>
+        <text class="bs" x="561" y="49" text-anchor="middle" fill="#234a9e" style="font-size:12px;font-weight:640">중앙 로그인</text>
+        <rect x="716" y="24" width="148" height="40" rx="6" fill="#E6F4F4" stroke="#0F7C82" stroke-width="1.3"/>
+        <text class="bs" x="790" y="49" text-anchor="middle" fill="#0b5a5e" style="font-size:12px;font-weight:640">pullim-api</text>
+
+        <!-- lifelines -->
+        <line class="life" x1="110" y1="64" x2="110" y2="414"/>
+        <line class="life" x1="340" y1="64" x2="340" y2="414"/>
+        <line class="life" x1="561" y1="64" x2="561" y2="414"/>
+        <line class="life" x1="790" y1="64" x2="790" y2="414"/>
+
+        <!-- messages -->
+        <circle cx="26" cy="100" r="9" fill="#2C57CE"/><text class="num" x="26" y="104" text-anchor="middle">1</text>
+        <path class="edge" d="M110,100 L338,100" marker-end="url(#ah-sq)"/>
+        <text class="el" x="224" y="93" text-anchor="middle">보호 라우트 열기</text>
+
+        <circle cx="26" cy="140" r="9" fill="#2C57CE"/><text class="num" x="26" y="144" text-anchor="middle">2</text>
+        <path class="edge" d="M340,132 h34 v16 h-32" marker-end="url(#ah-sq)"/>
+        <text class="el" x="384" y="137">session() 확인 (클라)</text>
+
+        <circle cx="26" cy="186" r="9" fill="#2C57CE"/><text class="num" x="26" y="190" text-anchor="middle">3</text>
+        <path class="edge-ac" d="M340,186 L559,186" marker-end="url(#ah-sq-ac)"/>
+        <text class="el" x="450" y="179" text-anchor="middle" fill="#2C57CE">redirect ?next= (미인증·SSO호스트)</text>
+
+        <circle cx="26" cy="226" r="9" fill="#2C57CE"/><text class="num" x="26" y="230" text-anchor="middle">4</text>
+        <path class="edge" d="M561,226 L112,226" marker-end="url(#ah-sq)"/>
+        <text class="el" x="336" y="219" text-anchor="middle">세션 쿠키 세팅 + next 복귀</text>
+
+        <circle cx="26" cy="272" r="9" fill="#2C57CE"/><text class="num" x="26" y="276" text-anchor="middle">5</text>
+        <path class="edge" d="M340,272 L788,272" marker-end="url(#ah-sq)"/>
+        <text class="el" x="564" y="265" text-anchor="middle">GET /auth/csrf</text>
+
+        <circle cx="26" cy="308" r="9" fill="#8A94A0"/><text class="num" x="26" y="312" text-anchor="middle">6</text>
+        <path class="ret" d="M790,308 L342,308" marker-end="url(#ah-sq)"/>
+        <text class="el" x="566" y="301" text-anchor="middle">csrf 토큰 + 쿠키</text>
+
+        <circle cx="26" cy="352" r="9" fill="#2C57CE"/><text class="num" x="26" y="356" text-anchor="middle">7</text>
+        <path class="edge-ac" d="M340,352 L788,352" marker-end="url(#ah-sq-ac)"/>
+        <text class="el" x="564" y="345" text-anchor="middle" fill="#2C57CE">변경 요청 · 쿠키 + X-CSRF-Token</text>
+
+        <circle cx="26" cy="390" r="9" fill="#8A94A0"/><text class="num" x="26" y="394" text-anchor="middle">8</text>
+        <path class="ret" d="M790,390 L342,390" marker-end="url(#ah-sq)"/>
+        <text class="el" x="566" y="383" text-anchor="middle">가드검증 → user.sub 스코프 데이터</text>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="dot d-fe"></span>FE</span>
+      <span class="item"><span class="dot d-shared"></span>공유 패키지</span>
+      <span class="item"><span class="dot d-be"></span>pullim-api 도메인</span>
+      <span class="item"><span class="dot d-data"></span>저장소</span>
+      <span class="item" style="color:var(--accent)">━ 파란 화살표 = 인증·쿠키 경로</span>
+    </div>
+  </section>
 
   <!-- ============ 1. REQUEST PATH ============ -->
   <section>
