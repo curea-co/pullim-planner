@@ -58,6 +58,7 @@ export type {
   PullimStudyProof,
   PullimFriend,
   PullimFriendship,
+  PullimDiscoverUser,
   PullimStudygramSettingWrite,
   PullimStudyProofCreateInput,
   PullimStudyProofPatch,
