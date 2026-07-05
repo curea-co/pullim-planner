@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>플래너 서비스 — 아키텍처</title>
 <style>
   :root {
@@ -433,9 +435,9 @@
       <div class="tier tier-top">
         <div class="tier-label">
           <span class="name">브라우저 — 학생</span>
-          <span class="tech">planner.pullim.ai · 로컬 :3006</span>
+          <span class="tech">기본 dev :3030 · SSO :3006</span>
         </div>
-        <p class="tier-desc">학생이 플래너를 연다. 세션 쿠키가 없으면 보호 라우트를 렌더링하기 전에 중앙 로그인으로 넘긴다.</p>
+        <p class="tier-desc">학생이 플래너를 연다. <code>RequireAuth</code> 가 마운트 후 클라이언트에서 세션 상태를 확인하고, 미인증이면서 SSO 가능 호스트일 때만 중앙 로그인으로 넘긴다(아래 05 참조). <span style="color:var(--muted)">로컬 기본 포트 = planner <b>3030</b> · backend <b>4030</b>. <b>:3006</b> 은 <code>planner.pullim.local</code> SSO 프록시 시나리오 전용.</span></p>
       </div>
 
       <div class="connector"><span class="rail-note">세션 없음 → 리다이렉트</span></div>
@@ -734,8 +736,8 @@
     <div class="seq">
       <div class="step">
         <div class="sn">1</div>
-        <div class="st-body"><b>미인증 진입.</b> 학생이 보호 라우트를 열고, <code>RequireAuth</code> 가 세션 없음을 감지한다.
-          <span class="sub">SSO 는 allowlist 호스트(<code>pullim.ai</code> / <code>pullim.local</code>)에서만 작동한다 — 리다이렉트 루프를 막기 위해 맨 <code>localhost</code> 는 제외.</span>
+        <div class="st-body"><b>미인증 감지 (클라이언트).</b> 세션은 HttpOnly 쿠키라 <code>RequireAuth</code> 가 마운트 후 <code>useAuth()</code> 로 상태를 확인한다. 상태가 <code>unauthenticated</code> 이고 <code>canCentralLogin()</code> 이 true 일 때만 다음 단계로 간다.
+          <span class="sub">SSO 가능 호스트(<code>pullim.ai</code> / <code>pullim.local</code>)에서만 리다이렉트한다. SSO 불가 호스트(<code>localhost</code> / preview)나 env 미설정이면 <b>리다이렉트 대신 안내 UI</b> 를 띄운다(루프·크래시 방지). 세션 복원이 네트워크/5xx 로 실패한 <code>error</code> 상태는 로그인으로 보내지 않고 재시도 UI.</span>
         </div>
       </div>
       <div class="step">
@@ -762,7 +764,7 @@
   </section>
 
   <div class="callout" style="margin-top:44px;border-left-color:var(--warn);background:var(--warn-bg)">
-    <b>검증 메모 (실제 코드 대조).</b> 위 BE 내용은 <b>pullim-api 플래너 도메인</b> 실측 기준이며, 이 리포 <code>apps/backend</code>(흡수 이전 placeholder — 상단 콜아웃 참조)와는 다르다. pullim-api 유의점 — ① <b>CSRF 가드는 쓰기(write) 엔드포인트에만</b> 붙는다(<code>@UseGuards(CsrfGuard, JwtVerifyGuard, EntitlementGuard('planner', { action: 'write' }))</code>). 읽기는 <code>Jwt + Entitlement(read)</code>. ② <b>엔타이틀먼트는 studygram 포함 현재 전부 <code>flags.planner</code></b> 를 쓴다. 공유용 별도 <code>flags.studygram</code> 은 plan 문서상 결정일 뿐 아직 코드 미반영(후속 항목).
+    <b>검증 메모 (실제 코드 대조).</b> 위 BE 내용은 <b>pullim-api 플래너 도메인</b> 실측 기준이며, 이 리포 <code>apps/backend</code>(흡수 이전 placeholder — 상단 콜아웃 참조)와는 다르다. pullim-api 유의점 — ① <b>CSRF 가드는 쓰기(write) 엔드포인트에만</b> 붙는다(<code>@UseGuards(CsrfGuard, JwtVerifyGuard, EntitlementGuard('planner', { action: 'write' }))</code>). 읽기는 <code>Jwt + Entitlement(read)</code>. ② <b>엔타이틀먼트는 studygram 포함 현재 전부 <code>flags.planner</code></b> 를 쓴다. 공유용 별도 <code>flags.studygram</code> 은 plan 문서상 결정일 뿐 아직 코드 미반영(후속 항목). ③ <b>로컬 기본 포트</b> = planner <code>3030</code> · backend <code>4030</code>; <code>:3006</code> 은 <code>planner.pullim.local</code> SSO 프록시 전용. ④ <b>RequireAuth</b> 는 서버 게이트가 아니라 클라이언트 마운트 후 세션 확인 → SSO 가능 호스트에서만 리다이렉트(그 외엔 안내 UI).
   </div>
 
   <footer>
