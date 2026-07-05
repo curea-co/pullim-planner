@@ -61,8 +61,11 @@ describe('PUDS 토큰 별칭 (re-skin lock)', () => {
     });
   });
 
-  it('lemon → secondary', () => {
-    expect(alias('--color-pullim-lemon')).toBe('--color-secondary-500');
+  // lemon은 의도적으로 PUDS secondary-500 별칭에서 이탈한다. 실 브랜드 레몬은 코치(writing/admissions)가
+  // 쓰는 vivid #E6FF4C 이고, PUDS secondary-500(oklch 0.967 0.197 116)은 sRGB 클램프 시 창백해져
+  // 디자인 시스템(코치)과 어긋난다. → CTA 어포던스·코치 정합을 위해 hex 리터럴로 고정.
+  it('lemon → vivid #E6FF4C (코치 브랜드 레몬; PUDS secondary-500 클램프 회피)', () => {
+    expect(css).toMatch(/--color-pullim-lemon:\s*#E6FF4C/i);
   });
 
   describe('radius → PUDS 토큰 별칭 (테마 전환 따라감, px 리터럴 금지)', () => {
