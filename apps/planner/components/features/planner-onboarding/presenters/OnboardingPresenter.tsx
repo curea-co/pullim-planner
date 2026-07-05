@@ -1,8 +1,10 @@
-import { CalendarClock, Calendar, PlayCircle, Smile, PencilLine } from 'lucide-react';
+import { CalendarClock, Calendar, PlayCircle, Smile, PencilLine, BarChart2, AlertCircle } from 'lucide-react';
 import { OnboardingTemplate } from '@/components/shell/onboarding-template';
 import { MockBrowser } from '@/components/shell/mock-browser';
 import { SideTimeline24 } from '@/components/features/planner-home/components/side-timeline-24';
 import { ConditionSlider } from '@/components/features/planner-home/components/condition-slider';
+import { AccuracyTrendChart } from '@/components/features/planner-reports/components/accuracy-trend-chart';
+import { REPORTS_ENABLED, WEAKNESS_ENABLED } from '@/lib/flags';
 import { todayBlocks } from '@/lib/mock';
 
 interface OnboardingPresenterProps {
@@ -72,6 +74,67 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           screenshot: (
             <MockBrowser label="컨디션 입력">
               <ConditionSlider initial={3} />
+            </MockBrowser>
+          ),
+        },
+        {
+          // 성장 리포트 — soft open 게이트(REPORTS_ENABLED)에 따라 오픈/출시 예정 문구 분기 (welcome-modal과 정합, codex)
+          Icon: BarChart2,
+          title: REPORTS_ENABLED ? '성장 리포트로 돌아보기' : '성장 리포트 — 출시 예정',
+          description: REPORTS_ENABLED
+            ? '하루·한 주·한 달 공부를 회고 화면에서 돌아봐요. 완료율과 학습 시간, 정답률이 어떻게 변했는지 흐름으로 보여 드려요.'
+            : '하루·한 주·한 달 공부를 돌아보는 회고 화면을 준비하고 있어요. 완료율과 학습 시간, 정답률이 어떻게 변했는지 흐름으로 보여 드려요. 열리면 왼쪽 메뉴에 나타나요.',
+          bullets: [
+            '오늘 회고: 완료율·컨디션을 한 줄로 기록해요',
+            '주간 회고: 학습 시간과 정답률 추세를 그래프로 봐요',
+            '월간 회고: 한 달 성장을 모아 부모님과 공유할 수 있어요',
+          ],
+          ...(REPORTS_ENABLED ? { cta: { label: '성장 리포트 보기', href: '/planner/reports' } } : {}),
+          screenshotCaption: REPORTS_ENABLED
+            ? '성장 리포트 — 정답률 추세'
+            : '성장 리포트 미리보기 — 정답률 추세 (출시 예정)',
+          screenshot: (
+            <MockBrowser label="study/planner/reports">
+              <AccuracyTrendChart />
+            </MockBrowser>
+          ),
+        },
+        {
+          // 약점 자동 반영 — 분석 BE 게이트(WEAKNESS_ENABLED)에 따라 오픈/출시 예정 분기
+          Icon: AlertCircle,
+          title: WEAKNESS_ENABLED ? '약점 단원 자동 반영' : '약점 자동 반영 — 출시 예정',
+          description: WEAKNESS_ENABLED
+            ? '풀림 분석이 공부 기록에서 약한 단원을 찾아내면, 시간표를 만들 때 그 단원을 먼저 배정해 드려요. 시간표 만들기 6단계에서 켜고 끌 수 있어요(기본은 꺼짐).'
+            : '풀림 분석이 공부 기록에서 약한 단원을 찾아내면, 시간표를 만들 때 그 단원을 먼저 배정해 드리는 기능을 준비하고 있어요. 열리면 시간표 만들기 6단계에서 켤 수 있어요.',
+          bullets: [
+            '풀림 분석: 문제 풀이 기록에서 약한 단원을 찾아요',
+            '켜 두면: 약한 단원이 시간표 앞쪽에 먼저 배정돼요',
+            '원치 않으면 끄고 직접 단원을 고르면 돼요',
+          ],
+          screenshotCaption: WEAKNESS_ENABLED
+            ? '감지된 약점 단원 — 풀림 분석'
+            : '감지된 약점 단원 미리보기 (출시 예정)',
+          screenshot: (
+            <MockBrowser label="시간표 만들기 · 6단계">
+              <div className="bg-pullim-warn-bg rounded-xl p-3">
+                <div className="text-pullim-warn flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+                  <AlertCircle className="h-3 w-3" />
+                  현재 감지된 약점 단원 — 풀림 분석
+                </div>
+                <ul className="mt-1.5 space-y-1">
+                  {[
+                    { label: '수학 · 미분', mastery: 42 },
+                    { label: '영어 · 빈칸추론', mastery: 48 },
+                    { label: '수학 · 수열', mastery: 55 },
+                  ].map(node => (
+                    <li key={node.label} className="text-pullim-slate-700 flex items-center gap-2 text-[11px]">
+                      <span className="bg-pullim-warn h-1.5 w-1.5 rounded-full" />
+                      <span className="font-semibold">{node.label}</span>
+                      <span className="text-pullim-slate-500 ml-auto font-mono">정복도 {node.mastery}%</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </MockBrowser>
           ),
         },

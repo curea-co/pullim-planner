@@ -4,7 +4,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { SubjectKey } from '@/lib/mock';
-import { ROUTINE_ENABLED } from '@/lib/flags';
+import { ROUTINE_ENABLED, WEAKNESS_ENABLED } from '@/lib/flags';
 
 /**
  * 학생 플래너 빌더 9단계 폼 데이터.
@@ -80,7 +80,7 @@ export const initialPlannerForm: PlannerForm = {
   subjectUnits: {},
   blockPattern: 'focused',
   routineIds: [],
-  weaknessAutoReflect: true,
+  weaknessAutoReflect: false, // 기본 체크 해제(사용자 확정 2026-07-05) — 켜는 건 본인 선택
   motivationStyle: 'guided',
   remindKakao: false, // 카카오 알림 발송 미연동 — UI 숨김 상태와 정합(dev QA #5). 실 연동 시 복원.
   remindPush: true,
@@ -134,7 +134,8 @@ export function plannerToForm(p: Planner): PlannerForm {
     blockPattern: p.blockPattern,
     // 루틴 적용은 Planner 메타에 미보존(실 BE 연기) — 편집 진입 시 빈 선택으로 시작
     routineIds: [],
-    weaknessAutoReflect: p.weaknessAutoReflect,
+    // 게이트 off 땐 기존 true 값도 false 로 — 출시 예정 상태에서 재저장 시 켜진 채 남지 않게
+    weaknessAutoReflect: WEAKNESS_ENABLED ? p.weaknessAutoReflect : false,
     motivationStyle: p.motivationStyle,
     // 알림 설정은 Planner 메타에 미보존 — 기본값 사용 (별도 사용자 설정으로 분리 예정)
     remindKakao: false, // 카카오 알림 발송 미연동 — UI 숨김 상태와 정합(dev QA #5). 실 연동 시 복원.
@@ -176,7 +177,10 @@ const allSteps: readonly Omit<StepInfo, 'num'>[] = [
   { key: 'subjects',   label: '범위',      icon: BookOpen,  title: '학습 범위',            description: '이번 시험에서 다룰 과목 · 단원 선택. 시간 분배는 AI가 단원 수·약점·D-day로 자동 계산해요.' },
   { key: 'pattern',    label: '블록',      icon: Hourglass, title: '블록 패턴',            description: '집중 ↔ 휴식 리듬. 본인 집중력에 맞춰 선택.' },
   { key: 'routine',    label: '루틴',      icon: Repeat2,   title: '루틴 — 반복하는 행동', description: '매일·매주 반복할 행동을 골라 이 시간표에 넣어요. 건너뛰어도 돼요.' },
-  { key: 'weakness',   label: '약점',      icon: Flame,     title: '약점 자동 반영',       description: '풀림 분석의 약점 단원을 플래너가 자동으로 더 많이 배정할지.' },
+  { key: 'weakness',   label: '약점',      icon: Flame,     title: '약점 자동 반영',
+    description: WEAKNESS_ENABLED
+      ? '풀림 분석의 약점 단원을 플래너가 자동으로 더 많이 배정할지.'
+      : '풀림 분석의 약점 단원을 자동 배정하는 기능 — 지금 준비 중이에요.' },
   { key: 'motivation', label: '동기',      icon: Heart,     title: '동기 부여 스타일',     description: '봇이 어떻게 너를 도울지. 스파르타로 갈수록 알림이 늘어요.' },
   { key: 'reminder',   label: '알림',      icon: Bell,      title: '리마인더',             description: '카톡·푸시·시작 5분 전 알림. 부모 일일 보고는 동의 필요.' },
   { key: 'activate',   label: '활성화',    icon: Sparkles,  title: '미리보기 · 활성화',    description: '일주일 자동 생성된 플래너를 확인하고 활성화.' },

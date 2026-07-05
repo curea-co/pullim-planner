@@ -7,7 +7,7 @@ import {
   Home, CalendarClock, Wrench, FileText, BookOpen, Share2, Repeat2,
   type LucideIcon,
 } from 'lucide-react';
-import { ROUTINE_ENABLED } from '@/lib/flags';
+import { REPORTS_ENABLED, ROUTINE_ENABLED } from '@/lib/flags';
 
 export type NavItem = {
   href: string;
@@ -52,7 +52,10 @@ export const plannerSection: NavSubItem[] = [
   ...(ROUTINE_ENABLED
     ? [{ href: '/planner/routine', label: '루틴 만들기', breadcrumbLabel: '루틴', icon: Repeat2, description: '반복하는 행동을 등록·관리 — 새 시간표 만들 때 골라 적용' } satisfies NavSubItem]
     : []),
-  { href: '/planner/reports',    label: '성장 리포트', icon: FileText, description: '일·주·월 회고 + 부모 공유' },
+  // 성장 리포트는 soft open(07-10)까지 BE 미준비 — off면 항목 자체를 제외(라우트 redirect와 일관, 온보딩 "출시 예정" 카드로만 예고)
+  ...(REPORTS_ENABLED
+    ? [{ href: '/planner/reports', label: '성장 리포트', icon: FileText, description: '일·주·월 회고 + 부모 공유' } satisfies NavSubItem]
+    : []),
   { href: '/planner/share',      label: '공유',        icon: Share2,   description: '학습 인증 공유 — 친구 피드 + 인증 카드' },
   { href: '/planner?help=1',     label: '매뉴얼',      icon: BookOpen, description: '5분 사용법 가이드 — 첫 화면에서 모달로 열림' },
 ];
@@ -78,11 +81,14 @@ export function navForRole(_role: Role): NavGroup[] {
 /**
  * 모바일 하단 탭 — 플래너 4 섹션 (홈 / 관리 / 리포트 / 공유).
  * OI-1 확정(2026-06-24): '소개/안내'는 하단탭에서 빼고 프로필 메뉴(헤더 ProfileMenu)로 내림 → 공유 승격.
+ * 리포트 탭은 REPORTS_ENABLED 게이트 — off면 3탭(홈/관리/공유).
  */
 export const studentBottomTabs = [
   { href: '/planner',        label: '홈',      icon: Home,     matchPrefix: ['/', '/planner'] },
   { href: '/planner/manage', label: '관리',    icon: Wrench,   matchPrefix: ['/planner/manage'] },
-  { href: '/planner/reports', label: '리포트', icon: FileText, matchPrefix: ['/planner/reports'] },
+  ...(REPORTS_ENABLED
+    ? [{ href: '/planner/reports', label: '리포트', icon: FileText, matchPrefix: ['/planner/reports'] } as const]
+    : []),
   { href: '/planner/share',  label: '공유',    icon: Share2,   matchPrefix: ['/planner/share'] },
 ] as const;
 
