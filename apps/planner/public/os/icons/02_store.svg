@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pullim Store">
+  <title>풀림 스토어</title>
+  <rect x="4" y="4" width="92" height="92" rx="18" fill="#0362DA"/>
+  <!-- handle -->
+  <rect x="38" y="30" width="24" height="8" fill="#FFFFFF"/>
+  <!-- box body -->
+  <rect x="30" y="38" width="40" height="32" fill="#FFFFFF"/>
+  <!-- shelf base -->
+  <rect x="22" y="70" width="56" height="8" fill="#FFFFFF"/>
+  <!-- price tag accent (center) -->
+  <rect x="46" y="46" width="8" height="8" fill="#E6FF4C"/>
+</svg>

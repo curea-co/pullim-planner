@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { Wrench, Plus, Eye, EyeOff } from 'lucide-react';
+import { Plus, Eye, EyeOff } from 'lucide-react';
 import type { Planner } from '@/lib/mock';
 import { PageHeader } from '@/components/shell/page-header';
 import { PlannerCard } from '../components/planner-card';
 import { ActivateConfirmDialog } from '../components/activate-confirm-dialog';
 import { DeleteConfirmDialog } from '../components/delete-confirm-dialog';
+import { SharePlannerDialog } from '../components/share-planner-dialog';
 import { EmptyState } from '../components/empty-state';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +22,7 @@ interface ManagePlannersPresenterProps {
   showArchived: boolean;
   activateTarget: Planner | null;
   deleteTarget: Planner | null;
+  shareTarget: Planner | null;
   onToggleArchived: () => void;
   onActivateRequest: (id: string) => void;
   onActivateOpenChange: (open: boolean) => void;
@@ -31,6 +33,9 @@ interface ManagePlannersPresenterProps {
   onDeleteOpenChange: (open: boolean) => void;
   onDeleteConfirm: () => void;
   onDecorate: (id: string) => void;
+  onShareRequest: (id: string) => void;
+  onShareOpenChange: (open: boolean) => void;
+  onShareConfirm: (friendIds: string[]) => void;
 }
 
 export default function ManagePlannersPresenter({
@@ -44,6 +49,7 @@ export default function ManagePlannersPresenter({
   showArchived,
   activateTarget,
   deleteTarget,
+  shareTarget,
   onToggleArchived,
   onActivateRequest,
   onActivateOpenChange,
@@ -54,6 +60,9 @@ export default function ManagePlannersPresenter({
   onDeleteOpenChange,
   onDeleteConfirm,
   onDecorate,
+  onShareRequest,
+  onShareOpenChange,
+  onShareConfirm,
 }: ManagePlannersPresenterProps) {
   const totalCount = inactive.length + (active ? 1 : 0);
   const isEmpty = totalCount === 0;
@@ -64,14 +73,14 @@ export default function ManagePlannersPresenter({
     onArchive,
     onDelete: onDeleteRequest,
     onDecorate,
+    onShare: onShareRequest,
   };
 
   return (
     <div key={tick} className="space-y-5">
       <PageHeader
-        eyebrow={{ icon: Wrench, text: '시간표 관리' }}
-        title="내 시간표"
-        description={`활성 ${active ? 1 : 0}개 + 다른 ${inactive.length}개${archivedList.length > 0 ? ` · 지난 시간표 ${archivedList.length}개 보관` : ''}`}
+        title="시간표 관리"
+        description={`활성 ${active ? 1 : 0} · 대기 ${inactive.length}${archivedList.length > 0 ? ` · 보관 ${archivedList.length}` : ''}`}
         action={
           <Link
             href="/planner/manage/new"
@@ -160,6 +169,13 @@ export default function ManagePlannersPresenter({
         onOpenChange={onDeleteOpenChange}
         target={deleteTarget}
         onConfirm={onDeleteConfirm}
+      />
+
+      <SharePlannerDialog
+        open={!!shareTarget}
+        onOpenChange={onShareOpenChange}
+        planner={shareTarget}
+        onConfirm={onShareConfirm}
       />
     </div>
   );

@@ -9,7 +9,8 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       type={type}
       data-slot="input"
       className={cn(
-        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        // PUDS(pullim-jr) 인풋 레시피 — input-h + surface-raised + radius-md(18px) + action-primary 포커스 링.
+        "h-[var(--input-h)] w-full min-w-0 rounded-[var(--puds-radius-md)] border border-[var(--border-default)] bg-[var(--surface-raised)] px-3 py-1 text-base outline-none transition-[border-color,box-shadow] duration-200 file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-[var(--text-tertiary)] hover:border-[var(--border-strong)] focus-visible:border-[var(--color-action-primary)] focus-visible:ring-[3px] focus-visible:ring-[color-mix(in_oklch,var(--color-action-primary)_25%,transparent)] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-[var(--color-danger-500)] aria-invalid:ring-[3px] aria-invalid:ring-[color-mix(in_oklch,var(--color-danger-500)_25%,transparent)] md:text-sm",
         className
       )}
       {...props}

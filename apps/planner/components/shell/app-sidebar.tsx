@@ -51,7 +51,7 @@ export function AppSidebar({ role, onNavigate, className, compact }: Props) {
                 <ul
                   className={cn(
                     'mt-0.5 space-y-0.5',
-                    compact ? 'ml-0' : 'ml-3 border-l border-pullim-slate-200 pl-2',
+                    compact ? 'ml-0' : 'ml-3 border-l border-[var(--border-subtle)] pl-2',
                   )}
                 >
                   {domain.children.map(sub => (
@@ -94,27 +94,29 @@ function NavRow({
       aria-disabled={item.locked || undefined}
       title={compact ? item.label : item.description}
       className={cn(
-        'group flex items-center gap-2 rounded-lg text-sm font-medium transition-colors',
-        compact ? 'h-11 w-full justify-center' : 'min-h-11 px-2 py-2',
+        // OS(pullim-web) rail 매칭 — nav-item: radius 11px, 활성=accent-soft bg + accent text + 좌측 accent bar(::before).
+        'group relative flex items-center gap-[11px] rounded-[11px] text-sm font-medium transition-colors',
+        "before:absolute before:top-2 before:bottom-2 before:-left-2 before:w-[3px] before:rounded-r-full before:bg-[var(--color-action-primary)] before:opacity-0 before:transition-opacity before:content-['']",
+        compact ? 'h-11 w-full justify-center' : 'min-h-11 px-3 py-2.5',
         active
-          ? 'bg-pullim-blue-50 text-pullim-blue-700'
+          ? 'bg-[var(--color-primary-50)] font-semibold text-[var(--color-action-primary)] before:opacity-100'
           : item.locked
-          ? 'text-pullim-slate-400 hover:bg-pullim-slate-50 cursor-not-allowed'
-          : 'text-pullim-slate-700 hover:bg-pullim-slate-100 hover:text-pullim-slate-900',
+          ? 'text-[var(--text-tertiary)] cursor-not-allowed opacity-60'
+          : 'text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]',
       )}
     >
       <Icon className={cn('h-4 w-4 shrink-0', active && 'stroke-[2.4]')} />
       {!compact && (
         <>
           <span className="flex-1 truncate">{item.label}</span>
-          {item.locked && <Lock className="text-pullim-slate-300 h-3 w-3" />}
+          {item.locked && <Lock className="text-[var(--text-tertiary)] h-3 w-3" />}
           {item.badge !== undefined && (
             <span
               className={cn(
                 'rounded-full px-1.5 py-0.5 text-[10px] font-bold',
                 item.badge === 'LIVE'
-                  ? 'bg-pullim-danger animate-pulse text-white'
-                  : 'bg-pullim-slate-100 text-pullim-slate-600',
+                  ? 'bg-[var(--color-danger-500)] animate-pulse text-white'
+                  : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]',
               )}
             >
               {item.badge}
@@ -160,20 +162,21 @@ function SubNavRow({
         aria-disabled={sub.locked || undefined}
         title={compact ? sub.label : sub.description}
         className={cn(
-          'group flex items-center gap-2 rounded-lg text-xs font-medium transition-colors',
-          compact ? 'h-10 w-full justify-center' : 'min-h-10 px-2 py-2',
+          // OS rail 매칭(자식) — soft accent, radius 11px. 좌측 바는 border-l 인덴트와 겹쳐 생략.
+          'group flex items-center gap-[11px] rounded-[11px] text-xs font-medium transition-colors',
+          compact ? 'h-10 w-full justify-center' : 'min-h-10 px-3 py-2',
           active
-            ? 'bg-pullim-blue-600 text-white shadow-pullim-sm'
+            ? 'bg-[var(--color-primary-50)] font-semibold text-[var(--color-action-primary)]'
             : sub.locked
-            ? 'text-pullim-slate-400 hover:bg-pullim-slate-50 cursor-not-allowed'
-            : 'text-pullim-slate-600 hover:bg-pullim-slate-100 hover:text-pullim-slate-900',
+            ? 'text-[var(--text-tertiary)] hover:bg-[var(--surface-sunken)] cursor-not-allowed'
+            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]',
         )}
       >
         {Icon && <Icon className={cn('h-3.5 w-3.5 shrink-0', active && 'stroke-[2.4]')} />}
         {!compact && (
           <>
             <span className="flex-1 truncate">{sub.label}</span>
-            {sub.locked && <Lock className={cn('h-3 w-3', active ? 'text-white/70' : 'text-pullim-slate-300')} />}
+            {sub.locked && <Lock className={cn('h-3 w-3', active ? 'text-[var(--color-action-primary)]/70' : 'text-[var(--text-tertiary)]')} />}
           </>
         )}
       </Link>

@@ -197,6 +197,39 @@ export function nextActiveBlock(blocks: TimeBlock[] = todayBlocks): TimeBlock | 
   return blocks.find(b => b.status === 'doing') ?? blocks.find(b => b.status === 'todo');
 }
 
+/**
+ * 오늘(Asia/Seoul, 고정 UTC+9·DST 없음) YYYY-MM-DD.
+ * 하드코딩 데모일 대신 접속 시점의 실제 날짜를 기준으로 홈·D-day가 동작하도록.
+ */
+export function todayISO(): string {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** day-view 날짜 네비게이션 기준일 — 접속 시점의 실제 오늘(KST). */
+export const planBaseDate = todayISO();
+
+/** todayBlocks(서연 데모)를 소유한 플래너 — 다른 시간표 활성 시 블록은 미생성. */
+const DEMO_BLOCKS_PLANNER_ID = 'pl_001';
+
+/**
+ * day-view 날짜 offset(0=기준일)별 블록.
+ * - 기준일 외 날짜: 빈 배열(데모 플랜 없음).
+ * - 기준일이라도 **활성 플래너가 데모(pl_001)가 아니면** 빈 배열 — mock은 신규 시간표의
+ *   블록을 생성하지 않으므로 데모 블록을 잘못 보여주지 않고 "정직한 빈 상태"를 보인다.
+ *   (실제 블록 생성은 활성화 시 BE materialize — 06-30+)
+ *
+ * 활성 판정에 `getActivePlanner()`(이 mock store)를 쓰는 이유: **홈은 블록·활성 플래너를
+ * 모두 이 mock 레이어에서 읽는다**(HomeContainer — dev/prod 공통, 아직 BE cutover 전).
+ * 즉 이 게이트는 홈의 현재 데이터 소스와 일관된다.
+ * - dev 우회: activatePlanner()가 이 store를 갱신 → 신규 플래너 활성 시 빈 상태가 의도대로 동작.
+ * - prod: 홈이 아직 BE로 cutover되지 않아 종전에도 줄곧 pl_001 데모만 노출 → 이 PR로도 동일(회귀 없음).
+ * 실 BE 활성 플래너 기준 블록 반영은 **홈→pullim-api cutover + materialize** 시점의 별 작업.
+ */
+export function getBlocksForDayOffset(offset: number): TimeBlock[] {
+  if (offset !== 0) return [];
+  return getActivePlanner().id === DEMO_BLOCKS_PLANNER_ID ? todayBlocks : [];
+}
+
 export function plannerProgress(blocks: TimeBlock[] = todayBlocks): { done: number; total: number; pct: number } {
   const learning = blocks.filter(b => b.type !== 'break');
   const done = learning.filter(b => b.status === 'done').length;
@@ -604,7 +637,7 @@ export type WeekDay = {
 };
 
 export const weekView: WeekDay[] = [
-  { day: '월', date: 21, isToday: false, totalMinutes: 252, completionPct: 100,
+  { day: '월', date: 20, isToday: false, totalMinutes: 252, completionPct: 100,
     blocks: [
       { type: 'concept',  count: 1, minutes: 40 },
       { type: 'practice', count: 2, minutes: 100 },
@@ -613,7 +646,7 @@ export const weekView: WeekDay[] = [
       { type: 'mock',     count: 1, minutes: 40 },
     ],
   },
-  { day: '화', date: 22, isToday: false, totalMinutes: 228, completionPct: 95,
+  { day: '화', date: 21, isToday: false, totalMinutes: 228, completionPct: 95,
     blocks: [
       { type: 'concept',  count: 2, minutes: 60 },
       { type: 'practice', count: 2, minutes: 90 },
@@ -622,7 +655,7 @@ export const weekView: WeekDay[] = [
       { type: 'self_explain', count: 1, minutes: 18 },
     ],
   },
-  { day: '수', date: 23, isToday: false, totalMinutes: 306, completionPct: 100,
+  { day: '수', date: 22, isToday: false, totalMinutes: 306, completionPct: 100,
     blocks: [
       { type: 'concept',  count: 1, minutes: 40 },
       { type: 'practice', count: 3, minutes: 150 },
@@ -632,7 +665,7 @@ export const weekView: WeekDay[] = [
       { type: 'self_explain', count: 1, minutes: 16 },
     ],
   },
-  { day: '목', date: 24, isToday: true,  totalMinutes: 240, completionPct: 35,
+  { day: '목', date: 23, isToday: false, totalMinutes: 240, completionPct: 100,
     blocks: [
       { type: 'concept',  count: 1, minutes: 40 },
       { type: 'practice', count: 2, minutes: 100 },
@@ -641,7 +674,7 @@ export const weekView: WeekDay[] = [
       { type: 'mock',     count: 1, minutes: 40 },
     ],
   },
-  { day: '금', date: 25, isToday: false, totalMinutes: 280, completionPct: 0,
+  { day: '금', date: 24, isToday: true,  totalMinutes: 280, completionPct: 35,
     blocks: [
       { type: 'concept',  count: 2, minutes: 80 },
       { type: 'practice', count: 2, minutes: 100 },
@@ -650,7 +683,7 @@ export const weekView: WeekDay[] = [
       { type: 'tutor',    count: 1, minutes: 40 },
     ],
   },
-  { day: '토', date: 26, isToday: false, totalMinutes: 360, completionPct: 0,
+  { day: '토', date: 25, isToday: false, totalMinutes: 360, completionPct: 0,
     blocks: [
       { type: 'concept',  count: 2, minutes: 80 },
       { type: 'practice', count: 3, minutes: 150 },
@@ -659,7 +692,7 @@ export const weekView: WeekDay[] = [
       { type: 'self_explain', count: 1, minutes: 20 },
     ],
   },
-  { day: '일', date: 27, isToday: false, totalMinutes: 192, completionPct: 0,
+  { day: '일', date: 26, isToday: false, totalMinutes: 192, completionPct: 0,
     blocks: [
       { type: 'concept',  count: 1, minutes: 40 },
       { type: 'practice', count: 2, minutes: 90 },
@@ -700,7 +733,7 @@ const EXAM_MILESTONES: Record<number, ExamMilestone> = {
 };
 
 function makeMonth(): MonthDay[] {
-  // 4월 — 30일치. 24일이 오늘 (목요일).
+  // 4월 — 30일치. 24일이 오늘 (금요일, 4/1=수 실달력).
   // 결정론적으로 생성 (SSR/CSR 일치 보장).
   const days: MonthDay[] = [];
   const today = 24;
@@ -868,7 +901,8 @@ function buildInitialPlanners(): Planner[] {
       archived: false,
       createdAt: '2026-04-20T10:00:00',
       updatedAt: '2026-04-20T10:00:00',
-      customization: { layoutId: 'block_cards', weekLayoutId: 'school_grid', paletteId: 'forest' },
+      // 색상: playbook 가드 정합 — forest(초록 큰 면) → pullim_blue(블루+레몬 액센트). color-palette green 회피.
+      customization: { layoutId: 'block_cards', weekLayoutId: 'school_grid', paletteId: 'pullim_blue' },
     },
     {
       id: 'pl_003',

@@ -1,10 +1,10 @@
-import { CalendarClock, Calendar, PlayCircle, Smile, HeartPulse, Brain, PencilLine, BookOpen } from 'lucide-react';
+import { CalendarClock, Calendar, PlayCircle, Smile, PencilLine, BarChart2, AlertCircle } from 'lucide-react';
 import { OnboardingTemplate } from '@/components/shell/onboarding-template';
 import { MockBrowser } from '@/components/shell/mock-browser';
 import { SideTimeline24 } from '@/components/features/planner-home/components/side-timeline-24';
 import { ConditionSlider } from '@/components/features/planner-home/components/condition-slider';
-import { BurnoutCard } from '@/components/features/planner-home/components/burnout-card';
-import { PedagogyTag } from '@/components/features/planner-home/components/pedagogy-tag';
+import { AccuracyTrendChart } from '@/components/features/planner-reports/components/accuracy-trend-chart';
+import { REPORTS_ENABLED, WEAKNESS_ENABLED } from '@/lib/flags';
 import { todayBlocks } from '@/lib/mock';
 
 interface OnboardingPresenterProps {
@@ -16,21 +16,21 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
     <OnboardingTemplate
       featureName="풀림 플래너"
       Icon={CalendarClock}
-      identity="시간표 앱이 아닌 자기조절 도구. 7대 학습과학을 자동 적용하고, 오늘 결과(정답률·감정·시간)가 내일 플랜에 자동 반영되는 매일 재최적화 플라이휠."
+      identity="학습과학 원리에 따라 스스로 공부 계획을 세워 보아요. 친구와 공유할 수도 있어요."
       estimatedMin={5}
       steps={[
         {
           Icon: Calendar,
           title: '일/주/월 캘린더로 학습 일정 보기',
           description:
-            '시간 블록 단위로 오늘·이번 주·이번 달 학습이 자동 배치돼요. 일간은 24시간 사이드 트래커로, 주간은 요일×블록 타입 그리드, 월간은 30일 히트맵.',
+            '시간 블록 단위로 오늘·이번 주·이번 달 학습을 계획해요. 하루는 24시간 시간표로, 한 주는 요일별 표로, 한 달은 학습 캘린더로 봐요.',
           bullets: [
-            '일간: 24시간 사이드 트래커 — 30분 단위 셀에 학습 시간이 형광펜처럼 채워짐',
-            '주간: 7일 그리드 — 오늘 열은 파랑 강조',
-            '월간: 30일 히트맵 — D-day 시험 일정 깃발 마커 표시',
+            '하루: 24시간 시간표 — 30분 칸에 공부한 시간이 형광펜처럼 채워져요',
+            '한 주: 7일 표 — 오늘 칸은 파랗게 강조돼요',
+            '한 달: 30일 학습 캘린더 — 시험 날짜는 깃발로 표시돼요',
           ],
           cta: { label: '캘린더 보기', href: '/planner/calendar' },
-          screenshotCaption: '24시간 사이드 트래커 — 학습 점유 시각화',
+          screenshotCaption: '24시간 시간표 — 공부한 시간이 한눈에',
           screenshot: (
             <MockBrowser label="study/planner/day">
               <div className="bg-pullim-slate-50/40 rounded-lg p-3">
@@ -41,11 +41,11 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
         },
         {
           Icon: PlayCircle,
-          title: '다음 블록 hero에서 바로 시작',
+          title: '다음 학습 카드에서 바로 시작',
           description:
             '홈 화면 큰 카드에 다음 학습 블록이 떠 있어요. "지금 시작하기" 한 번이면 해당 기능(무한풀기·튜터·비주얼 등)으로 직진.',
           signature: true,
-          screenshotCaption: '다음 블록 hero (그라데이션 카드)',
+          screenshotCaption: '다음 학습 카드',
           screenshot: (
             <MockBrowser label="다음 블록">
               <div className="from-pullim-blue-600 to-pullim-blue-500 rounded-xl bg-gradient-to-br p-3 text-white">
@@ -66,11 +66,11 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
         },
         {
           Icon: Smile,
-          title: '오늘 컨디션 슬라이더',
+          title: '오늘 컨디션 알려주기',
           description:
             '매일 아침 컨디션을 5단계로 보고하면 오늘 블록 난이도가 ±20% 자동 조정. 피곤한 날엔 쉽게, 컨디션 좋은 날엔 어렵게.',
           bullets: ['😴 피곤 → -20%', '🙂 보통 → 기본', '🤩 쌩쌩 → +20%'],
-          screenshotCaption: '실제 컨디션 슬라이더',
+          screenshotCaption: '컨디션 입력 화면',
           screenshot: (
             <MockBrowser label="컨디션 입력">
               <ConditionSlider initial={3} />
@@ -78,41 +78,62 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           ),
         },
         {
-          Icon: HeartPulse,
-          title: '번아웃 지수 + "쉴래요" 1-tap',
-          description:
-            '5개 지표(수면·완료율·감정·휴식 수용·쉴래요 빈도) 가중 평균. 임계값 아래 3일 지속 시 시스템이 먼저 휴식 제안.',
-          bullets: ['"오늘은 쉴래요" 누르면 오늘 블록 자동 이월', '내일 난이도 20% 하향'],
-          screenshotCaption: '실제 번아웃 카드 + 레몬 CTA',
+          // 성장 리포트 — soft open 게이트(REPORTS_ENABLED)에 따라 오픈/출시 예정 문구 분기 (welcome-modal과 정합, codex)
+          Icon: BarChart2,
+          title: REPORTS_ENABLED ? '성장 리포트로 돌아보기' : '성장 리포트 — 출시 예정',
+          description: REPORTS_ENABLED
+            ? '하루·한 주·한 달 공부를 회고 화면에서 돌아봐요. 완료율과 학습 시간, 정답률이 어떻게 변했는지 흐름으로 보여 드려요.'
+            : '하루·한 주·한 달 공부를 돌아보는 회고 화면을 준비하고 있어요. 완료율과 학습 시간, 정답률이 어떻게 변했는지 흐름으로 보여 드려요. 열리면 왼쪽 메뉴에 나타나요.',
+          bullets: [
+            '오늘 회고: 완료율·컨디션을 한 줄로 기록해요',
+            '주간 회고: 학습 시간과 정답률 추세를 그래프로 봐요',
+            '월간 회고: 한 달 성장을 모아 부모님과 공유할 수 있어요',
+          ],
+          ...(REPORTS_ENABLED ? { cta: { label: '성장 리포트 보기', href: '/planner/reports' } } : {}),
+          screenshotCaption: REPORTS_ENABLED
+            ? '성장 리포트 — 정답률 추세'
+            : '성장 리포트 미리보기 — 정답률 추세 (출시 예정)',
           screenshot: (
-            <MockBrowser label="번아웃 모니터링">
-              <BurnoutCard />
+            <MockBrowser label="study/planner/reports">
+              <AccuracyTrendChart />
             </MockBrowser>
           ),
         },
         {
-          Icon: Brain,
-          title: '7대 교육학 엔진 자동 적용',
-          description:
-            '블록 카드에 "간격 복습 / 포모도로 / 인지 부하 관리" 같은 엔진 태그가 붙어요. 클릭하면 "왜 이 엔진?"으로 원리 확인 — 교육적 투명성.',
-          screenshotCaption: '엔진 태그 — 클릭 시 원리 모달',
+          // 약점 자동 반영 — 분석 BE 게이트(WEAKNESS_ENABLED)에 따라 오픈/출시 예정 분기
+          Icon: AlertCircle,
+          title: WEAKNESS_ENABLED ? '약점 단원 자동 반영' : '약점 자동 반영 — 출시 예정',
+          description: WEAKNESS_ENABLED
+            ? '풀림 분석이 공부 기록에서 약한 단원을 찾아내면, 시간표를 만들 때 그 단원을 먼저 배정해 드려요. 시간표 만들기 6단계에서 켜고 끌 수 있어요(기본은 꺼짐).'
+            : '풀림 분석이 공부 기록에서 약한 단원을 찾아내면, 시간표를 만들 때 그 단원을 먼저 배정해 드리는 기능을 준비하고 있어요. 열리면 시간표 만들기 6단계에서 켤 수 있어요.',
+          bullets: [
+            '풀림 분석: 문제 풀이 기록에서 약한 단원을 찾아요',
+            '켜 두면: 약한 단원이 시간표 앞쪽에 먼저 배정돼요',
+            '원치 않으면 끄고 직접 단원을 고르면 돼요',
+          ],
+          screenshotCaption: WEAKNESS_ENABLED
+            ? '감지된 약점 단원 — 풀림 분석'
+            : '감지된 약점 단원 미리보기 (출시 예정)',
           screenshot: (
-            <MockBrowser label="블록 카드 — 엔진 태그">
-              <div className="space-y-2">
-                <div className="text-pullim-slate-700 inline-flex items-center gap-1 text-xs font-bold">
-                  <BookOpen aria-hidden className="h-3.5 w-3.5" />
-                  미분 기본 공식 시각화
+            <MockBrowser label="시간표 만들기 · 6단계">
+              <div className="bg-pullim-warn-bg rounded-xl p-3">
+                <div className="text-pullim-warn flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+                  <AlertCircle className="h-3 w-3" />
+                  현재 감지된 약점 단원 — 풀림 분석
                 </div>
-                <div className="text-pullim-slate-500 text-[10px]">
-                  <span className="font-mono">17:30–18:10</span> · 40분 · 수학
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <PedagogyTag engineId="cognitive_load" size="md" />
-                  <PedagogyTag engineId="active_recall" size="md" />
-                </div>
-                <p className="text-pullim-slate-500 mt-2 text-[10px]">
-                  태그 클릭 → 원리·예시 모달 (교육적 투명성)
-                </p>
+                <ul className="mt-1.5 space-y-1">
+                  {[
+                    { label: '수학 · 미분', mastery: 42 },
+                    { label: '영어 · 빈칸추론', mastery: 48 },
+                    { label: '수학 · 수열', mastery: 55 },
+                  ].map(node => (
+                    <li key={node.label} className="text-pullim-slate-700 flex items-center gap-2 text-[11px]">
+                      <span className="bg-pullim-warn h-1.5 w-1.5 rounded-full" />
+                      <span className="font-semibold">{node.label}</span>
+                      <span className="text-pullim-slate-500 ml-auto font-mono">정복도 {node.mastery}%</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </MockBrowser>
           ),

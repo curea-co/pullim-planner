@@ -179,7 +179,7 @@ export function SideTimeline24({ blocks, now, ddayLabel, className, paletteId, c
           'border-pullim-slate-100 overflow-y-auto rounded-lg border',
           compact ? 'max-h-[220px]' : 'max-h-[320px] sm:max-h-[480px]',
         )}
-        aria-label={trimToBlocks ? '학습 사이드 트래커 (핵심 시간)' : '24시간 학습 사이드 트래커'}
+        aria-label={trimToBlocks ? '하루 학습 시간표 (핵심 시간)' : '24시간 학습 시간표'}
       >
         <div className="relative flex" style={{ height: range.cellCount * CELL_HEIGHT }}>
           {/* 시간 라벨 컬럼 */}

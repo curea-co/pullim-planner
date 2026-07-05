@@ -8,7 +8,7 @@
 
 ## UI 컴포넌트 — shadcn/ui 사용
 
-이 앱은 **shadcn/ui + Base UI** 로컬 프리미티브 기반이다. 디자인 **토큰**은 PUDS `pullim-os`를 vendored CSS(`app/tokens/{_base.css,pullim-os.css}` + `app/globals.css` 브릿지)로 소비해 코치(writing/admissions)와 정합한다. 단 `@pullim/design-system` npm 패키지·`@puds/*` 레지스트리 컴포넌트는 **여전히 미설치**(import 금지) — 토큰만 차용, 컴포넌트는 로컬 유지. 정합 근거: [proc/plan/2026-07-04_planner-puds-design-adoption.md](../../proc/plan/2026-07-04_planner-puds-design-adoption.md)
+이 앱은 **shadcn/ui + Base UI** 로컬 프리미티브 기반이다. (pullim 정본의 `@pullim/design-system` 미사용 — 별 트랙)
 
 ```
 @/components/ui/*       ← shadcn/ui 프리미티브 (Button, Card, Dialog, Input, Tabs 등)

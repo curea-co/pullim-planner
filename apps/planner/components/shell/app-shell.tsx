@@ -18,7 +18,7 @@ type Props = {
  * - 태블릿 (md): 헤더 + 사이드바(축약) + 본문
  * - 데스크탑 (lg+): 헤더 + 사이드바(전체) + 본문
  */
-const CONTENT_MAX = 'mx-auto w-full max-w-[1180px]';
+const CONTENT_MAX = 'mx-auto w-full max-w-[1280px]';
 
 export function AppShell({ role, children }: Props) {
   return (
