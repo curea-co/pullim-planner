@@ -12,7 +12,10 @@ const weekHeader = ['월', '화', '수', '목', '금', '토', '일'];
  * 월간 히트맵 — 일별 블록 수 색 강도 + D-day 마일스톤 표시.
  * 핸드오프 4.4 (월간 뷰).
  *
- * 셀 클릭 — 과거/오늘은 일간 뷰로 drill-down. 미래는 "초안 미리보기" 토스트.
+ * 미래 날짜도 색 강도·개수를 그대로 그린다(점선 외곽선으로 '예정'만 구분) — materialize
+ * 이후 미래 블록은 초안이 아니라 확정 계획이라, 투명 처리하면 시험까지의 계획이
+ * 전부 비어 보인다(2026-07-05 검수: "월간 뷰 7월 이후 안 보임").
+ * 셀 클릭 — 과거/오늘은 일간 뷰로 drill-down. 미래는 예정 안내 토스트.
  */
 export function MonthHeatmap({
   days: daysProp,
@@ -31,8 +34,8 @@ export function MonthHeatmap({
 
   function onCell(d: MonthDay) {
     if (d.isFuture) {
-      toast.info(`📅 ${d.date}일 초안`, {
-        description: `예상 ${d.blockCount}개 블록 — 활성화 후 일간 뷰에서 확인할 수 있어요.`,
+      toast.info(`📅 ${d.date}일 예정`, {
+        description: `예정 ${d.blockCount}개 블록 — 그날이 되면 일간 뷰에서 진행할 수 있어요.`,
       });
       return;
     }
@@ -97,8 +100,8 @@ export function MonthHeatmap({
 }
 
 function heatColor(count: number, isFuture: boolean): string {
-  if (isFuture) return 'transparent';
-  if (count === 0) return 'var(--color-pullim-heat-0)';
+  // 계획 없는 미래만 투명(점선 테두리만). 블록 있는 미래는 과거와 동일 강도 스케일.
+  if (count === 0) return isFuture ? 'transparent' : 'var(--color-pullim-heat-0)';
   if (count <= 3)  return 'var(--color-pullim-heat-1)';
   if (count <= 5)  return 'var(--color-pullim-heat-2)';
   if (count <= 7)  return 'var(--color-pullim-heat-3)';
@@ -144,7 +147,7 @@ function DayCell({ day, onSelect }: { day: MonthDay; onSelect: () => void }) {
         >
           {day.date}
         </span>
-        {day.blockCount > 0 && !day.isFuture && (
+        {day.blockCount > 0 && (
           <span
             className={cn(
               'text-[8px] font-mono mt-0.5 font-semibold',
