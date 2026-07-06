@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { CalendarView } from '../components/calendar-shell';
 import {
@@ -52,6 +52,15 @@ export default function HomeContainer() {
   const parsed = dRaw === null ? 0 : Number.parseInt(dRaw, 10);
   const offset = Number.isFinite(parsed) ? parsed : 0;
 
+  // 라우터 반영은 비동기라, URL이 갱신되기 전 사용자가 이전/다음을 빠르게 연타하면 두 클릭이
+  // 같은 stale offset 을 읽어 입력이 누락된다(기존 setOffset(o=>o+1) 엔 없던 회귀, codex).
+  // ref로 최신 목표 offset 을 동기 추적해 상대 이동을 ref 기준으로 계산한다. URL이 외부(뒤로가기
+  // 등)로 바뀌면 아래 effect가 ref를 URL 기준으로 재동기화한다.
+  const offsetRef = useRef(offset);
+  useEffect(() => {
+    offsetRef.current = offset;
+  }, [offset]);
+
   // view·offset을 URL로 직렬화 — 기존 search param(help 등)은 보존하고 view·d만 갱신한다
   // (빈 params에서 시작하면 ?help=1 등이 뷰 전환·기간 이동 한 번에 사라짐, codex).
   // view=day·offset=0은 해당 파라미터 생략(정규 URL 유지).
@@ -63,22 +72,19 @@ export default function HomeContainer() {
     return `/planner${qs ? `?${qs}` : ''}`;
   }, [params]);
 
-  const handlePrev = useCallback(
-    () => router.replace(buildUrl(view, offset - 1), { scroll: false }),
-    [router, buildUrl, view, offset],
+  // 목표 offset 을 ref에 즉시 반영(연타 누적) 후 URL 갱신 — 상대 이동의 단일 경로.
+  const go = useCallback(
+    (v: CalendarView, o: number) => {
+      offsetRef.current = o;
+      router.replace(buildUrl(v, o), { scroll: false });
+    },
+    [router, buildUrl],
   );
-  const handleNext = useCallback(
-    () => router.replace(buildUrl(view, offset + 1), { scroll: false }),
-    [router, buildUrl, view, offset],
-  );
-  const handleReset = useCallback(
-    () => router.replace(buildUrl(view, 0), { scroll: false }),
-    [router, buildUrl, view],
-  );
-  const handleJump = useCallback(
-    (o: number) => router.replace(buildUrl(view, o), { scroll: false }),
-    [router, buildUrl, view],
-  );
+
+  const handlePrev = useCallback(() => go(view, offsetRef.current - 1), [go, view]);
+  const handleNext = useCallback(() => go(view, offsetRef.current + 1), [go, view]);
+  const handleReset = useCallback(() => go(view, 0), [go, view]);
+  const handleJump = useCallback((o: number) => go(view, o), [go, view]);
 
   useEffect(() => {
     // sessionStorage 는 클라이언트 전용 — 서버 렌더는 항상 닫힘(false)으로 hydration 일치시키고,
@@ -104,11 +110,9 @@ export default function HomeContainer() {
   }, [helpParam, params, router]);
 
   const onChangeView = useCallback(
-    (next: CalendarView) => {
-      // 뷰 전환 시 offset 리셋 — buildUrl이 offset=0이면 `d`를 생략하므로 자동으로 기준 기간.
-      router.replace(buildUrl(next, 0), { scroll: false });
-    },
-    [router, buildUrl],
+    // 뷰 전환 시 offset 리셋 — go(_,0)이 ref·URL 모두 0으로(buildUrl이 d 생략=기준 기간).
+    (next: CalendarView) => go(next, 0),
+    [go],
   );
 
   // 실데이터(B4) — 배포 환경은 pullim-api 활성 플래너·블록, dev bypass 는 기존 mock 경로 유지.
