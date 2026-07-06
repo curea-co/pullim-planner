@@ -23,12 +23,12 @@ const CONTENT_MAX = 'mx-auto w-full max-w-[1280px]';
 export function AppShell({ role, children }: Props) {
   return (
     <div className="bg-pullim-slate-50 flex h-screen flex-col">
-      <AppHeader role={role} />
+      <AppHeader />
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="border-pullim-slate-200 bg-card hidden shrink-0 border-r md:flex md:w-16 md:flex-col lg:w-60">
-          <AppSidebar role={role} className="hidden lg:flex" />
-          <AppSidebar role={role} compact className="flex lg:hidden" />
+          <AppSidebar className="hidden lg:flex" />
+          <AppSidebar compact className="flex lg:hidden" />
         </aside>
 
         <main className="flex-1 overflow-y-auto">

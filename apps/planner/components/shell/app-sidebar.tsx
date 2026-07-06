@@ -3,180 +3,102 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Lock } from 'lucide-react';
-import {
-  findActiveSection, studentDomains,
-  type Role, type NavItem, type NavSubItem,
-} from './nav-config';
+import { plannerSection, type NavSubItem } from './nav-config';
 import { cn } from '@/lib/utils';
 
 type Props = {
-  role: Role;
   /** 항목 클릭 시 추가 처리 (모바일 drawer 자동 닫힘 등) */
   onNavigate?: () => void;
   /** 외부 컨테이너 className */
   className?: string;
   /** "icon only" 축약 모드 — Cozy bracket (768~1023) */
   compact?: boolean;
+  /** lg+ 접힘 토글 상태 — 아이콘 전용 (AppShell의 useRailCollapse가 소유) */
+  collapsed?: boolean;
 };
 
 /**
- * 사이드바 — 풀림 플래너 전용. 홈 + 플래너 도메인 + 활성 도메인 children 인덴트.
- *
- * Compact (≥768 <1024): 아이콘 전용. 활성 도메인 children도 아이콘.
- * Comfortable (≥1024): 풀 라벨.
+ * 사이드바 — 풀림 플래너 전용. 형제 앱(Q·입시·라이팅 코치) 공통 PUDS 레일 패턴:
+ * mono 눈썹 라벨 + 플랫 아이템 리스트. 활성 = primary-50 틴트 + 3px 좌측 액센트 바.
+ * 단일 도메인 앱이라 이전의 도메인>자식 2단 인덴트는 폐기(플랫).
  */
-export function AppSidebar({ role, onNavigate, className, compact }: Props) {
+export function AppSidebar({ onNavigate, className, compact, collapsed }: Props) {
   const pathname = usePathname();
-  const activeSection = findActiveSection(pathname, role);
+  const iconOnly = compact || collapsed;
+  const activeHref = findActiveHref(pathname, plannerSection);
 
   return (
     <nav
       aria-label="플래너 메뉴"
-      className={cn('flex flex-col overflow-y-auto py-3', compact ? 'px-1.5' : 'px-2', className)}
+      className={cn('flex flex-col overflow-y-auto py-3', iconOnly ? 'items-center px-1.5' : 'px-2', className)}
     >
-      {/* 도메인 — 활성 도메인 아래에 children 인덴트로 펼침 */}
-      <ul className="space-y-0.5">
-        {studentDomains.map(domain => {
-          const isActive = activeSection?.href === domain.href;
-          const activeSubHref = isActive ? findActiveSubHref(pathname, domain.children) : undefined;
-          return (
-            <li key={domain.href}>
-              <NavRow
-                item={domain}
-                pathname={pathname}
-                onNavigate={onNavigate}
-                compact={compact}
-              />
-              {isActive && domain.children && (
-                <ul
-                  className={cn(
-                    'mt-0.5 space-y-0.5',
-                    compact ? 'ml-0' : 'ml-3 border-l border-[var(--border-subtle)] pl-2',
-                  )}
-                >
-                  {domain.children.map(sub => (
-                    <SubNavRow
-                      key={sub.href}
-                      sub={sub}
-                      isActive={sub.href === activeSubHref}
-                      onNavigate={onNavigate}
-                      compact={compact}
-                    />
-                  ))}
-                </ul>
-              )}
-            </li>
-          );
-        })}
+      {!iconOnly && (
+        <div className="text-[var(--text-tertiary)] px-2 pt-1 pb-1.5 font-mono text-[10px] font-medium tracking-[0.16em] uppercase">
+          풀림 플래너
+        </div>
+      )}
+      <ul className={cn('space-y-0.5', iconOnly && 'w-full')}>
+        {plannerSection.map(item => (
+          <NavRow
+            key={item.href}
+            item={item}
+            isActive={item.href === activeHref}
+            onNavigate={onNavigate}
+            iconOnly={iconOnly}
+          />
+        ))}
       </ul>
     </nav>
   );
 }
 
-function NavRow({
-  item, pathname, onNavigate, compact,
-}: {
-  item: NavItem;
-  pathname: string;
-  onNavigate?: () => void;
-  compact?: boolean;
-}) {
-  const Icon = item.icon;
-  const active =
-    pathname === item.href ||
-    (item.href !== '/' && pathname.startsWith(item.href + '/'));
-
-  return (
-    <Link
-      href={item.locked ? '#' : item.href}
-      onClick={item.locked ? e => e.preventDefault() : onNavigate}
-      aria-current={active ? 'page' : undefined}
-      aria-disabled={item.locked || undefined}
-      title={compact ? item.label : item.description}
-      className={cn(
-        // OS(pullim-web) rail 매칭 — nav-item: radius 11px, 활성=accent-soft bg + accent text + 좌측 accent bar(::before).
-        'group relative flex items-center gap-[11px] rounded-[11px] text-sm font-medium transition-colors',
-        "before:absolute before:top-2 before:bottom-2 before:-left-2 before:w-[3px] before:rounded-r-full before:bg-[var(--color-action-primary)] before:opacity-0 before:transition-opacity before:content-['']",
-        compact ? 'h-11 w-full justify-center' : 'min-h-11 px-3 py-2.5',
-        active
-          ? 'bg-[var(--color-primary-50)] font-semibold text-[var(--color-action-primary)] before:opacity-100'
-          : item.locked
-          ? 'text-[var(--text-tertiary)] cursor-not-allowed opacity-60'
-          : 'text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]',
-      )}
-    >
-      <Icon className={cn('h-4 w-4 shrink-0', active && 'stroke-[2.4]')} />
-      {!compact && (
-        <>
-          <span className="flex-1 truncate">{item.label}</span>
-          {item.locked && <Lock className="text-[var(--text-tertiary)] h-3 w-3" />}
-          {item.badge !== undefined && (
-            <span
-              className={cn(
-                'rounded-full px-1.5 py-0.5 text-[10px] font-bold',
-                item.badge === 'LIVE'
-                  ? 'bg-[var(--color-danger-500)] animate-pulse text-white'
-                  : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)]',
-              )}
-            >
-              {item.badge}
-            </span>
-          )}
-        </>
-      )}
-    </Link>
-  );
-}
-
-/** 도메인 children 중 현재 pathname에 가장 잘 맞는 sub.href 반환 (가장 긴 prefix 우선) */
-function findActiveSubHref(pathname: string, children: NavSubItem[] | undefined): string | undefined {
-  if (!children) return undefined;
+/** 현재 pathname에 가장 잘 맞는 href 반환 (최장 prefix 우선). query 포함 href는 exact만. */
+function findActiveHref(pathname: string, items: NavSubItem[]): string | undefined {
   let best: string | undefined;
-  for (const sub of children) {
-    if (pathname === sub.href || pathname.startsWith(sub.href + '/')) {
-      if (!best || sub.href.length > best.length) {
-        best = sub.href;
-      }
+  for (const item of items) {
+    if (pathname === item.href || pathname.startsWith(item.href + '/')) {
+      if (!best || item.href.length > best.length) best = item.href;
     }
   }
   return best;
 }
 
-function SubNavRow({
-  sub, isActive, onNavigate, compact,
+function NavRow({
+  item, isActive, onNavigate, iconOnly,
 }: {
-  sub: NavSubItem;
+  item: NavSubItem;
   isActive: boolean;
   onNavigate?: () => void;
-  compact?: boolean;
+  iconOnly?: boolean;
 }) {
-  const Icon = sub.icon;
-  const active = isActive;
+  const Icon = item.icon;
 
   return (
     <li>
       <Link
-        href={sub.locked ? '#' : sub.href}
-        onClick={sub.locked ? e => e.preventDefault() : onNavigate}
-        aria-current={active ? 'page' : undefined}
-        aria-disabled={sub.locked || undefined}
-        title={compact ? sub.label : sub.description}
+        href={item.locked ? '#' : item.href}
+        onClick={item.locked ? e => e.preventDefault() : onNavigate}
+        aria-current={isActive ? 'page' : undefined}
+        aria-disabled={item.locked || undefined}
+        title={iconOnly ? item.label : item.description}
         className={cn(
-          // OS rail 매칭(자식) — soft accent, radius 11px. 좌측 바는 border-l 인덴트와 겹쳐 생략.
-          'group flex items-center gap-[11px] rounded-[11px] text-xs font-medium transition-colors',
-          compact ? 'h-10 w-full justify-center' : 'min-h-10 px-3 py-2',
-          active
-            ? 'bg-[var(--color-primary-50)] font-semibold text-[var(--color-action-primary)]'
-            : sub.locked
-            ? 'text-[var(--text-tertiary)] hover:bg-[var(--surface-sunken)] cursor-not-allowed'
+          // PUDS 레일 아이템 — radius 11px, 활성=primary-50 틴트 + 3px 좌측 액센트 바(::before)
+          'group relative flex items-center gap-[11px] rounded-[11px] text-sm font-medium transition-colors duration-150',
+          iconOnly ? 'mx-auto h-[42px] w-[42px] justify-center' : 'min-h-11 px-3 py-2.5',
+          !iconOnly &&
+            "before:absolute before:top-[9px] before:bottom-[9px] before:-left-2 before:w-[3px] before:rounded-r-full before:bg-[var(--color-action-primary)] before:opacity-0 before:transition-opacity before:content-['']",
+          isActive
+            ? 'bg-[var(--color-primary-50)] font-semibold text-[var(--color-action-primary)] before:opacity-100'
+            : item.locked
+            ? 'text-[var(--text-tertiary)] cursor-not-allowed opacity-60'
             : 'text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]',
         )}
       >
-        {Icon && <Icon className={cn('h-3.5 w-3.5 shrink-0', active && 'stroke-[2.4]')} />}
-        {!compact && (
+        {Icon && <Icon className={cn('h-[19px] w-[19px] shrink-0 opacity-90', isActive && 'stroke-[2.2]')} />}
+        {!iconOnly && (
           <>
-            <span className="flex-1 truncate">{sub.label}</span>
-            {sub.locked && <Lock className={cn('h-3 w-3', active ? 'text-[var(--color-action-primary)]/70' : 'text-[var(--text-tertiary)]')} />}
+            <span className="flex-1 truncate">{item.label}</span>
+            {item.locked && <Lock className="text-[var(--text-tertiary)] h-3 w-3" />}
           </>
         )}
       </Link>
