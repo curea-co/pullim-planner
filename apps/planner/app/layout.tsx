@@ -28,6 +28,8 @@ export const metadata: Metadata = {
   },
   description: DESCRIPTION,
   applicationName: BRAND,
+  // 풀림OS(pullim-web)와 동일 파비콘 — 서비스 전역 일관성(게이트키퍼 2026-07-06)
+  icons: { icon: '/favicon.svg' },
   keywords: [
     '풀림 플래너',
     'AI 학습 플래너',
