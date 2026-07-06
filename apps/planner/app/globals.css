@@ -321,3 +321,13 @@
   /* 학생 화면은 모바일 우선 → 폰트 크기 살짝 키움 */
   h1, h2, h3 { letter-spacing: -0.02em; }
 }
+
+/* ═══ 홈 히어로 3D — 형제 앱(Q·코치) 공통 기법. 틸트=부모 transform, 플로트=카드 translate(독립 속성) ═══ */
+@keyframes planner-hero-tilt {
+  0%, 100% { transform: rotateY(-20deg) rotateX(9deg); }
+  50%      { transform: rotateY(16deg) rotateX(2deg); }
+}
+@keyframes planner-hero-float {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 -10px; }
+}
