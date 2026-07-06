@@ -45,19 +45,38 @@ export default function HomeContainer() {
   const helpParam = params.get('help') === '1';
   const [welcomeOpen, setWelcomeOpen] = useState(false);
 
-  // 기간 이동 offset (0=기준 기간). 일/주/월 공용.
-  const [offset, setOffset] = useState(0);
-  const handlePrev = useCallback(() => setOffset(o => o - 1), []);
-  const handleNext = useCallback(() => setOffset(o => o + 1), []);
-  const handleReset = useCallback(() => setOffset(0), []);
-  const handleJump = useCallback((o: number) => setOffset(o), []);
+  // 기간 이동 offset (0=기준 기간). 일/주/월 공용. URL 파라미터 `d`가 소스 —
+  // 주간 그리드·월간 캘린더에서 특정 날짜 일간 뷰로 딥링크(?view=day&d=N)하려면 offset이
+  // URL에 있어야 하기 때문(B4b ③). 뷰 단위(일=일수, 주=주수, 월=월수)는 뷰 안에서 일관.
+  const dRaw = params.get('d');
+  const parsed = dRaw === null ? 0 : Number.parseInt(dRaw, 10);
+  const offset = Number.isFinite(parsed) ? parsed : 0;
 
-  // 뷰가 바뀌면(토글·뒤로가기·외부 ?view= 진입 모두) offset을 기준 기간으로 리셋.
-  // offset이 URL과 분리돼 있어, 이전 뷰의 offset이 남아 다른 뷰에 빈 화면이 뜨는 것을 방지.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOffset(0);
-  }, [view]);
+  // view·offset을 URL로 직렬화 — view=day·offset=0은 파라미터 생략(정규 URL 유지).
+  const buildUrl = useCallback((v: CalendarView, o: number) => {
+    const sp = new URLSearchParams();
+    if (v !== 'day') sp.set('view', v);
+    if (o !== 0) sp.set('d', String(o));
+    const qs = sp.toString();
+    return `/planner${qs ? `?${qs}` : ''}`;
+  }, []);
+
+  const handlePrev = useCallback(
+    () => router.replace(buildUrl(view, offset - 1), { scroll: false }),
+    [router, buildUrl, view, offset],
+  );
+  const handleNext = useCallback(
+    () => router.replace(buildUrl(view, offset + 1), { scroll: false }),
+    [router, buildUrl, view, offset],
+  );
+  const handleReset = useCallback(
+    () => router.replace(buildUrl(view, 0), { scroll: false }),
+    [router, buildUrl, view],
+  );
+  const handleJump = useCallback(
+    (o: number) => router.replace(buildUrl(view, o), { scroll: false }),
+    [router, buildUrl, view],
+  );
 
   useEffect(() => {
     // sessionStorage 는 클라이언트 전용 — 서버 렌더는 항상 닫힘(false)으로 hydration 일치시키고,
@@ -84,11 +103,10 @@ export default function HomeContainer() {
 
   const onChangeView = useCallback(
     (next: CalendarView) => {
-      setOffset(0); // 뷰 전환 시 기준 기간으로 리셋
-      const qs = next === 'day' ? '' : `?view=${next}`;
-      router.replace(`/planner${qs}`, { scroll: false });
+      // 뷰 전환 시 offset 리셋 — buildUrl이 offset=0이면 `d`를 생략하므로 자동으로 기준 기간.
+      router.replace(buildUrl(next, 0), { scroll: false });
     },
-    [router],
+    [router, buildUrl],
   );
 
   // 실데이터(B4) — 배포 환경은 pullim-api 활성 플래너·블록, dev bypass 는 기존 mock 경로 유지.
