@@ -52,14 +52,16 @@ export default function HomeContainer() {
   const parsed = dRaw === null ? 0 : Number.parseInt(dRaw, 10);
   const offset = Number.isFinite(parsed) ? parsed : 0;
 
-  // view·offset을 URL로 직렬화 — view=day·offset=0은 파라미터 생략(정규 URL 유지).
+  // view·offset을 URL로 직렬화 — 기존 search param(help 등)은 보존하고 view·d만 갱신한다
+  // (빈 params에서 시작하면 ?help=1 등이 뷰 전환·기간 이동 한 번에 사라짐, codex).
+  // view=day·offset=0은 해당 파라미터 생략(정규 URL 유지).
   const buildUrl = useCallback((v: CalendarView, o: number) => {
-    const sp = new URLSearchParams();
-    if (v !== 'day') sp.set('view', v);
-    if (o !== 0) sp.set('d', String(o));
+    const sp = new URLSearchParams(params);
+    if (v !== 'day') sp.set('view', v); else sp.delete('view');
+    if (o !== 0) sp.set('d', String(o)); else sp.delete('d');
     const qs = sp.toString();
     return `/planner${qs ? `?${qs}` : ''}`;
-  }, []);
+  }, [params]);
 
   const handlePrev = useCallback(
     () => router.replace(buildUrl(view, offset - 1), { scroll: false }),
