@@ -30,16 +30,16 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
   const maxMinutes = Math.max(1, ...week.flatMap(d => d.blocks.map(b => b.minutes)));
 
   function openDay(day: WeekDay) {
-    if (day.isToday) {
-      router.push('/planner/calendar?view=day');
+    // 실데이터(B4b): 클릭한 요일의 offset(오늘 대비 일 수)으로 일간 뷰 딥링크.
+    if (isReal) {
+      const o = day.dayOffset ?? 0;
+      const q = o !== 0 ? `?view=day&d=${o}` : '?view=day';
+      router.push(`/planner${q}`);
       return;
     }
-    if (isReal) {
-      // 실데이터 — 다른 요일도 데이터는 있으나 일간 뷰 날짜 딥링크(offset URL) 미지원.
-      // 거짓 안내("오늘만 데이터") 대신 요약 toast 만(딥링크는 후속 — B4b).
-      toast.info(`📅 ${day.day}요일 (${day.date}일)`, {
-        description: `계획 ${Math.round(day.totalMinutes / 60 * 10) / 10}h · 완료 ${day.completionPct}% — 일간 이동은 상단 날짜 이동으로 볼 수 있어요.`,
-      });
+    // mock 데모 — 일간 뷰에 오늘만 데이터가 있어 오늘은 이동, 다른 요일은 요약 toast.
+    if (day.isToday) {
+      router.push('/planner?view=day');
       return;
     }
     toast.info(`📅 ${day.day}요일 (${day.date}일)`, {

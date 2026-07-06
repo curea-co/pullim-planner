@@ -634,6 +634,8 @@ export type WeekDay = {
   blocks: { type: BlockType; count: number; minutes: number }[];
   totalMinutes: number;
   completionPct: number;
+  /** 오늘 대비 일 오프셋 — 일간 뷰 딥링크용(실데이터 B4b). mock 데모엔 없음(bypass=토스트 폴백). */
+  dayOffset?: number;
 };
 
 export const weekView: WeekDay[] = [
@@ -721,6 +723,8 @@ export type MonthDay = {
   hasExamMilestone?: boolean;
   /** 일정 메타 — month-view 시험 카드를 동적화 */
   examMilestone?: ExamMilestone;
+  /** 오늘 대비 일 오프셋 — 일간 뷰 딥링크용(실데이터 B4b). mock 데모엔 없음(bypass=토스트 폴백). */
+  dayOffset?: number;
 };
 
 const weekdays = ['월', '화', '수', '목', '금', '토', '일'] as const;
