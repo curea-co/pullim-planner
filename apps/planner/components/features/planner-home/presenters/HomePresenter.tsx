@@ -14,7 +14,7 @@ import {
   formatMonthNavLabel, formatMonthTitle, formatMonthShort,
 } from '@/lib/planner/day-nav';
 import { DDayChip } from '@/components/shared/d-day-chip';
-import { DDayHeaderBand } from '../components/d-day-header-band';
+import { HomeHero } from '../components/home-hero';
 import { BurnoutThresholdBanner } from '../components/burnout-threshold-banner';
 
 interface HomePresenterProps {
@@ -136,7 +136,7 @@ export default function HomePresenter({
 
   return (
     <>
-      <DDayHeaderBand dday={dday} examName={examName} />
+      <HomeHero examName={examName} dday={dday} daySummary={daySummary} weekMeta={weekMeta} />
       <BurnoutThresholdBanner score={burnoutScore} />
       <CalendarShell
         view={view}
