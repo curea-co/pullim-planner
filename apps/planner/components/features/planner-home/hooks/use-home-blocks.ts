@@ -16,6 +16,12 @@ export interface HomeBlocksData {
   active: Planner | null;
   /** 요청 기간(view·offset)의 날짜별 블록. 키 = `YYYY-MM-DD`. */
   blocksByDate: Record<string, TimeBlock[]>;
+  /**
+   * 히어로 배너 전용 — **이번 주(offset 0) 7일**의 날짜별 블록. 뷰·offset 네비게이션과 무관하게
+   * 활성 플래너당 1회 조회(오늘이 이번 주에 포함되므로 오늘·이번 주 통계를 모두 커버). 히어로가
+   * 어느 뷰·기간에서도 "실제 오늘/이번 주"를 정확히 표시하기 위함(Codex #124/#126).
+   */
+  heroBlocksByDate: Record<string, TimeBlock[]>;
   /** 오늘(KST) — 파생 계산의 공통 기준. */
   todayIso: string;
 }
@@ -37,6 +43,7 @@ export function useHomeBlocks(
   const [status, setStatus] = useState<HomeBlocksData['status']>('loading');
   const [activeRaw, setActiveRaw] = useState<PullimPlanner | null>(null);
   const [blocksByDate, setBlocksByDate] = useState<Record<string, TimeBlock[]>>({});
+  const [heroBlocksByDate, setHeroBlocksByDate] = useState<Record<string, TimeBlock[]>>({});
 
   // 활성 플래너 — 최초 1회.
   useEffect(() => {
@@ -82,10 +89,32 @@ export function useHomeBlocks(
     };
   }, [enabled, activeRaw, view, offset, todayIso]);
 
+  // 히어로 전용 이번 주 블록 — 활성 플래너당 1회(view·offset 무관). 오늘이 이번 주에 포함돼
+  // 오늘·이번 주 히어로 통계를 모두 커버한다. (기간 API 도입 시 위 기간 조회와 통합 가능.)
+  useEffect(() => {
+    if (!enabled || !activeRaw) return;
+    let alive = true;
+    const dates = weekDatesFor(todayIso, 0);
+    void Promise.all(
+      dates.map((date) =>
+        pullimPlannerClient
+          .blocks(activeRaw.id, date)
+          .then((bs) => [date, bs.map(pullimToTimeBlock)] as const)
+          .catch(() => [date, [] as TimeBlock[]] as const),
+      ),
+    ).then((entries) => {
+      if (alive) setHeroBlocksByDate(Object.fromEntries(entries));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [enabled, activeRaw, todayIso]);
+
   return {
     status: enabled ? status : 'ready',
     active: activeRaw ? pullimToPlanner(activeRaw) : null,
     blocksByDate,
+    heroBlocksByDate,
     todayIso,
   };
 }
