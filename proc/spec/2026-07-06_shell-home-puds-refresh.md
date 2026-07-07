@@ -19,7 +19,7 @@
 
 1. **사이드바 플랫 재편.** 도메인>자식 인덴트를 버리고 mono 눈썹 `풀림 플래너` + `plannerSection` 플랫 리스트로. 단일 도메인 앱이라 2단 구조가 사실상 불필요.
 2. **접기 토글 추가.** Q 패턴 그대로: `AppShell`이 `useState` + `localStorage['puds-rail-collapsed']` 소유, lg 전용 28px 원형 셰브론이 레일 폭을 따라 이동(`left-[248px]` ↔ `left-[68px]`).
-3. **홈 히어로 = D-Day 밴드 승격(신규 컴포넌트).** `/planner` 홈 상단(모든 뷰 공통)에 컴팩트 그라디언트 히어로: 눈썹 + `{examName} D-{n}` 헤드라인 + 오늘/주간 스탯, 우측에 시간블록 카드 3장 CSS 3D 플로트. 기존 `DDayHeaderBand`(4px 경고 띠, D≤3 전용)와 `BurnoutThresholdBanner`는 유지.
+3. **홈 히어로 = D-Day 밴드 승격(대체 — 신규 컴포넌트).** `/planner` 홈 상단(모든 뷰 공통)에 컴팩트 그라디언트 히어로: 눈썹 + `{examName} D-{n}` 헤드라인 + 오늘/주간 스탯, 우측에 시간블록 카드 3장 CSS 3D 플로트. `BurnoutThresholdBanner`는 유지. `DDayHeaderBand`는 **히어로가 완전 흡수·대체**한다 — 직전 구간(today/critical, ~D-6) 권유 카피(11-planner-design § 2.1)를 히어로 안 `role="status"` 라인으로 노출하고 노출 조건은 `shouldShowDDayHeaderBand` 헬퍼를 그대로 재사용해 보존. *(초안은 "밴드 유지 + 히어로 추가"였으나 PR #123 리뷰에서 시험명·D-Day 이중 노출 지적 → 흡수·대체로 확정, 2026-07-07)*
 4. **max-w 1280 → 1180** (`AppShell CONTENT_MAX`).
 
 ## 변경 상세
@@ -41,7 +41,7 @@
 - **`home-hero.tsx`** (신규): `rounded-2xl bg-gradient-to-br from-pullim-blue-700 to-pullim-blue-900 text-white overflow-hidden relative` 패널. 좌측: mono 눈썹 `PULLIM PLANNER`(lemon 액센트 dot), 헤드라인 `{examName}` + D-Day(큰 숫자), 서브라인 `오늘 n/m 블록 완료 · 이번 주 Nh`. 우측: `<HeroMotion3D />`. 높이 컴팩트(내용 기준, 데일리 툴 밀도 유지).
 - **`hero-motion-3d.tsx`** (신규): `aria-hidden`, `hidden sm:block absolute inset-y-0 right-0 [perspective:1100px]`. 내부 `[transform-style:preserve-3d]` 스택이 `animate-[planner-hero-tilt_10s_ease-in-out_infinite]`, `motion-reduce:animate-none motion-reduce:[transform:rotateY(-14deg)_rotateX(6deg)]`. 시간블록 미니 카드 3장(시간 라벨 + 과목 바 + lemon 체크 액센트)을 `translateZ(-46px)/0/48px` + 소폭 rotate로 배치, 각 카드 스태거 플로트.
 - **`app/globals.css`**: `@keyframes planner-hero-tilt`(rotateY -20↔16deg, rotateX 9↔2deg) + 플로트 키프레임 추가.
-- **`presenters/HomePresenter.tsx`**: `DDayHeaderBand` 다음, `BurnoutThresholdBanner` 앞에 `<HomeHero examName dday daySummary weekMeta />` 삽입. 필요한 props는 전부 기존 시그니처에 존재 — Container 변경 없음.
+- **`presenters/HomePresenter.tsx`**: 최상단(기존 `DDayHeaderBand` 자리), `BurnoutThresholdBanner` 앞에 `<HomeHero examName dday daySummary weekMeta />` 렌더. `DDayHeaderBand` 렌더·컴포넌트 파일은 제거(히어로가 흡수 — 결정 3). 필요한 props는 전부 기존 시그니처에 존재 — Container 변경 없음.
 
 ### 4. 레이아웃 — `app-shell.tsx`
 - `CONTENT_MAX`: `max-w-[1280px]` → `max-w-[1180px]`.

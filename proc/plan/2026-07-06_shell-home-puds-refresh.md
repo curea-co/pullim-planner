@@ -650,6 +650,10 @@ return 블록의 `<DDayHeaderBand …/>` 바로 다음, `<BurnoutThresholdBanner
 <BurnoutThresholdBanner score={burnoutScore} />
 ```
 
+> **리뷰 반영 (2026-07-07, PR #123 라운드 2)**: 위 배치는 시험명·D-Day 이중 노출로 지적됨
+> → `DDayHeaderBand` 렌더·컴포넌트를 제거하고 히어로가 완전 흡수(직전 구간 권유 카피를
+> 히어로 안 `role="status"` 라인으로, `shouldShowDDayHeaderBand` 조건 보존). 스펙 결정 3 개정판 참조.
+
 - [ ] **Step 7: 테스트·게이트 통과 확인**
 
 Run: `bun --filter @pullim-planner/planner test && bun --filter @pullim-planner/planner typecheck && bun --filter @pullim-planner/planner lint`
