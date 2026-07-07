@@ -11,7 +11,6 @@ import {
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { ServiceSwitcher } from './service-switcher';
-import { type Role } from './nav-config';
 import { MobileDrawer } from './mobile-drawer';
 
 /**
@@ -19,12 +18,12 @@ import { MobileDrawer } from './mobile-drawer';
  * pullim-web `os.pullim.local:3001` 헤더 구조: mast(로고) · 서비스 전환 스위처 · 검색 · 알림 · 사용자.
  * 스타일은 `.os-root` 스코프 CSS(플래너 PUDS 테마와 분리).
  */
-export function AppHeader({ role }: { role: Role }) {
+export function AppHeader() {
   return (
     <header className="os-root topbar">
       {/* 모바일 nav 드로어 — OS '모바일 탭 메뉴' 대응(플래너 within-app 네비) */}
       <div className="md:hidden">
-        <MobileDrawer role={role} />
+        <MobileDrawer />
       </div>
 
       <Link href="/" className="mast" aria-label="풀림 플래너 홈">

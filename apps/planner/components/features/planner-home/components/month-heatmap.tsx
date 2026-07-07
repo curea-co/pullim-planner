@@ -27,20 +27,29 @@ export function MonthHeatmap({
   monthLabel?: string;
 } = {}) {
   const router = useRouter();
+  const isReal = daysProp !== undefined;
   const month = daysProp ?? monthView;
   // 그리드 시작 — 첫 날의 weekday로 빈 셀 padding
   const firstWeekdayIdx = weekHeader.indexOf(month[0].weekday);
   const padBefore = firstWeekdayIdx;
 
   function onCell(d: MonthDay) {
+    // 실데이터(B4b): 클릭한 날짜의 offset(오늘 대비 일 수)으로 일간 뷰 딥링크. 과거·오늘·미래 모두
+    // 이동(미래는 예정 블록을 일간 뷰에서 확인). #113 이후 미래 블록도 확정 계획으로 표시된다.
+    if (isReal) {
+      const o = d.dayOffset ?? 0;
+      const q = o !== 0 ? `?view=day&d=${o}` : '?view=day';
+      router.push(`/planner${q}`);
+      return;
+    }
+    // mock 데모 — 데이터 단위가 오늘 1일치만 있어, 미래는 예정 toast·나머지는 오늘 day view.
     if (d.isFuture) {
       toast.info(`📅 ${d.date}일 예정`, {
         description: `예정 ${d.blockCount}개 블록 — 그날이 되면 일간 뷰에서 진행할 수 있어요.`,
       });
       return;
     }
-    // 데모 — 데이터 단위가 오늘 1일치만 있어 모두 day view로 보냄.
-    router.push('/planner/calendar?view=day');
+    router.push('/planner?view=day');
   }
 
   return (

@@ -7,12 +7,11 @@ import {
 } from '@/components/ui/sheet';
 import { PullimLogo } from '@/components/brand/logo';
 import { AppSidebar } from './app-sidebar';
-import type { Role } from './nav-config';
 
 /**
  * 모바일 햄버거 → 사이드바 drawer.
  */
-export function MobileDrawer({ role }: { role: Role }) {
+export function MobileDrawer() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -32,7 +31,7 @@ export function MobileDrawer({ role }: { role: Role }) {
             </span>
           </SheetTitle>
         </SheetHeader>
-        <AppSidebar role={role} onNavigate={() => setOpen(false)} className="flex-1" />
+        <AppSidebar onNavigate={() => setOpen(false)} className="flex-1" />
       </SheetContent>
     </Sheet>
   );

@@ -116,6 +116,7 @@ export function buildWeekDays(
       blocks: [...byType.entries()].map(([type, v]) => ({ type, ...v })),
       totalMinutes: total,
       completionPct: total === 0 ? 0 : Math.round((doneMinutes / total) * 100),
+      dayOffset: ddayFrom(todayIso, date), // 일간 뷰 딥링크용(오늘 대비 일 수)
     };
   });
 }
@@ -139,6 +140,7 @@ export function buildMonthDays(
         blocks.length === 0 ? 0 : Math.round((done / blocks.length) * 100),
       isToday: date === todayIso,
       isFuture: date > todayIso,
+      dayOffset: ddayFrom(todayIso, date), // 일간 뷰 딥링크용(오늘 대비 일 수)
       ...(isExam
         ? {
             hasExamMilestone: true,

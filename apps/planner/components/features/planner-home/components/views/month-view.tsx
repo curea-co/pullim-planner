@@ -1,6 +1,7 @@
 import { monthView, type MonthDay } from '@/lib/mock';
 import { MonthHeatmap } from '@/components/features/planner-home/components/month-heatmap';
 import { MonthlyProgressCard } from '@/components/features/planner-home/components/home/monthly-progress-card';
+import { MonthPlanSummary } from '@/components/features/planner-home/components/home/month-plan-summary';
 import { PeriodEmptyState } from '@/components/features/planner-home/components/period-empty-state';
 
 interface MonthViewProps {
@@ -15,10 +16,10 @@ interface MonthViewProps {
 }
 
 /**
- * 월간 시간표 본문 — 좌측 히트맵, 우측 해당 월 달성률 통합 카드.
+ * 월간 시간표 본문 — 좌측 히트맵, 우측 요약 카드.
  * day-view·week-view와 동일 grid (xl:grid-cols-[420px_1fr])로 일관 IA.
- * 실데이터 모드에선 MonthlyProgressCard 를 숨긴다 — 목표·정답률 등 블록 외 mock 수치라
- * 실 수치로 오도하지 않기 위함(B4b 에서 실 표면 연동).
+ * 실데이터 모드에선 mock MonthlyProgressCard(목표·정답률·약점·streak) 대신 우측에
+ * MonthPlanSummary(계획 블록·예정일·시험 마일스톤, 블록 파생값만)를 둔다(B4b ①-1단계).
  */
 export function MonthView({ monthOffset = 0, onReset, days, monthLabel }: MonthViewProps) {
   const isReal = days !== undefined;
@@ -28,9 +29,9 @@ export function MonthView({ monthOffset = 0, onReset, days, monthLabel }: MonthV
   }
 
   return (
-    <div className={isReal ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 gap-4 xl:grid-cols-[420px_1fr]'}>
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[420px_1fr]">
       <MonthHeatmap days={days} monthLabel={monthLabel} />
-      {!isReal && <MonthlyProgressCard />}
+      {isReal ? <MonthPlanSummary days={days} /> : <MonthlyProgressCard />}
     </div>
   );
 }

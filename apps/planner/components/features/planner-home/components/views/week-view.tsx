@@ -4,6 +4,7 @@ import { weekView, type WeekDay } from '@/lib/mock';
 import { ActiveWeekLayout } from '@/components/features/planner-home/components/layouts/active-week-layout';
 import { WeeklyChart } from '@/components/features/planner-home/components/weekly-chart';
 import { WeeklyGoalsCard } from '@/components/features/planner-home/components/home/weekly-goals-card';
+import { WeekPlanSummary } from '@/components/features/planner-home/components/home/week-plan-summary';
 import { PeriodEmptyState } from '@/components/features/planner-home/components/period-empty-state';
 import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
 
@@ -22,8 +23,8 @@ interface WeekViewProps {
  *
  * 활성 플래너의 `weekLayoutId`에 따라 4종 주간 레이아웃 중 하나 렌더.
  * bar_week 레이아웃 선택 시 하단 WeeklyChart는 중복이라 숨김.
- * 실데이터 모드(days 주입)에선 WeeklyChart·WeeklyGoalsCard 를 숨긴다 —
- * 목표시간·정답률·약점은 블록 외 mock 이라 실 수치로 오도하지 않기 위함(B4b 에서 실 표면 연동).
+ * 실데이터 모드(days 주입)에선 mock WeeklyChart·WeeklyGoalsCard(목표시간·정답률·약점 — 블록 외
+ * mock) 대신 우측에 WeekPlanSummary(계획 시간·예정일·타입 구성, 블록 파생값만)를 둔다(B4b ①-1단계).
  */
 export function WeekView({ weekOffset = 0, onReset, days }: WeekViewProps) {
   const { weekLayoutId, paletteId } = getActiveCustomization();
@@ -36,12 +37,12 @@ export function WeekView({ weekOffset = 0, onReset, days }: WeekViewProps) {
   }
 
   return (
-    <div className={isReal ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 gap-4 xl:grid-cols-[420px_1fr]'}>
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[420px_1fr]">
       <div className="space-y-4">
         <ActiveWeekLayout weekLayoutId={weekLayoutId} paletteId={paletteId} days={days} />
         {!isBarWeek && !isReal && <WeeklyChart />}
       </div>
-      {!isReal && <WeeklyGoalsCard />}
+      {isReal ? <WeekPlanSummary days={days} /> : <WeeklyGoalsCard />}
     </div>
   );
 }
