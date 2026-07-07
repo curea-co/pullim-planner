@@ -173,11 +173,14 @@ export default function HomeContainer() {
     monthMeta = monthDays
       ? { totalBlocks: monthDays.reduce((s, d) => s + d.blockCount, 0) }
       : { totalBlocks: 0 };
-    // 히어로 — heroBlocksByDate(이번 주 7일, view·offset 무관 1회 조회)로 항상 실제 오늘·이번 주.
-    heroDaySummary = plannerProgress(heroBlocksByDate[todayIso] ?? []);
+    // 히어로 — 이번 주 7일 기준. 현재 뷰가 이미 조회한 날짜(blocksByDate)를 우선 재사용하고
+    // 나머지만 heroBlocksByDate 로 채운다: 같은 날짜를 두 조회가 서로 다르게 성공/실패해도
+    // 히어로와 헤더·본문이 어긋나지 않게 단일 소스(blocksByDate)를 우선한다(Codex #126 R3).
+    const heroMerged = { ...heroBlocksByDate, ...blocksByDate };
+    heroDaySummary = plannerProgress(heroMerged[todayIso] ?? []);
     const heroWeekDays = buildWeekDays(
       weekDatesFor(todayIso, 0),
-      heroBlocksByDate,
+      heroMerged,
       todayIso,
     );
     heroWeekMeta = {
