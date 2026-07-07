@@ -1,7 +1,8 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Lock } from 'lucide-react';
 import { plannerSection, type NavSubItem } from './nav-config';
 import { cn } from '@/lib/utils';
@@ -22,10 +23,20 @@ type Props = {
  * mono 눈썹 라벨 + 플랫 아이템 리스트. 활성 = primary-50 틴트 + 3px 좌측 액센트 바.
  * 단일 도메인 앱이라 이전의 도메인>자식 2단 인덴트는 폐기(플랫).
  */
-export function AppSidebar({ onNavigate, className, compact, collapsed }: Props) {
+export function AppSidebar(props: Props) {
+  // useSearchParams는 정적 프리렌더 시 suspend → 셸 전체 CSR bailout 방지용 자체 boundary
+  return (
+    <Suspense fallback={null}>
+      <AppSidebarInner {...props} />
+    </Suspense>
+  );
+}
+
+function AppSidebarInner({ onNavigate, className, compact, collapsed }: Props) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const iconOnly = compact || collapsed;
-  const activeHref = findActiveHref(pathname, plannerSection);
+  const activeHref = findActiveHref(pathname, searchParams, plannerSection);
 
   return (
     <nav
@@ -52,13 +63,25 @@ export function AppSidebar({ onNavigate, className, compact, collapsed }: Props)
   );
 }
 
-/** 현재 pathname에 가장 잘 맞는 href 반환 (최장 prefix 우선). query 포함 href는 exact만. */
-function findActiveHref(pathname: string, items: NavSubItem[]): string | undefined {
+/**
+ * 현재 URL에 가장 잘 맞는 href 반환 (최장 매치 우선).
+ * - 일반 href: pathname exact 또는 prefix 매치.
+ * - query 포함 href(예: `/planner?help=1` 매뉴얼): pathname exact + 해당 쿼리 파라미터 전부 일치 시 활성
+ *   — 이때 href가 더 기니 홈(`/planner`)을 이기고 매뉴얼이 활성이 된다.
+ */
+function findActiveHref(
+  pathname: string,
+  searchParams: URLSearchParams,
+  items: NavSubItem[],
+): string | undefined {
   let best: string | undefined;
   for (const item of items) {
-    if (pathname === item.href || pathname.startsWith(item.href + '/')) {
-      if (!best || item.href.length > best.length) best = item.href;
-    }
+    const [itemPath, itemQuery] = item.href.split('?');
+    const matched = itemQuery
+      ? pathname === itemPath &&
+        [...new URLSearchParams(itemQuery)].every(([k, v]) => searchParams.get(k) === v)
+      : pathname === item.href || pathname.startsWith(item.href + '/');
+    if (matched && (!best || item.href.length > best.length)) best = item.href;
   }
   return best;
 }

@@ -3,14 +3,22 @@
  */
 import '@testing-library/jest-dom';
 
+let mockPathname = '/planner/manage/abc/edit';
+let mockSearch = '';
 jest.mock('next/navigation', () => ({
-  usePathname: () => '/planner/manage/abc/edit',
+  usePathname: () => mockPathname,
+  useSearchParams: () => new URLSearchParams(mockSearch),
 }));
 
 import { render, screen } from '@testing-library/react';
 import { AppSidebar } from '@/components/shell/app-sidebar';
 
 describe('AppSidebar (플랫 PUDS 레일)', () => {
+  beforeEach(() => {
+    mockPathname = '/planner/manage/abc/edit';
+    mockSearch = '';
+  });
+
   it('mono 눈썹 라벨과 핵심 항목을 플랫하게 렌더한다', () => {
     render(<AppSidebar />);
     expect(screen.getByText('풀림 플래너')).toBeInTheDocument();
@@ -25,6 +33,21 @@ describe('AppSidebar (플랫 PUDS 레일)', () => {
     // pathname=/planner/manage/abc/edit → '/planner'와 '/planner/manage' 둘 다 prefix지만 긴 쪽이 활성
     expect(screen.getByRole('link', { name: '시간표 관리' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: '홈' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('query href(매뉴얼 /planner?help=1)는 pathname+쿼리 일치 시 활성 — 홈을 이긴다', () => {
+    mockPathname = '/planner';
+    mockSearch = 'help=1';
+    render(<AppSidebar />);
+    expect(screen.getByRole('link', { name: '매뉴얼' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: '홈' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('쿼리 없는 홈에선 매뉴얼이 활성화되지 않는다', () => {
+    mockPathname = '/planner';
+    render(<AppSidebar />);
+    expect(screen.getByRole('link', { name: '홈' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: '매뉴얼' })).not.toHaveAttribute('aria-current');
   });
 
   it('compact(아이콘 전용)에선 눈썹·라벨을 숨기고 title 접근명으로 대체한다', () => {
