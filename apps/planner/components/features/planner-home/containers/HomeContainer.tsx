@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { CalendarView } from '../components/calendar-shell';
 import {
@@ -45,19 +45,46 @@ export default function HomeContainer() {
   const helpParam = params.get('help') === '1';
   const [welcomeOpen, setWelcomeOpen] = useState(false);
 
-  // 기간 이동 offset (0=기준 기간). 일/주/월 공용.
-  const [offset, setOffset] = useState(0);
-  const handlePrev = useCallback(() => setOffset(o => o - 1), []);
-  const handleNext = useCallback(() => setOffset(o => o + 1), []);
-  const handleReset = useCallback(() => setOffset(0), []);
-  const handleJump = useCallback((o: number) => setOffset(o), []);
+  // 기간 이동 offset (0=기준 기간). 일/주/월 공용. URL 파라미터 `d`가 소스 —
+  // 주간 그리드·월간 캘린더에서 특정 날짜 일간 뷰로 딥링크(?view=day&d=N)하려면 offset이
+  // URL에 있어야 하기 때문(B4b ③). 뷰 단위(일=일수, 주=주수, 월=월수)는 뷰 안에서 일관.
+  const dRaw = params.get('d');
+  const parsed = dRaw === null ? 0 : Number.parseInt(dRaw, 10);
+  const offset = Number.isFinite(parsed) ? parsed : 0;
 
-  // 뷰가 바뀌면(토글·뒤로가기·외부 ?view= 진입 모두) offset을 기준 기간으로 리셋.
-  // offset이 URL과 분리돼 있어, 이전 뷰의 offset이 남아 다른 뷰에 빈 화면이 뜨는 것을 방지.
+  // 라우터 반영은 비동기라, URL이 갱신되기 전 사용자가 이전/다음을 빠르게 연타하면 두 클릭이
+  // 같은 stale offset 을 읽어 입력이 누락된다(기존 setOffset(o=>o+1) 엔 없던 회귀, codex).
+  // ref로 최신 목표 offset 을 동기 추적해 상대 이동을 ref 기준으로 계산한다. URL이 외부(뒤로가기
+  // 등)로 바뀌면 아래 effect가 ref를 URL 기준으로 재동기화한다.
+  const offsetRef = useRef(offset);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOffset(0);
-  }, [view]);
+    offsetRef.current = offset;
+  }, [offset]);
+
+  // view·offset을 URL로 직렬화 — 기존 search param(help 등)은 보존하고 view·d만 갱신한다
+  // (빈 params에서 시작하면 ?help=1 등이 뷰 전환·기간 이동 한 번에 사라짐, codex).
+  // view=day·offset=0은 해당 파라미터 생략(정규 URL 유지).
+  const buildUrl = useCallback((v: CalendarView, o: number) => {
+    const sp = new URLSearchParams(params);
+    if (v !== 'day') sp.set('view', v); else sp.delete('view');
+    if (o !== 0) sp.set('d', String(o)); else sp.delete('d');
+    const qs = sp.toString();
+    return `/planner${qs ? `?${qs}` : ''}`;
+  }, [params]);
+
+  // 목표 offset 을 ref에 즉시 반영(연타 누적) 후 URL 갱신 — 상대 이동의 단일 경로.
+  const go = useCallback(
+    (v: CalendarView, o: number) => {
+      offsetRef.current = o;
+      router.replace(buildUrl(v, o), { scroll: false });
+    },
+    [router, buildUrl],
+  );
+
+  const handlePrev = useCallback(() => go(view, offsetRef.current - 1), [go, view]);
+  const handleNext = useCallback(() => go(view, offsetRef.current + 1), [go, view]);
+  const handleReset = useCallback(() => go(view, 0), [go, view]);
+  const handleJump = useCallback((o: number) => go(view, o), [go, view]);
 
   useEffect(() => {
     // sessionStorage 는 클라이언트 전용 — 서버 렌더는 항상 닫힘(false)으로 hydration 일치시키고,
@@ -83,12 +110,9 @@ export default function HomeContainer() {
   }, [helpParam, params, router]);
 
   const onChangeView = useCallback(
-    (next: CalendarView) => {
-      setOffset(0); // 뷰 전환 시 기준 기간으로 리셋
-      const qs = next === 'day' ? '' : `?view=${next}`;
-      router.replace(`/planner${qs}`, { scroll: false });
-    },
-    [router],
+    // 뷰 전환 시 offset 리셋 — go(_,0)이 ref·URL 모두 0으로(buildUrl이 d 생략=기준 기간).
+    (next: CalendarView) => go(next, 0),
+    [go],
   );
 
   // 실데이터(B4) — 배포 환경은 pullim-api 활성 플래너·블록, dev bypass 는 기존 mock 경로 유지.
@@ -103,6 +127,11 @@ export default function HomeContainer() {
   let weekDays: WeekDay[] | undefined;
   let monthDays: MonthDay[] | undefined;
   let monthLabel: string | undefined;
+  // 히어로 배너는 뷰·기간 이동과 무관하게 **항상 실제 오늘·이번 주** 기준으로 요약한다.
+  // (뷰 offset 을 그대로 쓰면 week/month·미래 날짜에서 "오늘 X/Y"가 엉뚱한 날짜로, "이번 주 Nh"가
+  //  사라진다 — Codex #124). daySummary/weekMeta(헤더용)는 뷰 맥락대로 두고, 히어로만 분리.
+  let heroDaySummary: { done: number; total: number };
+  let heroWeekMeta: { totalHours: number; completedHours: number };
 
   if (DEV_AUTH_BYPASS) {
     const active = getActivePlanner();
@@ -111,8 +140,10 @@ export default function HomeContainer() {
     daySummary = plannerProgress(getBlocksForDayOffset(offset));
     weekMeta = getWeekMeta(offset);
     monthMeta = getMonthMeta(offset);
+    heroDaySummary = plannerProgress(getBlocksForDayOffset(0)); // 실제 오늘
+    heroWeekMeta = getWeekMeta(0); // 이번 주
   } else {
-    const { active, blocksByDate, todayIso } = real;
+    const { active, blocksByDate, heroBlocksByDate, todayIso } = real;
     examName = active?.examLabel || active?.name || '';
     dday = active ? ddayFrom(todayIso, active.examStartDate) : 0;
     dayBlocks = blocksByDate[shiftIsoDate(todayIso, offset)] ?? [];
@@ -142,6 +173,23 @@ export default function HomeContainer() {
     monthMeta = monthDays
       ? { totalBlocks: monthDays.reduce((s, d) => s + d.blockCount, 0) }
       : { totalBlocks: 0 };
+    // 히어로 — 이번 주 7일 기준. 현재 뷰가 이미 조회한 날짜(blocksByDate)를 우선 재사용하고
+    // 나머지만 heroBlocksByDate 로 채운다: 같은 날짜를 두 조회가 서로 다르게 성공/실패해도
+    // 히어로와 헤더·본문이 어긋나지 않게 단일 소스(blocksByDate)를 우선한다(Codex #126 R3).
+    const heroMerged = { ...heroBlocksByDate, ...blocksByDate };
+    heroDaySummary = plannerProgress(heroMerged[todayIso] ?? []);
+    const heroWeekDays = buildWeekDays(
+      weekDatesFor(todayIso, 0),
+      heroMerged,
+      todayIso,
+    );
+    heroWeekMeta = {
+      totalHours: Math.round(heroWeekDays.reduce((s, d) => s + d.totalMinutes, 0) / 6) / 10,
+      completedHours:
+        Math.round(
+          heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
+        ) / 10,
+    };
   }
 
   return (
@@ -154,6 +202,8 @@ export default function HomeContainer() {
         daySummary={daySummary}
         weekMeta={weekMeta}
         monthMeta={monthMeta}
+        heroDaySummary={heroDaySummary}
+        heroWeekMeta={heroWeekMeta}
         offset={offset}
         onPrev={handlePrev}
         onNext={handleNext}
