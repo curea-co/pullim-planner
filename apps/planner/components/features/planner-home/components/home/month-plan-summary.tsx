@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 /**
  * 월간 계획 요약(실데이터 ①-1단계) — MonthlyProgressCard(mock: 목표 시간·약점·streak)를 대체하는
  * 실모드 우측 카드. **블록 파생값만**: 계획 블록 수·학습 예정일·이 달의 시험 마일스톤. D-day 는 홈
- * 상단 DDayHeaderBand 가 이미 노출한다. 완료율·목표는 BE 준비 전이라 넣지 않는다(B4b ①-2단계).
+ * 상단 HomeHero 가 이미 노출한다. 완료율·목표는 BE 준비 전이라 넣지 않는다(B4b ①-2단계).
  */
 export function MonthPlanSummary({ days }: { days: MonthDay[] }) {
   const totalBlocks = days.reduce((s, d) => s + d.blockCount, 0);

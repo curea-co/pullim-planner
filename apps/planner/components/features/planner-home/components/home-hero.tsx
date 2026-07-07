@@ -1,3 +1,4 @@
+import { shouldShowDDayHeaderBand } from '@/lib/planner/d-day-tier';
 import { HeroMotion3D } from './hero-motion-3d';
 
 type Props = {
@@ -8,13 +9,20 @@ type Props = {
 };
 
 /**
- * 홈 히어로 — D-Day 밴드의 승격. 형제 앱 공통 그라디언트 히어로의 컴팩트 버전
+ * 홈 히어로 — D-Day 밴드의 승격(대체). 형제 앱 공통 그라디언트 히어로의 컴팩트 버전
  * (매일 쓰는 달력 대시보드라 세로 공간을 아낀다). 3D 장식은 absolute라 높이에 영향 없음.
+ * 직전 구간(today/critical, ~D-6) 임박 카피(11-planner-design § 2.1 — 위협 아닌 권유형,
+ * `07 § 4.5.1` 4원칙)는 별도 밴드 대신 히어로 안 status 라인으로 흡수한다.
  */
 export function HomeHero({ examName, dday, daySummary, weekMeta }: Props) {
   const ddayLabel = dday === 0 ? 'D-DAY' : dday > 0 ? `D-${dday}` : `D+${Math.abs(dday)}`;
   const showDay = daySummary.total > 0;
   const showWeek = weekMeta.totalHours > 0;
+  const urgent = shouldShowDDayHeaderBand(dday);
+  const urgentCopy =
+    dday === 0
+      ? `오늘 ${examName} — 컨디션 안정 우선, 새 단원 No`
+      : `${examName}까지 ${dday}일 — 컨디션 75% 이상 유지하기`;
 
   return (
     <section
@@ -44,6 +52,15 @@ export function HomeHero({ examName, dday, daySummary, weekMeta }: Props) {
                 이번 주 계획 <strong className="font-bold text-white">{weekMeta.totalHours}h</strong>
               </>
             )}
+          </p>
+        )}
+        {urgent && (
+          <p
+            role="status"
+            className="text-pullim-lemon mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium"
+          >
+            <span aria-hidden className="bg-pullim-lemon h-1 w-1 rounded-full" />
+            {urgentCopy}
           </p>
         )}
       </div>

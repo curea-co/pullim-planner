@@ -34,4 +34,20 @@ describe('HomeHero', () => {
     const { container } = render(<HomeHero {...base} />);
     expect(container.querySelector('[data-hero-3d][aria-hidden="true"]')).toBeTruthy();
   });
+
+  // D-Day 밴드 흡수(대체) — 직전(today/critical, ~D-6) 권유 카피가 히어로 status 라인으로
+  it('직전 구간(D-6 이내)엔 임박 권유 카피를 status로 노출한다', () => {
+    render(<HomeHero {...base} dday={6} />);
+    expect(screen.getByRole('status')).toHaveTextContent('수능까지 6일 — 컨디션 75% 이상 유지하기');
+  });
+
+  it('D-0 임박 카피는 당일 문구를 쓴다', () => {
+    render(<HomeHero {...base} dday={0} />);
+    expect(screen.getByRole('status')).toHaveTextContent('오늘 수능 — 컨디션 안정 우선, 새 단원 No');
+  });
+
+  it('D-7 이상(imminent~)이면 임박 카피를 감춘다', () => {
+    render(<HomeHero {...base} dday={7} />);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
 });
