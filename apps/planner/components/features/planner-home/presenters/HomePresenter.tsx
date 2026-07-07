@@ -25,6 +25,9 @@ interface HomePresenterProps {
   daySummary: { done: number; total: number };
   weekMeta: { totalHours: number; completedHours: number };
   monthMeta: { totalBlocks: number };
+  /** 히어로 전용 — 뷰·offset 무관하게 항상 실제 오늘/이번 주 기준(헤더용 daySummary/weekMeta 와 분리). */
+  heroDaySummary: { done: number; total: number };
+  heroWeekMeta: { totalHours: number; completedHours: number };
   /** 기간 이동 offset (0=기준 기간). 일/주/월 공용 */
   offset: number;
   onPrev: () => void;
@@ -49,6 +52,8 @@ export default function HomePresenter({
   daySummary,
   weekMeta,
   monthMeta,
+  heroDaySummary,
+  heroWeekMeta,
   offset,
   onPrev,
   onNext,
@@ -136,7 +141,7 @@ export default function HomePresenter({
 
   return (
     <>
-      <HomeHero examName={examName} dday={dday} daySummary={daySummary} weekMeta={weekMeta} />
+      <HomeHero examName={examName} dday={dday} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
       <BurnoutThresholdBanner score={burnoutScore} />
       <CalendarShell
         view={view}

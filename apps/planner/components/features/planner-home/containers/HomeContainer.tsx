@@ -127,6 +127,11 @@ export default function HomeContainer() {
   let weekDays: WeekDay[] | undefined;
   let monthDays: MonthDay[] | undefined;
   let monthLabel: string | undefined;
+  // 히어로 배너는 뷰·기간 이동과 무관하게 **항상 실제 오늘·이번 주** 기준으로 요약한다.
+  // (뷰 offset 을 그대로 쓰면 week/month·미래 날짜에서 "오늘 X/Y"가 엉뚱한 날짜로, "이번 주 Nh"가
+  //  사라진다 — Codex #124). daySummary/weekMeta(헤더용)는 뷰 맥락대로 두고, 히어로만 분리.
+  let heroDaySummary: { done: number; total: number };
+  let heroWeekMeta: { totalHours: number; completedHours: number };
 
   if (DEV_AUTH_BYPASS) {
     const active = getActivePlanner();
@@ -135,6 +140,8 @@ export default function HomeContainer() {
     daySummary = plannerProgress(getBlocksForDayOffset(offset));
     weekMeta = getWeekMeta(offset);
     monthMeta = getMonthMeta(offset);
+    heroDaySummary = plannerProgress(getBlocksForDayOffset(0)); // 실제 오늘
+    heroWeekMeta = getWeekMeta(0); // 이번 주
   } else {
     const { active, blocksByDate, todayIso } = real;
     examName = active?.examLabel || active?.name || '';
@@ -166,6 +173,14 @@ export default function HomeContainer() {
     monthMeta = monthDays
       ? { totalBlocks: monthDays.reduce((s, d) => s + d.blockCount, 0) }
       : { totalBlocks: 0 };
+    // 히어로 — 실제 오늘은 blocksByDate[todayIso] 로 항상 조회(뷰 offset 무관). 오늘이 로드된
+    // 기간(일 offset0·주/월 offset0)이 아니면 빈 배열 → 히어로가 day 라인을 숨긴다(틀린 값 대신 미표시).
+    heroDaySummary = plannerProgress(blocksByDate[todayIso] ?? []);
+    // 이번 주 계획 시간은 이번 주 전체(7일)가 로드된 주 뷰 offset0 에서만 정확 → 그때만 노출, 아니면 숨김.
+    heroWeekMeta =
+      view === 'week' && offset === 0
+        ? weekMeta
+        : { totalHours: 0, completedHours: 0 };
   }
 
   return (
@@ -178,6 +193,8 @@ export default function HomeContainer() {
         daySummary={daySummary}
         weekMeta={weekMeta}
         monthMeta={monthMeta}
+        heroDaySummary={heroDaySummary}
+        heroWeekMeta={heroWeekMeta}
         offset={offset}
         onPrev={handlePrev}
         onNext={handleNext}
