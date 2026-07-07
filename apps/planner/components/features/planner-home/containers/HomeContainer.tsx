@@ -127,6 +127,11 @@ export default function HomeContainer() {
   let weekDays: WeekDay[] | undefined;
   let monthDays: MonthDay[] | undefined;
   let monthLabel: string | undefined;
+  // 히어로 배너는 뷰·기간 이동과 무관하게 **항상 실제 오늘·이번 주** 기준으로 요약한다.
+  // (뷰 offset 을 그대로 쓰면 week/month·미래 날짜에서 "오늘 X/Y"가 엉뚱한 날짜로, "이번 주 Nh"가
+  //  사라진다 — Codex #124). daySummary/weekMeta(헤더용)는 뷰 맥락대로 두고, 히어로만 분리.
+  let heroDaySummary: { done: number; total: number };
+  let heroWeekMeta: { totalHours: number; completedHours: number };
 
   if (DEV_AUTH_BYPASS) {
     const active = getActivePlanner();
@@ -135,8 +140,10 @@ export default function HomeContainer() {
     daySummary = plannerProgress(getBlocksForDayOffset(offset));
     weekMeta = getWeekMeta(offset);
     monthMeta = getMonthMeta(offset);
+    heroDaySummary = plannerProgress(getBlocksForDayOffset(0)); // 실제 오늘
+    heroWeekMeta = getWeekMeta(0); // 이번 주
   } else {
-    const { active, blocksByDate, todayIso } = real;
+    const { active, blocksByDate, heroBlocksByDate, todayIso } = real;
     examName = active?.examLabel || active?.name || '';
     dday = active ? ddayFrom(todayIso, active.examStartDate) : 0;
     dayBlocks = blocksByDate[shiftIsoDate(todayIso, offset)] ?? [];
@@ -166,6 +173,23 @@ export default function HomeContainer() {
     monthMeta = monthDays
       ? { totalBlocks: monthDays.reduce((s, d) => s + d.blockCount, 0) }
       : { totalBlocks: 0 };
+    // 히어로 — 이번 주 7일 기준. 현재 뷰가 이미 조회한 날짜(blocksByDate)를 우선 재사용하고
+    // 나머지만 heroBlocksByDate 로 채운다: 같은 날짜를 두 조회가 서로 다르게 성공/실패해도
+    // 히어로와 헤더·본문이 어긋나지 않게 단일 소스(blocksByDate)를 우선한다(Codex #126 R3).
+    const heroMerged = { ...heroBlocksByDate, ...blocksByDate };
+    heroDaySummary = plannerProgress(heroMerged[todayIso] ?? []);
+    const heroWeekDays = buildWeekDays(
+      weekDatesFor(todayIso, 0),
+      heroMerged,
+      todayIso,
+    );
+    heroWeekMeta = {
+      totalHours: Math.round(heroWeekDays.reduce((s, d) => s + d.totalMinutes, 0) / 6) / 10,
+      completedHours:
+        Math.round(
+          heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
+        ) / 10,
+    };
   }
 
   return (
@@ -178,6 +202,8 @@ export default function HomeContainer() {
         daySummary={daySummary}
         weekMeta={weekMeta}
         monthMeta={monthMeta}
+        heroDaySummary={heroDaySummary}
+        heroWeekMeta={heroWeekMeta}
         offset={offset}
         onPrev={handlePrev}
         onNext={handleNext}
