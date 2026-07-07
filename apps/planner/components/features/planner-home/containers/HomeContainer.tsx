@@ -143,7 +143,7 @@ export default function HomeContainer() {
     heroDaySummary = plannerProgress(getBlocksForDayOffset(0)); // 실제 오늘
     heroWeekMeta = getWeekMeta(0); // 이번 주
   } else {
-    const { active, blocksByDate, todayIso } = real;
+    const { active, blocksByDate, heroBlocksByDate, todayIso } = real;
     examName = active?.examLabel || active?.name || '';
     dday = active ? ddayFrom(todayIso, active.examStartDate) : 0;
     dayBlocks = blocksByDate[shiftIsoDate(todayIso, offset)] ?? [];
@@ -173,14 +173,20 @@ export default function HomeContainer() {
     monthMeta = monthDays
       ? { totalBlocks: monthDays.reduce((s, d) => s + d.blockCount, 0) }
       : { totalBlocks: 0 };
-    // 히어로 — 실제 오늘은 blocksByDate[todayIso] 로 항상 조회(뷰 offset 무관). 오늘이 로드된
-    // 기간(일 offset0·주/월 offset0)이 아니면 빈 배열 → 히어로가 day 라인을 숨긴다(틀린 값 대신 미표시).
-    heroDaySummary = plannerProgress(blocksByDate[todayIso] ?? []);
-    // 이번 주 계획 시간은 이번 주 전체(7일)가 로드된 주 뷰 offset0 에서만 정확 → 그때만 노출, 아니면 숨김.
-    heroWeekMeta =
-      view === 'week' && offset === 0
-        ? weekMeta
-        : { totalHours: 0, completedHours: 0 };
+    // 히어로 — heroBlocksByDate(이번 주 7일, view·offset 무관 1회 조회)로 항상 실제 오늘·이번 주.
+    heroDaySummary = plannerProgress(heroBlocksByDate[todayIso] ?? []);
+    const heroWeekDays = buildWeekDays(
+      weekDatesFor(todayIso, 0),
+      heroBlocksByDate,
+      todayIso,
+    );
+    heroWeekMeta = {
+      totalHours: Math.round(heroWeekDays.reduce((s, d) => s + d.totalMinutes, 0) / 6) / 10,
+      completedHours:
+        Math.round(
+          heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
+        ) / 10,
+    };
   }
 
   return (
