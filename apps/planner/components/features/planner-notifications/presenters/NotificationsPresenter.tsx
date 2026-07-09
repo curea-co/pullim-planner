@@ -25,14 +25,16 @@ interface NotificationsPresenterProps {
 
 export default function NotificationsPresenter({ notifications }: NotificationsPresenterProps) {
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const isEmpty = notifications.length === 0;
 
   return (
     <>
       <PageHeader
         title="알림"
-        description={unreadCount > 0 ? `읽지 않은 알림 ${unreadCount}개` : '모두 읽었어요'}
+        // 빈 상태(발송 인프라 미구현)에선 헤더도 본문과 같은 안내로 맞춤 — "모두 읽었어요"(상충 문구) 방지
+        description={isEmpty ? '아직 받은 알림이 없어요' : unreadCount > 0 ? `읽지 않은 알림 ${unreadCount}개` : '모두 읽었어요'}
       />
-      {notifications.length === 0 ? (
+      {isEmpty ? (
         <div className="py-16 text-center text-xs text-muted-foreground">알림이 없어요</div>
       ) : (
         <ul className="space-y-2">
