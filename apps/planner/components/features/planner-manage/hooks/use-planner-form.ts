@@ -7,7 +7,7 @@ import { examTypeMeta, plannerStepConfig, type PlannerForm } from '@/components/
 const TOTAL_STEPS = plannerStepConfig.length;
 
 /**
- * 9단계 프로세스 step navigation + form state — new/edit 공유 hook.
+ * 8단계 프로세스 step navigation + form state — new/edit 공유 hook.
  *
  * 책임: currentStep / form 상태, goPrev/goNext (validation 포함), jumpTo.
  * 저장 핸들러(create/activate vs update)는 Container 책임.

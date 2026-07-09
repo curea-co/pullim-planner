@@ -13,7 +13,7 @@ import type { Routine } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
 /**
- * 9단계 프로세스 마크업 — new/edit 페이지 공유.
+ * 8단계 프로세스 마크업 — new/edit 페이지 공유.
  * 상태/이벤트는 props로 받기만 (presentation).
  */
 interface PlannerWizardProps {

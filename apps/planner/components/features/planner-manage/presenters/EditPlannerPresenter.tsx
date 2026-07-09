@@ -65,7 +65,7 @@ export default function EditPlannerPresenter({
         {(['config', 'layout'] as const).map(t => {
           const isCurrent = tab === t;
           const Icon = t === 'config' ? ListChecks : Palette;
-          const label = t === 'config' ? '설정 (9단계)' : '꾸미기';
+          const label = t === 'config' ? '설정 (8단계)' : '꾸미기';
           return (
             <button
               key={t}

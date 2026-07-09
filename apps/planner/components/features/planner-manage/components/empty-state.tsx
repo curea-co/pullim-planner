@@ -14,7 +14,7 @@ export function EmptyState() {
         첫 시간표를 만들어보세요
       </h2>
       <p className="text-pullim-slate-500 mx-auto mt-1 max-w-sm text-xs leading-relaxed">
-        시험 일정만 입력하면 AI가 시간 단위로 학습 계획을 짜줘요. 9단계 프로세스로 5분 안에 완성.
+        시험 일정만 입력하면 AI가 시간 단위로 학습 계획을 짜줘요. 8단계 프로세스로 5분 안에 완성.
       </p>
       <Link
         href="/planner/manage/new"

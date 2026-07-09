@@ -7,7 +7,7 @@ import type { SubjectKey } from '@/lib/mock';
 import { ROUTINE_ENABLED, WEAKNESS_ENABLED, NOTIFICATIONS_ENABLED } from '@/lib/flags';
 
 /**
- * 학생 플래너 빌더 9단계 폼 데이터.
+ * 학생 플래너 빌더 8단계 폼 데이터.
  * 핸드오프 08 기반.
  */
 
