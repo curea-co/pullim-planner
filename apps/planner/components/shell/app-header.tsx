@@ -43,9 +43,10 @@ export function AppHeader() {
         <button type="button" className="icon-btn" aria-label="검색" title="검색 (⌘ K)">
           <Search width={20} height={20} aria-hidden />
         </button>
+        {/* 항상 켜져 있던 unread 점 배지 제거 — 알림 발송 인프라 미구현(soft-open)이라 실제 unread 없음.
+            "안 읽은 알림 있음" 오해 방지. 실 알림 파이프라인 준비 시 unread 여부와 연동해 복원. */}
         <Link href="/planner/notifications" className="icon-btn" aria-label="알림">
           <Bell width={20} height={20} aria-hidden />
-          <span className="dot" />
         </Link>
         <AuthCluster />
       </div>

@@ -12,7 +12,7 @@ import {
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { WEAKNESS_ENABLED } from '@/lib/flags';
+import { WEAKNESS_ENABLED, NOTIFICATIONS_ENABLED } from '@/lib/flags';
 import {
   subjectLabels, type SubjectKey, getWeakNodes, allCurricula,
   type BlockType, type Routine,
@@ -1160,7 +1160,10 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
           <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(시간 맞는 요일만 미리보기 반영)</span></li>
           <li>· 동기 스타일: {motivationStyleMeta[form.motivationStyle].label}</li>
           <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON' : 'OFF'}</li>
-          <li>· 알림: {[form.remindPush && '푸시', form.remindBefore5min && '5분 전', form.parentDailyReport && '부모 보고'].filter(Boolean).join(', ') || '없음'}</li>
+          {/* 리마인더 STEP 게이트(NOTIFICATIONS_ENABLED) off면 요약에서도 알림 줄 숨김 — 기본값(푸시·5분 전)이 남아 오해 주는 것 방지 */}
+          {NOTIFICATIONS_ENABLED && (
+            <li>· 알림: {[form.remindPush && '푸시', form.remindBefore5min && '5분 전', form.parentDailyReport && '부모 보고'].filter(Boolean).join(', ') || '없음'}</li>
+          )}
         </ul>
       </section>
 

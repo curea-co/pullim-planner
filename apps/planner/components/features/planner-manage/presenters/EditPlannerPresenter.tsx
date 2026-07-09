@@ -5,6 +5,7 @@ import { Palette, ListChecks } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { FlywheelNote } from '@/components/shell/flywheel-note';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
+import { plannerStepConfig } from '@/components/features/planner-builder/components/builder-types';
 import type { Planner, Routine } from '@/lib/mock';
 import { PlannerWizard } from '../components/planner-wizard';
 import { DecorateSection } from '../components/decorate-section';
@@ -65,7 +66,8 @@ export default function EditPlannerPresenter({
         {(['config', 'layout'] as const).map(t => {
           const isCurrent = tab === t;
           const Icon = t === 'config' ? ListChecks : Palette;
-          const label = t === 'config' ? '설정 (9단계)' : '꾸미기';
+          // 단계 수는 게이트에 따라 달라지므로 실제 config 길이 사용(하드코딩 금지)
+          const label = t === 'config' ? `설정 (${plannerStepConfig.length}단계)` : '꾸미기';
           return (
             <button
               key={t}
