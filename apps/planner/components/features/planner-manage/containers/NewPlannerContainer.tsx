@@ -19,7 +19,7 @@ const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
 export default function NewPlannerContainer() {
   const router = useRouter();
-  const formState = usePlannerForm(initialPlannerForm, '새 플래너');
+  const formState = usePlannerForm(initialPlannerForm);
 
   // STEP5·미리보기용 루틴 — bypass는 mock(초기값), 배포는 실 API로 교체(dev QA #4: 실 루틴 노출).
   const [routines, setRoutines] = useState<Routine[]>(() => (DEV_AUTH_BYPASS ? getRoutines() : []));
@@ -84,7 +84,6 @@ export default function NewPlannerContainer() {
       onPrev={formState.goPrev}
       onNext={formState.goNext}
       onJump={formState.jumpTo}
-      onSaveDraft={formState.saveDraft}
       onActivate={handleActivate}
       routines={routines}
     />
