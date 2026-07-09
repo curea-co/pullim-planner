@@ -4,7 +4,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { SubjectKey } from '@/lib/mock';
-import { ROUTINE_ENABLED, WEAKNESS_ENABLED } from '@/lib/flags';
+import { ROUTINE_ENABLED, WEAKNESS_ENABLED, NOTIFICATIONS_ENABLED } from '@/lib/flags';
 
 /**
  * 학생 플래너 빌더 9단계 폼 데이터.
@@ -170,7 +170,8 @@ export function formToPlannerPatch(form: PlannerForm): Omit<Planner, 'id' | 'act
   };
 }
 
-// 루틴 단계는 게이트(ROUTINE_ENABLED) off면 제외 — prod에서 미출시 단계/CTA dead-end 방지.
+// 루틴·리마인더 단계는 게이트 off면 제외 — prod에서 미출시 단계/CTA dead-end 방지.
+// (리마인더는 저장처·웹푸시 발송 인프라 미구현 — NOTIFICATIONS_ENABLED 준비 후 오픈)
 const allSteps: readonly Omit<StepInfo, 'num'>[] = [
   { key: 'goal',       label: '목표',      icon: Target,    title: '목표 · D-day',         description: '' },
   { key: 'hours',      label: '가용시간',  icon: Clock,     title: '학습 가능 시간',       description: '평일·주말 학습할 수 있는 시간대. 학교/학원 시간 빼고.' },
@@ -187,5 +188,5 @@ const allSteps: readonly Omit<StepInfo, 'num'>[] = [
 ];
 
 export const plannerStepConfig: readonly StepInfo[] = allSteps
-  .filter(s => s.key !== 'routine' || ROUTINE_ENABLED)
+  .filter(s => (s.key !== 'routine' || ROUTINE_ENABLED) && (s.key !== 'reminder' || NOTIFICATIONS_ENABLED))
   .map((s, i) => ({ ...s, num: i + 1 }));
