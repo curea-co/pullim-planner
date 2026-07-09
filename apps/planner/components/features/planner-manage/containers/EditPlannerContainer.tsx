@@ -130,7 +130,6 @@ function EditPlannerForm({
 
   const formState = usePlannerForm(
     planner ? plannerToForm(planner) : ({} as PlannerForm),
-    planner?.name ?? '시간표',
   );
 
   async function handleSave(submitted: PlannerForm) {
@@ -172,7 +171,6 @@ function EditPlannerForm({
       onPrev={formState.goPrev}
       onNext={formState.goNext}
       onJump={formState.jumpTo}
-      onSaveDraft={formState.saveDraft}
       onSave={handleSave}
       routines={routines}
     />

@@ -1,6 +1,5 @@
 'use client';
 
-import { Save } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 import type { Routine } from '@/lib/mock';
@@ -15,7 +14,6 @@ interface NewPlannerPresenterProps {
   onPrev: () => void;
   onNext: () => void;
   onJump: (n: number) => void;
-  onSaveDraft: () => void;
   onActivate: (submitted: PlannerForm) => void;
   routines?: Routine[];
 }
@@ -24,24 +22,14 @@ export default function NewPlannerPresenter({
   form, setForm,
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
-  onSaveDraft, onActivate,
+  onActivate,
   routines,
 }: NewPlannerPresenterProps) {
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="내 맞춤 시간표 만들기"
-        action={
-          <button
-            type="button"
-            onClick={onSaveDraft}
-            className="bg-pullim-slate-900 hover:bg-pullim-slate-800 inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold text-white shadow-pullim-sm"
-          >
-            <Save className="h-4 w-4" />
-            임시저장
-          </button>
-        }
-      />
+      {/* 임시저장 버튼 숨김(soft-open) — 서버 draft BE·영속 API 미구현이라 데모 토스트만 떠서
+          "저장됐다" 오해를 유발. 리포트·약점과 동일 원칙(미구현 기능 미노출). BE draft 준비 시 복원. */}
+      <PageHeader title="내 맞춤 시간표 만들기" />
 
       <PlannerWizard
         form={form}

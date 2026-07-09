@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Save, Palette, ListChecks } from 'lucide-react';
+import { Palette, ListChecks } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { FlywheelNote } from '@/components/shell/flywheel-note';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
@@ -23,7 +23,6 @@ interface EditPlannerPresenterProps {
   onPrev: () => void;
   onNext: () => void;
   onJump: (n: number) => void;
-  onSaveDraft: () => void;
   onSave: (submitted: PlannerForm) => void;
   routines?: Routine[];
 }
@@ -33,7 +32,7 @@ export default function EditPlannerPresenter({
   form, setForm,
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
-  onSaveDraft, onSave,
+  onSave,
   routines,
 }: EditPlannerPresenterProps) {
   if (!planner) {
@@ -53,21 +52,13 @@ export default function EditPlannerPresenter({
 
   return (
     <div className="space-y-5">
+      {/* 임시저장 버튼 숨김(soft-open) — 서버 draft BE·영속 API 미구현이라 데모 토스트만 떠서
+          "저장됐다" 오해를 유발. 리포트·약점과 동일 원칙. BE draft 준비 시 복원. */}
       <PageHeader
         title={`${planner.name} 수정하기`}
         description={tab === 'config'
           ? '기존 설정 그대로 불러왔어요. 변경 후 마지막 단계에서 [변경 사항 저장] 클릭.'
           : '레이아웃과 색상 팔레트를 골라 시간표를 내 스타일로.'}
-        action={tab === 'config' ? (
-          <button
-            type="button"
-            onClick={onSaveDraft}
-            className="bg-pullim-slate-900 hover:bg-pullim-slate-800 inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold text-white shadow-pullim-sm"
-          >
-            <Save className="h-4 w-4" />
-            임시저장
-          </button>
-        ) : undefined}
       />
 
       <nav role="tablist" aria-label="시간표 수정 모드" className="inline-flex rounded-xl border border-pullim-slate-200 bg-pullim-slate-50 p-1">
