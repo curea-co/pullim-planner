@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { Wrench, Sparkles, ArrowRight } from 'lucide-react';
+import { plannerStepConfig } from '@/components/features/planner-builder/components/builder-types';
 
 /** 시간표 0개 — 신규 가입자용 빈 상태 */
 export function EmptyState() {
+  // 단계 수는 게이트(ROUTINE_ENABLED·NOTIFICATIONS_ENABLED)에 따라 달라지므로 하드코딩 대신 실제 config 길이 사용
+  const stepCount = plannerStepConfig.length;
   return (
     <section className="bg-card rounded-2xl border border-dashed p-8 text-center">
       <span className="bg-pullim-blue-50 text-pullim-blue-600 mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full">
@@ -14,7 +17,7 @@ export function EmptyState() {
         첫 시간표를 만들어보세요
       </h2>
       <p className="text-pullim-slate-500 mx-auto mt-1 max-w-sm text-xs leading-relaxed">
-        시험 일정만 입력하면 AI가 시간 단위로 학습 계획을 짜줘요. 8단계 프로세스로 5분 안에 완성.
+        시험 일정만 입력하면 AI가 시간 단위로 학습 계획을 짜줘요. {stepCount}단계 프로세스로 5분 안에 완성.
       </p>
       <Link
         href="/planner/manage/new"
