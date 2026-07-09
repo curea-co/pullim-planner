@@ -27,3 +27,14 @@ export const REPORTS_ENABLED = process.env.NEXT_PUBLIC_REPORTS_ENABLED === '1';
  * - dev·prod 기본: 미설정 → **차단**(safe-by-default). 분석 BE 준비 후 플래그로 오픈
  */
 export const WEAKNESS_ENABLED = process.env.NEXT_PUBLIC_WEAKNESS_ENABLED === '1';
+
+/**
+ * 알림(리마인더·푸시) — BE 미구현: 위저드 리마인더 STEP의 토글(`remindPush`·`remindBefore5min`·
+ * `parentDailyReport`)은 Planner 메타에 저장처가 없고, 앱이 닫혀도 울리는 실 알림은 웹푸시 발송
+ * 인프라(서비스워커+구독 저장+스케줄러+VAPID)가 FE·BE 양쪽에 전무하다(2026-07-09 실사). off면
+ * 위저드에서 리마인더 STEP을 제외하고 미리보기 요약의 알림 줄도 숨긴다(routine 게이트와 동일 패턴).
+ * 헤더 벨(`/planner/notifications`)은 유지하되 실 알림 없으므로 빈 상태를 보인다.
+ * - 로컬/preview 확인용: `NEXT_PUBLIC_NOTIFICATIONS_ENABLED=1`
+ * - dev·prod 기본: 미설정 → **차단**(safe-by-default). 웹푸시 파이프라인 준비 후 플래그로 오픈
+ */
+export const NOTIFICATIONS_ENABLED = process.env.NEXT_PUBLIC_NOTIFICATIONS_ENABLED === '1';

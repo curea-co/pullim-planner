@@ -57,7 +57,8 @@ export const plannerSection: NavSubItem[] = [
     ? [{ href: '/planner/reports', label: '성장 리포트', icon: FileText, description: '일·주·월 회고 + 부모 공유' } satisfies NavSubItem]
     : []),
   { href: '/planner/share',      label: '공유',        icon: Share2,   description: '학습 인증 공유 — 친구 피드 + 인증 카드' },
-  { href: '/planner?help=1',     label: '매뉴얼',      icon: BookOpen, description: '5분 사용법 가이드 — 첫 화면에서 모달로 열림' },
+  // 매뉴얼은 홈 모달(?help=1) 대신 온보딩 랜딩으로 — 전용 페이지가 가이드 권위(?help=1 딥링크 자체는 유지)
+  { href: '/planner/onboarding', label: '매뉴얼',      icon: BookOpen, description: '5분 사용법 가이드 — 온보딩 랜딩 페이지' },
 ];
 
 /** 도메인 — 플래너 단일 */

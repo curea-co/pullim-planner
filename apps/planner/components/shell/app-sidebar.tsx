@@ -66,8 +66,9 @@ function AppSidebarInner({ onNavigate, className, compact, collapsed }: Props) {
 /**
  * 현재 URL에 가장 잘 맞는 href 반환 (최장 매치 우선).
  * - 일반 href: pathname exact 또는 prefix 매치.
- * - query 포함 href(예: `/planner?help=1` 매뉴얼): pathname exact + 해당 쿼리 파라미터 전부 일치 시 활성
- *   — 이때 href가 더 기니 홈(`/planner`)을 이기고 매뉴얼이 활성이 된다.
+ * - query 포함 href: pathname exact + 해당 쿼리 파라미터 전부 일치 시 활성
+ *   — href가 더 길어 base 경로 항목을 이긴다. (현재 nav엔 query href 없음 — 매뉴얼이
+ *   `/planner?help=1` → `/planner/onboarding` 으로 바뀜. 딥링크 재도입 대비 로직 유지.)
  */
 function findActiveHref(
   pathname: string,

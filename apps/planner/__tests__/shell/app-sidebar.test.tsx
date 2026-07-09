@@ -35,15 +35,14 @@ describe('AppSidebar (플랫 PUDS 레일)', () => {
     expect(screen.getByRole('link', { name: '홈' })).not.toHaveAttribute('aria-current');
   });
 
-  it('query href(매뉴얼 /planner?help=1)는 pathname+쿼리 일치 시 활성 — 홈을 이긴다', () => {
-    mockPathname = '/planner';
-    mockSearch = 'help=1';
+  it('매뉴얼(/planner/onboarding)은 온보딩 경로에서 활성 — 홈을 이긴다', () => {
+    mockPathname = '/planner/onboarding';
     render(<AppSidebar />);
     expect(screen.getByRole('link', { name: '매뉴얼' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: '홈' })).not.toHaveAttribute('aria-current');
   });
 
-  it('쿼리 없는 홈에선 매뉴얼이 활성화되지 않는다', () => {
+  it('홈에선 매뉴얼이 활성화되지 않는다', () => {
     mockPathname = '/planner';
     render(<AppSidebar />);
     expect(screen.getByRole('link', { name: '홈' })).toHaveAttribute('aria-current', 'page');
