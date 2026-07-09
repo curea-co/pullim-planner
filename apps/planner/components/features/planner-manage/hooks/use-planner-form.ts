@@ -9,10 +9,11 @@ const TOTAL_STEPS = plannerStepConfig.length;
 /**
  * 9단계 프로세스 step navigation + form state — new/edit 공유 hook.
  *
- * 책임: currentStep / form 상태, goPrev/goNext (validation 포함), jumpTo, saveDraft toast.
+ * 책임: currentStep / form 상태, goPrev/goNext (validation 포함), jumpTo.
  * 저장 핸들러(create/activate vs update)는 Container 책임.
+ * (임시저장은 서버 draft BE 미구현이라 버튼·핸들러 모두 제거 — soft-open. BE 준비 시 복원.)
  */
-export function usePlannerForm(initialForm: PlannerForm, draftFallbackName: string) {
+export function usePlannerForm(initialForm: PlannerForm) {
   const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState<PlannerForm>(initialForm);
 
@@ -56,15 +57,9 @@ export function usePlannerForm(initialForm: PlannerForm, draftFallbackName: stri
     setCurrentStep(n);
   }
 
-  function saveDraft() {
-    toast.info('💾 임시저장 (데모)', {
-      description: `${form.examName || draftFallbackName} · ${currentStep}/${TOTAL_STEPS}단계까지 작성됨`,
-    });
-  }
-
   return {
     currentStep, form, setForm,
     canPrev, canNext,
-    goPrev, goNext, jumpTo, saveDraft,
+    goPrev, goNext, jumpTo,
   };
 }
