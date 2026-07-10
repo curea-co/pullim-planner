@@ -81,10 +81,10 @@ export function BlockCompleteDialog({ block, onClose, nextBlock }: Props) {
     });
     onClose();
     if (nextBlock?.linkedFeatureSlug) {
-      // Q 미구독이면 라우트 이동 대신 안내. 다음 블록 자체는 플래너 안에서 자연 진행.
+      // Q 연계 미개통이면 라우트 이동 대신 준비 중 안내. 다음 블록 자체는 플래너 안에서 자연 진행.
       if (!hasQAccess()) {
-        toast.info('🔒 풀림 Q 구독이 필요해요', {
-          description: 'Q를 구독하면 다음 블록에서 바로 풀이로 진입해요.',
+        toast.info('🔒 풀림 Q와 연계한 서비스가 준비 중입니다.', {
+          description: '열리면 다음 블록에서 바로 풀이로 이어져요.',
           duration: 3500,
         });
         return;
