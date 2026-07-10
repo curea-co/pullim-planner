@@ -11,7 +11,6 @@ import {
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { ServiceSwitcher } from './service-switcher';
-import { MobileDrawer } from './mobile-drawer';
 
 /**
  * 상단 헤더 — **풀림 OS 공통 헤더(topbar)** 를 플래너에 적용(vendoring: `app/os-topbar.css`).
@@ -21,11 +20,8 @@ import { MobileDrawer } from './mobile-drawer';
 export function AppHeader() {
   return (
     <header className="os-root topbar">
-      {/* 모바일 nav 드로어 — OS '모바일 탭 메뉴' 대응(플래너 within-app 네비) */}
-      <div className="md:hidden">
-        <MobileDrawer />
-      </div>
-
+      {/* 모바일 햄버거 drawer 제거(2026-07-10) — OS 정합: OS는 md 미만에서 하단 탭바만 쓰고
+          햄버거를 두지 않는다. 플래너도 동일하게 탭바(+프로필 메뉴)로 일원화. */}
       <Link href="/" className="mast" aria-label="풀림 플래너 홈">
         <span className="glyph">
           {/* eslint-disable-next-line @next/next/no-img-element */}
