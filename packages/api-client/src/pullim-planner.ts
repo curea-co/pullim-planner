@@ -192,6 +192,19 @@ export interface PullimRoutineWrite {
 export type PullimRoutinePatch = Partial<PullimRoutineWrite>;
 
 /**
+ * 블록 완료 기록 입력 (`CompletionWriteDto`, pullim-api #416) — 전 필드 선택.
+ * `completedAt` 은 서버 소유(본문 비포함 — 클라 전송 비권위). PK=blockId 1:1 이라 재제출은 upsert.
+ */
+export interface PullimCompletionWrite {
+  /** 정답률(0~100, 선택). */
+  accuracy?: number;
+  /** 감정 지표(1~5 등 smallint, 선택). */
+  emotion?: number;
+  /** 완료 메모(선택). */
+  notes?: string;
+}
+
+/**
  * 새 시간표 생성 시 적용할 루틴 (`RoutineApplicationDto`).
  * `endRange`: indefinite(상시) / exam(시험 종료까지) — 현재 BE 는 둘 다 시간표 범위(examEndDate)로 cap.
  */
@@ -258,6 +271,17 @@ export interface PullimPlannerClient {
    * (`BlocksQueryDto @IsOptional` + 핸들러 `query.date ?? todayKstIsoDate()`).
    */
   blocks(plannerId: string, date?: string): Promise<PullimBlock[]>;
+  /**
+   * 블록 완료 기록 upsert. `POST /planner/planners/:id/blocks/:blockId/completion` (201, #416).
+   * 응답 = 완료 메타 포함 블록. 재제출은 수정(upsert). 타인 소유 403 · 플래너/블록 미존재 404.
+   */
+  completeBlock(
+    plannerId: string,
+    blockId: string,
+    input?: PullimCompletionWrite,
+  ): Promise<PullimBlock>;
+  /** 완료 취소(멱등 — 기록 없어도 204). `DELETE /planner/planners/:id/blocks/:blockId/completion`. */
+  uncompleteBlock(plannerId: string, blockId: string): Promise<void>;
   /** 생성(비활성). `POST /planner/planners`. 생성 전용 입력(루틴 적용 포함). */
   create(input: PullimPlannerCreate): Promise<PullimPlanner>;
   /** 수정(편집 필드 교체). `PATCH /planner/planners/:id`. */
@@ -534,6 +558,21 @@ export function createPullimPlannerClient(
         config,
         `/planner/planners/${plannerId}/blocks`,
         date ? { query: { date } } : undefined,
+      );
+    },
+
+    completeBlock(plannerId, blockId, input) {
+      return mutate<PullimBlock>(
+        `/planner/planners/${plannerId}/blocks/${blockId}/completion`,
+        "POST",
+        input ?? {},
+      );
+    },
+
+    uncompleteBlock(plannerId, blockId) {
+      return mutate<void>(
+        `/planner/planners/${plannerId}/blocks/${blockId}/completion`,
+        "DELETE",
       );
     },
 

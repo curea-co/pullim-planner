@@ -36,6 +36,7 @@ export type {
   PullimPlannerClientConfig,
   PullimPlanner,
   PullimPlannerWrite,
+  PullimCompletionWrite,
   PullimPlannerTarget,
   PullimPlannerHours,
   PullimPlannerCustomization,
