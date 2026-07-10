@@ -110,10 +110,11 @@ export interface PullimSessionClient {
    */
   refresh(): Promise<PullimSessionResponse>;
   /**
-   * `refresh()` 의 single-flight 래퍼 — 성공 `true`/실패 `false`. 동시 401 다발에도 재발급은
-   * 1회만 나간다. 이 클라이언트 자신의 요청에는 자동 주입돼 있고(아래 팩토리 self-wire),
-   * 다른 cookie-http 클라이언트(planner 데이터 클라 등)의 `config.refreshSession` 으로
-   * 재사용해 앱 전체가 한 재발급 흐름을 공유하게 한다.
+   * `refresh()` 의 single-flight 래퍼 — 성공 `true`/실패 `false`(만료 확정인 401 만).
+   * 동시 401 다발에도 재발급은 1회만 나간다. 이 클라이언트 자신의 요청에는 자동 주입돼
+   * 있다(아래 팩토리 self-wire). 다른 cookie-http 클라이언트(planner 데이터 클라 등)는
+   * 이 함수를 `config.refreshSession` 으로 주입해야 같은 재발급 흐름을 공유한다 —
+   * **배선은 소비자 몫**(planner FE 주입은 후속 PR).
    */
   refreshSession(): Promise<boolean>;
   /** planner 세션 확인 — 200 프로필 / 401 미인증 / 403 엔타이틀먼트 미보유 / 404 온보딩 미완. */
