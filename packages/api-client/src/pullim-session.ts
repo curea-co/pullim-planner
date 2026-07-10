@@ -103,6 +103,12 @@ export interface PullimSessionClient {
   login(input: PullimLoginRequest): Promise<PullimSessionResponse>;
   /** 로그아웃 — CSRF 동봉 POST. 쿠키 무효화는 서버가 수행. */
   logout(): Promise<void>;
+  /**
+   * 세션 재발급(`POST /auth/refresh`) — refresh 쿠키로 access/refresh/CSRF 쿠키를 회전한다.
+   * access 만료(401) 시 자동 재발급 경로의 실체. 이 요청 자체는 401 재시도 루프를 타지 않는다
+   * (`skipRefreshRetry`). refresh 도 만료·무효면 401 → 세션 만료 확정(로그인 복구).
+   */
+  refresh(): Promise<PullimSessionResponse>;
   /** planner 세션 확인 — 200 프로필 / 401 미인증 / 403 엔타이틀먼트 미보유 / 404 온보딩 미완. */
   session(): Promise<PullimMeProfile>;
   /**
@@ -165,6 +171,7 @@ export function createPullimSessionClient(
     path: string,
     body?: unknown,
     method: "POST" | "PATCH" = "POST",
+    skipRefreshRetry = false,
   ): Promise<T> {
     const token = await ensureCsrf();
     try {
@@ -172,6 +179,7 @@ export function createPullimSessionClient(
         method,
         body,
         csrfToken: token,
+        skipRefreshRetry,
       });
     } catch (error) {
       if (!isCsrfRejection(error)) throw error;
@@ -182,6 +190,7 @@ export function createPullimSessionClient(
         method,
         body,
         csrfToken: fresh,
+        skipRefreshRetry,
       });
     }
   }
@@ -205,6 +214,19 @@ export function createPullimSessionClient(
         // BE 호출 성패와 무관하게 캐시를 비운다(세션/CSRF 상태 불일치 방지).
         csrfToken = null;
       }
+    },
+
+    async refresh() {
+      // 재발급 자체는 401 재시도 루프 금지(skipRefreshRetry) — refresh 401 = 세션 만료 확정.
+      // 서버가 CSRF 쿠키를 회전하므로 성공 후 메모리 캐시를 비워 다음 mutate 가 새 토큰을 받게 한다.
+      const res = await mutate<PullimSessionResponse>(
+        "/auth/refresh",
+        undefined,
+        "POST",
+        true,
+      );
+      csrfToken = null;
+      return res;
     },
 
     session() {
