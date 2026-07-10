@@ -13,6 +13,7 @@ import {
   shiftIsoDate, weekDatesFor,
 } from '@/lib/planner/home-data';
 import { toast } from 'sonner';
+import { ApiError } from '@pullim-planner/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
 import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
@@ -131,10 +132,14 @@ export default function HomeContainer() {
         await pullimPlannerClient.completeBlock(realActiveId, blockId, input);
         realRefetch();
         return true;
-      } catch {
-        toast.error('완료 저장에 실패했어요', {
-          description: '네트워크 상태를 확인하고 다시 시도해주세요.',
-        });
+      } catch (error) {
+        // 401은 on401 래퍼가 전역 세션 만료를 이미 전파(로그인 복구 흐름) — 네트워크 오류 안내로
+        // 오도하지 않게 토스트 생략(Codex #137). 그 외 오류만 재시도 안내.
+        if (!(error instanceof ApiError && error.statusCode === 401)) {
+          toast.error('완료 저장에 실패했어요', {
+            description: '네트워크 상태를 확인하고 다시 시도해주세요.',
+          });
+        }
         return false;
       }
     },
