@@ -57,8 +57,8 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
   const { layoutId, paletteId } = getActiveCustomization();
 
   function notifyQNoAccess() {
-    toast.info('🔒 풀림 Q 구독이 필요해요', {
-      description: 'Q를 구독하면 학습 블록을 바로 풀이로 진행할 수 있어요.',
+    toast.info('🔒 풀림 Q와 연계한 서비스가 준비 중입니다.', {
+      description: '열리면 학습 블록에서 바로 풀이로 이어져요.',
       duration: 3500,
     });
   }

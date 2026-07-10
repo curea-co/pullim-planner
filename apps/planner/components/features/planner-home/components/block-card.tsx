@@ -127,8 +127,8 @@ function notifyLockedAction(e: React.MouseEvent) {
 }
 
 function notifyQNoAccess() {
-  toast.info('🔒 풀림 Q 구독이 필요해요', {
-    description: 'Q를 구독하면 학습 블록을 바로 풀이로 진행할 수 있어요.',
+  toast.info('🔒 풀림 Q와 연계한 서비스가 준비 중입니다.', {
+    description: '열리면 학습 블록에서 바로 풀이로 이어져요.',
     duration: 3500,
   });
 }
@@ -355,7 +355,7 @@ function BlockCardFull({ block, onComplete }: Props) {
                     ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
                     : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',
                 )}
-                aria-label="풀림 Q 미구독 — 클릭하면 구독 안내가 떠요"
+                aria-label="풀림 Q 연계 준비 중 — 클릭하면 안내가 떠요"
               >
                 {isActive ? '이어서' : '시작'}
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -500,7 +500,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
                   ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
                   : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',
               )}
-              aria-label="풀림 Q 미구독 — 클릭하면 구독 안내가 떠요"
+              aria-label="풀림 Q 연계 준비 중 — 클릭하면 안내가 떠요"
             >
               {isActive ? '이어서' : '시작'}
               <ArrowRight className="h-3 w-3" />
