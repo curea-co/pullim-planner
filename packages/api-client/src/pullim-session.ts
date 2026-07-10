@@ -264,8 +264,9 @@ export function createPullimSessionClient(
 
     async logout() {
       try {
-        // 로그아웃 401 = 이미 만료된 세션 — 재발급해서까지 로그아웃할 필요 없음(skip).
-        await mutate<void>("/auth/logout", undefined, "POST", true);
+        // logout 은 일반 재발급 경로를 탄다 — access 만료 상태에서도 refresh 후 재시도해
+        // 서버 측 세션 정리(쿠키 무효화·refresh family revoke)를 끝까지 수행한다(Codex R4).
+        await mutate<void>("/auth/logout");
       } finally {
         // BE 호출 성패와 무관하게 캐시를 비운다(세션/CSRF 상태 불일치 방지).
         csrfToken = null;
