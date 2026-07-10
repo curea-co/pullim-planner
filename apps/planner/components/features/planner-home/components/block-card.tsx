@@ -218,9 +218,11 @@ function BlockCardFull({ block, onComplete }: Props) {
         <span className="text-pullim-slate-500">{block.expectedMinutes}분</span>
         <span className="text-pullim-slate-300">·</span>
         <span className="text-pullim-slate-700">{subjectLabel}</span>
+        {/* 우측 정렬 spacer — 상태 칩이 조건부라 ml-auto를 칩에 두면 todo 에서 정렬이 깨진다(Codex) */}
+        <span className="ml-auto" aria-hidden />
         {/* 상태 칩 — '대기'(todo)는 기본 상태라 칩 미노출(무표시=대기, 07-10 QA) */}
         {block.status !== 'todo' && (
-          <span className={cn('ml-auto inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px]', status.className)}>
+          <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px]', status.className)}>
             <StatusIcon className="h-2.5 w-2.5" />
             {status.label}
           </span>
@@ -325,8 +327,9 @@ function BlockCardFull({ block, onComplete }: Props) {
               <span className="text-pullim-slate-500 text-[10px]">+{block.engines.length - 2}</span>
             )}
           </div>
-          {/* Q 연계 미개통(Q_LINK_ENABLED off)이면 시작/이어서 CTA 숨김 — 준비 중 안내뿐인 버튼 미노출 */}
-          {!isDone && Q_LINK_ENABLED && (
+          {/* 잠금(자원 출시 전) 표시는 Q 연계와 별개라 유지. 시작/이어서 CTA 만
+              Q_LINK_ENABLED off 시 숨김 — 준비 중 안내뿐인 버튼 미노출(07-10 QA, Codex) */}
+          {!isDone && (
             locked ? (
               <button
                 type="button"
@@ -337,7 +340,7 @@ function BlockCardFull({ block, onComplete }: Props) {
                 <Lock className="h-3.5 w-3.5" />
                 준비 중
               </button>
-            ) : qAccess ? (
+            ) : !Q_LINK_ENABLED ? null : qAccess ? (
               <Link
                 href={target}
                 className={cn(
@@ -472,8 +475,8 @@ function BlockCardCompact({ block, onComplete }: Props) {
           </span>
         )}
 
-        {/* CTA — 진행 중·대기일 때만. Q 연계 미개통(Q_LINK_ENABLED off)이면 숨김 */}
-        {!isDone && !isBreak && Q_LINK_ENABLED && (
+        {/* CTA — 진행 중·대기일 때만. 잠금 표시는 유지, 시작/이어서만 Q_LINK_ENABLED off 시 숨김 */}
+        {!isDone && !isBreak && (
           locked ? (
             <button
               type="button"
@@ -484,7 +487,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
               <Lock className="h-3 w-3" />
               준비 중
             </button>
-          ) : qAccess ? (
+          ) : !Q_LINK_ENABLED ? null : qAccess ? (
             <Link
               href={target}
               className={cn(
