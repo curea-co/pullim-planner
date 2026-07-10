@@ -21,6 +21,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PedagogyTag } from './pedagogy-tag';
+import { Q_LINK_ENABLED } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
 const statusMeta = {
@@ -217,10 +218,13 @@ function BlockCardFull({ block, onComplete }: Props) {
         <span className="text-pullim-slate-500">{block.expectedMinutes}분</span>
         <span className="text-pullim-slate-300">·</span>
         <span className="text-pullim-slate-700">{subjectLabel}</span>
-        <span className={cn('ml-auto inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px]', status.className)}>
-          <StatusIcon className="h-2.5 w-2.5" />
-          {status.label}
-        </span>
+        {/* 상태 칩 — '대기'(todo)는 기본 상태라 칩 미노출(무표시=대기, 07-10 QA) */}
+        {block.status !== 'todo' && (
+          <span className={cn('ml-auto inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px]', status.className)}>
+            <StatusIcon className="h-2.5 w-2.5" />
+            {status.label}
+          </span>
+        )}
         {/* 완료 체크 — 케밥에 숨기지 않고 상시 노출 (완료 처리 접근성 QA 2026-07-10) */}
         {!isBreak && !isDone && (
           <button
@@ -321,7 +325,8 @@ function BlockCardFull({ block, onComplete }: Props) {
               <span className="text-pullim-slate-500 text-[10px]">+{block.engines.length - 2}</span>
             )}
           </div>
-          {!isDone && (
+          {/* Q 연계 미개통(Q_LINK_ENABLED off)이면 시작/이어서 CTA 숨김 — 준비 중 안내뿐인 버튼 미노출 */}
+          {!isDone && Q_LINK_ENABLED && (
             locked ? (
               <button
                 type="button"
@@ -454,19 +459,21 @@ function BlockCardCompact({ block, onComplete }: Props) {
           </span>
         )}
 
-        {/* 상태 칩 — 항상 노출, 매우 작게 */}
-        <span
-          className={cn(
-            'inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold',
-            status.className,
-          )}
-        >
-          <StatusIcon className="h-2.5 w-2.5" />
-          {status.label}
-        </span>
+        {/* 상태 칩 — '대기'(todo)는 기본 상태라 칩 미노출(무표시=대기, 07-10 QA) */}
+        {block.status !== 'todo' && (
+          <span
+            className={cn(
+              'inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold',
+              status.className,
+            )}
+          >
+            <StatusIcon className="h-2.5 w-2.5" />
+            {status.label}
+          </span>
+        )}
 
-        {/* CTA — 진행 중·대기일 때만 */}
-        {!isDone && !isBreak && (
+        {/* CTA — 진행 중·대기일 때만. Q 연계 미개통(Q_LINK_ENABLED off)이면 숨김 */}
+        {!isDone && !isBreak && Q_LINK_ENABLED && (
           locked ? (
             <button
               type="button"

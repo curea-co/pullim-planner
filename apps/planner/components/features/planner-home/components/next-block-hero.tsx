@@ -6,6 +6,7 @@ import {
   blockTypeMeta, subjectLabels, getFeatureRoute,
   type TimeBlock, type BlockType,
 } from '@/lib/mock';
+import { Q_LINK_ENABLED } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
 /**
@@ -74,25 +75,28 @@ export function NextBlockHero({ next, qAccess, onNoAccess }: NextBlockHeroProps)
             </div>
           </div>
         </div>
-        {qAccess ? (
-          <Link
-            href={next.linkedFeatureSlug ? getFeatureRoute(next.linkedFeatureSlug) : '#'}
-            className={ctaCls}
-          >
-            지금 시작해요
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={onNoAccess}
-            aria-label="풀림 Q 연계 준비 중 — 클릭하면 안내가 떠요"
-            className={ctaCls}
-          >
-            지금 시작해요
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </button>
-        )}
+        {/* Q 연계 미개통(Q_LINK_ENABLED off)이면 "지금 시작해요" CTA 자체를 숨긴다 —
+            눌러도 준비 중 안내뿐인 버튼을 노출하지 않음(07-10 QA). 개통 시 구독 분기 복원. */}
+        {Q_LINK_ENABLED &&
+          (qAccess ? (
+            <Link
+              href={next.linkedFeatureSlug ? getFeatureRoute(next.linkedFeatureSlug) : '#'}
+              className={ctaCls}
+            >
+              지금 시작해요
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={onNoAccess}
+              aria-label="풀림 Q 연계 준비 중 — 클릭하면 안내가 떠요"
+              className={ctaCls}
+            >
+              지금 시작해요
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </button>
+          ))}
       </div>
     </div>
   );
