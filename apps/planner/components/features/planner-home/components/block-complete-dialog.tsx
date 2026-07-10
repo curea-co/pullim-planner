@@ -146,7 +146,8 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
   }
 
   return (
-    <Dialog open={!!block} onOpenChange={(o) => { if (!o) onClose(); }}>
+    // 저장 중(backdrop 클릭·ESC) dismiss 무시 — 실패 시 모달 유지(재시도) 보장이 깨지지 않게(Codex #137 R2)
+    <Dialog open={!!block} onOpenChange={(o) => { if (!o && !saving) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <span className="text-pullim-success text-[10px] font-bold tracking-wider uppercase">
