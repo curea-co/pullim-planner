@@ -32,8 +32,8 @@ export interface CookieHttpConfig {
   csrfCookieName?: string;
   /**
    * 401(access 만료) 시 세션 재발급 시도 — `true` 반환이면 원 요청을 **1회** 재시도한다.
-   * 재시도 요청은 다시 이 콜백을 타지 않고(무한루프 방지), 명시 `csrfToken` 은 버리고
-   * `csrfCookieName` 쿠키에서 재회수한다(refresh 가 CSRF 쿠키도 회전시키므로 옛 토큰은 무효).
+   * 재시도 요청은 다시 이 콜백을 타지 않고(무한루프 방지), CSRF 토큰은 `csrfCookieName`
+   * 쿠키에서 재회수 가능하면 회전된 새 토큰으로 교체한다(불가 환경은 기존 명시 토큰 유지).
    * `false`/reject 면 원 401 을 그대로 던진다(→ 세션 만료 흐름).
    *
    * 주입자 책임: ① single-flight(동시 401 다발 시 refresh 1회) ② 콜백이 수행하는
@@ -169,8 +169,7 @@ export async function cookieRequest<T>(
   if (!response.ok) {
     // access 만료(401) — 재발급 콜백이 있으면 refresh 후 원 요청을 1회 재시도한다
     // (게이트키퍼 공통 계약: 401 → POST /auth/refresh → 원 API 재호출). 재시도 요청은
-    // `skipRefreshRetry` 로 재진입을 막고, refresh 가 CSRF 쿠키를 회전시키므로 옛 명시
-    // 토큰은 버리고 쿠키에서 재회수한다. 재발급 실패면 원 401 → 기존 세션 만료 흐름.
+    // `skipRefreshRetry` 로 재진입을 막는다. 재발급 실패면 원 401 → 기존 세션 만료 흐름.
     if (
       response.status === 401 &&
       config.refreshSession &&
@@ -178,9 +177,15 @@ export async function cookieRequest<T>(
     ) {
       const refreshed = await config.refreshSession().catch(() => false);
       if (refreshed) {
+        // refresh 가 CSRF 쿠키를 회전시켰으므로 브라우저에선 쿠키에서 새 토큰을 재회수한다.
+        // 쿠키를 읽을 수 없는 환경(SSR/테스트 — document 부재)은 기존 명시 토큰을 유지 —
+        // 무효라면 403 이 나고 상위 mutate 의 CSRF 재부트스트랩 재시도가 처리한다.
+        const rotatedToken = config.csrfCookieName
+          ? readCsrfCookie(config.csrfCookieName)
+          : null;
         return cookieRequest<T>(config, path, {
           ...opts,
-          csrfToken: undefined,
+          csrfToken: rotatedToken ?? opts.csrfToken,
           skipRefreshRetry: true,
         });
       }
