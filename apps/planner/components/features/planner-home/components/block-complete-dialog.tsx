@@ -23,6 +23,11 @@ type Props = {
   onClose: () => void;
   /** 다음으로 진행할 블록 — 있으면 "다음 블록 시작" CTA에 사용 */
   nextBlock?: TimeBlock | null;
+  /**
+   * 완료 기록 실 저장(pullim-api #416) — 성공 true/실패 false. 미주입(dev bypass·mock)이면
+   * 저장 없이 데모(toast) 흐름 유지. 실패 시 모달을 닫지 않아 재시도 가능.
+   */
+  onSubmit?: (blockId: string, input: { emotion?: number; notes?: string }) => Promise<boolean>;
 };
 
 const emotionLabel: Record<Emotion, string> = {
@@ -36,14 +41,16 @@ const emotionLabel: Record<Emotion, string> = {
 /**
  * 블록 완료 모달 — "5초 안에 닫을 수 있는" 마이크로 인터랙션.
  * 핵심 플라이휠 표면 — 학생이 *완료를 보고하고*, 그 결과(감정·시간·정확도)가
- * 내일 플랜 재최적화의 입력이 됨 (데모 단계는 toast로 표현).
+ * 내일 플랜 재최적화의 입력이 됨. 실모드는 `onSubmit`(pullim-api 완료 기록 upsert)로
+ * 영속하고, 미주입(dev bypass·mock)이면 기존 데모(toast) 흐름 그대로.
  *
  * 감정·코멘트는 선택적. "종료" CTA로 즉시 빠져나갈 수 있음.
  */
-export function BlockCompleteDialog({ block, onClose, nextBlock }: Props) {
+export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Props) {
   const router = useRouter();
   const [emotion, setEmotion] = useState<Emotion | null>(null);
   const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // 새 블록이 열릴 때 입력 초기화 — render 중 setState로 cascading effect 회피
   const [prevId, setPrevId] = useState<string | null>(null);
@@ -72,7 +79,25 @@ export function BlockCompleteDialog({ block, onClose, nextBlock }: Props) {
     return `✓ ${block!.title}${accPart}${emotionPart}`;
   }
 
-  function handleNext() {
+  /**
+   * 완료 기록 저장 — 세 CTA(종료/휴식/다음) 공통 선행 단계.
+   * onSubmit 미주입(데모)이면 즉시 true. 실패(false)면 CTA가 모달을 닫지 않는다(재시도).
+   */
+  async function persist(): Promise<boolean> {
+    if (!onSubmit || !block) return true;
+    setSaving(true);
+    try {
+      return await onSubmit(block.id, {
+        ...(emotion !== null ? { emotion } : {}),
+        ...(note.trim() ? { notes: note.trim() } : {}),
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleNext() {
+    if (!(await persist())) return;
     toast.success(summary(), {
       description: nextBlock
         ? `다음 블록(${nextBlock.start})으로 넘어가요`
@@ -102,7 +127,8 @@ export function BlockCompleteDialog({ block, onClose, nextBlock }: Props) {
     }
   }
 
-  function handleRest() {
+  async function handleRest() {
+    if (!(await persist())) return;
     toast(summary(), {
       description: '5분 휴식 후 다음 블록으로 자동 알림',
       duration: 3000,
@@ -110,7 +136,8 @@ export function BlockCompleteDialog({ block, onClose, nextBlock }: Props) {
     onClose();
   }
 
-  function handleClose() {
+  async function handleClose() {
+    if (!(await persist())) return;
     toast(summary(), {
       description: '오늘 학습 종료. 내일 플랜이 결과를 반영해 재배치돼요.',
       duration: 3000,
@@ -119,7 +146,8 @@ export function BlockCompleteDialog({ block, onClose, nextBlock }: Props) {
   }
 
   return (
-    <Dialog open={!!block} onOpenChange={(o) => { if (!o) onClose(); }}>
+    // 저장 중(backdrop 클릭·ESC) dismiss 무시 — 실패 시 모달 유지(재시도) 보장이 깨지지 않게(Codex #137 R2)
+    <Dialog open={!!block} onOpenChange={(o) => { if (!o && !saving) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <span className="text-pullim-success text-[10px] font-bold tracking-wider uppercase">
@@ -207,16 +235,17 @@ export function BlockCompleteDialog({ block, onClose, nextBlock }: Props) {
         </DialogBody>
 
         <DialogFooter className="gap-1.5">
-          <Button type="button" variant="ghost" onClick={handleClose}>
+          <Button type="button" variant="ghost" onClick={handleClose} disabled={saving}>
             종료
           </Button>
-          <Button type="button" variant="outline" onClick={handleRest}>
+          <Button type="button" variant="outline" onClick={handleRest} disabled={saving}>
             <Coffee className="mr-1 h-3.5 w-3.5" />
             5분 휴식
           </Button>
           <Button
             type="button"
             onClick={handleNext}
+            disabled={saving}
             className="bg-pullim-lemon text-pullim-lemon-ink hover:bg-pullim-lemon/90"
           >
             {nextBlock ? (

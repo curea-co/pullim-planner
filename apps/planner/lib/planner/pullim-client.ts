@@ -5,6 +5,7 @@ import {
   weekdaysToMask,
   type PullimDiscoverUser,
   type PullimFriend,
+  type PullimBlockCompletionClient,
   type PullimPlanner,
   type PullimPlannerClient,
   type PullimPlannerWrite,
@@ -75,6 +76,7 @@ function on401<A extends unknown[], R>(
  * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 401 에서 세션 만료를 통지한다.
  */
 export const pullimPlannerClient: PullimPlannerClient &
+  PullimBlockCompletionClient &
   PullimRoutineClient &
   Pick<
     PullimStudygramClient,
@@ -96,6 +98,8 @@ export const pullimPlannerClient: PullimPlannerClient &
   > = {
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
+  completeBlock: on401(rawPullimPlannerClient.completeBlock),
+  uncompleteBlock: on401(rawPullimPlannerClient.uncompleteBlock),
   create: on401(rawPullimPlannerClient.create),
   update: on401(rawPullimPlannerClient.update),
   remove: on401(rawPullimPlannerClient.remove),

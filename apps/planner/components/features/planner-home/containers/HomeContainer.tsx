@@ -12,6 +12,9 @@ import {
   buildMonthDays, buildWeekDays, ddayFrom, monthDatesFor, monthLabelOf,
   shiftIsoDate, weekDatesFor,
 } from '@/lib/planner/home-data';
+import { toast } from 'sonner';
+import { ApiError } from '@pullim-planner/api-client';
+import { pullimPlannerClient } from '@/lib/planner/pullim-client';
 import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
 import { useHomeBlocks } from '../hooks/use-home-blocks';
@@ -118,6 +121,31 @@ export default function HomeContainer() {
   // 실데이터(B4) — 배포 환경은 pullim-api 활성 플래너·블록, dev bypass 는 기존 mock 경로 유지.
   const real = useHomeBlocks(!DEV_AUTH_BYPASS, view, offset);
 
+  // 블록 완료 기록 저장(실모드, pullim-api #416 write) — 성공 시 블록 재조회로 진행률·상태 반영.
+  // 실패 시 false 반환 → 다이얼로그가 닫히지 않고 재시도 가능. mock 경로(bypass)엔 미주입(데모 유지).
+  const realActiveId = real.active?.id;
+  const realRefetch = real.refetch;
+  const handleCompleteBlock = useCallback(
+    async (blockId: string, input: { emotion?: number; notes?: string }) => {
+      if (!realActiveId) return false;
+      try {
+        await pullimPlannerClient.completeBlock(realActiveId, blockId, input);
+        realRefetch();
+        return true;
+      } catch (error) {
+        // 401은 on401 래퍼가 전역 세션 만료를 이미 전파(로그인 복구 흐름) — 네트워크 오류 안내로
+        // 오도하지 않게 토스트 생략(Codex #137). 그 외 오류만 재시도 안내.
+        if (!(error instanceof ApiError && error.statusCode === 401)) {
+          toast.error('완료 저장에 실패했어요', {
+            description: '네트워크 상태를 확인하고 다시 시도해주세요.',
+          });
+        }
+        return false;
+      }
+    },
+    [realActiveId, realRefetch],
+  );
+
   let examName: string;
   let dday: number;
   let daySummary: { done: number; total: number };
@@ -211,6 +239,7 @@ export default function HomeContainer() {
         onJumpOffset={handleJump}
         onChangeView={onChangeView}
         dayBlocks={dayBlocks}
+        onCompleteSubmit={DEV_AUTH_BYPASS ? undefined : handleCompleteBlock}
         weekDays={weekDays}
         monthDays={monthDays}
         monthLabel={monthLabel}
