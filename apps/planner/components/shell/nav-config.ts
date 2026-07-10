@@ -80,13 +80,17 @@ export function navForRole(_role: Role): NavGroup[] {
 }
 
 /**
- * 모바일 하단 탭 — 플래너 4 섹션 (홈 / 관리 / 리포트 / 공유).
- * OI-1 확정(2026-06-24): '소개/안내'는 하단탭에서 빼고 프로필 메뉴(헤더 ProfileMenu)로 내림 → 공유 승격.
- * 리포트 탭은 REPORTS_ENABLED 게이트 — off면 3탭(홈/관리/공유).
+ * 모바일 하단 탭 — 순서: 시간표 · 루틴 · 홈 · (리포트) · 공유 (2026-07-10 확정, 홈 가운데).
+ * OI-1 확정(2026-06-24): '소개/안내'는 하단탭에서 빼고 프로필 메뉴(헤더 ProfileMenu)로 내림.
+ * 햄버거 drawer 제거(OS 정합)로 탭바가 모바일 유일 섹션 네비 — 루틴도 탭으로 승격(게이트 준수).
+ * 루틴 탭은 ROUTINE_ENABLED, 리포트 탭은 REPORTS_ENABLED 게이트 — off면 항목 제외.
  */
 export const studentBottomTabs = [
+  { href: '/planner/manage', label: '시간표',  icon: Wrench,   matchPrefix: ['/planner/manage'] },
+  ...(ROUTINE_ENABLED
+    ? [{ href: '/planner/routine', label: '루틴', icon: Repeat2, matchPrefix: ['/planner/routine'] } as const]
+    : []),
   { href: '/planner',        label: '홈',      icon: Home,     matchPrefix: ['/', '/planner'] },
-  { href: '/planner/manage', label: '관리',    icon: Wrench,   matchPrefix: ['/planner/manage'] },
   ...(REPORTS_ENABLED
     ? [{ href: '/planner/reports', label: '리포트', icon: FileText, matchPrefix: ['/planner/reports'] } as const]
     : []),

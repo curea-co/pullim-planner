@@ -127,8 +127,8 @@ function notifyLockedAction(e: React.MouseEvent) {
 }
 
 function notifyQNoAccess() {
-  toast.info('🔒 풀림 Q 구독이 필요해요', {
-    description: 'Q를 구독하면 학습 블록을 바로 풀이로 진행할 수 있어요.',
+  toast.info('🔒 풀림 Q와 연계한 서비스가 준비 중입니다.', {
+    description: '열리면 학습 블록에서 바로 풀이로 이어져요.',
     duration: 3500,
   });
 }
@@ -164,7 +164,7 @@ type Props = {
 
 /**
  * 단일 블록 카드 — 오늘의 학습 블록 리스트.
- * 시작/이어서/완료 상태별로 다른 톤·CTA + 케밥 액션(완료/스킵/미루기) + 비통상 reasoning 라벨.
+ * 시작/이어서/완료 상태별로 다른 톤·CTA + 완료 체크(상시 노출) + 케밥 액션(미루기/스킵) + 비통상 reasoning 라벨.
  *
  * variant='compact' — day-view 우측에서 좌측 시간표와 높이 정합 위해 행 형태로 압축.
  */
@@ -221,6 +221,18 @@ function BlockCardFull({ block, onComplete }: Props) {
           <StatusIcon className="h-2.5 w-2.5" />
           {status.label}
         </span>
+        {/* 완료 체크 — 케밥에 숨기지 않고 상시 노출 (완료 처리 접근성 QA 2026-07-10) */}
+        {!isBreak && !isDone && (
+          <button
+            type="button"
+            onClick={onCompleteAction}
+            aria-label={`${block.title} 완료 처리`}
+            title="완료 처리"
+            className="text-pullim-slate-400 hover:bg-pullim-success-bg hover:text-pullim-success inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+          >
+            <CheckCircle2 className="h-4 w-4" aria-hidden />
+          </button>
+        )}
         {!isBreak && (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -230,10 +242,6 @@ function BlockCardFull({ block, onComplete }: Props) {
               <MoreVertical className="h-3.5 w-3.5" aria-hidden />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={4}>
-              <DropdownMenuItem onClick={onCompleteAction} disabled={isDone}>
-                <CheckCircle2 className="text-pullim-success" />
-                완료 처리
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={onPostpone} disabled={isDone}>
                 <Clock4 className="text-pullim-blue-600" />
                 30분 미루기
@@ -347,7 +355,7 @@ function BlockCardFull({ block, onComplete }: Props) {
                     ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
                     : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',
                 )}
-                aria-label="풀림 Q 미구독 — 클릭하면 구독 안내가 떠요"
+                aria-label="풀림 Q 연계 준비 중 — 클릭하면 안내가 떠요"
               >
                 {isActive ? '이어서' : '시작'}
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -492,12 +500,25 @@ function BlockCardCompact({ block, onComplete }: Props) {
                   ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
                   : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',
               )}
-              aria-label="풀림 Q 미구독 — 클릭하면 구독 안내가 떠요"
+              aria-label="풀림 Q 연계 준비 중 — 클릭하면 안내가 떠요"
             >
               {isActive ? '이어서' : '시작'}
               <ArrowRight className="h-3 w-3" />
             </button>
           )
+        )}
+
+        {/* 완료 체크 — 케밥에 숨기지 않고 상시 노출 (완료 처리 접근성 QA 2026-07-10) */}
+        {!isBreak && !isDone && (
+          <button
+            type="button"
+            onClick={onCompleteAction}
+            aria-label={`${block.title} 완료 처리`}
+            title="완료 처리"
+            className="text-pullim-slate-400 hover:bg-pullim-success-bg hover:text-pullim-success inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+          </button>
         )}
 
         {/* 케밥 — break 외 + hover 시에만 노출 (mobile no-hover는 항상 약하게 노출) */}
@@ -510,10 +531,6 @@ function BlockCardCompact({ block, onComplete }: Props) {
               <MoreVertical className="h-3.5 w-3.5" aria-hidden />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={4}>
-              <DropdownMenuItem onClick={onCompleteAction} disabled={isDone}>
-                <CheckCircle2 className="text-pullim-success" />
-                완료 처리
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={onPostpone} disabled={isDone}>
                 <Clock4 className="text-pullim-blue-600" />
                 30분 미루기

@@ -25,7 +25,7 @@ const TYPE_STRIPE: Record<BlockType, string> = {
 
 interface NextBlockHeroProps {
   next: TimeBlock;
-  /** 풀림 Q 구독 여부 — 미구독 시 CTA가 구독 안내 토스트로 */
+  /** 풀림 Q 진입 가능 여부(Q_LINK_ENABLED 게이트 포함) — 불가 시 CTA가 준비 중 안내 토스트로 */
   qAccess: boolean;
   onNoAccess: () => void;
 }
@@ -86,7 +86,7 @@ export function NextBlockHero({ next, qAccess, onNoAccess }: NextBlockHeroProps)
           <button
             type="button"
             onClick={onNoAccess}
-            aria-label="풀림 Q 미구독 — 클릭하면 구독 안내가 떠요"
+            aria-label="풀림 Q 연계 준비 중 — 클릭하면 안내가 떠요"
             className={ctaCls}
           >
             지금 시작해요
