@@ -5,6 +5,7 @@ import {
   weekdaysToMask,
   type PullimDiscoverUser,
   type PullimFriend,
+  type PullimBlockCompletionClient,
   type PullimPlanner,
   type PullimPlannerClient,
   type PullimPlannerWrite,
@@ -19,7 +20,7 @@ import {
   type PullimStudyProofCreateInput,
 } from '@pullim-planner/api-client';
 
-import { notifyPullimSessionExpired } from '@/lib/auth/pullim-session-client';
+import { notifyPullimSessionExpired, pullimSession } from '@/lib/auth/pullim-session-client';
 import { minutesBetween, type Planner, type Routine, type RoutineSubject } from '@/lib/mock';
 import type { BlockType } from '@/lib/mock';
 import type {
@@ -45,6 +46,10 @@ const CSRF_COOKIE_NAME =
 const rawPullimPlannerClient = createPullimPlannerClient({
   baseUrl: PULLIM_API_URL,
   csrfCookieName: CSRF_COOKIE_NAME,
+  // 401 자동 재발급(게이트키퍼 공통 계약) — 세션 클라의 single-flight 재발급을 공유해
+  // planner/routine/studygram 데이터 요청도 access 만료 시 refresh → 1회 재시도한다.
+  // 재발급 실패(만료 확정)면 원 401 → on401 래퍼가 세션 만료를 전파(기존 로그인 복구).
+  refreshSession: pullimSession.refreshSession,
 });
 
 /**
@@ -75,6 +80,7 @@ function on401<A extends unknown[], R>(
  * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 401 에서 세션 만료를 통지한다.
  */
 export const pullimPlannerClient: PullimPlannerClient &
+  PullimBlockCompletionClient &
   PullimRoutineClient &
   Pick<
     PullimStudygramClient,
@@ -96,6 +102,8 @@ export const pullimPlannerClient: PullimPlannerClient &
   > = {
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
+  completeBlock: on401(rawPullimPlannerClient.completeBlock),
+  uncompleteBlock: on401(rawPullimPlannerClient.uncompleteBlock),
   create: on401(rawPullimPlannerClient.create),
   update: on401(rawPullimPlannerClient.update),
   remove: on401(rawPullimPlannerClient.remove),

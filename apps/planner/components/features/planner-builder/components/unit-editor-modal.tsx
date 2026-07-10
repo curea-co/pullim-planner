@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import {
   allCurricula, subjectLabels, type CurriculumNode, type SubjectKey,
 } from '@/lib/mock';
+import { WEAKNESS_ENABLED } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -74,7 +75,11 @@ export function UnitEditorModal({
     };
   }, [pickedSubject]);
 
-  const weakNodes = allDepth3.filter(n => (n.mastery ?? 1) < 0.5);
+  // 약점 자동 추천은 분석(mastery) BE 미구현 — 학습 데이터 누적 후 개발 예정이라
+  // WEAKNESS_ENABLED off(기본)면 섹션 자체를 숨긴다(mock 정복도 노출 방지, 07-10 QA).
+  const weakNodes = WEAKNESS_ENABLED
+    ? allDepth3.filter(n => (n.mastery ?? 1) < 0.5)
+    : [];
 
   // 코스별 그룹화 — 트리 정의 순서 그대로 (공통 → Ⅰ → Ⅱ → 미적분 → ...)
   const courseList = useMemo(() => {
@@ -169,7 +174,9 @@ export function UnitEditorModal({
                 <DialogDescription className="text-pullim-slate-500 mt-1 text-xs leading-relaxed">
                   {pickedSubject === 'etc'
                     ? '과목명·단원명을 직접 입력해요.'
-                    : '교과 단원 / 자유 입력 모두 가능. 약점 단원 자동 추천.'}
+                    : WEAKNESS_ENABLED
+                      ? '교과 단원 / 자유 입력 모두 가능. 약점 단원 자동 추천.'
+                      : '교과 단원 / 자유 입력 모두 가능.'}
                   <span className="text-pullim-blue-700 ml-1 font-mono font-bold">{pending.length}</span>
                   <span className="text-pullim-slate-500"> 단원 선택됨</span>
                 </DialogDescription>

@@ -30,6 +30,17 @@ export interface CookieHttpConfig {
    * 동봉한다(브라우저 한정). cutover 시 호출부마다 토큰을 손수 넘기는 부담을 없앤다.
    */
   csrfCookieName?: string;
+  /**
+   * 401(access 만료) 시 세션 재발급 시도 — `true` 반환이면 원 요청을 **1회** 재시도한다.
+   * 재시도 요청은 다시 이 콜백을 타지 않고(무한루프 방지), CSRF 토큰은 `csrfCookieName`
+   * 쿠키에서 재회수 가능하면 회전된 새 토큰으로 교체한다(불가 환경은 기존 명시 토큰 유지).
+   * `false`(만료 확정)면 원 401 을 그대로 던진다(→ 세션 만료 흐름). reject(네트워크·5xx 등
+   * 비-만료 장애)는 그대로 전파돼 상위가 세션 만료로 오인하지 않는다.
+   *
+   * 주입자 책임: ① single-flight(동시 401 다발 시 refresh 1회) ② 콜백이 수행하는
+   * `/auth/refresh` 호출 자체는 이 콜백이 없는 경로(`skipRefreshRetry`)로 보낼 것.
+   */
+  refreshSession?: () => Promise<boolean>;
 }
 
 export interface CookieRequestOptions {
@@ -40,6 +51,11 @@ export interface CookieRequestOptions {
   query?: Record<string, string | undefined>;
   /** 추가 헤더(선택). */
   headers?: Record<string, string>;
+  /**
+   * 401 시 `config.refreshSession` 재발급→재시도를 건너뛴다 — `/auth/refresh` 자기 자신 등
+   * 재발급 경로가 무한루프에 빠지지 않게 하는 내부용 플래그(재시도된 요청에도 자동 설정).
+   */
+  skipRefreshRetry?: boolean;
 }
 
 /** NestJS 기본 에러 응답 형태. message 는 validation 시 배열일 수 있다. */
@@ -151,7 +167,34 @@ export async function cookieRequest<T>(
     }
   }
 
-  if (!response.ok) throw toApiError(payload, response.status);
+  if (!response.ok) {
+    // access 만료(401) — 재발급 콜백이 있으면 refresh 후 원 요청을 1회 재시도한다
+    // (게이트키퍼 공통 계약: 401 → POST /auth/refresh → 원 API 재호출). 재시도 요청은
+    // `skipRefreshRetry` 로 재진입을 막는다. 재발급 실패면 원 401 → 기존 세션 만료 흐름.
+    if (
+      response.status === 401 &&
+      config.refreshSession &&
+      !opts.skipRefreshRetry
+    ) {
+      // reject(비-만료 인프라 장애 — 네트워크·5xx)는 삼키지 않고 그대로 전파해 상위가
+      // 세션 만료로 오인하지 않게 한다. false(만료 확정)만 원 401 로 접는다.
+      const refreshed = await config.refreshSession();
+      if (refreshed) {
+        // refresh 가 CSRF 쿠키를 회전시켰으므로 브라우저에선 쿠키에서 새 토큰을 재회수한다.
+        // 쿠키를 읽을 수 없는 환경(SSR/테스트 — document 부재)은 기존 명시 토큰을 유지 —
+        // 무효라면 403 이 나고 상위 mutate 의 CSRF 재부트스트랩 재시도가 처리한다.
+        const rotatedToken = config.csrfCookieName
+          ? readCsrfCookie(config.csrfCookieName)
+          : null;
+        return cookieRequest<T>(config, path, {
+          ...opts,
+          csrfToken: rotatedToken ?? opts.csrfToken,
+          skipRefreshRetry: true,
+        });
+      }
+    }
+    throw toApiError(payload, response.status);
+  }
 
   // pullim-api 는 DTO 본문을 그대로 반환한다(envelope 언랩 없음).
   return payload as T;
