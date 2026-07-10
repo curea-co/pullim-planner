@@ -109,6 +109,13 @@ export interface PullimSessionClient {
    * (`skipRefreshRetry`). refresh 도 만료·무효면 401 → 세션 만료 확정(로그인 복구).
    */
   refresh(): Promise<PullimSessionResponse>;
+  /**
+   * `refresh()` 의 single-flight 래퍼 — 성공 `true`/실패 `false`. 동시 401 다발에도 재발급은
+   * 1회만 나간다. 이 클라이언트 자신의 요청에는 자동 주입돼 있고(아래 팩토리 self-wire),
+   * 다른 cookie-http 클라이언트(planner 데이터 클라 등)의 `config.refreshSession` 으로
+   * 재사용해 앱 전체가 한 재발급 흐름을 공유하게 한다.
+   */
+  refreshSession(): Promise<boolean>;
   /** planner 세션 확인 — 200 프로필 / 401 미인증 / 403 엔타이틀먼트 미보유 / 404 온보딩 미완. */
   session(): Promise<PullimMeProfile>;
   /**
@@ -145,6 +152,29 @@ function isCsrfRejection(error: unknown): boolean {
 export function createPullimSessionClient(
   config: PullimSessionClientConfig,
 ): PullimSessionClient {
+  // ── 401 자동 재발급(self-wire) ─────────────────────────────────────────────
+  // 이 클라이언트의 모든 요청은 access 만료(401) 시 refreshSession(single-flight)을 거쳐
+  // 1회 재시도된다(cookie-http). refresh 자체는 skipRefreshRetry 라 재진입하지 않는다.
+  // 호출자가 config.refreshSession 을 명시 주입하면 그것을 우선한다.
+  let refreshInFlight: Promise<boolean> | null = null;
+  function refreshSession(): Promise<boolean> {
+    if (!refreshInFlight) {
+      refreshInFlight = doRefresh()
+        .then(
+          () => true,
+          () => false,
+        )
+        .finally(() => {
+          refreshInFlight = null;
+        });
+    }
+    return refreshInFlight;
+  }
+  const cfg: PullimSessionClientConfig = {
+    refreshSession,
+    ...config,
+  };
+
   // double-submit CSRF 토큰 메모리 캐시. 부트스트랩/회전 시 갱신.
   let csrfToken: string | null = null;
   // 진행 중인 부트스트랩 공유(single-flight) — 동시 호출이 각자 GET /auth/csrf 를 쏴서
@@ -154,7 +184,7 @@ export function createPullimSessionClient(
   async function ensureCsrf(): Promise<string> {
     if (csrfToken) return csrfToken;
     if (!csrfInFlight) {
-      csrfInFlight = bootstrapCsrf(config)
+      csrfInFlight = bootstrapCsrf(cfg)
         .then((token) => {
           csrfToken = token;
           return token;
@@ -175,7 +205,7 @@ export function createPullimSessionClient(
   ): Promise<T> {
     const token = await ensureCsrf();
     try {
-      return await cookieRequest<T>(config, path, {
+      return await cookieRequest<T>(cfg, path, {
         method,
         body,
         csrfToken: token,
@@ -186,13 +216,29 @@ export function createPullimSessionClient(
       // 캐시 토큰이 회전·만료됐을 수 있으므로 새로 받고 1회 재시도.
       csrfToken = null;
       const fresh = await ensureCsrf();
-      return await cookieRequest<T>(config, path, {
+      return await cookieRequest<T>(cfg, path, {
         method,
         body,
         csrfToken: fresh,
         skipRefreshRetry,
       });
     }
+  }
+
+  /**
+   * 세션 재발급 실체 — `POST /auth/refresh`(CSRF 동봉). 재발급 자체는 401 재시도 루프
+   * 금지(skipRefreshRetry) — refresh 401 = 세션 만료 확정. 서버가 CSRF 쿠키를 회전하므로
+   * 성공 후 메모리 캐시를 비워 다음 mutate 가 새 토큰을 받게 한다.
+   */
+  async function doRefresh(): Promise<PullimSessionResponse> {
+    const res = await mutate<PullimSessionResponse>(
+      "/auth/refresh",
+      undefined,
+      "POST",
+      true,
+    );
+    csrfToken = null;
+    return res;
   }
 
   return {
@@ -216,27 +262,18 @@ export function createPullimSessionClient(
       }
     },
 
-    async refresh() {
-      // 재발급 자체는 401 재시도 루프 금지(skipRefreshRetry) — refresh 401 = 세션 만료 확정.
-      // 서버가 CSRF 쿠키를 회전하므로 성공 후 메모리 캐시를 비워 다음 mutate 가 새 토큰을 받게 한다.
-      const res = await mutate<PullimSessionResponse>(
-        "/auth/refresh",
-        undefined,
-        "POST",
-        true,
-      );
-      csrfToken = null;
-      return res;
-    },
+    refresh: doRefresh,
+
+    refreshSession,
 
     session() {
       // GET — CSRF 면제. 쿠키(access)로 인증.
-      return cookieRequest<PullimMeProfile>(config, "/planner/me");
+      return cookieRequest<PullimMeProfile>(cfg, "/planner/me");
     },
 
     accountMe() {
       // GET — CSRF 면제. owner-only 실명(name, ADR-048) 포함 — 표시 용도로만 소비(로그·저장 금지).
-      return cookieRequest<PullimAccountMe>(config, "/me");
+      return cookieRequest<PullimAccountMe>(cfg, "/me");
     },
 
     updateProfile(input) {
