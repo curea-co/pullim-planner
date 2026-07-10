@@ -271,17 +271,6 @@ export interface PullimPlannerClient {
    * (`BlocksQueryDto @IsOptional` + 핸들러 `query.date ?? todayKstIsoDate()`).
    */
   blocks(plannerId: string, date?: string): Promise<PullimBlock[]>;
-  /**
-   * 블록 완료 기록 upsert. `POST /planner/planners/:id/blocks/:blockId/completion` (201, #416).
-   * 응답 = 완료 메타 포함 블록. 재제출은 수정(upsert). 타인 소유 403 · 플래너/블록 미존재 404.
-   */
-  completeBlock(
-    plannerId: string,
-    blockId: string,
-    input?: PullimCompletionWrite,
-  ): Promise<PullimBlock>;
-  /** 완료 취소(멱등 — 기록 없어도 204). `DELETE /planner/planners/:id/blocks/:blockId/completion`. */
-  uncompleteBlock(plannerId: string, blockId: string): Promise<void>;
   /** 생성(비활성). `POST /planner/planners`. 생성 전용 입력(루틴 적용 포함). */
   create(input: PullimPlannerCreate): Promise<PullimPlanner>;
   /** 수정(편집 필드 교체). `PATCH /planner/planners/:id`. */
@@ -301,6 +290,25 @@ export interface PullimPlannerClient {
     id: string,
     customization: PullimPlannerCustomization,
   ): Promise<PullimPlanner>;
+}
+
+/**
+ * 블록 완료 기록 write 클라이언트(pullim-api #416) — `PullimPlannerClient`와 **분리된 인터페이스**.
+ * 기존 소비자(어그리게이트 싱글톤 등)의 구현 의무를 늘리지 않아 패키지 변경이 앱 컴파일을 깨지
+ * 않는다 — 소비 측 채택은 후속 FE PR에서 `& PullimBlockCompletionClient`로 opt-in.
+ */
+export interface PullimBlockCompletionClient {
+  /**
+   * 완료 기록 upsert. `POST /planner/planners/:id/blocks/:blockId/completion` (201).
+   * 응답 = 완료 메타 포함 블록. 재제출은 수정(upsert). 타인 소유 403 · 플래너/블록 미존재 404.
+   */
+  completeBlock(
+    plannerId: string,
+    blockId: string,
+    input?: PullimCompletionWrite,
+  ): Promise<PullimBlock>;
+  /** 완료 취소(멱등 — 기록 없어도 204). `DELETE /planner/planners/:id/blocks/:blockId/completion`. */
+  uncompleteBlock(plannerId: string, blockId: string): Promise<void>;
 }
 
 // ── 스터디그램(공유 학습 인증 피드) ──────────────────────────────────────────
@@ -501,7 +509,10 @@ function isCsrfRejection(error: unknown): boolean {
  */
 export function createPullimPlannerClient(
   config: PullimPlannerClientConfig,
-): PullimPlannerClient & PullimRoutineClient & PullimStudygramClient {
+): PullimPlannerClient &
+  PullimBlockCompletionClient &
+  PullimRoutineClient &
+  PullimStudygramClient {
   // CSRF double-submit 토큰 관리 — 메모리 캐시 + single-flight(pullim-session ensureCsrf 동형).
   // 토큰을 부트스트랩해 **명시 동봉**하므로 SSR/test(브라우저 `document.cookie` 부재)에서도 동작하고,
   // 매 mutation 마다 일부러 403 을 한 번 맞고 재시도하는 구조를 피한다. cookie 자동회수에 의존하지 않음.

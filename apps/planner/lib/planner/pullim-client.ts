@@ -96,8 +96,6 @@ export const pullimPlannerClient: PullimPlannerClient &
   > = {
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
-  completeBlock: on401(rawPullimPlannerClient.completeBlock),
-  uncompleteBlock: on401(rawPullimPlannerClient.uncompleteBlock),
   create: on401(rawPullimPlannerClient.create),
   update: on401(rawPullimPlannerClient.update),
   remove: on401(rawPullimPlannerClient.remove),
