@@ -126,7 +126,7 @@ export default function HomeContainer() {
   const realActiveId = real.active?.id;
   const realRefetch = real.refetch;
   const handleCompleteBlock = useCallback(
-    async (blockId: string, input: { emotion?: number; notes?: string }) => {
+    async (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => {
       if (!realActiveId) return false;
       try {
         await pullimPlannerClient.completeBlock(realActiveId, blockId, input);

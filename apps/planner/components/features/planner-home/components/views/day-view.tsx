@@ -42,7 +42,7 @@ interface DayViewProps {
   /** 실데이터 D-day — blocks 와 함께 주입(미주입이면 mock persona 기준). */
   dday?: number;
   /** 블록 완료 기록 실 저장(#416) — 미주입이면 완료 다이얼로그가 데모(toast)로 동작. */
-  onCompleteSubmit?: (blockId: string, input: { emotion?: number; notes?: string }) => Promise<boolean>;
+  onCompleteSubmit?: (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => Promise<boolean>;
 }
 
 /** 일간 캘린더 본문 — 24h 시계 + 자기보고 패널 + 블록 리스트. */
