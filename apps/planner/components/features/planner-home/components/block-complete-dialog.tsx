@@ -27,7 +27,7 @@ type Props = {
    * 완료 기록 실 저장(pullim-api #416) — 성공 true/실패 false. 미주입(dev bypass·mock)이면
    * 저장 없이 데모(toast) 흐름 유지. 실패 시 모달을 닫지 않아 재시도 가능.
    */
-  onSubmit?: (blockId: string, input: { emotion?: number; notes?: string }) => Promise<boolean>;
+  onSubmit?: (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => Promise<boolean>;
 };
 
 const emotionLabel: Record<Emotion, string> = {
@@ -88,6 +88,7 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
     setSaving(true);
     try {
       return await onSubmit(block.id, {
+        ...(block.accuracy !== undefined ? { accuracy: block.accuracy } : {}),
         ...(emotion !== null ? { emotion } : {}),
         ...(note.trim() ? { notes: note.trim() } : {}),
       });

@@ -39,7 +39,7 @@ interface HomePresenterProps {
   /** 실데이터(B4) — 미주입(dev bypass)이면 각 뷰가 mock 폴백. */
   dayBlocks?: TimeBlock[];
   /** 블록 완료 기록 실 저장(#416) — 미주입(dev bypass)이면 완료 다이얼로그가 데모(toast)로 동작. */
-  onCompleteSubmit?: (blockId: string, input: { emotion?: number; notes?: string }) => Promise<boolean>;
+  onCompleteSubmit?: (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => Promise<boolean>;
   weekDays?: WeekDay[];
   monthDays?: MonthDay[];
   /** 실데이터 월간 헤더 라벨("7월") — 미주입이면 mock 데모 라벨. */
