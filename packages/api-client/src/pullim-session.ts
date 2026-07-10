@@ -163,13 +163,10 @@ export function createPullimSessionClient(
         .then(
           () => true,
           (error: unknown) => {
-            // 401/403(재발급 거부·CSRF 재시도 후에도 거부) = 세션 만료 확정 → false
-            // (원 401 로 접혀 로그인 복구). 그 외(네트워크 단절·타임아웃·5xx)는 인프라
-            // 장애라 만료로 오인하지 않게 그대로 전파한다(Codex R5 — auth.ts 와 동형).
-            if (
-              error instanceof ApiError &&
-              (error.statusCode === 401 || error.statusCode === 403)
-            ) {
+            // refresh 자체의 401(재발급 토큰 만료·무효)만 세션 만료 확정 → false
+            // (원 401 로 접혀 로그인 복구). 403(CSRF/Origin 거부)·네트워크·5xx 는 보안/
+            // 인프라 오류라 만료로 오인하지 않게 그대로 전파한다(진단 정보 보존, Codex R6).
+            if (error instanceof ApiError && error.statusCode === 401) {
               return false;
             }
             throw error;
