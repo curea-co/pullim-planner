@@ -162,7 +162,18 @@ export function createPullimSessionClient(
       refreshInFlight = doRefresh()
         .then(
           () => true,
-          () => false,
+          (error: unknown) => {
+            // 401/403(재발급 거부·CSRF 재시도 후에도 거부) = 세션 만료 확정 → false
+            // (원 401 로 접혀 로그인 복구). 그 외(네트워크 단절·타임아웃·5xx)는 인프라
+            // 장애라 만료로 오인하지 않게 그대로 전파한다(Codex R5 — auth.ts 와 동형).
+            if (
+              error instanceof ApiError &&
+              (error.statusCode === 401 || error.statusCode === 403)
+            ) {
+              return false;
+            }
+            throw error;
+          },
         )
         .finally(() => {
           refreshInFlight = null;
@@ -187,7 +198,10 @@ export function createPullimSessionClient(
   async function ensureCsrf(): Promise<string> {
     if (csrfToken) return csrfToken;
     if (!csrfInFlight) {
-      csrfInFlight = bootstrapCsrf(cfg)
+      // CSRF 부트스트랩은 self-wire 없는 원래 config 로 보낸다 — 공개 GET 이라 재발급이
+      // 무의미하고, 배선되면 /auth/csrf 401 → refreshSession → mutate → ensureCsrf 가
+      // 진행 중인 csrfInFlight(자기 자신)를 기다리는 순환 대기(hang)가 생긴다(Codex R5).
+      csrfInFlight = bootstrapCsrf(config)
         .then((token) => {
           csrfToken = token;
           return token;
