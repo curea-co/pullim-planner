@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PullimPlanner } from '@pullim-planner/api-client';
 import { pullimPlannerClient, pullimToPlanner } from '@/lib/planner/pullim-client';
 import {
@@ -24,6 +24,8 @@ export interface HomeBlocksData {
   heroBlocksByDate: Record<string, TimeBlock[]>;
   /** 오늘(KST) — 파생 계산의 공통 기준. */
   todayIso: string;
+  /** 블록 재조회 트리거 — 완료 기록 저장 등 쓰기 후 기간·히어로 블록을 다시 읽는다. */
+  refetch: () => void;
 }
 
 /**
@@ -44,6 +46,9 @@ export function useHomeBlocks(
   const [activeRaw, setActiveRaw] = useState<PullimPlanner | null>(null);
   const [blocksByDate, setBlocksByDate] = useState<Record<string, TimeBlock[]>>({});
   const [heroBlocksByDate, setHeroBlocksByDate] = useState<Record<string, TimeBlock[]>>({});
+  // 쓰기(완료 기록 등) 후 재조회 트리거 — 증가 시 기간·히어로 블록 effect가 다시 돈다.
+  const [refreshTick, setRefreshTick] = useState(0);
+  const refetch = useCallback(() => setRefreshTick((t) => t + 1), []);
 
   // 활성 플래너 — 최초 1회.
   useEffect(() => {
@@ -87,7 +92,7 @@ export function useHomeBlocks(
     return () => {
       alive = false;
     };
-  }, [enabled, activeRaw, view, offset, todayIso]);
+  }, [enabled, activeRaw, view, offset, todayIso, refreshTick]);
 
   // 히어로 전용 이번 주 블록 — 활성 플래너당 1회(view·offset 무관). 오늘이 이번 주에 포함돼
   // 오늘·이번 주 히어로 통계를 모두 커버한다. (기간 API 도입 시 위 기간 조회와 통합 가능.)
@@ -108,7 +113,7 @@ export function useHomeBlocks(
     return () => {
       alive = false;
     };
-  }, [enabled, activeRaw, todayIso]);
+  }, [enabled, activeRaw, todayIso, refreshTick]);
 
   return {
     status: enabled ? status : 'ready',
@@ -116,5 +121,6 @@ export function useHomeBlocks(
     blocksByDate,
     heroBlocksByDate,
     todayIso,
+    refetch,
   };
 }
