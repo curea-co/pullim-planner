@@ -170,9 +170,12 @@ export function createPullimSessionClient(
     }
     return refreshInFlight;
   }
+  // 호출자가 config.refreshSession 을 명시 주입하면 그것이 유효 재발급 경로다 — 내부 요청과
+  // 공개 API(refreshSession)가 같은 함수를 가리키도록 한 곳에서 확정한다(계약 일치).
+  const effectiveRefreshSession = config.refreshSession ?? refreshSession;
   const cfg: PullimSessionClientConfig = {
-    refreshSession,
     ...config,
+    refreshSession: effectiveRefreshSession,
   };
 
   // double-submit CSRF 토큰 메모리 캐시. 부트스트랩/회전 시 갱신.
@@ -248,14 +251,21 @@ export function createPullimSessionClient(
     // 성공 후 메모리 캐시(csrfToken)를 무효화해야, 다음 상태변경 요청이 stale 토큰으로 한 번
     // 403 → 재부트스트랩 하는 회귀를 피하고 ensureCsrf 가 곧장 회전된 토큰을 받는다.
     async login(input) {
-      const res = await mutate<PullimSessionResponse>("/auth/login", input);
+      // 로그인 401 = 자격증명 실패(자동 재발급 대상 아님) — skipRefreshRetry 로 refresh 우회.
+      const res = await mutate<PullimSessionResponse>(
+        "/auth/login",
+        input,
+        "POST",
+        true,
+      );
       csrfToken = null;
       return res;
     },
 
     async logout() {
       try {
-        await mutate<void>("/auth/logout");
+        // 로그아웃 401 = 이미 만료된 세션 — 재발급해서까지 로그아웃할 필요 없음(skip).
+        await mutate<void>("/auth/logout", undefined, "POST", true);
       } finally {
         // BE 호출 성패와 무관하게 캐시를 비운다(세션/CSRF 상태 불일치 방지).
         csrfToken = null;
@@ -264,7 +274,7 @@ export function createPullimSessionClient(
 
     refresh: doRefresh,
 
-    refreshSession,
+    refreshSession: effectiveRefreshSession,
 
     session() {
       // GET — CSRF 면제. 쿠키(access)로 인증.
