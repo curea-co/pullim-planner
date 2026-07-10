@@ -103,6 +103,20 @@ export interface PullimSessionClient {
   login(input: PullimLoginRequest): Promise<PullimSessionResponse>;
   /** 로그아웃 — CSRF 동봉 POST. 쿠키 무효화는 서버가 수행. */
   logout(): Promise<void>;
+  /**
+   * 세션 재발급(`POST /auth/refresh`) — refresh 쿠키로 access/refresh/CSRF 쿠키를 회전한다.
+   * access 만료(401) 시 자동 재발급 경로의 실체. 이 요청 자체는 401 재시도 루프를 타지 않는다
+   * (`skipRefreshRetry`). refresh 도 만료·무효면 401 → 세션 만료 확정(로그인 복구).
+   */
+  refresh(): Promise<PullimSessionResponse>;
+  /**
+   * `refresh()` 의 single-flight 래퍼 — 성공 `true`/실패 `false`(만료 확정인 401 만).
+   * 동시 401 다발에도 재발급은 1회만 나간다. 이 클라이언트 자신의 요청에는 자동 주입돼
+   * 있다(아래 팩토리 self-wire). 다른 cookie-http 클라이언트(planner 데이터 클라 등)는
+   * 이 함수를 `config.refreshSession` 으로 주입해야 같은 재발급 흐름을 공유한다 —
+   * **배선은 소비자 몫**(planner FE 주입은 후속 PR).
+   */
+  refreshSession(): Promise<boolean>;
   /** planner 세션 확인 — 200 프로필 / 401 미인증 / 403 엔타이틀먼트 미보유 / 404 온보딩 미완. */
   session(): Promise<PullimMeProfile>;
   /**
@@ -139,6 +153,40 @@ function isCsrfRejection(error: unknown): boolean {
 export function createPullimSessionClient(
   config: PullimSessionClientConfig,
 ): PullimSessionClient {
+  // ── 401 자동 재발급(self-wire) ─────────────────────────────────────────────
+  // 이 클라이언트의 모든 요청은 access 만료(401) 시 refreshSession(single-flight)을 거쳐
+  // 1회 재시도된다(cookie-http). refresh 자체는 skipRefreshRetry 라 재진입하지 않는다.
+  // 호출자가 config.refreshSession 을 명시 주입하면 그것을 우선한다.
+  let refreshInFlight: Promise<boolean> | null = null;
+  function refreshSession(): Promise<boolean> {
+    if (!refreshInFlight) {
+      refreshInFlight = doRefresh()
+        .then(
+          () => true,
+          (error: unknown) => {
+            // refresh 자체의 401(재발급 토큰 만료·무효)만 세션 만료 확정 → false
+            // (원 401 로 접혀 로그인 복구). 403(CSRF/Origin 거부)·네트워크·5xx 는 보안/
+            // 인프라 오류라 만료로 오인하지 않게 그대로 전파한다(진단 정보 보존, Codex R6).
+            if (error instanceof ApiError && error.statusCode === 401) {
+              return false;
+            }
+            throw error;
+          },
+        )
+        .finally(() => {
+          refreshInFlight = null;
+        });
+    }
+    return refreshInFlight;
+  }
+  // 호출자가 config.refreshSession 을 명시 주입하면 그것이 유효 재발급 경로다 — 내부 요청과
+  // 공개 API(refreshSession)가 같은 함수를 가리키도록 한 곳에서 확정한다(계약 일치).
+  const effectiveRefreshSession = config.refreshSession ?? refreshSession;
+  const cfg: PullimSessionClientConfig = {
+    ...config,
+    refreshSession: effectiveRefreshSession,
+  };
+
   // double-submit CSRF 토큰 메모리 캐시. 부트스트랩/회전 시 갱신.
   let csrfToken: string | null = null;
   // 진행 중인 부트스트랩 공유(single-flight) — 동시 호출이 각자 GET /auth/csrf 를 쏴서
@@ -148,6 +196,9 @@ export function createPullimSessionClient(
   async function ensureCsrf(): Promise<string> {
     if (csrfToken) return csrfToken;
     if (!csrfInFlight) {
+      // CSRF 부트스트랩은 self-wire 없는 원래 config 로 보낸다 — 공개 GET 이라 재발급이
+      // 무의미하고, 배선되면 /auth/csrf 401 → refreshSession → mutate → ensureCsrf 가
+      // 진행 중인 csrfInFlight(자기 자신)를 기다리는 순환 대기(hang)가 생긴다(Codex R5).
       csrfInFlight = bootstrapCsrf(config)
         .then((token) => {
           csrfToken = token;
@@ -165,25 +216,44 @@ export function createPullimSessionClient(
     path: string,
     body?: unknown,
     method: "POST" | "PATCH" = "POST",
+    skipRefreshRetry = false,
   ): Promise<T> {
     const token = await ensureCsrf();
     try {
-      return await cookieRequest<T>(config, path, {
+      return await cookieRequest<T>(cfg, path, {
         method,
         body,
         csrfToken: token,
+        skipRefreshRetry,
       });
     } catch (error) {
       if (!isCsrfRejection(error)) throw error;
       // 캐시 토큰이 회전·만료됐을 수 있으므로 새로 받고 1회 재시도.
       csrfToken = null;
       const fresh = await ensureCsrf();
-      return await cookieRequest<T>(config, path, {
+      return await cookieRequest<T>(cfg, path, {
         method,
         body,
         csrfToken: fresh,
+        skipRefreshRetry,
       });
     }
+  }
+
+  /**
+   * 세션 재발급 실체 — `POST /auth/refresh`(CSRF 동봉). 재발급 자체는 401 재시도 루프
+   * 금지(skipRefreshRetry) — refresh 401 = 세션 만료 확정. 서버가 CSRF 쿠키를 회전하므로
+   * 성공 후 메모리 캐시를 비워 다음 mutate 가 새 토큰을 받게 한다.
+   */
+  async function doRefresh(): Promise<PullimSessionResponse> {
+    const res = await mutate<PullimSessionResponse>(
+      "/auth/refresh",
+      undefined,
+      "POST",
+      true,
+    );
+    csrfToken = null;
+    return res;
   }
 
   return {
@@ -193,13 +263,21 @@ export function createPullimSessionClient(
     // 성공 후 메모리 캐시(csrfToken)를 무효화해야, 다음 상태변경 요청이 stale 토큰으로 한 번
     // 403 → 재부트스트랩 하는 회귀를 피하고 ensureCsrf 가 곧장 회전된 토큰을 받는다.
     async login(input) {
-      const res = await mutate<PullimSessionResponse>("/auth/login", input);
+      // 로그인 401 = 자격증명 실패(자동 재발급 대상 아님) — skipRefreshRetry 로 refresh 우회.
+      const res = await mutate<PullimSessionResponse>(
+        "/auth/login",
+        input,
+        "POST",
+        true,
+      );
       csrfToken = null;
       return res;
     },
 
     async logout() {
       try {
+        // logout 은 일반 재발급 경로를 탄다 — access 만료 상태에서도 refresh 후 재시도해
+        // 서버 측 세션 정리(쿠키 무효화·refresh family revoke)를 끝까지 수행한다(Codex R4).
         await mutate<void>("/auth/logout");
       } finally {
         // BE 호출 성패와 무관하게 캐시를 비운다(세션/CSRF 상태 불일치 방지).
@@ -207,14 +285,18 @@ export function createPullimSessionClient(
       }
     },
 
+    refresh: doRefresh,
+
+    refreshSession: effectiveRefreshSession,
+
     session() {
       // GET — CSRF 면제. 쿠키(access)로 인증.
-      return cookieRequest<PullimMeProfile>(config, "/planner/me");
+      return cookieRequest<PullimMeProfile>(cfg, "/planner/me");
     },
 
     accountMe() {
       // GET — CSRF 면제. owner-only 실명(name, ADR-048) 포함 — 표시 용도로만 소비(로그·저장 금지).
-      return cookieRequest<PullimAccountMe>(config, "/me");
+      return cookieRequest<PullimAccountMe>(cfg, "/me");
     },
 
     updateProfile(input) {
