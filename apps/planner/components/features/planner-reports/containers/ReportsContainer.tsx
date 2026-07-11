@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { track } from '@vercel/analytics';
 import { currentPersona, getDday } from '@/lib/mock';
+import { REFLECTION_ENABLED } from '@/lib/flags';
 import type { ReportsView } from '../components/reports-shell';
 import ReportsPresenter from '../presenters/ReportsPresenter';
 
@@ -28,9 +29,11 @@ export default function ReportsContainer() {
     [router, view],
   );
 
-  // day view 진입 시 1회 impression — TodayReflection이 default expanded 노출됐는지 시그널
+  // day view 진입 시 1회 impression — TodayReflection이 default expanded 노출됐는지 시그널.
+  // REFLECTION_ENABLED off면 실제로는 placeholder만 뜨므로 이벤트를 같은 조건으로 묶는다
+  // (Codex #146 — 안 열린 패널을 defaultOpen:true로 잘못 집계하던 문제).
   useEffect(() => {
-    if (view === 'day') {
+    if (view === 'day' && REFLECTION_ENABLED) {
       track('reports_day_reflection_view', { defaultOpen: true });
     }
   }, [view]);
