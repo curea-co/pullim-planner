@@ -13,6 +13,7 @@ import {
   Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { REFLECTION_ENABLED } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
 type Emotion = 1 | 2 | 3 | 4 | 5;
@@ -116,7 +117,7 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
         return;
       }
       router.push(getFeatureRoute(nextBlock.linkedFeatureSlug));
-    } else {
+    } else if (REFLECTION_ENABLED) {
       // 다음 블록 없음 — "오늘 학습 마감" 흐름. 일일 회고 카드로 부드럽게 스크롤.
       requestAnimationFrame(() => {
         const target = document.getElementById('today-reflection');
@@ -124,6 +125,13 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
         // 회고 ribbon이 collapsed 상태라면 자동 펼침 — aria-expanded=false인 trigger 클릭
         const trigger = target?.querySelector<HTMLButtonElement>('button[aria-expanded="false"]');
         trigger?.click();
+      });
+    } else {
+      // 회고 패널 숨김(REFLECTION_ENABLED off)이면 스크롤 대상이 없어 조용히 무동작이 되던
+      // 회귀(Codex #144) — 대신 마감을 명확히 알리는 토스트로 마무리(handleClose와 동일 톤).
+      toast('🌙 오늘 학습 마감', {
+        description: '오늘 계획한 블록을 모두 마쳤어요. 내일 또 만나요!',
+        duration: 3000,
       });
     }
   }
