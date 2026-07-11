@@ -13,6 +13,7 @@ import {
   Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { REFLECTION_ENABLED } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
 type Emotion = 1 | 2 | 3 | 4 | 5;
@@ -99,14 +100,35 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
 
   async function handleNext() {
     if (!(await persist())) return;
+
+    if (!nextBlock) {
+      // 다음 블록 없음 — "다음 블록으로 넘어가요"는 사실과 다르므로 nextBlock 있는 경로와
+      // 분리한다(Codex #144 R2). 저장 성공 피드백(summary)은 always 유지하고, 회고 패널
+      // 유무(REFLECTION_ENABLED)에 따라 뒤이은 안내만 다르게 — 패널이 stale mock이라 성공
+      // 피드백 없이 넘기면 "완료가 반영 안 된 것" 처럼 보이는 회귀(Codex #145).
+      toast.success(summary(), {
+        description: '오늘 계획한 블록을 모두 마쳤어요',
+        duration: 3000,
+      });
+      onClose();
+      if (REFLECTION_ENABLED) {
+        requestAnimationFrame(() => {
+          const target = document.getElementById('today-reflection');
+          target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // 회고 ribbon이 collapsed 상태라면 자동 펼침 — aria-expanded=false인 trigger 클릭
+          const trigger = target?.querySelector<HTMLButtonElement>('button[aria-expanded="false"]');
+          trigger?.click();
+        });
+      }
+      return;
+    }
+
     toast.success(summary(), {
-      description: nextBlock
-        ? `다음 블록(${nextBlock.start})으로 넘어가요`
-        : '다음 블록으로 넘어가요',
+      description: `다음 블록(${nextBlock.start})으로 넘어가요`,
       duration: 3000,
     });
     onClose();
-    if (nextBlock?.linkedFeatureSlug) {
+    if (nextBlock.linkedFeatureSlug) {
       // Q 연계 미개통이면 라우트 이동 대신 준비 중 안내. 다음 블록 자체는 플래너 안에서 자연 진행.
       if (!hasQAccess()) {
         toast.info('🔒 풀림 Q와 연계한 서비스가 준비 중입니다.', {
@@ -116,15 +138,6 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
         return;
       }
       router.push(getFeatureRoute(nextBlock.linkedFeatureSlug));
-    } else {
-      // 다음 블록 없음 — "오늘 학습 마감" 흐름. 일일 회고 카드로 부드럽게 스크롤.
-      requestAnimationFrame(() => {
-        const target = document.getElementById('today-reflection');
-        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // 회고 ribbon이 collapsed 상태라면 자동 펼침 — aria-expanded=false인 trigger 클릭
-        const trigger = target?.querySelector<HTMLButtonElement>('button[aria-expanded="false"]');
-        trigger?.click();
-      });
     }
   }
 
