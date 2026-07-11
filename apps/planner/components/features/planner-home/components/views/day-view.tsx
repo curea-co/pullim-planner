@@ -18,6 +18,7 @@ import { BlockCompleteDialog } from '@/components/features/planner-home/componen
 import { NextBlockHero } from '@/components/features/planner-home/components/next-block-hero';
 import { PeriodEmptyState } from '@/components/features/planner-home/components/period-empty-state';
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
+import { REFLECTION_ENABLED } from '@/lib/flags';
 
 /** 완료한 블록 다음의 첫 학습 블록(휴식 제외, todo/doing) — 모달 CTA 라우팅용 */
 function findFollowing(block: TimeBlock, blocks: TimeBlock[]): TimeBlock | null {
@@ -180,9 +181,13 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
             ))}
           </ol>
 
-          <div className="mt-4">
-            <TodayReflection />
-          </div>
+          {/* 회고 BE 미구현(REFLECTION_ENABLED off) — mock 계산을 실제처럼 노출하지 않게 숨김.
+              위저드 STEP 6(약점)과 동일 맥락(07-10 QA). */}
+          {REFLECTION_ENABLED && (
+            <div className="mt-4">
+              <TodayReflection />
+            </div>
+          )}
         </section>
       </div>
 

@@ -48,3 +48,14 @@ export const NOTIFICATIONS_ENABLED = process.env.NEXT_PUBLIC_NOTIFICATIONS_ENABL
  * - dev·prod 기본: 미설정 → **차단**(safe-by-default)
  */
 export const Q_LINK_ENABLED = process.env.NEXT_PUBLIC_Q_LINK_ENABLED === '1';
+
+/**
+ * 홈 "오늘 회고" — BE 미구현: `dailyReflection()`·`tomorrowDifferences()`가 전부 mock
+ * 계산이고 회고 결과를 저장·소비하는 BE 표면이 없다(위저드 STEP 6 약점과 동일 맥락 —
+ * mock 데이터를 실제처럼 노출, 2026-07-10 QA). off면 홈 일간 뷰 하단 리본을 숨긴다.
+ * `BlockCompleteDialog`의 "오늘 학습 마감" scroll anchor는 대상 요소가 없으면 안전하게
+ * no-op(옵셔널 체이닝) — 별도 분기 불요.
+ * - 로컬/preview 확인용: `NEXT_PUBLIC_REFLECTION_ENABLED=1`
+ * - dev·prod 기본: 미설정 → **차단**(safe-by-default). 회고 BE 준비 후 플래그로 오픈
+ */
+export const REFLECTION_ENABLED = process.env.NEXT_PUBLIC_REFLECTION_ENABLED === '1';
