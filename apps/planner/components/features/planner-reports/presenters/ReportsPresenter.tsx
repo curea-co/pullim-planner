@@ -9,6 +9,7 @@ import { WeeklySummary } from '../components/weekly-summary';
 import { MonthlySummary } from '../components/monthly-summary';
 import { ConsentDialog } from '../components/consent-dialog';
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
+import { REFLECTION_ENABLED } from '@/lib/flags';
 
 interface ReportsPresenterProps {
   view: ReportsView;
@@ -55,7 +56,13 @@ export default function ReportsPresenter({
           </button>
         }
       >
-        {view === 'day' && <TodayReflection defaultOpen />}
+        {/* REFLECTION_ENABLED로 홈과 동일하게 게이트 — REPORTS_ENABLED만 독립적으로 켜져도
+            mock 회고(dailyReflection())가 새는 것 방지(Codex #145). */}
+        {view === 'day' && (
+          REFLECTION_ENABLED
+            ? <TodayReflection defaultOpen />
+            : <div className="py-16 text-center text-xs text-muted-foreground">일간 회고는 곧 열려요</div>
+        )}
         {view === 'week' && <WeeklySummary />}
         {view === 'month' && <MonthlySummary />}
       </ReportsShell>

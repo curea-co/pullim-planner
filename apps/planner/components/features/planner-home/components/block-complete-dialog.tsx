@@ -102,9 +102,14 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
     if (!(await persist())) return;
 
     if (!nextBlock) {
-      // 다음 블록 없음 — "다음 블록으로 넘어가요"는 사실과 다르므로 마감 토스트 하나로만
-      // 마무리한다(Codex #144 R2 — 모순 토스트 중복 회귀). REFLECTION_ENABLED on이면 회고
-      // 패널로 스크롤(패널 자체가 "오늘 마쳤어요" 요약을 보여주므로 별도 토스트 불필요).
+      // 다음 블록 없음 — "다음 블록으로 넘어가요"는 사실과 다르므로 nextBlock 있는 경로와
+      // 분리한다(Codex #144 R2). 저장 성공 피드백(summary)은 always 유지하고, 회고 패널
+      // 유무(REFLECTION_ENABLED)에 따라 뒤이은 안내만 다르게 — 패널이 stale mock이라 성공
+      // 피드백 없이 넘기면 "완료가 반영 안 된 것" 처럼 보이는 회귀(Codex #145).
+      toast.success(summary(), {
+        description: '오늘 계획한 블록을 모두 마쳤어요',
+        duration: 3000,
+      });
       onClose();
       if (REFLECTION_ENABLED) {
         requestAnimationFrame(() => {
@@ -113,11 +118,6 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
           // 회고 ribbon이 collapsed 상태라면 자동 펼침 — aria-expanded=false인 trigger 클릭
           const trigger = target?.querySelector<HTMLButtonElement>('button[aria-expanded="false"]');
           trigger?.click();
-        });
-      } else {
-        toast('🌙 오늘 학습 마감', {
-          description: '오늘 계획한 블록을 모두 마쳤어요. 내일 또 만나요!',
-          duration: 3000,
         });
       }
       return;
