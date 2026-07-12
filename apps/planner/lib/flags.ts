@@ -40,10 +40,14 @@ export const WEAKNESS_ENABLED = process.env.NEXT_PUBLIC_WEAKNESS_ENABLED === '1'
 export const NOTIFICATIONS_ENABLED = process.env.NEXT_PUBLIC_NOTIFICATIONS_ENABLED === '1';
 
 /**
- * 풀림 Q 연계(블록 → 풀이 직진입) — Q 연계 서비스 미개통: 라우팅 대상(무한풀기·튜터 등)이
- * 플래너 밖 미구현 표면이라, 구독 여부와 무관하게 진입 자체가 열리면 안 된다(2026-07-10 QA).
- * off면 `hasQAccess()`가 항상 false → 모든 진입 CTA가 "연계 서비스 준비 중" 안내로 일치
- * (콘솔 `setQAccess(true)` 데모 훅도 게이트에 막힘). Q 연계 개통 시 on → 구독 체크로 복원.
+ * 풀림 Q **블록 딥링크**(블록 → 풀이 직진입) 게이트.
+ * Q 서비스 자체는 **개통됨**(q.pullim.ai live) — 플래너에서의 공식 진입점은 헤더 서비스 전환
+ * 드롭다운(스위처)뿐이고, 그 외 진입 버튼(블록 시작/이어서 CTA·"지금 시작해요" 등 딥링크)은
+ * 플래너↔Q 연계가 붙기 전까지 없음 유지(사용자 확정 2026-07-12).
+ * off면 `hasQAccess()`가 항상 false → 블록 딥링크 CTA 미노출·"연계 서비스 준비 중" 안내로 일치
+ * (콘솔 `setQAccess(true)` 데모 훅도 게이트에 막힘). 블록 연계 개통 시 on → 구독 체크로 복원.
+ * ⚠️ 스코프 = **블록 딥링크만.** 스위처의 "문제큐 앱 이동"(q.pullim.ai 톱레벨 핸드오프)은
+ * OS 정본이 live 로 노출하는 별개 표면이라 이 게이트 밖이다.
  * - 로컬/preview 확인용: `NEXT_PUBLIC_Q_LINK_ENABLED=1`
  * - dev·prod 기본: 미설정 → **차단**(safe-by-default)
  */
