@@ -8,8 +8,8 @@
  *   - 티어 앵커 = `NEXT_PUBLIC_PULLIM_OS_URL`(플래너가 이미 환경별로 주입하는 값).
  *     `dev-os…` → dev · `.local`/`localhost` → local · 그 외 → prod · **미설정 → 전 항목 비활성**
  *     (설정 오류를 prod 링크로 가리지 않는 플래너 기존 안전장치 유지)
- *   - 파생: dev → `https://dev-<app>.pullim.ai` · 그 외(local 포함) → `https://<app>.pullim.ai`
- *     (정본 `siblingAppUrl` 과 동일 — local 은 독립 앱들이 로컬에 없어 prod 로 향한다.)
+ *   - 파생: dev → `https://dev-<app>.pullim.ai` · prod → `https://<app>.pullim.ai` ·
+ *     **local → 형제 앱 비활성**(로컬 `*.pullim.local` 인증이 prod 와 공유되지 않아 이탈 방지)
  * 회원 access 쿠키는 `Domain=.pullim.ai` 라 톱레벨 하드 내비게이션이면 자동 동반된다(정본 주석).
  */
 const OS_BASE = process.env.NEXT_PUBLIC_PULLIM_OS_URL;
@@ -27,14 +27,17 @@ function osTier(): 'dev' | 'prod' | 'local' {
 }
 
 /**
- * 정본 `siblingAppUrl()` 미러 — dev 티어면 dev-<app>, 그 외 <app> 서브도메인.
- * ⚠️ **env 미설정 안전장치(플래너 기존 정책 유지·Codex)**: OS_BASE 가 없으면 undefined 를
- * 반환해 항목이 '준비 중' 비활성이 된다 — 설정 오류를 조용히 prod 링크로 가리는 대신 드러낸다.
- * (정본은 기본 prod 폴백이지만, 플래너는 미설정=비활성이 합의된 안전장치.)
+ * 정본 `siblingAppUrl()` 미러 — dev 티어면 dev-<app>, prod 면 <app> 서브도메인.
+ * ⚠️ 플래너 안전장치 2가지(Codex #147):
+ *   - **미설정** → undefined(비활성 '준비 중' + warn) — 설정 오류를 prod 링크로 가리지 않는다.
+ *   - **local 티어** → undefined(비활성) — 로컬 인증은 `*.pullim.local` 쿠키라 prod 앱과
+ *     공유되지 않아, 스위처가 로컬 검증 세션을 prod 로 이탈시키는 회귀를 막는다.
+ *     (정본 OS 는 local 에서 앱별 .env.local 명시 URL 로 해결하지만 플래너엔 앱별 env 가 없다.)
  */
 function siblingAppUrl(app: string): string | undefined {
-  if (!OS_BASE) return undefined;
-  return osTier() === 'dev' ? `https://dev-${app}.pullim.ai` : `https://${app}.pullim.ai`;
+  const tier = osTier();
+  if (!OS_BASE || tier === 'local') return undefined;
+  return tier === 'dev' ? `https://dev-${app}.pullim.ai` : `https://${app}.pullim.ai`;
 }
 
 /** OS 홈 origin — OS_BASE 미설정이면 undefined(비활성 — 위 안전장치와 동일). */
@@ -83,7 +86,8 @@ export const PULLIM_SERVICES: PullimService[] = [
   sibling({ key: 'games', name: '게임즈', desc: '숙제 끝나고 30분 더 한다.', icon: { img: '/os/icons/06_games.svg' }, app: 'games', path: '/games' }),
   sibling({ key: 'writing', name: '라이팅 코치', desc: '한 줄, 한 단락이 더 좋아진다.', icon: { img: '/os/icons/08_writing.svg' }, app: 'writing' }),
   sibling({ key: 'exam', name: '입시 코치', desc: '입시 준비를 데이터로 한다.', icon: { img: '/os/icons/07_exam.svg' }, app: 'admissions' }),
-  sibling({ key: 'store', name: '스토어', desc: '검증된 콘텐츠만 사고 판다.', icon: { img: '/os/icons/02_store.svg' }, app: 'store' }),
+  // 스토어는 개통 미확인(사용자 개통 지정 목록·실서비스 확인 밖) — 확인 전까지 soon 유지(Codex #147 R3)
+  { key: 'store', name: '스토어', desc: '검증된 콘텐츠만 사고 판다.', icon: { img: '/os/icons/02_store.svg' }, soon: true },
   sibling({ key: 'studio', name: '스튜디오', desc: '제작은 AI가, 검증은 사람이.', icon: { img: '/os/icons/01_studio.svg' }, app: 'studio' }),
   sibling({ key: 'junior', name: '주니어', desc: '초등, 즐겁게 시작하는 첫 학습.', icon: { img: '/os/icons/pullim.svg' }, app: 'jr' }),
   sibling({ key: 'arcade', name: '아케이드', desc: '무료로 즐기는 학습 아케이드.', icon: { img: '/os/icons/06_games.svg' }, app: 'arcade' }),
