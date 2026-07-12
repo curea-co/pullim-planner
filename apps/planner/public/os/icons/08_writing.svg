@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pullim Writing Coach">
+  <title>풀림 라이팅코치</title>
+  <rect x="4" y="4" width="92" height="92" rx="18" fill="#0362DA"/>
+  <!-- notebook outline -->
+  <rect x="30" y="22" width="40" height="8" fill="#FFFFFF"/>
+  <rect x="30" y="70" width="40" height="8" fill="#FFFFFF"/>
+  <rect x="30" y="30" width="8" height="40" fill="#FFFFFF"/>
+  <rect x="62" y="30" width="8" height="40" fill="#FFFFFF"/>
+  <!-- text lines (4 lines, line 3 is half-written) -->
+  <rect x="38" y="38" width="24" height="8" fill="#FFFFFF"/>
+  <rect x="38" y="46" width="24" height="8" fill="#FFFFFF"/>
+  <rect x="38" y="54" width="16" height="8" fill="#FFFFFF"/>
+  <rect x="38" y="62" width="24" height="8" fill="#FFFFFF"/>
+  <!-- highlight accent (dead center, marks "the line you're writing") -->
+  <rect x="46" y="46" width="8" height="8" fill="#E6FF4C"/>
+</svg>
