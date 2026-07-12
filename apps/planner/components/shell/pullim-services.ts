@@ -78,19 +78,30 @@ function sibling(
   };
 }
 
-export const PULLIM_SERVICES: PullimService[] = [
-  { key: 'os', name: 'OS 홈', desc: '8개 서비스 한 곳에서', icon: { char: '⌂' }, href: osHomeUrl(), soon: !OS_BASE },
+/**
+ * 개통 근거(2026-07-12) — live 링크는 아래 두 근거 중 하나로만 열었다:
+ *   ① 사용자(제품 오너) 개통 지정: 문제큐(q)·라이팅 코치(writing)·스튜디오(studio)·아케이드(arcade)
+ *   ② 실서비스 실측 확인(title): 클래스봇("풀림 클래스봇")·주니어("풀림 주니어")·입시 코치
+ *      ("Pullim Admissions Coach")·게임즈(기존 목록에서도 live)
+ * 스토어만 근거 밖 — 개통 확인 전까지 soon 유지.
+ */
+const SERVICE_ENTRIES: PullimService[] = [
   { key: 'planner', name: '플래너', desc: '내 공부, 내가 설계한다.', icon: { img: '/os/icons/03_planner.svg' }, href: '/planner', current: true },
   sibling({ key: 'classbot', name: '클래스봇', desc: '선생님의 분신을 만든다.', icon: { img: '/os/icons/04_classbot.svg' }, app: 'classbot' }),
   sibling({ key: 'q', name: '문제큐', desc: '풀고, 틀리고, 다시 자라난다.', icon: { img: '/os/icons/05_q.svg' }, app: 'q' }),
   sibling({ key: 'games', name: '게임즈', desc: '숙제 끝나고 30분 더 한다.', icon: { img: '/os/icons/06_games.svg' }, app: 'games', path: '/games' }),
   sibling({ key: 'writing', name: '라이팅 코치', desc: '한 줄, 한 단락이 더 좋아진다.', icon: { img: '/os/icons/08_writing.svg' }, app: 'writing' }),
   sibling({ key: 'exam', name: '입시 코치', desc: '입시 준비를 데이터로 한다.', icon: { img: '/os/icons/07_exam.svg' }, app: 'admissions' }),
-  // 스토어는 개통 미확인(사용자 개통 지정 목록·실서비스 확인 밖) — 확인 전까지 soon 유지(Codex #147 R3)
   { key: 'store', name: '스토어', desc: '검증된 콘텐츠만 사고 판다.', icon: { img: '/os/icons/02_store.svg' }, soon: true },
   sibling({ key: 'studio', name: '스튜디오', desc: '제작은 AI가, 검증은 사람이.', icon: { img: '/os/icons/01_studio.svg' }, app: 'studio' }),
   sibling({ key: 'junior', name: '주니어', desc: '초등, 즐겁게 시작하는 첫 학습.', icon: { img: '/os/icons/pullim.svg' }, app: 'jr' }),
   sibling({ key: 'arcade', name: '아케이드', desc: '무료로 즐기는 학습 아케이드.', icon: { img: '/os/icons/06_games.svg' }, app: 'arcade' }),
+];
+
+export const PULLIM_SERVICES: PullimService[] = [
+  // 정본 스위처와 동일하게 개수는 목록에서 파생 — 하드코딩 "8개"가 카탈로그와 어긋나지 않게(Codex).
+  { key: 'os', name: 'OS 홈', desc: `${SERVICE_ENTRIES.length}개 서비스 한 곳에서`, icon: { char: '⌂' }, href: osHomeUrl(), soon: !OS_BASE },
+  ...SERVICE_ENTRIES,
 ];
 
 /** 현재 서비스(플래너) */
