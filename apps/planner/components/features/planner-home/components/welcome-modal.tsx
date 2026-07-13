@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { CalendarClock, BarChart2, Share2, Repeat2, BookOpen } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-  DialogFooter, DialogClose,
+  DialogBody, DialogFooter, DialogClose,
 } from '@/components/ui/dialog';
 import { REPORTS_ENABLED, ROUTINE_ENABLED } from '@/lib/flags';
 
@@ -37,19 +37,23 @@ export function WelcomeModal({ open, onClose }: WelcomeModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <ul className="mt-1 space-y-3">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
-            <li key={title} className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-pullim-blue-50">
-                <Icon className="h-4 w-4 text-pullim-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-foreground">{title}</p>
-                <p className="text-xs text-muted-foreground">{desc}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        {/* DialogBody(px-4)로 감싸 아이콘 열의 좌측선을 헤더 텍스트("시험 목표부터…", DialogHeader px-4)와
+            정렬 — ul이 DialogContent 직속(px 0)이라 원형 아이콘이 텍스트보다 왼쪽으로 나가던 것 수정. */}
+        <DialogBody>
+          <ul className="space-y-3">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <li key={title} className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-pullim-blue-50">
+                  <Icon className="h-4 w-4 text-pullim-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">{title}</p>
+                  <p className="text-xs text-muted-foreground">{desc}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </DialogBody>
 
         <DialogFooter className="mt-2 flex gap-2">
           <Link
