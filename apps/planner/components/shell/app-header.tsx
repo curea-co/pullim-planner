@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, LogOut, Settings } from 'lucide-react';
+import { Bell, Search, LogOut, Settings, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -107,6 +107,15 @@ function ProfileMenu() {
               설정
             </DropdownMenuItem>
           )}
+          {/* 매뉴얼(온보딩) — 모바일(md 미만)은 LNB 가 없어 이 항목이 유일한 진입 경로(Codex #154).
+              LNB '매뉴얼'과 동일 명칭·목적지. */}
+          <DropdownMenuItem
+            onClick={() => router.push('/planner/onboarding')}
+            className="gap-1.5 px-2 py-1.5 text-sm"
+          >
+            <BookOpen className="h-4 w-4" />
+            매뉴얼
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
