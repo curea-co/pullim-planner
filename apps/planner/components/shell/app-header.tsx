@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, LogOut, BookOpen } from 'lucide-react';
+import { Bell, Search, LogOut, Settings, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -11,6 +11,7 @@ import {
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { ServiceSwitcher } from './service-switcher';
+import { osHomeUrl } from './pullim-services';
 
 /**
  * 상단 헤더 — **풀림 OS 공통 헤더(topbar)** 를 플래너에 적용(vendoring: `app/os-topbar.css`).
@@ -94,13 +95,26 @@ function ProfileMenu() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {/* OI-1: '소개/안내'를 하단탭에서 프로필 메뉴로 내림 */}
+          {/* '서비스 소개' → OS '설정'으로 교체(사용자 확정 2026-07-13) — 온보딩 진입은 LNB '매뉴얼' 유지.
+              OS 설정은 외부 앱(os.pullim.ai)이라 하드 내비게이션(쿠키 Domain=.pullim.ai 자동 동반).
+              URL 은 티어 안전장치(osHomeUrl — env 미설정이면 항목 미노출) 재사용. */}
+          {osHomeUrl() && (
+            <DropdownMenuItem
+              onClick={() => { window.location.href = `${osHomeUrl()}/os/settings`; }}
+              className="gap-1.5 px-2 py-1.5 text-sm"
+            >
+              <Settings className="h-4 w-4" />
+              설정
+            </DropdownMenuItem>
+          )}
+          {/* 매뉴얼(온보딩) — 모바일(md 미만)은 LNB 가 없어 이 항목이 유일한 진입 경로(Codex #154).
+              LNB '매뉴얼'과 동일 명칭·목적지. */}
           <DropdownMenuItem
             onClick={() => router.push('/planner/onboarding')}
             className="gap-1.5 px-2 py-1.5 text-sm"
           >
             <BookOpen className="h-4 w-4" />
-            서비스 소개
+            매뉴얼
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

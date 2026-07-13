@@ -40,8 +40,8 @@ function siblingAppUrl(app: string): string | undefined {
   return tier === 'dev' ? `https://dev-${app}.pullim.ai` : `https://${app}.pullim.ai`;
 }
 
-/** OS 홈 origin — OS_BASE 미설정이면 undefined(비활성 — 위 안전장치와 동일). */
-function osHomeUrl(): string | undefined {
+/** OS 홈 origin — OS_BASE 미설정이면 undefined(비활성 — 위 안전장치와 동일). 헤더 프로필 메뉴의 OS 설정 링크도 재사용. */
+export function osHomeUrl(): string | undefined {
   return OS_BASE ? OS_BASE.replace(/\/$/, '') : undefined;
 }
 
