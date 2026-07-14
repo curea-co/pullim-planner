@@ -49,6 +49,19 @@ describe('AppSidebar (플랫 PUDS 레일)', () => {
     expect(screen.getByRole('link', { name: '매뉴얼' })).not.toHaveAttribute('aria-current');
   });
 
+  it('레일 하단에 문의 카드(mailto)를 상시 노출한다', () => {
+    render(<AppSidebar />);
+    const contact = screen.getByRole('link', { name: /문의하기/ });
+    expect(contact).toHaveAttribute('href', 'mailto:support@curea.co');
+    expect(screen.getByText('support@curea.co')).toBeInTheDocument();
+  });
+
+  it('아이콘 전용(compact) 모드에서도 문의 mailto 진입점이 유지된다', () => {
+    render(<AppSidebar compact />);
+    const contact = screen.getByRole('link', { name: /문의하기/ });
+    expect(contact).toHaveAttribute('href', 'mailto:support@curea.co');
+  });
+
   it('compact(아이콘 전용)에선 눈썹·라벨을 숨기고 title 접근명으로 대체한다', () => {
     render(<AppSidebar compact />);
     expect(screen.queryByText('풀림 플래너')).not.toBeInTheDocument();
