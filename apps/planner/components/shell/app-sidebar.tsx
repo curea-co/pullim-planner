@@ -42,15 +42,17 @@ function AppSidebarInner({ onNavigate, className, compact, collapsed }: Props) {
   return (
     <nav
       aria-label="플래너 메뉴"
-      // flex-1: RailFooter(mt-auto)가 레일 바닥에 고정되도록 세로 공간을 채운다(정본 .rail-foot 대응)
-      className={cn('flex flex-1 flex-col overflow-y-auto py-3', iconOnly ? 'items-center px-1.5' : 'px-2', className)}
+      // flex-1: RailFooter가 레일 바닥에 고정되도록 세로 공간을 채운다(정본 .rail-foot 대응).
+      // 스크롤은 메뉴 리스트(ul)에만 — nav 전체에 걸면 낮은 화면에서 문의 카드가 함께 밀려
+      // "상시 노출"이 깨진다(Codex #157).
+      className={cn('flex flex-1 min-h-0 flex-col py-3', iconOnly ? 'items-center px-1.5' : 'px-2', className)}
     >
       {!iconOnly && (
         <div className="text-[var(--text-tertiary)] px-2 pt-1 pb-1.5 font-mono text-[10px] font-medium tracking-[0.16em] uppercase">
           풀림 플래너
         </div>
       )}
-      <ul className={cn('space-y-0.5', iconOnly && 'w-full')}>
+      <ul className={cn('flex-1 min-h-0 space-y-0.5 overflow-y-auto', iconOnly && 'w-full')}>
         {plannerSection.map(item => (
           <NavRow
             key={item.href}
