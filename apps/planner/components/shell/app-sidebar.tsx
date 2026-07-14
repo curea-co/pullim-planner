@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Lock } from 'lucide-react';
 import { plannerSection, type NavSubItem } from './nav-config';
+import { RailFooter } from './rail-footer';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -41,7 +42,8 @@ function AppSidebarInner({ onNavigate, className, compact, collapsed }: Props) {
   return (
     <nav
       aria-label="플래너 메뉴"
-      className={cn('flex flex-col overflow-y-auto py-3', iconOnly ? 'items-center px-1.5' : 'px-2', className)}
+      // flex-1: RailFooter(mt-auto)가 레일 바닥에 고정되도록 세로 공간을 채운다(정본 .rail-foot 대응)
+      className={cn('flex flex-1 flex-col overflow-y-auto py-3', iconOnly ? 'items-center px-1.5' : 'px-2', className)}
     >
       {!iconOnly && (
         <div className="text-[var(--text-tertiary)] px-2 pt-1 pb-1.5 font-mono text-[10px] font-medium tracking-[0.16em] uppercase">
@@ -59,6 +61,8 @@ function AppSidebarInner({ onNavigate, className, compact, collapsed }: Props) {
           />
         ))}
       </ul>
+      {/* 문의 카드 — 전 모드(펼침/compact/collapsed) 공유, 레일 바닥 고정 */}
+      <RailFooter iconOnly={iconOnly} />
     </nav>
   );
 }
