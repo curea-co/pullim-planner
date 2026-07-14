@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, LogOut, Settings, BookOpen, Mail } from 'lucide-react';
+import { Bell, Search, LogOut, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -95,8 +95,11 @@ function ProfileMenu() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {/* '서비스 소개' → OS '설정'으로 교체(사용자 확정 2026-07-13) — 온보딩 진입은 LNB '매뉴얼' 유지.
-              OS 설정은 외부 앱(os.pullim.ai)이라 하드 내비게이션(쿠키 Domain=.pullim.ai 자동 동반).
+          {/* 프로필 메뉴 구성 = OS 기준(사용자 이름 · 설정 · 로그아웃) 정합 — 사용자 확정 2026-07-13.
+              '매뉴얼'·'문의하기'는 제거: 온보딩은 최초 1회로 충분하고, 문의는 레일 카드(RailFooter)로
+              충분하다는 제품 결정. md 미만에서 온보딩·문의 진입점이 없어지는 것은 **수용된 트레이드오프**
+              (Codex #154·#157 지적을 오너가 명시적으로 검토 후 반려).
+              OS 설정은 외부 앱이라 하드 내비게이션(쿠키 Domain=.pullim.ai 자동 동반).
               URL 은 티어 안전장치(osHomeUrl — env 미설정이면 항목 미노출) 재사용. */}
           {osHomeUrl() && (
             <DropdownMenuItem
@@ -107,24 +110,6 @@ function ProfileMenu() {
               설정
             </DropdownMenuItem>
           )}
-          {/* 매뉴얼(온보딩) — 모바일(md 미만)은 LNB 가 없어 이 항목이 유일한 진입 경로(Codex #154).
-              LNB '매뉴얼'과 동일 명칭·목적지. */}
-          <DropdownMenuItem
-            onClick={() => router.push('/planner/onboarding')}
-            className="gap-1.5 px-2 py-1.5 text-sm"
-          >
-            <BookOpen className="h-4 w-4" />
-            매뉴얼
-          </DropdownMenuItem>
-          {/* 문의하기 — 모바일(md 미만)은 레일(RailFooter)이 없어 프로필 메뉴가 문의 진입점(Codex #157).
-              데스크톱은 레일 카드와 중복 노출이지만 무해(같은 mailto). */}
-          <DropdownMenuItem
-            onClick={() => { window.location.href = 'mailto:support@curea.co'; }}
-            className="gap-1.5 px-2 py-1.5 text-sm"
-          >
-            <Mail className="h-4 w-4" />
-            문의하기
-          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
