@@ -13,7 +13,9 @@ import {
   deletePlanner,
 } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient } from '@/lib/planner/client';
+import { pullimPlannerClient, pullimToFriend } from '@/lib/planner/pullim-client';
 import { mockFriends } from '@/lib/mock/studygram';
+import type { Friend } from '@/lib/mock/studygram';
 import ManagePlannersPresenter from '../presenters/ManagePlannersPresenter';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
@@ -31,9 +33,29 @@ export default function ManagePlannersContainer() {
   const [deleteTarget, setDeleteTarget] = useState<Planner | null>(null);
   const [shareTarget, setShareTarget] = useState<Planner | null>(null);
   const [allPlanners, setAllPlanners] = useState<Planner[]>([]);
+  // 공유 모달용 친구 목록 — LNB '공유'와 동일한 실 데이터(getFriends). dev bypass면 mock.
+  const [friends, setFriends] = useState<Friend[]>(DEV_AUTH_BYPASS ? mockFriends : []);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
+
+  // 공유 모달 친구 목록 — 마운트 1회(real 모드). 실패해도 시간표 관리 자체는 동작해야 하므로
+  // 조용히 빈 목록 유지(공유 모달에서 "친구 없음"으로 처리). LNB '공유'와 동일한 getFriends 재사용.
+  useEffect(() => {
+    if (DEV_AUTH_BYPASS) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await pullimPlannerClient.getFriends();
+        if (!cancelled) setFriends(rows.map(pullimToFriend));
+      } catch {
+        // 무시 — 친구 목록 없이도 관리 화면은 정상. 공유 시도 시 빈 목록으로 안내.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 마운트 + tick(mutation 후 refresh) 마다 본인 시간표 목록을 다시 읽는다.
   // loading/loadError 를 분리해 "정말 비어 있음"과 "불러오기 실패"를 구분한다 (codex).
@@ -207,7 +229,7 @@ export default function ManagePlannersContainer() {
   function confirmShare(friendIds: string[]) {
     if (!shareTarget) return;
     if (DEV_AUTH_BYPASS) {
-      const names = mockFriends
+      const names = friends
         .filter((f) => friendIds.includes(f.id))
         .map((f) => f.name)
         .join(', ');
@@ -256,6 +278,7 @@ export default function ManagePlannersContainer() {
         if (!o) setShareTarget(null);
       }}
       onShareConfirm={confirmShare}
+      friends={friends}
     />
   );
 }
