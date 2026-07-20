@@ -39,6 +39,8 @@ interface ManagePlannersPresenterProps {
   onShareConfirm: (friendIds: string[]) => void;
   /** 공유 모달 친구 목록 — 실 데이터(getFriends)/mock(bypass). */
   friends: Friend[];
+  /** 친구 목록 로드 실패 여부. */
+  friendsError?: boolean;
 }
 
 export default function ManagePlannersPresenter({
@@ -54,6 +56,7 @@ export default function ManagePlannersPresenter({
   deleteTarget,
   shareTarget,
   friends,
+  friendsError,
   onToggleArchived,
   onActivateRequest,
   onActivateOpenChange,
@@ -181,6 +184,7 @@ export default function ManagePlannersPresenter({
         planner={shareTarget}
         onConfirm={onShareConfirm}
         friends={friends}
+        friendsError={friendsError}
       />
     </div>
   );

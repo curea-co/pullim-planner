@@ -35,6 +35,7 @@ export default function ManagePlannersContainer() {
   const [allPlanners, setAllPlanners] = useState<Planner[]>([]);
   // 공유 모달용 친구 목록 — LNB '공유'와 동일한 실 데이터(getFriends). dev bypass면 mock.
   const [friends, setFriends] = useState<Friend[]>(DEV_AUTH_BYPASS ? mockFriends : []);
+  const [friendsError, setFriendsError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
@@ -47,9 +48,14 @@ export default function ManagePlannersContainer() {
     void (async () => {
       try {
         const rows = await pullimPlannerClient.getFriends();
-        if (!cancelled) setFriends(rows.map(pullimToFriend));
+        if (!cancelled) {
+          setFriends(rows.map(pullimToFriend));
+          setFriendsError(false);
+        }
       } catch {
-        // 무시 — 친구 목록 없이도 관리 화면은 정상. 공유 시도 시 빈 목록으로 안내.
+        // 로드 실패(네트워크·401 등) — 빈 목록을 '친구 없음'으로 오표시하지 않게 실패 플래그를
+        // 세운다(LNB '공유' ShareContainer 동일 패턴). 관리 화면 자체는 정상 동작.
+        if (!cancelled) setFriendsError(true);
       }
     })();
     return () => {
@@ -279,6 +285,7 @@ export default function ManagePlannersContainer() {
       }}
       onShareConfirm={confirmShare}
       friends={friends}
+      friendsError={friendsError}
     />
   );
 }

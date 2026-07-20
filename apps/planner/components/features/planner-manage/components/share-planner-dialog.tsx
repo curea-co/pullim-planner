@@ -19,13 +19,15 @@ type Props = {
   onConfirm: (friendIds: string[]) => void;
   /** 공유 대상 친구 목록 — LNB '공유'와 동일한 실 데이터(getFriends). dev bypass면 mock. */
   friends: Friend[];
+  /** 친구 목록 로드 실패(네트워크·401 등) — 빈 목록을 '친구 없음'으로 오표시하지 않게 분기. */
+  friendsError?: boolean;
 };
 
 /**
  * 시간표 공유 — 친구 다중 선택 모달.
  * 아웃바운드 공유(내 시간표 → 친구). 인바운드 조회는 LNB "공유"(친구가 공유한 시간표).
  */
-export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm, friends }: Props) {
+export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm, friends, friendsError }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   // 수락된 친구만 공유 대상 (pending/blocked 제외)
   const acceptedFriends = friends.filter((f) => f.status === 'accepted');
@@ -70,7 +72,11 @@ export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm, fri
         </DialogHeader>
 
         <DialogBody>
-          {acceptedFriends.length === 0 ? (
+          {friendsError ? (
+            <p className="text-pullim-slate-500 py-8 text-center text-sm">
+              친구 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+            </p>
+          ) : acceptedFriends.length === 0 ? (
             <p className="text-pullim-slate-500 py-8 text-center text-sm">
               아직 친구가 없어요. 공유에서 친구를 추가해 보세요.
             </p>
