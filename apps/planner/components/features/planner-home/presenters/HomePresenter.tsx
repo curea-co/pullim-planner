@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { CalendarShell, type CalendarView } from '../components/calendar-shell';
+import type { Customization } from '@/lib/hooks/use-planner-customization';
 import { DayView } from '../components/views/day-view';
 import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
@@ -40,6 +41,8 @@ interface HomePresenterProps {
   dayBlocks?: TimeBlock[];
   /** 블록 완료 기록 실 저장(#416) — 미주입(dev bypass)이면 완료 다이얼로그가 데모(toast)로 동작. */
   onCompleteSubmit?: (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => Promise<boolean>;
+  /** 실 active 플래너 꾸미기 — 홈 뷰 layout·palette 반영(미주입 시 mock 폴백). */
+  customization?: Customization;
   weekDays?: WeekDay[];
   monthDays?: MonthDay[];
   /** 실데이터 월간 헤더 라벨("7월") — 미주입이면 mock 데모 라벨. */
@@ -64,6 +67,7 @@ export default function HomePresenter({
   onChangeView,
   dayBlocks,
   onCompleteSubmit,
+  customization,
   weekDays,
   monthDays,
   monthLabel,
@@ -163,8 +167,8 @@ export default function HomePresenter({
         }
         action={switchAction}
       >
-        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} />}
-        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} />}
+        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} />}
+        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} />}
         {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} />}
       </CalendarShell>
     </>
