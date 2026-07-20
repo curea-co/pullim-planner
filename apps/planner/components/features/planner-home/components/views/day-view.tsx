@@ -9,7 +9,7 @@ import {
   hasQAccess, getBlockColor,
   type ConditionLevel, type BlockType, type TimeBlock,
 } from '@/lib/mock';
-import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
+import { getActiveCustomization, type Customization } from '@/lib/hooks/use-planner-customization';
 import { SectionHeading } from '@/components/shell/section-heading';
 import { ActiveDayLayout } from '@/components/features/planner-home/components/layouts/active-day-layout';
 import { ConditionBurnoutPanel } from '@/components/features/planner-home/components/condition-burnout-panel';
@@ -44,10 +44,12 @@ interface DayViewProps {
   dday?: number;
   /** 블록 완료 기록 실 저장(#416) — 미주입이면 완료 다이얼로그가 데모(toast)로 동작. */
   onCompleteSubmit?: (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => Promise<boolean>;
+  /** 실 active 플래너의 꾸미기(layout·palette) — 미주입(dev bypass)이면 mock getActiveCustomization 폴백. */
+  customization?: Customization;
 }
 
 /** 일간 캘린더 본문 — 24h 시계 + 자기보고 패널 + 블록 리스트. */
-export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp, onCompleteSubmit }: DayViewProps) {
+export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp, onCompleteSubmit, customization }: DayViewProps) {
   const [condition, setCondition] = useState<ConditionLevel>(3);
   const [showLegend, setShowLegend] = useState(false);
   const [trimTimeline, setTrimTimeline] = useState(true);
@@ -57,7 +59,8 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
   const blocks = blocksProp ?? getBlocksForDayOffset(dayOffset);
   const next = nextActiveBlock(blocks);
   const qAccess = hasQAccess();
-  const { layoutId, paletteId } = getActiveCustomization();
+  // 실데이터 주입 우선(홈 꾸미기 반영) — 미주입(dev bypass)이면 mock 폴백.
+  const { layoutId, paletteId } = customization ?? getActiveCustomization();
 
   function notifyQNoAccess() {
     toast.info('🔒 풀림 Q와 연계한 서비스가 준비 중입니다.', {
