@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { ApiError } from '@pullim-planner/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
+import { getCustomization, type Customization } from '@/lib/hooks/use-planner-customization';
 import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
 import { useHomeBlocks } from '../hooks/use-home-blocks';
@@ -155,6 +156,9 @@ export default function HomeContainer() {
   let weekDays: WeekDay[] | undefined;
   let monthDays: MonthDay[] | undefined;
   let monthLabel: string | undefined;
+  // 홈 뷰 꾸미기(layout·palette) — 실 active 플래너의 customization을 뷰로 주입해 저장값을 반영한다.
+  // dev bypass면 undefined로 두어 뷰가 mock getActiveCustomization으로 폴백한다(기존 동작 유지).
+  let customization: Customization | undefined;
   // 히어로 배너는 뷰·기간 이동과 무관하게 **항상 실제 오늘·이번 주** 기준으로 요약한다.
   // (뷰 offset 을 그대로 쓰면 week/month·미래 날짜에서 "오늘 X/Y"가 엉뚱한 날짜로, "이번 주 Nh"가
   //  사라진다 — Codex #124). daySummary/weekMeta(헤더용)는 뷰 맥락대로 두고, 히어로만 분리.
@@ -172,6 +176,7 @@ export default function HomeContainer() {
     heroWeekMeta = getWeekMeta(0); // 이번 주
   } else {
     const { active, blocksByDate, heroBlocksByDate, todayIso } = real;
+    customization = getCustomization(active);
     examName = active?.examLabel || active?.name || '';
     dday = active ? ddayFrom(todayIso, active.examStartDate) : 0;
     dayBlocks = blocksByDate[shiftIsoDate(todayIso, offset)] ?? [];
@@ -240,6 +245,7 @@ export default function HomeContainer() {
         onChangeView={onChangeView}
         dayBlocks={dayBlocks}
         onCompleteSubmit={DEV_AUTH_BYPASS ? undefined : handleCompleteBlock}
+        customization={customization}
         weekDays={weekDays}
         monthDays={monthDays}
         monthLabel={monthLabel}

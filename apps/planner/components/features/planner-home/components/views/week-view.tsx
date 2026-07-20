@@ -6,7 +6,7 @@ import { WeeklyChart } from '@/components/features/planner-home/components/weekl
 import { WeeklyGoalsCard } from '@/components/features/planner-home/components/home/weekly-goals-card';
 import { WeekPlanSummary } from '@/components/features/planner-home/components/home/week-plan-summary';
 import { PeriodEmptyState } from '@/components/features/planner-home/components/period-empty-state';
-import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
+import { getActiveCustomization, type Customization } from '@/lib/hooks/use-planner-customization';
 
 interface WeekViewProps {
   /** 주 이동 offset (0=기준 주). 0 외에는 데모 플랜이 없어 빈 상태. */
@@ -15,6 +15,8 @@ interface WeekViewProps {
   onReset?: () => void;
   /** 실데이터(B4) — 주입 시 그 주의 실 집계로 렌더(offset 이동도 실데이터). 미주입=mock 데모. */
   days?: WeekDay[];
+  /** 실 active 플래너의 꾸미기 — 미주입(dev bypass)이면 mock 폴백. */
+  customization?: Customization;
 }
 
 /**
@@ -26,8 +28,8 @@ interface WeekViewProps {
  * 실데이터 모드(days 주입)에선 mock WeeklyChart·WeeklyGoalsCard(목표시간·정답률·약점 — 블록 외
  * mock) 대신 우측에 WeekPlanSummary(계획 시간·예정일·타입 구성, 블록 파생값만)를 둔다(B4b ①-1단계).
  */
-export function WeekView({ weekOffset = 0, onReset, days }: WeekViewProps) {
-  const { weekLayoutId, paletteId } = getActiveCustomization();
+export function WeekView({ weekOffset = 0, onReset, days, customization }: WeekViewProps) {
+  const { weekLayoutId, paletteId } = customization ?? getActiveCustomization();
   const isBarWeek = weekLayoutId === 'bar_week';
   const isReal = days !== undefined;
 
