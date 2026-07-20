@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@pullim-planner/api-client';
@@ -42,30 +42,30 @@ export default function ManagePlannersContainer() {
   const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
 
-  // 공유 모달 친구 목록 — 마운트 1회(real 모드). 실패해도 시간표 관리 자체는 동작해야 하므로
-  // 조용히 빈 목록 유지(공유 모달에서 "친구 없음"으로 처리). LNB '공유'와 동일한 getFriends 재사용.
-  useEffect(() => {
+  // 공유 모달 친구 목록 — LNB '공유'와 동일한 getFriends 재사용. 마운트 1회 + 공유 모달 열 때마다
+  // 재조회(일시 장애 뒤에도 이 세션에서 공유가 영구 차단되지 않게, Codex). 실패해도 관리 화면은 정상.
+  // 선두에서 setFriendsLoading(true)를 두지 않는다(effect 동기 setState 룰) — 마운트는 초기값
+  // (friendsLoading = real 모드 true)이 커버하고, 모달 열 때 재조회는 onShareRequest(이벤트 핸들러)가
+  // 로딩 플래그를 세운다. 여기선 결과 반영(await 이후)만 한다.
+  const loadFriends = useCallback(async () => {
     if (DEV_AUTH_BYPASS) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const rows = await pullimPlannerClient.getFriends();
-        if (!cancelled) {
-          setFriends(rows.map(pullimToFriend));
-          setFriendsError(false);
-        }
-      } catch {
-        // 로드 실패(네트워크·401 등) — 빈 목록을 '친구 없음'으로 오표시하지 않게 실패 플래그를
-        // 세운다(LNB '공유' ShareContainer 동일 패턴). 관리 화면 자체는 정상 동작.
-        if (!cancelled) setFriendsError(true);
-      } finally {
-        if (!cancelled) setFriendsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    try {
+      const rows = await pullimPlannerClient.getFriends();
+      setFriends(rows.map(pullimToFriend));
+      setFriendsError(false);
+    } catch {
+      setFriendsError(true);
+    } finally {
+      setFriendsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    // async IIFE로 감싸 setState를 await 경계 뒤로 보낸다(effect 동기 setState 룰 — tick 효과와 동일).
+    void (async () => {
+      await loadFriends();
+    })();
+  }, [loadFriends]);
 
   // 마운트 + tick(mutation 후 refresh) 마다 본인 시간표 목록을 다시 읽는다.
   // loading/loadError 를 분리해 "정말 비어 있음"과 "불러오기 실패"를 구분한다 (codex).
@@ -229,7 +229,13 @@ export default function ManagePlannersContainer() {
   /** 공유 — 친구 선택 모달 열기 (아웃바운드. 인바운드 조회는 LNB "공유") */
   function onShareRequest(id: string) {
     const target = allPlanners.find((p) => p.id === id);
-    if (target) setShareTarget(target);
+    if (!target) return;
+    setShareTarget(target);
+    // 모달 열 때마다 친구 목록 재조회 — 마운트 시 실패했어도 이 시점에 복구된다(Codex).
+    if (!DEV_AUTH_BYPASS) {
+      setFriendsLoading(true);
+      void loadFriends();
+    }
   }
   /**
    * 공유 확정 — studygram 공유 BE·인바운드 조회 화면이 모두 미구현(spec P1+).
