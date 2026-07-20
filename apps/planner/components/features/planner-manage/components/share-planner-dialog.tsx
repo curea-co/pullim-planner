@@ -21,13 +21,15 @@ type Props = {
   friends: Friend[];
   /** 친구 목록 로드 실패(네트워크·401 등) — 빈 목록을 '친구 없음'으로 오표시하지 않게 분기. */
   friendsError?: boolean;
+  /** 친구 목록 첫 조회 중 — 로딩을 '친구 없음'으로 오표시하지 않게 분기. */
+  friendsLoading?: boolean;
 };
 
 /**
  * 시간표 공유 — 친구 다중 선택 모달.
  * 아웃바운드 공유(내 시간표 → 친구). 인바운드 조회는 LNB "공유"(친구가 공유한 시간표).
  */
-export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm, friends, friendsError }: Props) {
+export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm, friends, friendsError, friendsLoading }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   // 수락된 친구만 공유 대상 (pending/blocked 제외)
   const acceptedFriends = friends.filter((f) => f.status === 'accepted');
@@ -72,7 +74,11 @@ export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm, fri
         </DialogHeader>
 
         <DialogBody>
-          {friendsError ? (
+          {friendsLoading ? (
+            <p className="text-pullim-slate-500 py-8 text-center text-sm">
+              친구 목록을 불러오는 중…
+            </p>
+          ) : friendsError ? (
             <p className="text-pullim-slate-500 py-8 text-center text-sm">
               친구 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
             </p>

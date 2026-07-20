@@ -41,6 +41,8 @@ interface ManagePlannersPresenterProps {
   friends: Friend[];
   /** 친구 목록 로드 실패 여부. */
   friendsError?: boolean;
+  /** 친구 목록 첫 조회 중 여부. */
+  friendsLoading?: boolean;
 }
 
 export default function ManagePlannersPresenter({
@@ -57,6 +59,7 @@ export default function ManagePlannersPresenter({
   shareTarget,
   friends,
   friendsError,
+  friendsLoading,
   onToggleArchived,
   onActivateRequest,
   onActivateOpenChange,
@@ -185,6 +188,7 @@ export default function ManagePlannersPresenter({
         onConfirm={onShareConfirm}
         friends={friends}
         friendsError={friendsError}
+        friendsLoading={friendsLoading}
       />
     </div>
   );
