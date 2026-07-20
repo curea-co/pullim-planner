@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Plus, Eye, EyeOff } from 'lucide-react';
 import type { Planner } from '@/lib/mock';
+import type { Friend } from '@/lib/mock/studygram';
 import { PageHeader } from '@/components/shell/page-header';
 import { PlannerCard } from '../components/planner-card';
 import { ActivateConfirmDialog } from '../components/activate-confirm-dialog';
@@ -36,6 +37,12 @@ interface ManagePlannersPresenterProps {
   onShareRequest: (id: string) => void;
   onShareOpenChange: (open: boolean) => void;
   onShareConfirm: (friendIds: string[]) => void;
+  /** 공유 모달 친구 목록 — 실 데이터(getFriends)/mock(bypass). */
+  friends: Friend[];
+  /** 친구 목록 로드 실패 여부. */
+  friendsError?: boolean;
+  /** 친구 목록 첫 조회 중 여부. */
+  friendsLoading?: boolean;
 }
 
 export default function ManagePlannersPresenter({
@@ -50,6 +57,9 @@ export default function ManagePlannersPresenter({
   activateTarget,
   deleteTarget,
   shareTarget,
+  friends,
+  friendsError,
+  friendsLoading,
   onToggleArchived,
   onActivateRequest,
   onActivateOpenChange,
@@ -176,6 +186,9 @@ export default function ManagePlannersPresenter({
         onOpenChange={onShareOpenChange}
         planner={shareTarget}
         onConfirm={onShareConfirm}
+        friends={friends}
+        friendsError={friendsError}
+        friendsLoading={friendsLoading}
       />
     </div>
   );

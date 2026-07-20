@@ -6,7 +6,7 @@ import {
   Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { mockFriends } from '@/lib/mock/studygram';
+import { type Friend } from '@/lib/mock/studygram';
 import { type Planner } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
@@ -17,17 +17,22 @@ type Props = {
   planner: Planner | null;
   /** 선택한 친구 id로 공유 확정 */
   onConfirm: (friendIds: string[]) => void;
+  /** 공유 대상 친구 목록 — LNB '공유'와 동일한 실 데이터(getFriends). dev bypass면 mock. */
+  friends: Friend[];
+  /** 친구 목록 로드 실패(네트워크·401 등) — 빈 목록을 '친구 없음'으로 오표시하지 않게 분기. */
+  friendsError?: boolean;
+  /** 친구 목록 첫 조회 중 — 로딩을 '친구 없음'으로 오표시하지 않게 분기. */
+  friendsLoading?: boolean;
 };
-
-// 수락된 친구만 공유 대상 (pending/blocked 제외)
-const acceptedFriends = mockFriends.filter((f) => f.status === 'accepted');
 
 /**
  * 시간표 공유 — 친구 다중 선택 모달.
  * 아웃바운드 공유(내 시간표 → 친구). 인바운드 조회는 LNB "공유"(친구가 공유한 시간표).
  */
-export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm }: Props) {
+export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm, friends, friendsError, friendsLoading }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
+  // 수락된 친구만 공유 대상 (pending/blocked 제외)
+  const acceptedFriends = friends.filter((f) => f.status === 'accepted');
 
   function toggle(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -69,7 +74,15 @@ export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm }: P
         </DialogHeader>
 
         <DialogBody>
-          {acceptedFriends.length === 0 ? (
+          {friendsLoading ? (
+            <p className="text-pullim-slate-500 py-8 text-center text-sm">
+              친구 목록을 불러오는 중…
+            </p>
+          ) : friendsError ? (
+            <p className="text-pullim-slate-500 py-8 text-center text-sm">
+              친구 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+            </p>
+          ) : acceptedFriends.length === 0 ? (
             <p className="text-pullim-slate-500 py-8 text-center text-sm">
               아직 친구가 없어요. 공유에서 친구를 추가해 보세요.
             </p>
@@ -108,7 +121,8 @@ export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm }: P
                             </span>
                           )}
                         </span>
-                        <span className="text-pullim-slate-500 block text-xs">{f.grade}</span>
+                        {/* grade 는 optional(BE 미노출·피어 안전 정책) — 있을 때만 표시. 실 데이터엔 없음 */}
+                        {f.grade && <span className="text-pullim-slate-500 block text-xs">{f.grade}</span>}
                       </span>
                       <span
                         className={cn(
