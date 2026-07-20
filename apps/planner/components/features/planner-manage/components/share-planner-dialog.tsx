@@ -121,7 +121,8 @@ export function SharePlannerDialog({ open, onOpenChange, planner, onConfirm, fri
                             </span>
                           )}
                         </span>
-                        <span className="text-pullim-slate-500 block text-xs">{f.grade}</span>
+                        {/* grade 는 optional(BE 미노출·피어 안전 정책) — 있을 때만 표시. 실 데이터엔 없음 */}
+                        {f.grade && <span className="text-pullim-slate-500 block text-xs">{f.grade}</span>}
                       </span>
                       <span
                         className={cn(
