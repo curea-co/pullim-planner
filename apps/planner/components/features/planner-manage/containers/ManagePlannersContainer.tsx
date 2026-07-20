@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@pullim-planner/api-client';
@@ -47,16 +47,22 @@ export default function ManagePlannersContainer() {
   // 선두에서 setFriendsLoading(true)를 두지 않는다(effect 동기 setState 룰) — 마운트는 초기값
   // (friendsLoading = real 모드 true)이 커버하고, 모달 열 때 재조회는 onShareRequest(이벤트 핸들러)가
   // 로딩 플래그를 세운다. 여기선 결과 반영(await 이후)만 한다.
+  // seq 가드: 마운트 요청과 모달 오픈 재요청이 겹칠 때, **최신 요청의 결과만** 반영해 느린 이전
+  // 요청이 최신 성공을 덮어쓰는 경쟁조건을 막는다(Codex — request id 비교).
+  const friendsReqSeq = useRef(0);
   const loadFriends = useCallback(async () => {
     if (DEV_AUTH_BYPASS) return;
+    const seq = ++friendsReqSeq.current;
     try {
       const rows = await pullimPlannerClient.getFriends();
+      if (seq !== friendsReqSeq.current) return; // 더 최신 요청이 진행 중 — stale 결과 무시.
       setFriends(rows.map(pullimToFriend));
       setFriendsError(false);
     } catch {
+      if (seq !== friendsReqSeq.current) return;
       setFriendsError(true);
     } finally {
-      setFriendsLoading(false);
+      if (seq === friendsReqSeq.current) setFriendsLoading(false);
     }
   }, []);
 
