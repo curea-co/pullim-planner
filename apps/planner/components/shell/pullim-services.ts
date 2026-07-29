@@ -79,18 +79,20 @@ function sibling(
 }
 
 /**
- * 노출 목록(사용자 확정 2026-07-12) — 플래너 스위처는 개통된 4개 서비스만 노출한다:
- * 문제큐(q)·라이팅 코치(writing)·스튜디오(studio)·아케이드(arcade).
- * **숨김(완전 비노출)**: 클래스봇·게임즈·입시 코치·스토어·주니어·리더 — 정본 hidden(reader)과
+ * 노출 목록(사용자 확정 2026-07-12 · 주니어 개통 반영 2026-07-29) — 플래너 스위처는 개통된
+ * 서비스만 노출한다: 문제큐(q)·라이팅 코치(writing)·스튜디오(studio)·주니어(jr)·아케이드(arcade).
+ * (개통에 따라 늘어나므로 **개수는 쓰지 않고 서술로만** 유지 — 하드코딩 개수 금지, Codex #147.)
+ * **숨김(완전 비노출)**: 클래스봇·게임즈·입시 코치·스토어·리더 — 정본 hidden(reader)과
  * 동일하게 목록에서 제외(soon 배지 아님). 개통·노출 결정 시 sibling() 항목으로 되살린다:
  *   classbot=app 'classbot' · games=app 'games'+path '/games' · exam=app 'admissions' ·
- *   store=app 'store' · junior=app 'jr' (이름·설명은 정본 os-services.ts 참조)
+ *   store=app 'store' (이름·설명은 정본 os-services.ts 참조)
  */
 const SERVICE_ENTRIES: PullimService[] = [
   { key: 'planner', name: '플래너', desc: '내 공부, 내가 설계한다.', icon: { img: '/os/icons/03_planner.svg' }, href: '/planner', current: true },
   sibling({ key: 'q', name: '문제큐', desc: '풀고, 틀리고, 다시 자라난다.', icon: { img: '/os/icons/05_q.svg' }, app: 'q' }),
   sibling({ key: 'writing', name: '라이팅 코치', desc: '한 줄, 한 단락이 더 좋아진다.', icon: { img: '/os/icons/08_writing.svg' }, app: 'writing' }),
   sibling({ key: 'studio', name: '스튜디오', desc: '제작은 AI가, 검증은 사람이.', icon: { img: '/os/icons/01_studio.svg' }, app: 'studio' }),
+  sibling({ key: 'junior', name: '주니어', desc: '초등, 즐겁게 시작하는 첫 학습.', icon: { img: '/os/icons/jr.svg' }, app: 'jr' }),
   sibling({ key: 'arcade', name: '아케이드', desc: '무료로 즐기는 학습 아케이드.', icon: { img: '/os/icons/06_games.svg' }, app: 'arcade' }),
 ];
 
