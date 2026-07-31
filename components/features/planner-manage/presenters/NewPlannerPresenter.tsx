@@ -42,7 +42,6 @@ export default function NewPlannerPresenter({
         onJump={onJump}
         mode="create"
         onActivate={onActivate}
-        finishHint="↑ 위 [플래너 활성화] 클릭으로 완료"
         routines={routines}
       />
     </div>

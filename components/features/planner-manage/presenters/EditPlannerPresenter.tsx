@@ -103,7 +103,6 @@ export default function EditPlannerPresenter({
             onJump={onJump}
             mode="edit"
             onActivate={onSave}
-            finishHint="↑ 위 [변경 사항 저장] 클릭으로 완료"
             routines={routines}
           />
 
