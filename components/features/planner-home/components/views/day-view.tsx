@@ -20,17 +20,6 @@ import { PeriodEmptyState } from '@/components/features/planner-home/components/
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 import { REFLECTION_ENABLED } from '@/lib/flags';
 
-/** 완료한 블록 다음의 첫 학습 블록(휴식 제외, todo/doing) — 모달 CTA 라우팅용 */
-function findFollowing(block: TimeBlock, blocks: TimeBlock[]): TimeBlock | null {
-  const idx = blocks.findIndex(b => b.id === block.id);
-  if (idx < 0) return null;
-  for (let i = idx + 1; i < blocks.length; i++) {
-    const b = blocks[i];
-    if (b.type !== 'break' && (b.status === 'todo' || b.status === 'doing')) return b;
-  }
-  return null;
-}
-
 const legendTypes: BlockType[] = ['concept', 'practice', 'review', 'memorize', 'mock', 'tutor', 'self_explain'];
 
 interface DayViewProps {
@@ -196,7 +185,6 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
 
       <BlockCompleteDialog
         block={completingBlock}
-        nextBlock={completingBlock ? findFollowing(completingBlock, blocks) : null}
         onClose={() => setCompletingBlock(null)}
         onSubmit={onCompleteSubmit}
       />
