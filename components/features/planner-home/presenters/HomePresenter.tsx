@@ -73,15 +73,20 @@ export default function HomePresenter({
   monthDays,
   monthLabel,
 }: HomePresenterProps) {
+  // QA #7 — 활성 계획표가 없으면 "다른 시간표로 전환" 대신 생성 CTA (전환할 시간표가 없음).
   const switchAction = (
     <Link
-      href="/planner/manage"
+      href={hasActivePlanner ? '/planner/manage' : '/planner/manage/new'}
       className="text-pullim-blue-600 hover:bg-pullim-blue-50 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1"
     >
-      다른 시간표로 전환
+      {hasActivePlanner ? '다른 시간표로 전환' : '시간표 만들기'}
       <ArrowRight className="h-3 w-3" />
     </Link>
   );
+  // 헤더 설명의 시험명 — 활성 계획표 없으면 빈 <strong>이 남지 않게 생략.
+  const examNameEl = hasActivePlanner && examName ? (
+    <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
+  ) : null;
 
   const headerProps = (() => {
     if (view === 'day') {
@@ -90,7 +95,7 @@ export default function HomePresenter({
         title: formatDayTitle(offset),
         description: (
           <>
-            <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
+            {examNameEl}
             {daySummary.total > 0 && (
               <>
                 <span className="mx-1">·</span>
@@ -109,7 +114,7 @@ export default function HomePresenter({
         title: formatWeekTitle(offset),
         description: (
           <>
-            <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
+            {examNameEl}
             {weekMeta.totalHours > 0 && (
               <>
                 <span className="mx-1">·</span>
@@ -129,7 +134,7 @@ export default function HomePresenter({
       title: formatMonthTitle(offset),
       description: (
         <>
-          <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
+          {examNameEl}
           {monthMeta.totalBlocks > 0 && (
             <>
               <span className="mx-1">·</span>
@@ -147,7 +152,7 @@ export default function HomePresenter({
   return (
     <>
       <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
-      <BurnoutThresholdBanner score={burnoutScore} />
+      {hasActivePlanner && <BurnoutThresholdBanner score={burnoutScore} />}
       <CalendarShell
         view={view}
         onChangeView={onChangeView}
