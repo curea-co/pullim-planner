@@ -21,7 +21,7 @@ import {
 import { BLOCK_TYPE_STRIPE } from '@/lib/planner/block-type-style';
 import {
   type PlannerForm, blockPatternMeta, motivationStyleMeta,
-  type ExamType, examTypeMeta,
+  type ExamType, examTypeMeta, todayIsoKst,
 } from './builder-types';
 import { RequiredMark } from '@/components/shell/required-mark';
 import { UnitEditorModal } from './unit-editor-modal';
@@ -35,8 +35,8 @@ type Props = {
 const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'etc'];
 
 /* ─── Step 1 — 목표 (시험 종류 탭 + 단일/범위 일자) ─── */
-// 접속 시점의 실제 오늘(KST) — D-day를 하드코딩 데모일이 아닌 현재 날짜 기준으로 계산.
-const TODAY_ISO = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+// 접속 시점의 실제 오늘(KST) — D-day 계산 + 시험 날짜 하한(min). 계획표는 미래 대상이라 과거 불가.
+const TODAY_ISO = todayIsoKst();
 
 const examTypeOrder: ExamType[] = ['mock', 'suneung', 'midterm', 'final', 'other'];
 
@@ -143,11 +143,11 @@ export function PStep1Goal({ form, setForm }: Props) {
       <div>
         {meta.isRange ? (
           <div className="grid grid-cols-2 gap-3">
-            <DateField label="시험 시작일" required value={startDate} onChange={setStart} />
-            <DateField label="시험 종료일" value={endDate} onChange={setEnd} min={startDate} />
+            <DateField label="시험 시작일" required value={startDate} onChange={setStart} min={TODAY_ISO} />
+            <DateField label="시험 종료일" value={endDate} onChange={setEnd} min={startDate || TODAY_ISO} />
           </div>
         ) : (
-          <DateField label="시험 날짜" required value={startDate} onChange={setStart} />
+          <DateField label="시험 날짜" required value={startDate} onChange={setStart} min={TODAY_ISO} />
         )}
         <p className="text-pullim-slate-500 mt-1 text-[10px] font-mono">
           D-day{' '}
@@ -1110,6 +1110,11 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
     }
     if (!form.examStartDate) {
       toast.error('1단계에서 시험 날짜를 선택해주세요');
+      return;
+    }
+    // 계획표는 미래 대상 — 과거 시험일 차단 (input min과 동일 기준, 직접 타이핑 우회 방지)
+    if (form.examStartDate < todayIsoKst()) {
+      toast.error('시험 날짜는 오늘 이후로 선택해주세요');
       return;
     }
     if (examTypeMeta[form.examType ?? 'mock'].targetKind === 'grade') {

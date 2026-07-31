@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { examTypeMeta, plannerStepConfig, type PlannerForm } from '@/components/features/planner-builder/components/builder-types';
+import { examTypeMeta, plannerStepConfig, todayIsoKst, type PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 
 const TOTAL_STEPS = plannerStepConfig.length;
 
@@ -32,6 +32,11 @@ export function usePlannerForm(initialForm: PlannerForm) {
       }
       if (!form.examStartDate) {
         toast.error('시험 날짜를 선택해주세요');
+        return;
+      }
+      // 계획표는 미래 대상 — 과거 시험일 차단 (input min과 동일 기준, 직접 타이핑 우회 방지)
+      if (form.examStartDate < todayIsoKst()) {
+        toast.error('시험 날짜는 오늘 이후로 선택해주세요');
         return;
       }
       // 등급형(모의·수능)은 자유입력 — 숫자가 없으면 저장 시 조용히 1등급으로 치환되므로 차단.
