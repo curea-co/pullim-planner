@@ -1130,9 +1130,16 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
         return;
       }
     }
-    const subjectCount = Object.keys(form.subjectUnits ?? {}).length;
-    if (subjectCount === 0) {
-      toast.error('3단계에서 과목을 1개 이상 추가해주세요');
+    const units = form.subjectUnits ?? {};
+    if (Object.keys(units).length === 0) {
+      toast.error('3단계에서 과목과 단원을 1개 이상 추가해주세요');
+      return;
+    }
+    // QA #9 — 단원이 비어 있는 과목이 있으면 활성화 차단 (goNext 방어와 동일 기준)
+    const emptySubject = (Object.entries(units) as [SubjectKey, string[]][])
+      .find(([, u]) => !u || u.length === 0);
+    if (emptySubject) {
+      toast.error(`3단계에서 '${subjectLabels[emptySubject[0]] ?? emptySubject[0]}' 과목의 단원을 1개 이상 선택해주세요`);
       return;
     }
 

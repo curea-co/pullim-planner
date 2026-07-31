@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { examTypeMeta, plannerStepConfig, todayIsoKst, type PlannerForm } from '@/components/features/planner-builder/components/builder-types';
+import { subjectLabels, type SubjectKey } from '@/lib/mock';
 
 const TOTAL_STEPS = plannerStepConfig.length;
 
@@ -51,9 +52,17 @@ export function usePlannerForm(initialForm: PlannerForm, mode: 'create' | 'edit'
       }
     }
     if (currentStep === 3) {
-      const subjectCount = Object.keys(form.subjectUnits ?? {}).length;
+      const units = form.subjectUnits ?? {};
+      const subjectCount = Object.keys(units).length;
       if (subjectCount === 0) {
-        toast.error('과목을 1개 이상 추가해주세요');
+        toast.error('과목과 단원을 1개 이상 추가해주세요');
+        return;
+      }
+      // QA #9 — 과목만 추가하고 단원이 비어 있으면 진행 차단 (모달이 단원 0개 저장을 허용하므로 여기서 방어)
+      const emptySubject = (Object.entries(units) as [SubjectKey, string[]][])
+        .find(([, u]) => !u || u.length === 0);
+      if (emptySubject) {
+        toast.error(`'${subjectLabels[emptySubject[0]] ?? emptySubject[0]}' 과목의 단원을 1개 이상 선택해주세요`);
         return;
       }
     }
