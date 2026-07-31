@@ -164,9 +164,12 @@ export default function HomeContainer() {
   //  사라진다 — Codex #124). daySummary/weekMeta(헤더용)는 뷰 맥락대로 두고, 히어로만 분리.
   let heroDaySummary: { done: number; total: number };
   let heroWeekMeta: { totalHours: number; completedHours: number };
+  // QA #7 — 활성 계획표 유무. 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요"를 보여준다.
+  let hasActivePlanner: boolean;
 
   if (DEV_AUTH_BYPASS) {
     const active = getActivePlanner();
+    hasActivePlanner = true;
     examName = active.name;
     dday = getDday(currentPersona);
     daySummary = plannerProgress(getBlocksForDayOffset(offset));
@@ -177,6 +180,7 @@ export default function HomeContainer() {
   } else {
     const { active, blocksByDate, heroBlocksByDate, todayIso } = real;
     customization = getCustomization(active);
+    hasActivePlanner = Boolean(active);
     examName = active?.examLabel || active?.name || '';
     dday = active ? ddayFrom(todayIso, active.examStartDate) : 0;
     dayBlocks = blocksByDate[shiftIsoDate(todayIso, offset)] ?? [];
@@ -231,6 +235,7 @@ export default function HomeContainer() {
         view={view}
         examName={examName}
         dday={dday}
+        hasActivePlanner={hasActivePlanner}
         burnoutScore={todayBurnout.score}
         daySummary={daySummary}
         weekMeta={weekMeta}

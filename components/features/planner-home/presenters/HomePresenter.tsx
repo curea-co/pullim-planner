@@ -20,6 +20,8 @@ interface HomePresenterProps {
   view: CalendarView;
   examName: string;
   dday: number;
+  /** 활성 계획표 유무 — 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요" 표시 (QA #7) */
+  hasActivePlanner?: boolean;
   burnoutScore: number;
   daySummary: { done: number; total: number };
   weekMeta: { totalHours: number; completedHours: number };
@@ -51,6 +53,7 @@ export default function HomePresenter({
   view,
   examName,
   dday,
+  hasActivePlanner = true,
   burnoutScore,
   daySummary,
   weekMeta,
@@ -143,7 +146,7 @@ export default function HomePresenter({
 
   return (
     <>
-      <HomeHero examName={examName} dday={dday} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
+      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
       <BurnoutThresholdBanner score={burnoutScore} />
       <CalendarShell
         view={view}

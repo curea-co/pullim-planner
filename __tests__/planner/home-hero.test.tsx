@@ -50,4 +50,12 @@ describe('HomeHero', () => {
     render(<HomeHero {...base} dday={7} />);
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
+
+  // QA #7 — 활성 계획표 없으면 D-DAY 대신 빈 상태 카피
+  it('활성 계획표가 없으면 D-DAY 대신 "아직 시간표가 없어요"를 노출한다', () => {
+    render(<HomeHero {...base} examName="" dday={0} hasActivePlanner={false} />);
+    expect(screen.getByText('아직 시간표가 없어요')).toBeInTheDocument();
+    expect(screen.queryByText('D-DAY')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
 });
