@@ -32,9 +32,9 @@ type Props = {
   description?: ReactNode;
   /** prev/next 버튼 사이의 라벨 (예: "2026.04 · 4주차") */
   navLabel: ReactNode;
-  /** 좌측 prev 버튼 라벨 (선택) */
+  /** 좌측 prev 버튼 aria-label (선택) — 화면에는 화살표 아이콘만 노출 */
   prevLabel?: string;
-  /** 우측 next 버튼 라벨 (선택) */
+  /** 우측 next 버튼 aria-label (선택) — 화면에는 화살표 아이콘만 노출 */
   nextLabel?: string;
   /** prev/next 클릭 핸들러. 미전달 시 버튼 disabled. */
   onPrev?: () => void;
@@ -78,10 +78,9 @@ export function CalendarShell({
             onClick={onPrev}
             disabled={!onPrev}
             aria-label={prevLabel ?? `이전 ${meta.navUnit}`}
-            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
+            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center rounded-lg px-2 py-2"
           >
             <ChevronLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">{prevLabel ?? `이전 ${meta.navUnit}`}</span>
           </button>
           {datePicker ? (
             <DateJumpPopover
@@ -109,9 +108,8 @@ export function CalendarShell({
             onClick={onNext}
             disabled={!onNext}
             aria-label={nextLabel ?? `다음 ${meta.navUnit}`}
-            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold"
+            className="hover:bg-pullim-slate-50 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center rounded-lg px-2 py-2"
           >
-            <span className="hidden sm:inline">{nextLabel ?? `다음 ${meta.navUnit}`}</span>
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
