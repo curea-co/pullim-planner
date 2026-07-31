@@ -20,6 +20,8 @@ interface HomePresenterProps {
   view: CalendarView;
   examName: string;
   dday: number;
+  /** 활성 계획표 유무 — 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요" 표시 (QA #7) */
+  hasActivePlanner?: boolean;
   burnoutScore: number;
   daySummary: { done: number; total: number };
   weekMeta: { totalHours: number; completedHours: number };
@@ -51,6 +53,7 @@ export default function HomePresenter({
   view,
   examName,
   dday,
+  hasActivePlanner = true,
   burnoutScore,
   daySummary,
   weekMeta,
@@ -70,15 +73,22 @@ export default function HomePresenter({
   monthDays,
   monthLabel,
 }: HomePresenterProps) {
+  // QA #7 — 활성 계획표가 없으면 "다른 시간표로 전환" 대신 "시간표 관리" CTA.
+  // active=null은 "시간표 미생성"과 "있지만 비활성"을 구분하지 못하므로(useHomeBlocks 계약),
+  // 목적지는 /planner/manage — 생성·기존 시간표 활성화 모두 가능한 화면으로 보낸다(Codex).
   const switchAction = (
     <Link
       href="/planner/manage"
       className="text-pullim-blue-600 hover:bg-pullim-blue-50 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1"
     >
-      다른 시간표로 전환
+      {hasActivePlanner ? '다른 시간표로 전환' : '시간표 관리'}
       <ArrowRight className="h-3 w-3" />
     </Link>
   );
+  // 헤더 설명의 시험명 — 활성 계획표 없으면 빈 <strong>이 남지 않게 생략.
+  const examNameEl = hasActivePlanner && examName ? (
+    <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
+  ) : null;
 
   const headerProps = (() => {
     if (view === 'day') {
@@ -87,7 +97,7 @@ export default function HomePresenter({
         title: formatDayTitle(offset),
         description: (
           <>
-            <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
+            {examNameEl}
             {daySummary.total > 0 && (
               <>
                 <span className="mx-1">·</span>
@@ -106,7 +116,7 @@ export default function HomePresenter({
         title: formatWeekTitle(offset),
         description: (
           <>
-            <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
+            {examNameEl}
             {weekMeta.totalHours > 0 && (
               <>
                 <span className="mx-1">·</span>
@@ -126,7 +136,7 @@ export default function HomePresenter({
       title: formatMonthTitle(offset),
       description: (
         <>
-          <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
+          {examNameEl}
           {monthMeta.totalBlocks > 0 && (
             <>
               <span className="mx-1">·</span>
@@ -143,8 +153,8 @@ export default function HomePresenter({
 
   return (
     <>
-      <HomeHero examName={examName} dday={dday} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
-      <BurnoutThresholdBanner score={burnoutScore} />
+      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
+      {hasActivePlanner && <BurnoutThresholdBanner score={burnoutScore} />}
       <CalendarShell
         view={view}
         onChangeView={onChangeView}
