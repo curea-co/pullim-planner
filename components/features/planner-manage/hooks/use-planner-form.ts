@@ -34,11 +34,12 @@ export function usePlannerForm(initialForm: PlannerForm) {
         toast.error('시험 날짜를 선택해주세요');
         return;
       }
-      // 등급형(모의·수능)은 자유입력 — 숫자가 없으면 저장 시 조용히 1등급으로 치환되므로 차단
+      // 등급형(모의·수능)은 자유입력 — 숫자가 없으면 저장 시 조용히 1등급으로 치환되므로 차단.
+      // QA #5 — 허용 범위는 1~8 (9등급은 목표 점수가 아님).
       if (examTypeMeta[form.examType ?? 'mock'].targetKind === 'grade') {
         const n = parseInt(form.targetGrade, 10);
-        if (!Number.isFinite(n) || n < 1 || n > 9) {
-          toast.error('목표 등급을 숫자로 입력해주세요 (예: 1등급)');
+        if (!Number.isFinite(n) || n < 1 || n > 8) {
+          toast.error('목표 등급을 1에서 8 사이의 숫자로 입력해주세요');
           return;
         }
       }
