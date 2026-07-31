@@ -5,7 +5,7 @@ import { Clock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   getBlocksForDayOffset, currentPersona, getDday, nextActiveBlock,
-  blockTypeMeta, conditionMeta,
+  blockTypeMeta,
   hasQAccess, getBlockColor,
   type ConditionLevel, type BlockType, type TimeBlock,
 } from '@/lib/mock';
@@ -58,14 +58,9 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
     });
   }
 
+  // QA #13 — 컨디션 선택 시 토스트 미노출. 선택 결과(난이도 조절)를 노골적으로 알리지 않는다.
   function onConditionChange(level: ConditionLevel) {
     setCondition(level);
-    const meta = conditionMeta[level];
-    toast(`${meta.emoji} ${meta.label}`, {
-      id: `planner-condition-${level}`,
-      description: `오늘 블록이 ${meta.difficultyAdj}로 자동 조정됐어요.`,
-      duration: 2500,
-    });
   }
 
   if (blocks.length === 0) {
