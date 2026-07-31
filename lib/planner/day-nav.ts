@@ -61,15 +61,11 @@ function weekMonday(weekOffset: number): Date {
   return new Date(base.getFullYear(), base.getMonth(), base.getDate() - mondayDelta + weekOffset * 7);
 }
 
-/** "4월 20일 — 26일" (월 다르면 끝에 월 표기) — 헤더 제목 */
+/** "4월 4주차" — 헤더 제목 (QA #2: 날짜 범위 대신 월주차 표기. 주차 산정은 formatWeekNavLabel 과 동일) */
 export function formatWeekTitle(weekOffset: number): string {
-  const mon = weekMonday(weekOffset);
-  const sun = new Date(mon);
-  sun.setDate(mon.getDate() + 6);
-  const tail = mon.getMonth() === sun.getMonth()
-    ? `${sun.getDate()}일`
-    : `${sun.getMonth() + 1}월 ${sun.getDate()}일`;
-  return `${mon.getMonth() + 1}월 ${mon.getDate()}일 — ${tail}`;
+  const thu = weekMonday(weekOffset);
+  thu.setDate(thu.getDate() + 3); // 월 + 3 = 그 주 목요일(ISO 대표일)
+  return `${thu.getMonth() + 1}월 ${isoWeekOfMonth(thu)}주차`;
 }
 
 /**

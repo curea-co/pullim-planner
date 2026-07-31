@@ -7,14 +7,12 @@ import type { Customization } from '@/lib/hooks/use-planner-customization';
 import { DayView } from '../components/views/day-view';
 import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
-import { composeDDayChipProps } from '@/lib/planner/d-day-tier';
 import { planBaseDate, type MonthDay, type TimeBlock, type WeekDay } from '@/lib/mock/planner';
 import {
   formatDayNavLabel, formatDayTitle, formatDayRelLabel,
   formatWeekNavLabel, formatWeekTitle,
   formatMonthNavLabel, formatMonthTitle, formatMonthShort,
 } from '@/lib/planner/day-nav';
-import { DDayChip } from '@/components/shared/d-day-chip';
 import { HomeHero } from '../components/home-hero';
 import { BurnoutThresholdBanner } from '../components/burnout-threshold-banner';
 
@@ -84,15 +82,12 @@ export default function HomePresenter({
 
   const headerProps = (() => {
     if (view === 'day') {
+      // QA #2 — 제목은 "X월 Y일 Z요일"만('오늘의 학습' 제거), D-day 뱃지는 상단 배너와 중복이라 미노출.
       return {
-        title: offset === 0
-          ? `오늘의 학습 — ${formatDayTitle(0)}`
-          : `${formatDayTitle(offset)} 학습 계획`,
+        title: formatDayTitle(offset),
         description: (
           <>
             <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
-            <span className="mx-1">·</span>
-            <DDayChip {...composeDDayChipProps(dday, examName)} />
             {daySummary.total > 0 && (
               <>
                 <span className="mx-1">·</span>
@@ -131,7 +126,7 @@ export default function HomePresenter({
       title: formatMonthTitle(offset),
       description: (
         <>
-          <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>까지 <DDayChip {...composeDDayChipProps(dday, examName)} />
+          <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
           {monthMeta.totalBlocks > 0 && (
             <>
               <span className="mx-1">·</span>
