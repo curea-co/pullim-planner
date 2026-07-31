@@ -35,7 +35,14 @@ export function WeekView({ weekOffset = 0, onReset, days, customization }: WeekV
 
   // 실데이터: 그 주에 블록이 하나도 없으면 빈 상태. mock 데모: 기준 주 외 빈 상태.
   if (isReal ? days.every(d => d.totalMinutes === 0) : weekOffset !== 0) {
-    return <PeriodEmptyState message="이 주엔 아직 계획이 없어요" onReset={onReset} resetLabel="이번 주 보기" />;
+    // QA #3 — 당주(offset 0)에선 "이번 주 보기" 리셋 버튼 미노출 (day-view 당일 동작과 통일).
+    return (
+      <PeriodEmptyState
+        message="이 주엔 아직 계획이 없어요"
+        onReset={weekOffset !== 0 ? onReset : undefined}
+        resetLabel="이번 주 보기"
+      />
+    );
   }
 
   return (

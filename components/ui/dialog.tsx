@@ -43,13 +43,17 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  showOverlay = true,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  /** false면 배경 오버레이 미렌더 — non-modal(Root `modal={false}`) 정보성 다이얼로그용.
+   *  오버레이는 fixed inset-0이라 non-modal이어도 렌더되면 뒤 화면 클릭을 막는다. */
+  showOverlay?: boolean
 }) {
   return (
     <DialogPortal>
-      <DialogOverlay />
+      {showOverlay && <DialogOverlay />}
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(

@@ -48,11 +48,11 @@ describe('calendar-nav 라벨 (실달력 getDay 기준)', () => {
     });
   });
 
-  describe('주 — formatWeekTitle (월~일 범위)', () => {
+  describe('주 — formatWeekTitle (X월 N주차 — QA #2)', () => {
     it.each([
-      [0, '4월 20일 — 26일'],
-      [-1, '4월 13일 — 19일'],
-      [1, '4월 27일 — 5월 3일'], // 월 경계 → 끝에 월 표기
+      [0, '4월 4주차'],
+      [-1, '4월 3주차'],
+      [1, '4월 5주차'], // 4/27~5/3 주 → 목요일(4/30)이 속한 4월 5주차
     ])('offset %i → %s', (offset, expected) => {
       expect(formatWeekTitle(offset)).toBe(expected);
     });
