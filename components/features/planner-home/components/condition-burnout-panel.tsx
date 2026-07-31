@@ -51,10 +51,11 @@ export function ConditionBurnoutPanel({ condition, onConditionChange, defaultOpe
             오늘 상태
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            {/* 컨디션 칩 — 주관 감정 */}
+            {/* 컨디션 칩 — 주관 감정. 상태 문구는 미노출(QA #13), 이모지만 */}
             <span className="bg-pullim-slate-100 text-pullim-slate-900 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold">
               <span aria-hidden>{meta.emoji}</span>
-              오늘 {meta.label}
+              <span className="sr-only">{meta.label}</span>
+              오늘
             </span>
             {/* 안전도 칩 — 객관 누적 부담 (높을수록 안전) */}
             <span

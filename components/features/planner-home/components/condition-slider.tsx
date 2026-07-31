@@ -14,13 +14,15 @@ const levels: ConditionLevel[] = [1, 2, 3, 4, 5];
 
 /**
  * 컨디션 슬라이더 — 매일 아침 자기보고 (핸드오프 7.3).
- * 선택값에 따라 오늘 블록 난이도 ±20% (UI에 표시).
+ *
+ * QA #13 — 상태 문구('피곤해요' 등)·난이도 ±N%·'매일 아침 보고' 라벨은 화면에 노출하지 않는다.
+ * [기획의도] 사용자가 본인 선택의 결과(난이도 조절)를 노골적으로 확인하지 못하게 — 숫자가 아닌
+ * 상태 그대로를 입력받아 간접적으로 난이도를 조절한다. (a11y용 aria-label에만 상태명 유지)
  *
  * a11y — radiogroup 패턴. 좌/우 화살표로 단계 이동, Home/End로 양 끝.
  */
 export function ConditionSlider({ initial = 3, onChange }: Props) {
   const [value, setValue] = useState<ConditionLevel>(initial);
-  const meta = conditionMeta[value];
   const buttonsRef = useRef<Array<HTMLButtonElement | null>>([]);
 
   // 외부 onChange 통지 — 초기값에는 호출하지 않음
@@ -66,16 +68,15 @@ export function ConditionSlider({ initial = 3, onChange }: Props) {
 
   return (
     <section className="bg-card rounded-xl border p-4">
-      <div className="mb-3 flex items-baseline justify-between">
+      <div className="mb-3">
         <h3 className="text-pullim-slate-900 text-sm font-bold">오늘의 컨디션</h3>
-        <span className="text-pullim-slate-500 text-[10px]">매일 아침 보고</span>
       </div>
 
       <div
         role="radiogroup"
         aria-label="오늘의 컨디션 (1=피곤, 5=쌩쌩)"
         onKeyDown={handleKey}
-        className="bg-pullim-slate-50 mb-2 flex h-14 items-center justify-around rounded-xl px-2"
+        className="bg-pullim-slate-50 flex h-14 items-center justify-around rounded-xl px-2"
       >
         {levels.map((l, i) => {
           const m = conditionMeta[l];
@@ -87,7 +88,7 @@ export function ConditionSlider({ initial = 3, onChange }: Props) {
               type="button"
               role="radio"
               aria-checked={active}
-              aria-label={`${m.label} (${m.difficultyAdj})`}
+              aria-label={m.label}
               tabIndex={active ? 0 : -1}
               onClick={() => setValue(l)}
               className={cn(
@@ -102,11 +103,6 @@ export function ConditionSlider({ initial = 3, onChange }: Props) {
             </button>
           );
         })}
-      </div>
-
-      <div className="flex items-baseline justify-between text-xs">
-        <span className="text-pullim-slate-700 font-semibold">{meta.label}</span>
-        <span className="text-pullim-blue-600 font-mono font-bold">{meta.difficultyAdj}</span>
       </div>
     </section>
   );

@@ -250,6 +250,8 @@ export const conditionMeta: Record<ConditionLevel, { emoji: string; label: strin
 
 /** 번아웃 지수 (0~100, 낮을수록 위험). 5개 지표 가중 평균. */
 export type BurnoutFactor = {
+  /** 안정 식별자 — 노출 여부 등 로직 분기는 label 문자열이 아닌 이 값으로 (카피 변경에 안전) */
+  id: 'sleep' | 'streak' | 'emotion' | 'rest_acceptance' | 'rest_usage';
   label: string;
   value: number;
   /** 표시 단위 — 라벨 매칭 fragile 코드를 제거하기 위한 명시 필드 */
@@ -270,11 +272,11 @@ export const todayBurnout: BurnoutSnapshot = {
   score: 64,
   trend: 'falling',
   factors: [
-    { label: '평균 수면 시간',    value: 5.8, unit: 'h',  weight: 0.30, status: 'warn' },
-    { label: '연속 블록 완료율',  value: 78,  unit: '%',  weight: 0.25, status: 'good' },
-    { label: '감정 평균',         value: 3.4, unit: '/5', weight: 0.20, status: 'good' },
-    { label: '휴식 수용률',       value: 40,  unit: '%',  weight: 0.15, status: 'warn' },
-    { label: '"쉴래요" 사용',     value: 1,   unit: '회', weight: 0.10, status: 'good' },
+    { id: 'sleep',           label: '평균 수면 시간',    value: 5.8, unit: 'h',  weight: 0.30, status: 'warn' },
+    { id: 'streak',          label: '연속 블록 완료율',  value: 78,  unit: '%',  weight: 0.25, status: 'good' },
+    { id: 'emotion',         label: '감정 평균',         value: 3.4, unit: '/5', weight: 0.20, status: 'good' },
+    { id: 'rest_acceptance', label: '휴식 수용률',       value: 40,  unit: '%',  weight: 0.15, status: 'warn' },
+    { id: 'rest_usage',      label: '"쉴래요" 사용',     value: 1,   unit: '회', weight: 0.10, status: 'good' },
   ],
   recommendBreak: false,
 };

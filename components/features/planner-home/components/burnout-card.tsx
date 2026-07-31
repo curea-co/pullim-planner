@@ -1,16 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Heart, TrendingDown, TrendingUp, Minus, Sparkles, MoonStar } from 'lucide-react';
-import { toast } from 'sonner';
-import {
-  todayBurnout, todayBlocks, blockTypeMeta, subjectLabels,
-  type BurnoutFactor, type TimeBlock,
-} from '@/lib/mock';
-import {
-  Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Heart, TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { todayBurnout, type BurnoutFactor } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
 const trendIcon = {
@@ -29,18 +20,20 @@ function formatFactor(f: BurnoutFactor): string {
   return f.unit === '/5' ? `${f.value}/5` : `${f.value}${f.unit}`;
 }
 
-/** 이월 대상 — 오늘 미완료(todo/doing) 학습 블록만. 휴식·완료·미수행은 제외 */
-function carryoverCandidates(blocks: TimeBlock[]): TimeBlock[] {
-  return blocks.filter(b => (b.status === 'todo' || b.status === 'doing') && b.type !== 'break');
-}
+/**
+ * QA #14 — 노출 지표 제외 목록 (안정 id 기준 — 카피 변경에 안전).
+ * sleep(평균 수면 시간)은 사용자 입력이 필요한 값이라 현 데이터로는 추정치(노이즈)이고,
+ * rest_usage("쉴래요" 사용)는 해당 기능(QA #15) 제거로 무의미. 유지: streak·emotion·rest_acceptance.
+ */
+const HIDDEN_FACTOR_IDS = new Set<BurnoutFactor['id']>(['sleep', 'rest_usage']);
 
 /**
- * 번아웃 지수 카드 + "오늘은 쉴래요" 버튼.
- * 핸드오프 7.2 (5개 지표 가중 평균) + 4.3 (1-tap 휴식).
+ * 번아웃 지수 카드 — 핸드오프 7.2 (지표 가중 평균).
+ * ("오늘은 쉴래요" 1-tap 휴식은 미동작 기능이라 QA #15에서 제거.)
  */
 export function BurnoutCard() {
-  const { score, trend, factors, recommendBreak } = todayBurnout;
-  const [open, setOpen] = useState(false);
+  const { score, trend, factors } = todayBurnout;
+  const visibleFactors = factors.filter(f => !HIDDEN_FACTOR_IDS.has(f.id));
 
   const tone = score >= 70 ? 'good' : score >= 50 ? 'warn' : 'bad';
   const ringColor =
@@ -50,16 +43,6 @@ export function BurnoutCard() {
 
   const { Icon, color, label } = trendIcon[trend];
   const angle = (score / 100) * 360;
-
-  const carryover = carryoverCandidates(todayBlocks);
-
-  function confirmRest() {
-    toast.success('🌙 오늘은 푹 쉬어요', {
-      description: `${carryover.length}개 블록을 내일로 이월. 내일 난이도가 −20% 자동 조정돼요.`,
-      duration: 3500,
-    });
-    setOpen(false);
-  }
 
   return (
     <section className="bg-card rounded-xl border p-4">
@@ -93,9 +76,9 @@ export function BurnoutCard() {
         </div>
       </div>
 
-      {/* 5개 지표 */}
+      {/* 지표 — QA #14 제외 목록 반영 */}
       <ul className="mt-4 space-y-1.5">
-        {factors.map(f => (
+        {visibleFactors.map(f => (
           <li key={f.label} className="flex items-center justify-between text-xs">
             <span className="text-pullim-slate-600">{f.label}</span>
             <span className={cn('font-mono font-bold', factorStatusColor[f.status])}>
@@ -105,125 +88,6 @@ export function BurnoutCard() {
         ))}
       </ul>
 
-      {/* 쉴래요 버튼 */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={cn(
-          'mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold transition-all',
-          'bg-pullim-lemon text-pullim-lemon-ink hover:scale-[1.01] hover:shadow-pullim-md active:scale-[0.99]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-2',
-        )}
-      >
-        {recommendBreak ? (
-          <>
-            오늘은 쉴래요 — AI 추천
-            <Sparkles aria-hidden className="h-3.5 w-3.5" />
-          </>
-        ) : (
-          '오늘은 쉴래요'
-        )}
-      </button>
-      <p className="text-pullim-slate-500 mt-1.5 text-center text-[10px]">
-        오늘 블록은 내일로 자동 이월돼요
-      </p>
-
-      <RestDialog
-        open={open}
-        onOpenChange={setOpen}
-        carryover={carryover}
-        onConfirm={confirmRest}
-        recommendBreak={recommendBreak}
-      />
     </section>
-  );
-}
-
-function RestDialog({
-  open, onOpenChange, carryover, onConfirm, recommendBreak,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  carryover: TimeBlock[];
-  onConfirm: () => void;
-  recommendBreak: boolean;
-}) {
-  const totalMinutes = carryover.reduce((s, b) => s + b.expectedMinutes, 0);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="bg-pullim-lemon text-pullim-lemon-ink inline-flex h-8 w-8 items-center justify-center rounded-lg">
-              <MoonStar aria-hidden className="h-4 w-4" />
-            </span>
-            오늘은 쉴래요
-          </DialogTitle>
-          <DialogDescription>
-            남은 블록을 내일로 이월하고, 내일 플랜은 컨디션을 반영해 자동 재배치돼요.
-          </DialogDescription>
-        </DialogHeader>
-
-        <DialogBody>
-        {recommendBreak && (
-          <aside className="bg-pullim-lemon/30 text-pullim-lemon-ink inline-flex w-full items-start gap-1.5 rounded-lg px-3 py-2 text-[11px] leading-relaxed">
-            <Sparkles aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>
-              <strong>AI 추천</strong> — 번아웃 지수와 최근 감정 추세를 보면 오늘은 쉬는 편이 더 나아요.
-            </span>
-          </aside>
-        )}
-
-        <section>
-          <h4 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
-            내일로 이월될 블록 {carryover.length}개 · 총 {totalMinutes}분
-          </h4>
-          {carryover.length === 0 ? (
-            <p className="text-pullim-slate-500 text-xs italic">남은 학습 블록이 없어요.</p>
-          ) : (
-            <ul className="bg-pullim-slate-50 max-h-48 space-y-1 overflow-y-auto rounded-lg p-2">
-              {carryover.map(b => {
-                const meta = blockTypeMeta[b.type];
-                const TypeIcon = meta.Icon;
-                return (
-                  <li
-                    key={b.id}
-                    className="bg-card flex items-center gap-2 rounded-md px-2 py-1.5 text-[11px]"
-                  >
-                    <span className="font-mono text-pullim-slate-500 w-20 shrink-0">{b.start}–{b.end}</span>
-                    <TypeIcon aria-hidden className="text-pullim-slate-500 h-3 w-3 shrink-0" />
-                    <span className="text-pullim-slate-900 truncate font-semibold">{b.title}</span>
-                    <span className="text-pullim-slate-500 ml-auto shrink-0 text-[10px]">
-                      {b.subject !== 'rest' && subjectLabels[b.subject]}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <ul className="text-pullim-slate-600 space-y-1 text-[11px]">
-          <li>· 내일 블록 난이도가 <strong className="text-pullim-blue-700">−20%</strong> 자동 조정</li>
-          <li>· 망각 곡선상 가장 위험한 단원만 우선 재배치</li>
-          <li>· 부모·튜터 알림은 기본 비활성 (설정에서 변경)</li>
-        </ul>
-        </DialogBody>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            취소
-          </Button>
-          <Button
-            type="button"
-            onClick={onConfirm}
-            className="bg-pullim-lemon text-pullim-lemon-ink hover:bg-pullim-lemon/90"
-          >
-            확정 — 오늘 쉴래요
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
