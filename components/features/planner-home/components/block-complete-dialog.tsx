@@ -1,19 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CheckCircle2, Clock, Coffee, ArrowRight } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  blockTypeMeta, subjectLabels, emotionEmojis, getFeatureRoute,
-  hasQAccess,
+  blockTypeMeta, subjectLabels, emotionEmojis,
   type TimeBlock,
 } from '@/lib/mock';
 import {
   Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { REFLECTION_ENABLED } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
 type Emotion = 1 | 2 | 3 | 4 | 5;
@@ -22,8 +19,6 @@ type Props = {
   /** 완료 처리할 블록 — null이면 모달 닫힘 */
   block: TimeBlock | null;
   onClose: () => void;
-  /** 다음으로 진행할 블록 — 있으면 "다음 블록 시작" CTA에 사용 */
-  nextBlock?: TimeBlock | null;
   /**
    * 완료 기록 실 저장(pullim-api #416) — 성공 true/실패 false. 미주입(dev bypass·mock)이면
    * 저장 없이 데모(toast) 흐름 유지. 실패 시 모달을 닫지 않아 재시도 가능.
@@ -45,10 +40,11 @@ const emotionLabel: Record<Emotion, string> = {
  * 내일 플랜 재최적화의 입력이 됨. 실모드는 `onSubmit`(pullim-api 완료 기록 upsert)로
  * 영속하고, 미주입(dev bypass·mock)이면 기존 데모(toast) 흐름 그대로.
  *
- * 감정·코멘트는 선택적. "종료" CTA로 즉시 빠져나갈 수 있음.
+ * CTA는 두 개뿐 (QA #12 — 기대대로 동작하지 않던 종료/5분 휴식/다음 블록 시작 제거):
+ * - 닫기: 완료 처리하지 않고 팝업만 닫음
+ * - 완료: 완료 처리(저장) 후 팝업 닫음. 감정·코멘트는 선택적
  */
-export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Props) {
-  const router = useRouter();
+export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
   const [emotion, setEmotion] = useState<Emotion | null>(null);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -81,8 +77,8 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
   }
 
   /**
-   * 완료 기록 저장 — 세 CTA(종료/휴식/다음) 공통 선행 단계.
-   * onSubmit 미주입(데모)이면 즉시 true. 실패(false)면 CTA가 모달을 닫지 않는다(재시도).
+   * 완료 기록 저장 — "완료" CTA의 선행 단계.
+   * onSubmit 미주입(데모)이면 즉시 true. 실패(false)면 모달을 닫지 않는다(재시도).
    */
   async function persist(): Promise<boolean> {
     if (!onSubmit || !block) return true;
@@ -98,62 +94,11 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
     }
   }
 
-  async function handleNext() {
+  /** "완료" — 완료 처리(저장) 후 팝업 닫기 (QA #12) */
+  async function handleComplete() {
     if (!(await persist())) return;
-
-    if (!nextBlock) {
-      // 다음 블록 없음 — "다음 블록으로 넘어가요"는 사실과 다르므로 nextBlock 있는 경로와
-      // 분리한다(Codex #144 R2). 저장 성공 피드백(summary)은 always 유지하고, 회고 패널
-      // 유무(REFLECTION_ENABLED)에 따라 뒤이은 안내만 다르게 — 패널이 stale mock이라 성공
-      // 피드백 없이 넘기면 "완료가 반영 안 된 것" 처럼 보이는 회귀(Codex #145).
-      toast.success(summary(), {
-        description: '오늘 계획한 블록을 모두 마쳤어요',
-        duration: 3000,
-      });
-      onClose();
-      if (REFLECTION_ENABLED) {
-        requestAnimationFrame(() => {
-          const target = document.getElementById('today-reflection');
-          target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          // 회고 ribbon이 collapsed 상태라면 자동 펼침 — aria-expanded=false인 trigger 클릭
-          const trigger = target?.querySelector<HTMLButtonElement>('button[aria-expanded="false"]');
-          trigger?.click();
-        });
-      }
-      return;
-    }
-
     toast.success(summary(), {
-      description: `다음 블록(${nextBlock.start})으로 넘어가요`,
-      duration: 3000,
-    });
-    onClose();
-    if (nextBlock.linkedFeatureSlug) {
-      // Q 연계 미개통이면 라우트 이동 대신 준비 중 안내. 다음 블록 자체는 플래너 안에서 자연 진행.
-      if (!hasQAccess()) {
-        toast.info('🔒 풀림 Q와 연계한 서비스가 준비 중입니다.', {
-          description: '열리면 다음 블록에서 바로 풀이로 이어져요.',
-          duration: 3500,
-        });
-        return;
-      }
-      router.push(getFeatureRoute(nextBlock.linkedFeatureSlug));
-    }
-  }
-
-  async function handleRest() {
-    if (!(await persist())) return;
-    toast(summary(), {
-      description: '5분 휴식 후 다음 블록으로 자동 알림',
-      duration: 3000,
-    });
-    onClose();
-  }
-
-  async function handleClose() {
-    if (!(await persist())) return;
-    toast(summary(), {
-      description: '오늘 학습 종료. 내일 플랜이 결과를 반영해 재배치돼요.',
+      description: '완료를 기록했어요 — 내일 플랜에 반영돼요.',
       duration: 3000,
     });
     onClose();
@@ -248,31 +193,19 @@ export function BlockCompleteDialog({ block, onClose, nextBlock, onSubmit }: Pro
         </section>
         </DialogBody>
 
+        {/* QA #12 — 닫기(완료 처리 없이 닫기) / 완료(완료 처리 후 닫기) 두 CTA만 */}
         <DialogFooter className="gap-1.5">
-          <Button type="button" variant="ghost" onClick={handleClose} disabled={saving}>
-            종료
-          </Button>
-          <Button type="button" variant="outline" onClick={handleRest} disabled={saving}>
-            <Coffee className="mr-1 h-3.5 w-3.5" />
-            5분 휴식
+          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+            닫기
           </Button>
           <Button
             type="button"
-            onClick={handleNext}
+            onClick={handleComplete}
             disabled={saving}
             className="bg-pullim-lemon text-pullim-lemon-ink hover:bg-pullim-lemon/90"
           >
-            {nextBlock ? (
-              <>
-                다음 블록 시작
-                <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </>
-            ) : (
-              <>
-                <Clock className="mr-1 h-3.5 w-3.5" />
-                오늘 학습 마감
-              </>
-            )}
+            <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+            완료
           </Button>
         </DialogFooter>
       </DialogContent>

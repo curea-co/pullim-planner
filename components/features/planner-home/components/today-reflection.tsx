@@ -27,7 +27,7 @@ const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: s
  * "오늘 무얼 했나" 메트릭 + 블록 회고 + "내일 뭐가 다른가" 인사이트.
  * 별도 라우트 만들지 않고 day view 안에서 처리. ribbon 패턴은 ConditionBurnoutPanel과 동일.
  *
- * id="today-reflection" — BlockCompleteDialog "오늘 학습 마감" CTA의 anchor scroll target.
+ * id="today-reflection" — 홈 내 anchor scroll target. (구 완료 모달 CTA 연결은 QA #12로 제거됨.)
  *
  * defaultOpen — reports day view 진입 시 펼친 상태로 시작 (true). 홈 day view는 미지정(기본 false, 학습 완료 시만 자동 펼침).
  */
