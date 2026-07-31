@@ -1096,7 +1096,9 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
   const weekdayHours = form.weekdayHours.end - form.weekdayHours.start;
   const weekly = weekdayHours * 5 + (form.weekendHours.end - form.weekendHours.start) * 2;
 
-  const previews = useMemo(() => generatePreview(form, todayIsoKst(), routines), [form, routines]);
+  // 오늘(KST)을 deps에 포함 — 자정 넘겨 열어둔 화면에서도 미리보기가 다음 렌더에 새 날짜로 갱신(Codex).
+  const todayIso = todayIsoKst();
+  const previews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
   const safeIdx = Math.min(previewIdx, Math.max(0, previews.length - 1));
   const current = previews[safeIdx];
   const totalMinutesToday = current?.items.reduce((s, it) => {
