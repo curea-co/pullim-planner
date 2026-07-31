@@ -60,7 +60,7 @@ jobs:
           rm -rf "${RULES_DIR}"
           mkdir -p "${RULES_DIR}"
           # Codex 지적(PR #100 4차): 루트 CLAUDE.md 가 위임하는 하위 규칙 파일
-          # (apps/planner/CLAUDE.md, apps/backend/CLAUDE.md, packages/*/AGENTS.md 등)
+          # (CLAUDE.md, AGENTS.md 등)
           # 도 같은 신뢰 경계 안에서 적용되어야 함. base SHA 의 모든
           # AGENTS.md / CLAUDE.md 를 원래 경로 보존하며 격리 위치에 복제.
           count=0
@@ -81,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           # .git 영역은 보존 (commit 메타 손상 방지).
-          # nested(apps/*/CLAUDE.md, packages/*/AGENTS.md 등) 도 동일 신뢰 경계라 일괄 제거.
+          # nested CLAUDE.md/AGENTS.md 도 동일 신뢰 경계라 일괄 제거.
           find . -type f \( -name "AGENTS.md" -o -name "CLAUDE.md" \) \
             -not -path "./.git/*" -print -delete || true
           # 제거 결과 확인 — 0건이어야 정상.
@@ -106,8 +106,8 @@ jobs:
           리뷰 규칙은 반드시 base revision 에서 추출한 다음 디렉터리 안의
           모든 AGENTS.md 와 CLAUDE.md 파일을 따른다:
           - /tmp/codex-rules-${{ github.event.repository.name }}-${{ github.event.pull_request.number }}-${{ github.run_id }}/
-          예: 위 경로 아래의 AGENTS.md, CLAUDE.md (루트), apps/planner/CLAUDE.md,
-              apps/backend/CLAUDE.md, packages/<name>/AGENTS.md 등 모두 포함.
+          예: 위 경로 아래의 AGENTS.md, CLAUDE.md (루트),
+              하위 디렉터리의 CLAUDE.md/AGENTS.md 등 모두 포함.
           루트 CLAUDE.md 가 위임하는 하위 규칙 파일도 모두 위 경로에 동일 구조로
           격리되어 있다. 변경된 파일이 특정 앱·패키지 디렉터리에 속하면 해당
           디렉터리의 CLAUDE.md / AGENTS.md 도 적용해라. 명시되지 않은 공통
