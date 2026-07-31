@@ -35,26 +35,26 @@ type Props = {
 const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'etc'];
 
 /* ─── Step 1 — 목표 (시험 종류 탭 + 단일/범위 일자) ─── */
-// 접속 시점의 실제 오늘(KST) — D-day 계산 + 시험 날짜 하한(min). 계획표는 미래 대상이라 과거 불가.
-const TODAY_ISO = todayIsoKst();
 
 const examTypeOrder: ExamType[] = ['mock', 'suneung', 'midterm', 'final', 'other'];
 
 export function PStep1Goal({ form, setForm, mode = 'create' }: Props & { mode?: 'create' | 'edit' }) {
   const examType = form.examType ?? 'mock';
   const meta = examTypeMeta[examType];
-  // 과거 시험일 하한(min)은 신규 생성에만 — edit는 이미 지난 시험 플래너의 수정을 막지 않는다(Codex).
-  const minDate = mode === 'create' ? TODAY_ISO : undefined;
+  // 오늘(KST)은 렌더마다 계산 — 모듈 상수로 캐시하면 자정 이후 min/D-day가 goNext/activate의
+  // todayIsoKst() 검증 기준과 어긋난다(Codex). 과거 하한(min)은 신규 생성에만.
+  const todayIso = todayIsoKst();
+  const minDate = mode === 'create' ? todayIso : undefined;
   const startDate = form.examStartDate ?? '';
   const endDate = form.examEndDate ?? startDate;
 
   const dDay = useMemo(() => {
     if (!startDate) return null;
-    const today = new Date(TODAY_ISO);
+    const today = new Date(todayIso);
     const exam = new Date(startDate);
     const diffMs = exam.getTime() - today.getTime();
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  }, [startDate]);
+  }, [startDate, todayIso]);
 
   const examLength = useMemo(() => {
     if (!meta.isRange || !startDate || !endDate) return 1;
@@ -1096,7 +1096,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
   const weekdayHours = form.weekdayHours.end - form.weekdayHours.start;
   const weekly = weekdayHours * 5 + (form.weekendHours.end - form.weekendHours.start) * 2;
 
-  const previews = useMemo(() => generatePreview(form, TODAY_ISO, routines), [form, routines]);
+  const previews = useMemo(() => generatePreview(form, todayIsoKst(), routines), [form, routines]);
   const safeIdx = Math.min(previewIdx, Math.max(0, previews.length - 1));
   const current = previews[safeIdx];
   const totalMinutesToday = current?.items.reduce((s, it) => {
