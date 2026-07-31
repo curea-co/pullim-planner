@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Calendar, Bell, Sparkles, Check, AlertCircle, X, Plus,
+  Bell, Sparkles, Check, AlertCircle, X, Plus,
   Smartphone, Users, BookOpenCheck, Sunrise,
   Lightbulb, AlertTriangle, Target, PencilLine, BookOpen, Brain,
   Coffee, FileText, Mic, MessageCircle, ChevronLeft, ChevronRight,
@@ -119,27 +119,37 @@ export function PStep1Goal({ form, setForm }: Props) {
         })}
       </div>
 
-      {/* 시험명 + D-day */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
-        <div>
-          <label className="text-pullim-slate-700 mb-1 block text-xs font-bold">
-            목표 시험명<RequiredMark />
-          </label>
-          <input
-            type="text"
-            value={form.examName}
-            onChange={e => setForm({ ...form, examName: e.target.value })}
-            placeholder={
-              examType === 'suneung'  ? '예: 2026 수능' :
-              examType === 'midterm'  ? '예: 1학기 중간고사' :
-              examType === 'final'    ? '예: 1학기 기말고사' :
-              examType === 'other'    ? '예: 토익 1차 시험' :
-                                        '예: 6월 모의평가'
-            }
-            className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
-          />
-        </div>
-        <div className="text-pullim-slate-500 self-end pb-2 text-[10px] font-mono">
+      {/* 시험명 */}
+      <div>
+        <label className="text-pullim-slate-700 mb-1 block text-xs font-bold">
+          목표 시험명<RequiredMark />
+        </label>
+        <input
+          type="text"
+          value={form.examName}
+          onChange={e => setForm({ ...form, examName: e.target.value })}
+          placeholder={
+            examType === 'suneung'  ? '예: 2026 수능' :
+            examType === 'midterm'  ? '예: 1학기 중간고사' :
+            examType === 'final'    ? '예: 1학기 기말고사' :
+            examType === 'other'    ? '예: 토익 1차 시험' :
+                                      '예: 6월 모의평가'
+          }
+          className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
+        />
+      </div>
+
+      {/* 일자 row — 단일 vs 범위. D-day는 날짜 입력 하단에 노출 (QA #4) */}
+      <div>
+        {meta.isRange ? (
+          <div className="grid grid-cols-2 gap-3">
+            <DateField label="시험 시작일" required value={startDate} onChange={setStart} />
+            <DateField label="시험 종료일" value={endDate} onChange={setEnd} min={startDate} />
+          </div>
+        ) : (
+          <DateField label="시험 날짜" required value={startDate} onChange={setStart} />
+        )}
+        <p className="text-pullim-slate-500 mt-1 text-[10px] font-mono">
           D-day{' '}
           <span className={cn(
             'font-bold',
@@ -152,18 +162,8 @@ export function PStep1Goal({ form, setForm }: Props) {
           {meta.isRange && examLength > 1 && (
             <span className="text-pullim-slate-400 ml-1">· {examLength}일간</span>
           )}
-        </div>
+        </p>
       </div>
-
-      {/* 일자 row — 단일 vs 범위 */}
-      {meta.isRange ? (
-        <div className="grid grid-cols-2 gap-3">
-          <DateField label="시험 시작일" required value={startDate} onChange={setStart} />
-          <DateField label="시험 종료일" value={endDate} onChange={setEnd} min={startDate} />
-        </div>
-      ) : (
-        <DateField label="시험 날짜" required value={startDate} onChange={setStart} />
-      )}
 
       {/* 목표 row — 시험 종류별 분기 */}
       <TargetField form={form} setForm={setForm} />
@@ -195,16 +195,18 @@ function DateField({ label, value, onChange, min, required }: {
         {label}
         {required && <RequiredMark />}
       </label>
-      <div className="relative">
-        <input
-          type="date"
-          value={value}
-          min={min}
-          onChange={e => onChange(e.target.value)}
-          className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm"
-        />
-        <Calendar className="text-pullim-slate-400 pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
-      </div>
+      {/* QA #4 — 커스텀 아이콘 오버레이 제거(네이티브 캘린더 아이콘과 겹침).
+          입력 영역 아무 곳이나 클릭해도 네이티브 캘린더가 열리게 showPicker 호출. */}
+      <input
+        type="date"
+        value={value}
+        min={min}
+        onChange={e => onChange(e.target.value)}
+        onClick={e => {
+          try { e.currentTarget.showPicker?.(); } catch { /* 미지원 브라우저 — 기본 동작 유지 */ }
+        }}
+        className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full cursor-pointer rounded-lg border px-3 py-2 text-sm"
+      />
     </div>
   );
 }
@@ -216,7 +218,9 @@ function TargetField({ form, setForm }: Props) {
   if (kind === 'grade') {
     return (
       <div>
-        <label htmlFor="target-grade" className="text-pullim-slate-700 mb-1 block text-xs font-bold">목표 등급</label>
+        <label htmlFor="target-grade" className="text-pullim-slate-700 mb-1 block text-xs font-bold">
+          목표 등급<RequiredMark />
+        </label>
         <input
           id="target-grade"
           type="text"
@@ -1117,9 +1121,10 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
       return;
     }
     if (examTypeMeta[form.examType ?? 'mock'].targetKind === 'grade') {
+      // QA #5 — 목표 등급은 1~8만 허용 (9등급은 목표 점수가 아님)
       const n = parseInt(form.targetGrade, 10);
-      if (!Number.isFinite(n) || n < 1 || n > 9) {
-        toast.error('1단계에서 목표 등급을 숫자로 입력해주세요 (예: 1등급)');
+      if (!Number.isFinite(n) || n < 1 || n > 8) {
+        toast.error('1단계에서 목표 등급을 1에서 8 사이의 숫자로 입력해주세요');
         return;
       }
     }
