@@ -130,6 +130,7 @@ function EditPlannerForm({
 
   const formState = usePlannerForm(
     planner ? plannerToForm(planner) : ({} as PlannerForm),
+    'edit',
   );
 
   async function handleSave(submitted: PlannerForm) {
