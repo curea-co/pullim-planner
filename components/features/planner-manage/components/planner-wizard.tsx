@@ -27,7 +27,6 @@ interface PlannerWizardProps {
   onJump: (n: number) => void;
   mode: 'create' | 'edit';
   onActivate: (submitted: PlannerForm) => void;
-  finishHint: string;
   /** 실 루틴(컨테이너 fetch) — STEP5 선택·STEP8 미리보기에 사용. 미주입 시 mock. */
   routines?: Routine[];
 }
@@ -36,7 +35,7 @@ export function PlannerWizard({
   form, setForm,
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
-  mode, onActivate, finishHint,
+  mode, onActivate,
   routines,
 }: PlannerWizardProps) {
   const stepInfo = plannerStepConfig[currentStep - 1];
@@ -112,11 +111,7 @@ export function PlannerWizard({
               다음
               <ChevronRight className="h-4 w-4" />
             </button>
-          ) : (
-            <span className="text-pullim-slate-500 text-[11px] font-semibold">
-              {finishHint}
-            </span>
-          )}
+          ) : null}
         </footer>
       </section>
     </>
