@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   Bell, Sparkles, Check, AlertCircle, X, Plus,
   Smartphone, Users, BookOpenCheck, Sunrise,
-  Lightbulb, AlertTriangle, Target, PencilLine, BookOpen, Brain,
+  Lightbulb, Target, PencilLine, BookOpen, Brain,
   Coffee, FileText, Mic, MessageCircle, ChevronLeft, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
@@ -343,20 +343,12 @@ export function PStep2Hours({ form, setForm }: Props) {
         />
       </div>
 
+      {/* QA #6·#8 — 연산식 안내·28h 미만 주의 문구 제거 (합계만 노출) */}
       <section className="bg-pullim-slate-50 rounded-xl p-3.5">
         <div className="flex items-center justify-between text-xs">
           <span className="text-pullim-slate-700 font-semibold">주간 학습 가능 시간</span>
           <span className="text-pullim-blue-600 font-mono text-base font-bold">{weeklyTotal}시간</span>
         </div>
-        <div className="text-pullim-slate-500 mt-1 text-[10px]">
-          평일 {weekdayDuration}h × 5 + 주말 {weekendDuration}h × 2 = {weeklyTotal}h/주
-        </div>
-        {weeklyTotal < 20 && (
-          <div className="bg-pullim-warn-bg text-pullim-warn mt-2 inline-flex w-full items-start gap-1 rounded p-1.5 text-[10px]">
-            <AlertTriangle aria-hidden className="mt-0.5 h-3 w-3 shrink-0" />
-            <span>고2 평균(주 28h)보다 부족해요. 시간 확보가 어렵다면 블록 패턴을 짧게(포모도로) 잡으세요.</span>
-          </div>
-        )}
       </section>
     </div>
   );
