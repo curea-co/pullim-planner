@@ -98,6 +98,10 @@ export function MonthHeatmap({
           <span className="ml-auto inline-flex items-center gap-1">
             <span className="border-pullim-success h-3 w-3 rounded-sm border-2" /> 100% 완료
           </span>
+          {/* 깃발 의미 — 헤더 안내 문구 삭제(QA #17)로 유일한 설명 위치가 범례로 이동 */}
+          <span className="inline-flex items-center gap-1">
+            <Flag aria-hidden className="text-pullim-warn h-3 w-3" /> 시험·모평
+          </span>
         </div>
       </div>
     </section>

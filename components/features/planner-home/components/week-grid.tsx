@@ -145,7 +145,7 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
         </table>
       </div>
 
-      {/* 색상 범례 — 시간표 하단 배치 (QA #16) */}
+      {/* 색상 범례 — 시간표 하단 배치 (QA #16). 막대 높이 의미는 범례 끝에 유지(해석 정보 손실 방지) */}
       {!compact && (
         <ul className="border-pullim-slate-100 flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-4 py-3">
           {visibleTypes.map(t => {
@@ -161,6 +161,7 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
               </li>
             );
           })}
+          <li className="text-pullim-slate-500 ml-auto text-[10px]">막대 높이 = 학습 시간</li>
         </ul>
       )}
     </section>
