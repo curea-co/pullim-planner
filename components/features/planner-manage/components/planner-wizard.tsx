@@ -72,7 +72,7 @@ export function PlannerWizard({
 
         <div className="min-h-[280px]">
           {/* 단계 번호가 아니라 key로 렌더 — 루틴 게이트로 단계 수가 8/9로 달라져도 안전 */}
-          {stepInfo.key === 'goal'       && <PStep1Goal form={form} setForm={setForm} />}
+          {stepInfo.key === 'goal'       && <PStep1Goal form={form} setForm={setForm} mode={mode} />}
           {stepInfo.key === 'hours'      && <PStep2Hours form={form} setForm={setForm} />}
           {stepInfo.key === 'subjects'   && <PStep3Subjects form={form} setForm={setForm} />}
           {stepInfo.key === 'pattern'    && <PStep4Pattern form={form} setForm={setForm} />}

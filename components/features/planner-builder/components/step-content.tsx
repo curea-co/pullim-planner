@@ -21,7 +21,7 @@ import {
 import { BLOCK_TYPE_STRIPE } from '@/lib/planner/block-type-style';
 import {
   type PlannerForm, blockPatternMeta, motivationStyleMeta,
-  type ExamType, examTypeMeta,
+  type ExamType, examTypeMeta, todayIsoKst,
 } from './builder-types';
 import { RequiredMark } from '@/components/shell/required-mark';
 import { UnitEditorModal } from './unit-editor-modal';
@@ -35,24 +35,26 @@ type Props = {
 const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'etc'];
 
 /* ─── Step 1 — 목표 (시험 종류 탭 + 단일/범위 일자) ─── */
-// 접속 시점의 실제 오늘(KST) — D-day를 하드코딩 데모일이 아닌 현재 날짜 기준으로 계산.
-const TODAY_ISO = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 const examTypeOrder: ExamType[] = ['mock', 'suneung', 'midterm', 'final', 'other'];
 
-export function PStep1Goal({ form, setForm }: Props) {
+export function PStep1Goal({ form, setForm, mode = 'create' }: Props & { mode?: 'create' | 'edit' }) {
   const examType = form.examType ?? 'mock';
   const meta = examTypeMeta[examType];
+  // 오늘(KST)은 렌더마다 계산 — 모듈 상수로 캐시하면 자정 이후 min/D-day가 goNext/activate의
+  // todayIsoKst() 검증 기준과 어긋난다(Codex). 과거 하한(min)은 신규 생성에만.
+  const todayIso = todayIsoKst();
+  const minDate = mode === 'create' ? todayIso : undefined;
   const startDate = form.examStartDate ?? '';
   const endDate = form.examEndDate ?? startDate;
 
   const dDay = useMemo(() => {
     if (!startDate) return null;
-    const today = new Date(TODAY_ISO);
+    const today = new Date(todayIso);
     const exam = new Date(startDate);
     const diffMs = exam.getTime() - today.getTime();
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  }, [startDate]);
+  }, [startDate, todayIso]);
 
   const examLength = useMemo(() => {
     if (!meta.isRange || !startDate || !endDate) return 1;
@@ -143,11 +145,11 @@ export function PStep1Goal({ form, setForm }: Props) {
       <div>
         {meta.isRange ? (
           <div className="grid grid-cols-2 gap-3">
-            <DateField label="시험 시작일" required value={startDate} onChange={setStart} />
-            <DateField label="시험 종료일" value={endDate} onChange={setEnd} min={startDate} />
+            <DateField label="시험 시작일" required value={startDate} onChange={setStart} min={minDate} />
+            <DateField label="시험 종료일" value={endDate} onChange={setEnd} min={startDate || minDate} />
           </div>
         ) : (
-          <DateField label="시험 날짜" required value={startDate} onChange={setStart} />
+          <DateField label="시험 날짜" required value={startDate} onChange={setStart} min={minDate} />
         )}
         <p className="text-pullim-slate-500 mt-1 text-[10px] font-mono">
           D-day{' '}
@@ -1094,7 +1096,9 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
   const weekdayHours = form.weekdayHours.end - form.weekdayHours.start;
   const weekly = weekdayHours * 5 + (form.weekendHours.end - form.weekendHours.start) * 2;
 
-  const previews = useMemo(() => generatePreview(form, TODAY_ISO, routines), [form, routines]);
+  // 오늘(KST)을 deps에 포함 — 자정 넘겨 열어둔 화면에서도 미리보기가 다음 렌더에 새 날짜로 갱신(Codex).
+  const todayIso = todayIsoKst();
+  const previews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
   const safeIdx = Math.min(previewIdx, Math.max(0, previews.length - 1));
   const current = previews[safeIdx];
   const totalMinutesToday = current?.items.reduce((s, it) => {
@@ -1110,6 +1114,12 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
     }
     if (!form.examStartDate) {
       toast.error('1단계에서 시험 날짜를 선택해주세요');
+      return;
+    }
+    // 계획표는 미래 대상 — 과거 시험일 차단. 신규 생성에만 적용 — edit(변경 사항 저장)는
+    // 이미 지난 시험 플래너의 다른 설정 수정·저장을 막지 않는다(Codex).
+    if (mode === 'create' && form.examStartDate < todayIsoKst()) {
+      toast.error('시험 날짜는 오늘 이후로 선택해주세요');
       return;
     }
     if (examTypeMeta[form.examType ?? 'mock'].targetKind === 'grade') {

@@ -22,6 +22,14 @@ export type ExamType = 'mock' | 'suneung' | 'midterm' | 'final' | 'other';
 
 export type TargetKind = 'grade' | 'score' | 'free';
 
+/**
+ * 오늘(KST, YYYY-MM-DD) — 시험 날짜 하한. 계획표는 미래를 향하므로 과거 시험일은 허용하지 않는다.
+ * step1 date input `min`과 goNext/activate 검증이 같은 값을 쓴다.
+ */
+export function todayIsoKst(): string {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 export const examTypeMeta: Record<ExamType, { label: string; isRange: boolean; targetKind: TargetKind; hint: string }> = {
   mock:    { label: '모의고사',  isRange: false, targetKind: 'grade', hint: 'D-day 14일 이내면 빈출 단원 +30% 자동 가중' },
   suneung: { label: '수능',      isRange: false, targetKind: 'grade', hint: '수능 D-day 기반 장기 곡선 — 6/9월 모평으로 단계별 점검' },
