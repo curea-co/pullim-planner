@@ -28,8 +28,11 @@ const FEATURES = [
 
 export function WelcomeModal({ open, onClose }: WelcomeModalProps) {
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-sm">
+    // non-modal + 오버레이 없음 (QA — dev 배포에서 바깥클릭으로 닫은 뒤 Base UI의 outside-click
+    // 가로채기가 잔류해 캘린더 버튼 전체가 무반응이 되는 문제). 게이팅이 아닌 정보 제공 목적이라
+    // 뒤 화면을 잠글 이유가 없다 — 모달이 떠 있어도 페이지는 그대로 조작 가능해야 한다.
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }} modal={false}>
+      <DialogContent className="max-w-sm" showOverlay={false}>
         <DialogHeader>
           <DialogTitle className="text-base font-bold">풀림 플래너 시작하기</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
