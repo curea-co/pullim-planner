@@ -21,11 +21,11 @@ function formatFactor(f: BurnoutFactor): string {
 }
 
 /**
- * QA #14 — 노출 지표 제외 목록.
- * '평균 수면 시간'은 사용자 입력이 필요한 값이라 현 데이터로는 추정치(노이즈)이고,
- * '"쉴래요" 사용'은 해당 기능(QA #15) 제거로 무의미. 유지: 연속 블록 완료율·감정 평균·휴식 수용률.
+ * QA #14 — 노출 지표 제외 목록 (안정 id 기준 — 카피 변경에 안전).
+ * sleep(평균 수면 시간)은 사용자 입력이 필요한 값이라 현 데이터로는 추정치(노이즈)이고,
+ * rest_usage("쉴래요" 사용)는 해당 기능(QA #15) 제거로 무의미. 유지: streak·emotion·rest_acceptance.
  */
-const HIDDEN_FACTORS = new Set(['평균 수면 시간', '"쉴래요" 사용']);
+const HIDDEN_FACTOR_IDS = new Set<BurnoutFactor['id']>(['sleep', 'rest_usage']);
 
 /**
  * 번아웃 지수 카드 — 핸드오프 7.2 (지표 가중 평균).
@@ -33,7 +33,7 @@ const HIDDEN_FACTORS = new Set(['평균 수면 시간', '"쉴래요" 사용']);
  */
 export function BurnoutCard() {
   const { score, trend, factors } = todayBurnout;
-  const visibleFactors = factors.filter(f => !HIDDEN_FACTORS.has(f.label));
+  const visibleFactors = factors.filter(f => !HIDDEN_FACTOR_IDS.has(f.id));
 
   const tone = score >= 70 ? 'good' : score >= 50 ? 'warn' : 'bad';
   const ringColor =
