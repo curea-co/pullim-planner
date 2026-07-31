@@ -49,6 +49,7 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
 
   return (
     <section className="bg-card overflow-hidden rounded-2xl border">
+      {/* QA #16 — 헤더의 해석 안내 문구 삭제, 색상 범례는 시간표 하단으로 이동 */}
       {!compact && (
         <header className="border-b p-4">
           <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
@@ -57,26 +58,6 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
           <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
             이번 주 학습 분포
           </h2>
-          <p className="text-pullim-slate-500 mt-0.5 text-[11px]">
-            행 = 블록 타입 · 열 = 요일 · 막대 길이 = 학습 시간
-          </p>
-
-          {/* 색상 범례 — week 컨텍스트에서 시간 분포 해석에 필요 */}
-          <ul className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-            {visibleTypes.map(t => {
-              const m = blockTypeMeta[t];
-              return (
-                <li key={t} className="text-pullim-slate-600 inline-flex items-center gap-1 text-[10px]">
-                  <span
-                    className="inline-block h-2.5 w-2.5 rounded-sm"
-                    style={{ background: getBlockColor(t, activePalette) }}
-                    aria-hidden
-                  />
-                  {m.label}
-                </li>
-              );
-            })}
-          </ul>
         </header>
       )}
 
@@ -163,6 +144,25 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
           </tbody>
         </table>
       </div>
+
+      {/* 색상 범례 — 시간표 하단 배치 (QA #16) */}
+      {!compact && (
+        <ul className="border-pullim-slate-100 flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-4 py-3">
+          {visibleTypes.map(t => {
+            const m = blockTypeMeta[t];
+            return (
+              <li key={t} className="text-pullim-slate-600 inline-flex items-center gap-1 text-[10px]">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-sm"
+                  style={{ background: getBlockColor(t, activePalette) }}
+                  aria-hidden
+                />
+                {m.label}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }
