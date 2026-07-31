@@ -73,13 +73,15 @@ export default function HomePresenter({
   monthDays,
   monthLabel,
 }: HomePresenterProps) {
-  // QA #7 — 활성 계획표가 없으면 "다른 시간표로 전환" 대신 생성 CTA (전환할 시간표가 없음).
+  // QA #7 — 활성 계획표가 없으면 "다른 시간표로 전환" 대신 "시간표 관리" CTA.
+  // active=null은 "시간표 미생성"과 "있지만 비활성"을 구분하지 못하므로(useHomeBlocks 계약),
+  // 목적지는 /planner/manage — 생성·기존 시간표 활성화 모두 가능한 화면으로 보낸다(Codex).
   const switchAction = (
     <Link
-      href={hasActivePlanner ? '/planner/manage' : '/planner/manage/new'}
+      href="/planner/manage"
       className="text-pullim-blue-600 hover:bg-pullim-blue-50 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1"
     >
-      {hasActivePlanner ? '다른 시간표로 전환' : '시간표 만들기'}
+      {hasActivePlanner ? '다른 시간표로 전환' : '시간표 관리'}
       <ArrowRight className="h-3 w-3" />
     </Link>
   );
