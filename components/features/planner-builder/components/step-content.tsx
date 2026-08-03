@@ -44,8 +44,8 @@ export function PStep1Goal({ form, setForm }: Props) {
   const examType = form.examType ?? 'mock';
   const meta = examTypeMeta[examType];
   // 오늘(KST)은 렌더마다 계산 — 모듈 상수로 캐시하면 자정 이후 min/D-day가 goNext/activate의
-  // todayIsoKst() 검증 기준과 어긋난다(Codex). 과거 하한(min)은 신규·수정 공통(사용자 확정 08-03) —
-  // 이미 지난 시험일 플래너는 수정 시 날짜를 오늘 이후로 갱신해야 진행·저장된다.
+  // todayIsoKst() 검증 기준과 어긋난다(Codex). 새 날짜 선택 하한(min)은 신규·수정 공통 오늘부터
+  // (사용자 확정 08-03). 검증은 종료일 기준 — 진행 중 범위 시험의 기존 시작일은 유지 가능.
   const todayIso = todayIsoKst();
   const minDate = todayIso;
   const startDate = form.examStartDate ?? '';
@@ -1129,9 +1129,10 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
       toast.error('1단계에서 시험 날짜를 선택해주세요');
       return;
     }
-    // 계획표는 미래 대상 — 과거 시험일 차단. 신규·수정 공통(사용자 확정 08-03).
-    if (form.examStartDate < todayIsoKst()) {
-      toast.error('시험 날짜는 오늘 이후로 선택해주세요');
+    // 계획표는 미래 대상 — 이미 **종료된** 시험 차단. 신규·수정 공통(사용자 확정 08-03).
+    // 판정은 종료일 기준(Codex) — 진행 중 범위 시험은 기존 시작일 그대로 저장 가능.
+    if ((form.examEndDate || form.examStartDate) < todayIsoKst()) {
+      toast.error('이미 지난 시험이에요 — 1단계에서 시험 날짜를 오늘 이후로 선택해주세요');
       return;
     }
     if (examTypeMeta[form.examType ?? 'mock'].targetKind === 'grade') {
