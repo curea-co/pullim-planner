@@ -1075,6 +1075,10 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
     for (const id of form.routineIds) {
       const r = routineMap ? routineMap.get(id) : findRoutine(id);
       if (!r || !r.weekdays.some(w => w === routineDay)) continue;
+      const rs = toMin(r.startTime);
+      const re = toMin(r.endTime);
+      if (rs < winStart || re > winEnd) continue; // 가용 시간(2단계) 밖 — 보류
+      if (routineItems.some(it => rs < toMin(it.end) && toMin(it.start) < re)) continue; // 루틴-루틴 겹침 보류
       routineItems.push({
         start: r.startTime, end: r.endTime,
         subjectLabel: routineSubjectLabel(r.subject),
