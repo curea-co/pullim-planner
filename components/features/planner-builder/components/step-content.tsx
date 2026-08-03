@@ -1067,20 +1067,19 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
     const winStart = range.start * 60;
     const winEnd = range.end * 60;
 
-    // 루틴을 먼저 배치 — BE bakeRoutines 정합: 루틴은 **시험기간(시작~종료, 양끝 포함)**의
-    // 해당 요일에만 bake 된다(가용 창 무관·루틴-루틴 겹침 허용). 시험일 미정이면 bake 없음.
+    // 루틴을 먼저 배치 — 해당 요일이면 준비 기간에도 표시(활성화 전 루틴 적용 검증 목적).
+    // ※ 실제 bake(BE bakeRoutines v1)는 시험기간(시작~종료)에만 굽는다 — 범위 확대 여부는
+    //   BE 결정 사항, 확정 시 #49 dry-run 연동으로 미리보기가 자동 정합된다.
     const routineDay = (dt.weekday + 6) % 7; // jsDay(0=일) → routine weekday(0=월)
     const routineItems: PreviewItem[] = [];
-    if (inExamRange) {
-      for (const id of form.routineIds) {
-        const r = routineMap ? routineMap.get(id) : findRoutine(id);
-        if (!r || !r.weekdays.some(w => w === routineDay)) continue;
-        routineItems.push({
-          start: r.startTime, end: r.endTime,
-          subjectLabel: routineSubjectLabel(r.subject),
-          type: r.type, unitLabel: r.title, isRoutine: true,
-        });
-      }
+    for (const id of form.routineIds) {
+      const r = routineMap ? routineMap.get(id) : findRoutine(id);
+      if (!r || !r.weekdays.some(w => w === routineDay)) continue;
+      routineItems.push({
+        start: r.startTime, end: r.endTime,
+        subjectLabel: routineSubjectLabel(r.subject),
+        type: r.type, unitLabel: r.title, isRoutine: true,
+      });
     }
 
     const items: PreviewItem[] = [...routineItems];
@@ -1252,7 +1251,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
           <li>· 학습 범위: <strong className="text-white font-mono">{Object.keys(form.subjectUnits ?? {}).length}개 과목 · {Object.values(form.subjectUnits ?? {}).reduce((a, b) => a + (b?.length ?? 0), 0)}개 단원</strong>{form.weaknessAutoReflect ? ' (+ 약점 단원 자동 — 반영 준비 중)' : ''}</li>
           <li>· 시간 분배: <span className="text-pullim-slate-400">AI 자동 (단원 수 + D-day 기반)</span></li>
           <li>· 블록 패턴: {blockPatternMeta[form.blockPattern].label} <span className="text-pullim-slate-500">({blockPatternMeta[form.blockPattern].spec})</span></li>
-          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(시험 기간 요일에 시간표 반영)</span></li>
+          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(해당 요일 미리보기 반영)</span></li>
           <li>· 동기 스타일: {motivationStyleMeta[form.motivationStyle].label}</li>
           <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON (시간표 반영 준비 중)' : 'OFF'}</li>
           {/* 리마인더 STEP 게이트(NOTIFICATIONS_ENABLED) off면 요약에서도 알림 줄 숨김 — 기본값(푸시·5분 전)이 남아 오해 주는 것 방지 */}
