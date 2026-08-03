@@ -32,7 +32,9 @@ type Props = {
   setForm: (next: PlannerForm) => void;
 };
 
-const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social', 'etc'];
+// QA #19 — '기타'(etc)는 선택지에서 제거(단원을 채워도 활성화 오류 유발). 기존 플래너에
+// 이미 etc가 있으면 step3의 selectedSubjects 폴백으로 계속 표시·편집된다.
+const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'social'];
 
 /* ─── Step 1 — 목표 (시험 종류 탭 + 단일/범위 일자) ─── */
 

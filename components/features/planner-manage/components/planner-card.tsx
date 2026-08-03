@@ -5,7 +5,7 @@ import {
   CalendarClock, Clock, BookOpen, MoreVertical, CheckCircle2,
   Pencil, Copy, Archive, Trash2, Sparkles, Palette, Share2,
 } from 'lucide-react';
-import { type Planner } from '@/lib/mock';
+import { subjectLabels, type Planner, type SubjectKey } from '@/lib/mock';
 import { todayISO } from '@/lib/mock/planner';
 import { examTypeMeta, blockPatternMeta } from '@/components/features/planner-builder/components/builder-types';
 import {
@@ -156,7 +156,8 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
       {/* 메트릭 4종 */}
       <div className="grid grid-cols-2 gap-2">
         <Metric Icon={CalendarClock} label="D-day" value={formatDday(dday)} sub={planner.examStartDate} tone={dday <= 14 && dday > 0 ? 'warn' : 'default'} />
-        <Metric Icon={BookOpen} label="과목·단원" value={`${subjectCount}·${unitCount}`} sub={Object.keys(planner.subjectUnits).join(', ')} />
+        {/* QA #18 — 과목 키('math' 등)는 한글 라벨로 표기 */}
+        <Metric Icon={BookOpen} label="과목·단원" value={`${subjectCount}·${unitCount}`} sub={(Object.keys(planner.subjectUnits) as SubjectKey[]).map(k => subjectLabels[k] ?? k).join(', ')} />
         <Metric Icon={Clock} label="주간 학습" value={`${weeklyTotal}h`} sub={`평일 ${weekdayHours}h · 주말 ${weekendHours}h`} />
         <Metric Icon={Sparkles} label="블록 패턴" value={blockPatternLabel} sub={blockPatternMeta[planner.blockPattern].spec} />
       </div>
