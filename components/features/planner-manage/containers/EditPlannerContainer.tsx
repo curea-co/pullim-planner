@@ -140,12 +140,18 @@ function EditPlannerForm({
   const handleServerPreview = useCallback(async (): Promise<PreviewDay[] | null> => {
     if (DEV_AUTH_BYPASS) return null;
     try {
+      // 저장(PATCH)과 동일 조건 — 프리필 근거(appliedRoutineIds)가 있을 때만 루틴을 포함해
+      // 미리보기와 저장 결과가 항상 일치한다(구버전 BE 응답이면 둘 다 루틴 무접촉, Codex).
       const res = await plannerClient.preview({
         ...toWriteInput(formToPlannerPatch(form)),
-        routineApplications: form.routineIds.map((routineId) => ({
-          routineId,
-          endRange: 'exam' as const,
-        })),
+        ...(planner?.appliedRoutineIds !== undefined
+          ? {
+              routineApplications: form.routineIds.map((routineId) => ({
+                routineId,
+                endRange: 'exam' as const,
+              })),
+            }
+          : {}),
       });
       return mapServerPreview(
         res.blocks,
@@ -156,7 +162,7 @@ function EditPlannerForm({
     } catch {
       return null;
     }
-  }, [form]);
+  }, [form, planner]);
 
   async function handleSave(submitted: PlannerForm) {
     // 로컬 dev 우회 — 실 API 대신 공유 mock store를 갱신한다.
