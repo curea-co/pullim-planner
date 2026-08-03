@@ -64,7 +64,11 @@ export default function NewPlannerContainer() {
     // 생성·활성화한다. ManagePlannersContainer 의 confirmActivate 와 동일 store(lib/mock/planner)라
     // 관리/홈 화면과 일관되며, 위저드를 끝까지 검증할 수 있다.
     if (DEV_AUTH_BYPASS) {
-      const planner = createPlanner(formToPlannerPatch(submitted));
+      const planner = createPlanner({
+        ...formToPlannerPatch(submitted),
+        // bypass 에서도 루틴 선택 보존 — 수정 화면 프리필 왕복 정합.
+        appliedRoutineIds: submitted.routineIds,
+      });
       activatePlanner(planner.id);
       toast.success('🎯 새 시간표 활성화 완료', {
         description: `${planner.name} — 홈 시간표가 생성됐어요`,

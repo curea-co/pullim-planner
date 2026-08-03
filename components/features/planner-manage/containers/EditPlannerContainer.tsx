@@ -161,7 +161,11 @@ function EditPlannerForm({
   async function handleSave(submitted: PlannerForm) {
     // 로컬 dev 우회 — 실 API 대신 공유 mock store를 갱신한다.
     if (DEV_AUTH_BYPASS) {
-      updatePlanner(id, formToPlannerPatch(submitted));
+      // 루틴 선택도 mock 스토어에 보존 — 재진입 프리필·bypass 왕복 정합(Codex).
+      updatePlanner(id, {
+        ...formToPlannerPatch(submitted),
+        appliedRoutineIds: submitted.routineIds,
+      });
       toast.success('✓ 변경 사항 저장 완료', {
         description: `${submitted.examName} — 다음 활성화 시 반영됩니다`,
         duration: 3000,
@@ -176,10 +180,16 @@ function EditPlannerForm({
       await plannerClient.update(id, {
         ...toWriteInput(formToPlannerPatch(submitted)),
         // STEP5 선택 = 원하는 적용 집합 전체 — BE 가 현재 적용과 diff(추가 bake·해제 삭제).
-        routineApplications: submitted.routineIds.map((routineId) => ({
-          routineId,
-          endRange: 'exam' as const,
-        })),
+        // 단, 프리필 근거(appliedRoutineIds)를 받은 경우에만 전송 — 구버전 BE 응답이면
+        // 빈 프리필을 desired 로 보내 기존 적용을 전부 해제하는 회귀를 막는다(Codex).
+        ...(planner?.appliedRoutineIds !== undefined
+          ? {
+              routineApplications: submitted.routineIds.map((routineId) => ({
+                routineId,
+                endRange: 'exam' as const,
+              })),
+            }
+          : {}),
       });
       toast.success('✓ 변경 사항 저장 완료', {
         description: `${submitted.examName} — 다음 활성화 시 반영됩니다`,
