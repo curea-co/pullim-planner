@@ -14,7 +14,7 @@ const TOTAL_STEPS = plannerStepConfig.length;
  * 저장 핸들러(create/activate vs update)는 Container 책임.
  * (임시저장은 서버 draft BE 미구현이라 버튼·핸들러 모두 제거 — soft-open. BE 준비 시 복원.)
  */
-export function usePlannerForm(initialForm: PlannerForm, mode: 'create' | 'edit' = 'create') {
+export function usePlannerForm(initialForm: PlannerForm) {
   const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState<PlannerForm>(initialForm);
 
@@ -36,8 +36,8 @@ export function usePlannerForm(initialForm: PlannerForm, mode: 'create' | 'edit'
         return;
       }
       // 계획표는 미래 대상 — 과거 시험일 차단 (input min과 동일 기준, 직접 타이핑 우회 방지).
-      // 신규 생성에만 적용 — edit는 이미 지난 시험 플래너의 다른 설정 수정을 막지 않는다(Codex).
-      if (mode === 'create' && form.examStartDate < todayIsoKst()) {
+      // 신규·수정 공통(사용자 확정 08-03) — 지난 시험일 플래너는 수정 시 날짜 갱신이 선행돼야 한다.
+      if (form.examStartDate < todayIsoKst()) {
         toast.error('시험 날짜는 오늘 이후로 선택해주세요');
         return;
       }

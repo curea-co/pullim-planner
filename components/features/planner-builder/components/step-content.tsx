@@ -40,13 +40,14 @@ const subjectOrder: SubjectKey[] = ['math', 'english', 'korean', 'science', 'soc
 
 const examTypeOrder: ExamType[] = ['mock', 'suneung', 'midterm', 'final', 'other'];
 
-export function PStep1Goal({ form, setForm, mode = 'create' }: Props & { mode?: 'create' | 'edit' }) {
+export function PStep1Goal({ form, setForm }: Props) {
   const examType = form.examType ?? 'mock';
   const meta = examTypeMeta[examType];
   // 오늘(KST)은 렌더마다 계산 — 모듈 상수로 캐시하면 자정 이후 min/D-day가 goNext/activate의
-  // todayIsoKst() 검증 기준과 어긋난다(Codex). 과거 하한(min)은 신규 생성에만.
+  // todayIsoKst() 검증 기준과 어긋난다(Codex). 과거 하한(min)은 신규·수정 공통(사용자 확정 08-03) —
+  // 이미 지난 시험일 플래너는 수정 시 날짜를 오늘 이후로 갱신해야 진행·저장된다.
   const todayIso = todayIsoKst();
-  const minDate = mode === 'create' ? todayIso : undefined;
+  const minDate = todayIso;
   const startDate = form.examStartDate ?? '';
   const endDate = form.examEndDate ?? startDate;
 
@@ -1128,9 +1129,8 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
       toast.error('1단계에서 시험 날짜를 선택해주세요');
       return;
     }
-    // 계획표는 미래 대상 — 과거 시험일 차단. 신규 생성에만 적용 — edit(변경 사항 저장)는
-    // 이미 지난 시험 플래너의 다른 설정 수정·저장을 막지 않는다(Codex).
-    if (mode === 'create' && form.examStartDate < todayIsoKst()) {
+    // 계획표는 미래 대상 — 과거 시험일 차단. 신규·수정 공통(사용자 확정 08-03).
+    if (form.examStartDate < todayIsoKst()) {
       toast.error('시험 날짜는 오늘 이후로 선택해주세요');
       return;
     }
