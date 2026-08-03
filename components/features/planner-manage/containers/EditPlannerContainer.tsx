@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useCallback, useEffect, useState, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
@@ -12,6 +12,8 @@ import type { Planner, Routine } from '@/lib/mock';
 import { getRoutines } from '@/lib/mock';
 import { findPlanner, updatePlanner } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient, toWriteInput } from '@/lib/planner/client';
+import { mapServerPreview, type PreviewDay } from '@/lib/planner/preview-map';
+import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
 import { usePlannerForm } from '../hooks/use-planner-form';
 import EditPlannerPresenter from '../presenters/EditPlannerPresenter';
@@ -132,6 +134,26 @@ function EditPlannerForm({
     planner ? plannerToForm(planner) : ({} as PlannerForm),
   );
 
+  // STEP8 서버 dry-run 미리보기 — 수정 화면도 동일(저장 없음). 루틴 적용은 create 전용이라
+  // edit 미리보기는 생성 블록만 계산한다(PATCH 재생성 정책과 동형).
+  const form = formState.form;
+  const handleServerPreview = useCallback(async (): Promise<PreviewDay[] | null> => {
+    if (DEV_AUTH_BYPASS) return null;
+    try {
+      const res = await plannerClient.preview(
+        toWriteInput(formToPlannerPatch(form)),
+      );
+      return mapServerPreview(
+        res.blocks,
+        todayIsoKst(),
+        form.examStartDate ?? null,
+        form.examEndDate ?? null,
+      );
+    } catch {
+      return null;
+    }
+  }, [form]);
+
   async function handleSave(submitted: PlannerForm) {
     // 로컬 dev 우회 — 실 API 대신 공유 mock store를 갱신한다.
     if (DEV_AUTH_BYPASS) {
@@ -173,6 +195,7 @@ function EditPlannerForm({
       onJump={formState.jumpTo}
       onSave={handleSave}
       routines={routines}
+      onServerPreview={handleServerPreview}
     />
   );
 }

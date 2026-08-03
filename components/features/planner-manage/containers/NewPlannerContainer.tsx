@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
@@ -11,6 +11,8 @@ import {
 import { createPlanner, activatePlanner } from '@/lib/mock/planner';
 import { getRoutines, type Routine } from '@/lib/mock';
 import { plannerClient, toWriteInput } from '@/lib/planner/client';
+import { mapServerPreview, type PreviewDay } from '@/lib/planner/preview-map';
+import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
 import { usePlannerForm } from '../hooks/use-planner-form';
 import NewPlannerPresenter from '../presenters/NewPlannerPresenter';
@@ -33,6 +35,30 @@ export default function NewPlannerContainer() {
     return () => { alive = false; };
   }, []);
 
+  // STEP8 서버 dry-run 미리보기(pullim-api #476) — 실제 bake 규칙으로 계산만(저장 없음).
+  // bypass·실패면 null → 휴리스틱 폴백. 루틴 적용은 create 와 동일 매핑.
+  const form = formState.form;
+  const handleServerPreview = useCallback(async (): Promise<PreviewDay[] | null> => {
+    if (DEV_AUTH_BYPASS) return null;
+    try {
+      const res = await plannerClient.preview({
+        ...toWriteInput(formToPlannerPatch(form)),
+        routineApplications: form.routineIds.map((routineId) => ({
+          routineId,
+          endRange: 'exam' as const,
+        })),
+      });
+      return mapServerPreview(
+        res.blocks,
+        todayIsoKst(),
+        form.examStartDate ?? null,
+        form.examEndDate ?? null,
+      );
+    } catch {
+      return null;
+    }
+  }, [form]);
+
   async function handleActivate(submitted: PlannerForm) {
     // 로컬 dev 우회 — pullim-api CORS/쿠키 미지원 환경에서 실 API 대신 공유 mock store에
     // 생성·활성화한다. ManagePlannersContainer 의 confirmActivate 와 동일 store(lib/mock/planner)라
@@ -51,9 +77,14 @@ export default function NewPlannerContainer() {
     // activate 만 실패해도 "생성 실패"로 보여 사용자가 재시도 → 동일 플래너가 중복 생성된다 (codex).
     let planner;
     try {
-      planner = await plannerClient.create(
-        toWriteInput(formToPlannerPatch(submitted)),
-      );
+      planner = await plannerClient.create({
+        ...toWriteInput(formToPlannerPatch(submitted)),
+        // 5단계 선택 루틴을 bake 입력으로 — 미리보기(dry-run)와 동일 매핑(정합).
+        routineApplications: submitted.routineIds.map((routineId) => ({
+          routineId,
+          endRange: 'exam' as const,
+        })),
+      });
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : '시간표 생성 실패');
       return;
@@ -86,6 +117,7 @@ export default function NewPlannerContainer() {
       onJump={formState.jumpTo}
       onActivate={handleActivate}
       routines={routines}
+      onServerPreview={handleServerPreview}
     />
   );
 }
