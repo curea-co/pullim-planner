@@ -225,14 +225,24 @@ function TargetField({ form, setForm }: Props) {
         <label htmlFor="target-grade" className="text-pullim-slate-700 mb-1 block text-xs font-bold">
           목표 등급<RequiredMark />
         </label>
-        <input
-          id="target-grade"
-          type="text"
-          value={form.targetGrade}
-          onChange={e => setForm({ ...form, targetGrade: e.target.value })}
-          placeholder="(예) 1등급"
-          className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
-        />
+        {/* QA #5 후속 — 입력 자체를 1~8 한 자리로 제한(한글·기호·0·9 타이핑 차단). '등급'은 서픽스로 표기 */}
+        <div className="relative">
+          <input
+            id="target-grade"
+            type="text"
+            inputMode="numeric"
+            maxLength={1}
+            value={form.targetGrade}
+            onChange={e =>
+              setForm({ ...form, targetGrade: e.target.value.replace(/[^1-8]/g, '').slice(0, 1) })
+            }
+            placeholder="(예) 1"
+            className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 pr-12 text-sm outline-none"
+          />
+          <span aria-hidden className="text-pullim-slate-500 absolute top-1/2 right-3 -translate-y-1/2 text-sm">
+            등급
+          </span>
+        </div>
       </div>
     );
   }
@@ -906,7 +916,7 @@ function ToggleRow({
 /* ─── Step 8 — 미리보기 + 활성화 ─── */
 function formatTarget(form: PlannerForm): string {
   const kind = examTypeMeta[form.examType ?? 'mock'].targetKind;
-  if (kind === 'grade') return form.targetGrade?.trim() || '미설정';
+  if (kind === 'grade') return form.targetGrade?.trim() ? `${form.targetGrade.trim()}등급` : '미설정';
   if (kind === 'score') return `${form.targetScore ?? 0}점`;
   return form.targetGoal?.trim() || '미설정';
 }
