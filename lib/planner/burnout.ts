@@ -4,8 +4,12 @@ import type { BurnoutFactor, BurnoutSnapshot } from '@/lib/mock';
 /**
  * 번아웃 안전도 실데이터 산출 (QA — mock `todayBurnout` 하드코딩 대체, FE 계산 1단계).
  *
- * 입력: 이번 주 날짜별 블록(pullim-api 실블록 — `completed`/`emotion` 완료 메타 포함)과 오늘(ISO).
- * **오늘까지의** 학습 블록만 집계한다(미래 블록을 미완료로 세면 항상 위험으로 왜곡).
+ * 입력: 날짜별 블록(pullim-api 실블록 — `completed`/`emotion` 완료 메타 포함), 오늘(ISO),
+ * 그리고 **이번 주 날짜 목록**(`weekDatesFor(todayIso, 0)`).
+ * 집계는 `weekDates ∩ 오늘 이전`으로 클리핑한다 — 호출부의 blocksByDate에 과거 뷰 탐색으로
+ * 로드된 다른 주 날짜가 섞여 있어도 점수가 화면 탐색에 따라 흔들리지 않게(Codex).
+ * 미래 블록도 제외(미완료로 세면 항상 위험으로 왜곡). 주 초반엔 표본이 적을 수 있음 — B안(BE
+ * 집계, 기간 확장) 이관 시 해소.
  *
  * 산출 지표 (완료 기록에서 직접 계산 가능한 것만):
  * - streak(연속 블록 완료율): 완료 학습 블록 / 계획 학습 블록
@@ -20,9 +24,10 @@ import type { BurnoutFactor, BurnoutSnapshot } from '@/lib/mock';
 export function computeBurnoutFromWeek(
   blocksByDate: Record<string, TimeBlock[]>,
   todayIso: string,
+  weekDates: string[],
 ): BurnoutSnapshot | null {
-  const pastDates = Object.keys(blocksByDate)
-    .filter((d) => d <= todayIso)
+  const pastDates = weekDates
+    .filter((d) => d <= todayIso && d in blocksByDate)
     .sort();
 
   const studyOf = (d: string) => (blocksByDate[d] ?? []).filter((b) => b.type !== 'break');

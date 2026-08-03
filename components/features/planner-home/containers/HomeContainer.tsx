@@ -232,7 +232,7 @@ export default function HomeContainer() {
           heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
         ) / 10,
     };
-    burnout = computeBurnoutFromWeek(heroMerged, todayIso);
+    burnout = computeBurnoutFromWeek(heroMerged, todayIso, weekDatesFor(todayIso, 0));
   }
 
   return (
