@@ -58,14 +58,10 @@ export function MonthHeatmap({
         <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
           월간 학습 캘린더
         </p>
+        {/* QA #17 — 헤더의 해석 안내 문구 삭제 (범례는 기존대로 하단) */}
         <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
           {monthLabel ?? '4월'} 학습 분포
         </h2>
-        <p className="text-pullim-slate-500 mt-0.5 inline-flex flex-wrap items-center gap-1 text-[11px]">
-          <span>색 농도 = 블록 수 · 외곽선 = 완료율 ·</span>
-          <Flag aria-hidden className="h-3 w-3" />
-          <span>= 시험·모평</span>
-        </p>
       </header>
 
       <div className="p-4">
@@ -101,6 +97,10 @@ export function MonthHeatmap({
           </span>
           <span className="ml-auto inline-flex items-center gap-1">
             <span className="border-pullim-success h-3 w-3 rounded-sm border-2" /> 100% 완료
+          </span>
+          {/* 깃발 의미 — 헤더 안내 문구 삭제(QA #17)로 유일한 설명 위치가 범례로 이동 */}
+          <span className="inline-flex items-center gap-1">
+            <Flag aria-hidden className="text-pullim-warn h-3 w-3" /> 시험·모평
           </span>
         </div>
       </div>
