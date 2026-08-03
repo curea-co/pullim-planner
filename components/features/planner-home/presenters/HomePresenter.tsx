@@ -7,7 +7,7 @@ import type { Customization } from '@/lib/hooks/use-planner-customization';
 import { DayView } from '../components/views/day-view';
 import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
-import { planBaseDate, type MonthDay, type TimeBlock, type WeekDay } from '@/lib/mock/planner';
+import { planBaseDate, type BurnoutSnapshot, type MonthDay, type TimeBlock, type WeekDay } from '@/lib/mock/planner';
 import {
   formatDayNavLabel, formatDayTitle, formatDayRelLabel,
   formatWeekNavLabel, formatWeekTitle,
@@ -22,7 +22,8 @@ interface HomePresenterProps {
   dday: number;
   /** 활성 계획표 유무 — 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요" 표시 (QA #7) */
   hasActivePlanner?: boolean;
-  burnoutScore: number;
+  /** 번아웃 스냅샷 — Container가 해석(실모드: 이번 주 완료 기록 계산 / bypass: mock). null=데이터 없음 */
+  burnout: BurnoutSnapshot | null;
   daySummary: { done: number; total: number };
   weekMeta: { totalHours: number; completedHours: number };
   monthMeta: { totalBlocks: number };
@@ -54,7 +55,7 @@ export default function HomePresenter({
   examName,
   dday,
   hasActivePlanner = true,
-  burnoutScore,
+  burnout,
   daySummary,
   weekMeta,
   monthMeta,
@@ -154,7 +155,7 @@ export default function HomePresenter({
   return (
     <>
       <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
-      {hasActivePlanner && <BurnoutThresholdBanner score={burnoutScore} />}
+      {hasActivePlanner && burnout && <BurnoutThresholdBanner score={burnout.score} />}
       <CalendarShell
         view={view}
         onChangeView={onChangeView}
@@ -172,7 +173,7 @@ export default function HomePresenter({
         }
         action={switchAction}
       >
-        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} />}
+        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} />}
         {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} />}
         {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} />}
       </CalendarShell>

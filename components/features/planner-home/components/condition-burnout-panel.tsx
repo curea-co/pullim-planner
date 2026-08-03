@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Battery } from 'lucide-react';
 import {
-  conditionMeta, todayBurnout,
-  type ConditionLevel,
+  conditionMeta,
+  type BurnoutSnapshot, type ConditionLevel,
 } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 import { ConditionSlider } from './condition-slider';
@@ -12,6 +12,8 @@ import { BurnoutCard } from './burnout-card';
 
 type Props = {
   condition: ConditionLevel;
+  /** 번아웃 스냅샷 — 실모드는 이번 주 완료 기록 기반 계산값, null=집계 데이터 없음. */
+  burnout: BurnoutSnapshot | null;
   onConditionChange: (level: ConditionLevel) => void;
   /** 첫 진입 시 펼친 상태로 시작할지 — 기본 collapsed */
   defaultOpen?: boolean;
@@ -24,12 +26,12 @@ type Props = {
  *
  * 시그니처(감정 지능)는 ribbon으로 *상시 가시*, 인지 부하는 collapse로 *조절 가능*.
  */
-export function ConditionBurnoutPanel({ condition, onConditionChange, defaultOpen = false }: Props) {
+export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, defaultOpen = false }: Props) {
   const [open, setOpen] = useState(defaultOpen);
   const meta = conditionMeta[condition];
-  const score = todayBurnout.score;
-  // 안전도 시맨틱 — 높을수록 안전 (todayBurnout.score 와 정합)
-  const burnoutTone = score >= 70 ? 'good' : score >= 50 ? 'warn' : 'bad';
+  // 안전도 시맨틱 — 높을수록 안전. 데이터 없으면(null) 칩 미노출.
+  const score = burnout?.score ?? null;
+  const burnoutTone = score === null ? null : score >= 70 ? 'good' : score >= 50 ? 'warn' : 'bad';
   const burnoutLabel = burnoutTone === 'good' ? '안전' : burnoutTone === 'warn' ? '주의' : '위험';
 
   return (
@@ -57,7 +59,8 @@ export function ConditionBurnoutPanel({ condition, onConditionChange, defaultOpe
               <span className="sr-only">{meta.label}</span>
               오늘
             </span>
-            {/* 안전도 칩 — 객관 누적 부담 (높을수록 안전) */}
+            {/* 안전도 칩 — 객관 누적 부담 (높을수록 안전). 집계 데이터 없으면 미노출 */}
+            {score !== null && (
             <span
               className={cn(
                 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs font-bold',
@@ -70,6 +73,7 @@ export function ConditionBurnoutPanel({ condition, onConditionChange, defaultOpe
               <Battery className="h-3 w-3" aria-hidden />
               안전도 {score} · {burnoutLabel}
             </span>
+            )}
           </div>
         </div>
         <span className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[11px] font-semibold">
@@ -81,7 +85,7 @@ export function ConditionBurnoutPanel({ condition, onConditionChange, defaultOpe
       {open && (
         <div id="condition-burnout-body" className="space-y-3 border-t p-3">
           <ConditionSlider initial={condition} onChange={onConditionChange} />
-          <BurnoutCard />
+          <BurnoutCard burnout={burnout} />
         </div>
       )}
     </section>

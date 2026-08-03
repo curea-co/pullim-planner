@@ -1,7 +1,7 @@
 'use client';
 
 import { Heart, TrendingDown, TrendingUp, Minus } from 'lucide-react';
-import { todayBurnout, type BurnoutFactor } from '@/lib/mock';
+import type { BurnoutFactor, BurnoutSnapshot } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
 const trendIcon = {
@@ -30,9 +30,25 @@ const HIDDEN_FACTOR_IDS = new Set<BurnoutFactor['id']>(['sleep', 'rest_usage']);
 /**
  * 번아웃 지수 카드 — 핸드오프 7.2 (지표 가중 평균).
  * ("오늘은 쉴래요" 1-tap 휴식은 미동작 기능이라 QA #15에서 제거.)
+ *
+ * `burnout`은 호출부(HomeContainer)가 해석한 스냅샷 — 실모드는 이번 주 완료 기록으로
+ * 계산(computeBurnoutFromWeek), dev bypass는 mock. null이면 아직 집계할 기록이 없음.
  */
-export function BurnoutCard() {
-  const { score, trend, factors } = todayBurnout;
+export function BurnoutCard({ burnout }: { burnout: BurnoutSnapshot | null }) {
+  if (!burnout) {
+    return (
+      <section className="bg-card rounded-xl border p-4 text-center">
+        <div className="text-pullim-slate-500 flex items-center justify-center gap-1 text-[11px] font-semibold tracking-wider uppercase">
+          <Heart className="h-3 w-3" />
+          번아웃 안전도
+        </div>
+        <p className="text-pullim-slate-500 mt-2 text-xs">
+          아직 데이터가 부족해요 — 학습 블록을 완료하면 안전도가 계산돼요.
+        </p>
+      </section>
+    );
+  }
+  const { score, trend, factors } = burnout;
   const visibleFactors = factors.filter(f => !HIDDEN_FACTOR_IDS.has(f.id));
 
   const tone = score >= 70 ? 'good' : score >= 50 ? 'warn' : 'bad';
