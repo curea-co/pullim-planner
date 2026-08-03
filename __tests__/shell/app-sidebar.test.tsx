@@ -24,7 +24,7 @@ describe('AppSidebar (플랫 PUDS 레일)', () => {
     expect(screen.getByText('풀림 플래너')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '홈' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '시간표 관리' })).toBeInTheDocument();
-    // 공유(공스타그램)는 STUDYGRAM_ENABLED 게이트로 기본 미노출 (QA #20 — 계정 연동 미비)
+    // 공유(공스타그램)는 기능 전체 제거됨 (QA #20 확정 08-03 — 필요 시 신규 개발)
     expect(screen.queryByRole('link', { name: '공유' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '매뉴얼' })).toBeInTheDocument();
   });

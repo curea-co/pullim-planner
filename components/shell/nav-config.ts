@@ -4,10 +4,10 @@
  */
 
 import {
-  Home, CalendarClock, Wrench, FileText, BookOpen, Share2, Repeat2,
+  Home, CalendarClock, Wrench, FileText, BookOpen, Repeat2,
   type LucideIcon,
 } from 'lucide-react';
-import { REPORTS_ENABLED, ROUTINE_ENABLED, STUDYGRAM_ENABLED } from '@/lib/flags';
+import { REPORTS_ENABLED, ROUTINE_ENABLED } from '@/lib/flags';
 
 export type NavItem = {
   href: string;
@@ -56,10 +56,6 @@ export const plannerSection: NavSubItem[] = [
   ...(REPORTS_ENABLED
     ? [{ href: '/planner/reports', label: '성장 리포트', icon: FileText, description: '일·주·월 회고 + 부모 공유' } satisfies NavSubItem]
     : []),
-  // 공유(공스타그램)는 계정 연동 미비로 우선순위 제외(QA #20) — off면 항목 제외(라우트 redirect와 일관)
-  ...(STUDYGRAM_ENABLED
-    ? [{ href: '/planner/share', label: '공유', icon: Share2, description: '학습 인증 공유 — 친구 피드 + 인증 카드' } satisfies NavSubItem]
-    : []),
   // 매뉴얼은 홈 모달(?help=1) 대신 온보딩 랜딩으로 — 전용 페이지가 가이드 권위(?help=1 딥링크 자체는 유지)
   { href: '/planner/onboarding', label: '매뉴얼',      icon: BookOpen, description: '5분 사용법 가이드 — 온보딩 랜딩 페이지' },
 ];
@@ -96,9 +92,6 @@ export const studentBottomTabs = [
   { href: '/planner',        label: '홈',      icon: Home,     matchPrefix: ['/', '/planner'] },
   ...(REPORTS_ENABLED
     ? [{ href: '/planner/reports', label: '리포트', icon: FileText, matchPrefix: ['/planner/reports'] } as const]
-    : []),
-  ...(STUDYGRAM_ENABLED
-    ? [{ href: '/planner/share', label: '공유', icon: Share2, matchPrefix: ['/planner/share'] } as const]
     : []),
 ] as const;
 

@@ -3,12 +3,10 @@
 import Link from 'next/link';
 import { Plus, Eye, EyeOff } from 'lucide-react';
 import type { Planner } from '@/lib/mock';
-import type { Friend } from '@/lib/mock/studygram';
 import { PageHeader } from '@/components/shell/page-header';
 import { PlannerCard } from '../components/planner-card';
 import { ActivateConfirmDialog } from '../components/activate-confirm-dialog';
 import { DeleteConfirmDialog } from '../components/delete-confirm-dialog';
-import { SharePlannerDialog } from '../components/share-planner-dialog';
 import { EmptyState } from '../components/empty-state';
 import { cn } from '@/lib/utils';
 
@@ -23,7 +21,6 @@ interface ManagePlannersPresenterProps {
   showArchived: boolean;
   activateTarget: Planner | null;
   deleteTarget: Planner | null;
-  shareTarget: Planner | null;
   onToggleArchived: () => void;
   onActivateRequest: (id: string) => void;
   onActivateOpenChange: (open: boolean) => void;
@@ -34,15 +31,6 @@ interface ManagePlannersPresenterProps {
   onDeleteOpenChange: (open: boolean) => void;
   onDeleteConfirm: () => void;
   onDecorate: (id: string) => void;
-  onShareRequest: (id: string) => void;
-  onShareOpenChange: (open: boolean) => void;
-  onShareConfirm: (friendIds: string[]) => void;
-  /** 공유 모달 친구 목록 — 실 데이터(getFriends)/mock(bypass). */
-  friends: Friend[];
-  /** 친구 목록 로드 실패 여부. */
-  friendsError?: boolean;
-  /** 친구 목록 첫 조회 중 여부. */
-  friendsLoading?: boolean;
 }
 
 export default function ManagePlannersPresenter({
@@ -56,10 +44,6 @@ export default function ManagePlannersPresenter({
   showArchived,
   activateTarget,
   deleteTarget,
-  shareTarget,
-  friends,
-  friendsError,
-  friendsLoading,
   onToggleArchived,
   onActivateRequest,
   onActivateOpenChange,
@@ -70,9 +54,6 @@ export default function ManagePlannersPresenter({
   onDeleteOpenChange,
   onDeleteConfirm,
   onDecorate,
-  onShareRequest,
-  onShareOpenChange,
-  onShareConfirm,
 }: ManagePlannersPresenterProps) {
   const totalCount = inactive.length + (active ? 1 : 0);
   const isEmpty = totalCount === 0;
@@ -83,7 +64,6 @@ export default function ManagePlannersPresenter({
     onArchive,
     onDelete: onDeleteRequest,
     onDecorate,
-    onShare: onShareRequest,
   };
 
   return (
@@ -181,15 +161,6 @@ export default function ManagePlannersPresenter({
         onConfirm={onDeleteConfirm}
       />
 
-      <SharePlannerDialog
-        open={!!shareTarget}
-        onOpenChange={onShareOpenChange}
-        planner={shareTarget}
-        onConfirm={onShareConfirm}
-        friends={friends}
-        friendsError={friendsError}
-        friendsLoading={friendsLoading}
-      />
     </div>
   );
 }

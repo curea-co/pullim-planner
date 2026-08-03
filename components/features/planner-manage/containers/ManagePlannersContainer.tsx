@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
@@ -13,9 +13,6 @@ import {
   deletePlanner,
 } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient } from '@/lib/planner/client';
-import { pullimPlannerClient, pullimToFriend } from '@/lib/planner/pullim-client';
-import { mockFriends } from '@/lib/mock/studygram';
-import type { Friend } from '@/lib/mock/studygram';
 import ManagePlannersPresenter from '../presenters/ManagePlannersPresenter';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
@@ -31,47 +28,10 @@ export default function ManagePlannersContainer() {
   const [showArchived, setShowArchived] = useState(false);
   const [activateTarget, setActivateTarget] = useState<Planner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Planner | null>(null);
-  const [shareTarget, setShareTarget] = useState<Planner | null>(null);
   const [allPlanners, setAllPlanners] = useState<Planner[]>([]);
-  // 공유 모달용 친구 목록 — LNB '공유'와 동일한 실 데이터(getFriends). dev bypass면 mock.
-  const [friends, setFriends] = useState<Friend[]>(DEV_AUTH_BYPASS ? mockFriends : []);
-  const [friendsError, setFriendsError] = useState(false);
-  // real 모드 첫 조회 전까지 true — 로딩 중을 '친구 없음'으로 오표시하지 않게 EmptyState와 분리.
-  const [friendsLoading, setFriendsLoading] = useState(!DEV_AUTH_BYPASS);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [tick, setTick] = useState(0);
-
-  // 공유 모달 친구 목록 — LNB '공유'와 동일한 getFriends 재사용. 마운트 1회 + 공유 모달 열 때마다
-  // 재조회(일시 장애 뒤에도 이 세션에서 공유가 영구 차단되지 않게, Codex). 실패해도 관리 화면은 정상.
-  // 선두에서 setFriendsLoading(true)를 두지 않는다(effect 동기 setState 룰) — 마운트는 초기값
-  // (friendsLoading = real 모드 true)이 커버하고, 모달 열 때 재조회는 onShareRequest(이벤트 핸들러)가
-  // 로딩 플래그를 세운다. 여기선 결과 반영(await 이후)만 한다.
-  // seq 가드: 마운트 요청과 모달 오픈 재요청이 겹칠 때, **최신 요청의 결과만** 반영해 느린 이전
-  // 요청이 최신 성공을 덮어쓰는 경쟁조건을 막는다(Codex — request id 비교).
-  const friendsReqSeq = useRef(0);
-  const loadFriends = useCallback(async () => {
-    if (DEV_AUTH_BYPASS) return;
-    const seq = ++friendsReqSeq.current;
-    try {
-      const rows = await pullimPlannerClient.getFriends();
-      if (seq !== friendsReqSeq.current) return; // 더 최신 요청이 진행 중 — stale 결과 무시.
-      setFriends(rows.map(pullimToFriend));
-      setFriendsError(false);
-    } catch {
-      if (seq !== friendsReqSeq.current) return;
-      setFriendsError(true);
-    } finally {
-      if (seq === friendsReqSeq.current) setFriendsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // async IIFE로 감싸 setState를 await 경계 뒤로 보낸다(effect 동기 setState 룰 — tick 효과와 동일).
-    void (async () => {
-      await loadFriends();
-    })();
-  }, [loadFriends]);
 
   // 마운트 + tick(mutation 후 refresh) 마다 본인 시간표 목록을 다시 읽는다.
   // loading/loadError 를 분리해 "정말 비어 있음"과 "불러오기 실패"를 구분한다 (codex).
@@ -232,41 +192,6 @@ export default function ManagePlannersContainer() {
     router.push(`/planner/manage/${id}/edit?tab=layout`);
   }
 
-  /** 공유 — 친구 선택 모달 열기 (아웃바운드. 인바운드 조회는 LNB "공유") */
-  function onShareRequest(id: string) {
-    const target = allPlanners.find((p) => p.id === id);
-    if (!target) return;
-    setShareTarget(target);
-    // 모달 열 때마다 친구 목록 재조회 — 마운트 시 실패했어도 이 시점에 복구된다(Codex).
-    if (!DEV_AUTH_BYPASS) {
-      setFriendsLoading(true);
-      void loadFriends();
-    }
-  }
-  /**
-   * 공유 확정 — studygram 공유 BE·인바운드 조회 화면이 모두 미구현(spec P1+).
-   * 실환경에서 성공처럼 보이면 안 되므로, **DEV 우회에서만 mock 성공**을 띄우고
-   * 그 외에는 "준비 중" 안내로 정직하게 처리한다 (codex).
-   */
-  function confirmShare(friendIds: string[]) {
-    if (!shareTarget) return;
-    if (DEV_AUTH_BYPASS) {
-      const names = friends
-        .filter((f) => friendIds.includes(f.id))
-        .map((f) => f.name)
-        .join(', ');
-      toast.success(`📨 ${shareTarget.name} 공유 (미리보기)`, {
-        description: `${names}님에게 공유 — 실제 전송·조회는 준비 중`,
-        duration: 3000,
-      });
-    } else {
-      toast.info('친구 공유는 준비 중이에요', {
-        description: '시간표를 친구에게 전달하는 기능을 순차 제공할게요',
-        duration: 3000,
-      });
-    }
-    setShareTarget(null);
-  }
 
   return (
     <ManagePlannersPresenter
@@ -294,15 +219,6 @@ export default function ManagePlannersContainer() {
       }}
       onDeleteConfirm={confirmDelete}
       onDecorate={onDecorate}
-      shareTarget={shareTarget}
-      onShareRequest={onShareRequest}
-      onShareOpenChange={(o) => {
-        if (!o) setShareTarget(null);
-      }}
-      onShareConfirm={confirmShare}
-      friends={friends}
-      friendsError={friendsError}
-      friendsLoading={friendsLoading}
     />
   );
 }

@@ -26,7 +26,7 @@ pullim-planner/
 │   ├── ui/                             # shadcn/ui 프리미티브
 │   ├── shell/                          # AppHeader, AppSidebar, BottomNav, nav-config.ts
 │   ├── brand/
-│   ├── features/<도메인>/              # planner-home, planner-manage, planner-onboarding, planner-reports, planner-routine, studygram, auth
+│   ├── features/<도메인>/              # planner-home, planner-manage, planner-onboarding, planner-reports, planner-routine, auth
 │   ├── shared/                         # 순수 뷰 위젯
 │   └── planner-builder/ · builder/     # Phase 4에서 features/ 이식 예정
 ├── lib/
