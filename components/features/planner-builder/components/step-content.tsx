@@ -9,7 +9,6 @@ import {
   Coffee, FileText, Mic, MessageCircle, ChevronLeft, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { WEAKNESS_ENABLED, NOTIFICATIONS_ENABLED } from '@/lib/flags';
@@ -23,6 +22,10 @@ import {
   type PlannerForm, blockPatternMeta, motivationStyleMeta,
   type ExamType, examTypeMeta, todayIsoKst,
 } from './builder-types';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { RequiredMark } from '@/components/shell/required-mark';
 import { UnitEditorModal } from './unit-editor-modal';
 import { Pencil, Repeat2 } from 'lucide-react';
@@ -690,12 +693,9 @@ export function PStep5Routine({ form, setForm, routines: routinesProp }: Props &
         <p className="text-pullim-slate-500 text-xs">
           반복하는 행동을 먼저 등록하면 여기서 골라 넣을 수 있어요. (건너뛰어도 돼요)
         </p>
-        <Link
-          href="/planner/routine"
-          className="text-pullim-blue-700 hover:bg-pullim-blue-50 mt-1 inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
-        >
+        <RoutineLeaveButton className="text-pullim-blue-700 hover:bg-pullim-blue-50 mt-1 inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500">
           루틴 관리로
-        </Link>
+        </RoutineLeaveButton>
       </div>
     );
   }
@@ -745,13 +745,44 @@ export function PStep5Routine({ form, setForm, routines: routinesProp }: Props &
           );
         })}
       </ul>
-      <Link
-        href="/planner/routine"
-        className="text-pullim-blue-700 hover:bg-pullim-blue-50 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
-      >
+      <RoutineLeaveButton className="text-pullim-blue-700 hover:bg-pullim-blue-50 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500">
         + 루틴 관리
-      </Link>
+      </RoutineLeaveButton>
     </div>
+  );
+}
+
+/**
+ * 루틴 페이지 이동 확인 버튼 (QA #42) — 위저드 작성 내용이 임시저장되지 않으므로
+ * 즉시 이동하는 대신 확인 모달을 거친다. 취소=현재 페이지 잔류, 계속=/planner/routine 이동.
+ */
+function RoutineLeaveButton({ className, children }: { className?: string; children: React.ReactNode }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className={className}>
+        {children}
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold">루틴 페이지로 이동할까요?</DialogTitle>
+            <DialogDescription className="text-xs">
+              현재 페이지에서 작성 중인 내용이 저장되지 않을 수 있어요.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-1.5">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              취소
+            </Button>
+            <Button type="button" onClick={() => router.push('/planner/routine')}>
+              계속
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -1203,8 +1234,9 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
       ) : (
         <section>
           <header className="flex items-center justify-between gap-2">
+            {/* QA #43 — 실 데이터가 아님을 오해하지 않게 '미리보기'로 축약, 하단에 예시 고지 */}
             <h3 className="text-pullim-slate-900 text-sm font-bold">
-              미리보기 — 일주일 자동 생성
+              미리보기
             </h3>
             <span className="text-pullim-slate-500 text-[10px]">
               {previews.length}일 생성 · 시험일 도달 시 자동 종료
@@ -1296,7 +1328,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
           )}
 
           <p className="text-pullim-slate-500 mt-1.5 text-[10px]">
-            ↑ 자동 생성 예시 — 단원·블록 패턴·루틴·약점 설정이 그대로 반영돼요.
+            위 시간표는 자동 생성 예시입니다. 실제로 구성되는 시간표는 다를 수 있습니다.
           </p>
         </section>
       )}
