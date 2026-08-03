@@ -59,21 +59,20 @@ export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, d
               <span className="sr-only">{meta.label}</span>
               오늘
             </span>
-            {/* 안전도 칩 — 객관 누적 부담 (높을수록 안전). 집계 데이터 없으면 미노출 */}
-            {score !== null && (
+            {/* 안전도 칩 — 객관 누적 부담 (높을수록 안전). 완료 기록 없으면 '–' (판정 보류, 사용자 확정 08-03) */}
             <span
               className={cn(
                 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs font-bold',
-                burnoutTone === 'good' ? 'bg-pullim-success-bg text-pullim-success'
+                score === null ? 'bg-pullim-slate-100 text-pullim-slate-400'
+                : burnoutTone === 'good' ? 'bg-pullim-success-bg text-pullim-success'
                 : burnoutTone === 'warn' ? 'bg-pullim-warn-bg text-pullim-warn-cta-bg'
                 : 'bg-pullim-danger-bg text-pullim-danger',
               )}
-              title="번아웃 안전도 — 높을수록 안전"
+              title={score === null ? '번아웃 안전도 — 블록을 완료하면 계산돼요' : '번아웃 안전도 — 높을수록 안전'}
             >
               <Battery className="h-3 w-3" aria-hidden />
-              안전도 {score} · {burnoutLabel}
+              {score === null ? '안전도 –' : `안전도 ${score} · ${burnoutLabel}`}
             </span>
-            )}
           </div>
         </div>
         <span className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[11px] font-semibold">

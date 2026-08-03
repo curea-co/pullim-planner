@@ -36,6 +36,10 @@ export function computeBurnoutFromWeek(
 
   const doneOf = (blocks: TimeBlock[]) => blocks.filter((b) => b.status === 'done');
 
+  // 완료 기록이 아직 하나도 없으면 판정하지 않는다(사용자 확정 08-03) — 시작 직후
+  // "0점 · 위험"으로 겁주지 않고 '–'(데이터 없음) 상태로 둔다. 첫 완료부터 점수 계산.
+  if (doneOf(allStudy).length === 0) return null;
+
   // ── streak: 완료율(%)
   const completionPct = Math.round((doneOf(allStudy).length / allStudy.length) * 100);
 
