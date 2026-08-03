@@ -1278,7 +1278,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
               미리보기
             </h3>
             <span className="text-pullim-slate-500 text-[10px]">
-              {previews.length}일 생성 · 시험일 도달 시 자동 종료
+              {previews.length}일 생성 · 시험 종료일까지 표시
             </span>
           </header>
 
@@ -1327,14 +1327,14 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
               {current.isExamDay && (
                 <aside className="bg-pullim-danger/10 text-pullim-danger mb-2 inline-flex w-full items-start gap-1.5 rounded-md p-2 text-[11px] font-semibold">
                   <Sparkles aria-hidden className="mt-0.5 h-3 w-3 shrink-0" />
-                  <span>{form.examName || '시험'} 당일 — AI 학습 블록은 전날까지만 생성되고, 당일엔 선택한 루틴만 반영돼요</span>
+                  <span>{form.examName || '시험'} {form.examEndDate && form.examEndDate !== form.examStartDate ? '기간' : '당일'} — AI 학습 블록은 시험 전날까지만 생성되고, 시험 중엔 선택한 루틴만 반영돼요</span>
                 </aside>
               )}
 
               {current.items.length === 0 ? (
                 <p className="text-pullim-slate-500 py-2 text-center text-[11px] italic">
                   {current.isExamDay
-                    ? '시험 당일에는 AI 학습 블록이 생성되지 않아요.'
+                    ? '시험 기간에는 AI 학습 블록이 생성되지 않아요.'
                     : '가용 시간이 너무 짧아요. 2단계에서 시간을 늘려보세요.'}
                 </p>
               ) : (

@@ -17,7 +17,7 @@ const FEATURES = [
   { icon: CalendarClock, title: '일·주·월 시간표', desc: '일·주·월 단위로 학습 블록을 계획하고 관리해요.' },
   // 루틴은 출시 게이트(ROUTINE_ENABLED) 따라 노출 — prod 차단 시 잘못된 안내 방지
   ...(ROUTINE_ENABLED
-    ? [{ icon: Repeat2, title: '루틴', desc: '반복 블록을 설정해 매일 자동 채워요.' }]
+    ? [{ icon: Repeat2, title: '루틴', desc: '반복 블록을 설정해 시간표에 자동 반영해요.' }]
     : []),
   // 성장 리포트는 soft open 게이트(REPORTS_ENABLED) — 차단 중엔 "출시 예정"으로 예고만
   ...(REPORTS_ENABLED

@@ -184,9 +184,9 @@ export function formToPlannerPatch(form: PlannerForm): Omit<Planner, 'id' | 'act
 const allSteps: readonly Omit<StepInfo, 'num'>[] = [
   { key: 'goal',       label: '목표',      icon: Target,    title: '목표 · D-day',         description: '' },
   { key: 'hours',      label: '가용시간',  icon: Clock,     title: '학습 가능 시간',       description: '평일·주말 학습할 수 있는 시간대. 학교/학원 시간 빼고.' },
-  { key: 'subjects',   label: '범위',      icon: BookOpen,  title: '학습 범위',            description: '이번 시험에서 다룰 과목 · 단원 선택. 시간 분배는 AI가 단원 수·약점·D-day로 자동 계산해요.' },
+  { key: 'subjects',   label: '범위',      icon: BookOpen,  title: '학습 범위',            description: '이번 시험에서 다룰 과목 · 단원 선택. 시간 분배는 AI가 단원 수·D-day로 자동 계산해요.' },
   { key: 'pattern',    label: '블록',      icon: Hourglass, title: '블록 패턴',            description: '집중 ↔ 휴식 리듬. 본인 집중력에 맞춰 선택.' },
-  { key: 'routine',    label: '루틴',      icon: Repeat2,   title: '루틴 — 반복하는 행동', description: '매일·매주 반복할 행동을 골라 이 시간표에 넣어요. 건너뛰어도 돼요.' },
+  { key: 'routine',    label: '루틴',      icon: Repeat2,   title: '루틴 — 반복하는 행동', description: '반복할 행동을 골라 시간표에 넣어요 — 시험 기간의 해당 요일에 반영돼요. 건너뛰어도 돼요.' },
   { key: 'weakness',   label: '약점',      icon: Flame,     title: '약점 자동 반영',
     description: WEAKNESS_ENABLED
       ? '풀림 분석의 약점 단원을 플래너가 자동으로 더 많이 배정할지.'
