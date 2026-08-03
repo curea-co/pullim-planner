@@ -36,6 +36,12 @@ export function computeBurnoutFromWeek(
 
   const doneOf = (blocks: TimeBlock[]) => blocks.filter((b) => b.status === 'done');
 
+  // 시작 직후(집계 대상이 **오늘 하루뿐**)에 완료 0건이면 판정 보류(사용자 확정 08-03) —
+  // 오늘 블록은 아직 진행 중이라 완료 0이 정상인데 "0점 · 위험"으로 겁주지 않는다('–' 표시).
+  // 단, 과거 날짜에 블록이 있는데도 완료 0이면 실제 위험 신호이므로 그대로 판정한다(Codex).
+  const pastStudy = pastDates.filter((d) => d < todayIso).flatMap(studyOf);
+  if (doneOf(allStudy).length === 0 && pastStudy.length === 0) return null;
+
   // ── streak: 완료율(%)
   const completionPct = Math.round((doneOf(allStudy).length / allStudy.length) * 100);
 
