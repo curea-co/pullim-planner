@@ -1014,6 +1014,8 @@ type PreviewItem = {
   unitLabel: string;
   /** 5단계에서 고른 루틴으로 들어간 블록 */
   isRoutine?: boolean;
+  /** 배치 보류 사유 — 숨기지 않고 표기한다(선택 루틴 누락 인지 가능, Codex). */
+  held?: '가용 시간 밖' | '루틴 겹침';
 };
 
 type PreviewDay = {
@@ -1077,12 +1079,16 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
       if (!r || !r.weekdays.some(w => w === routineDay)) continue;
       const rs = toMin(r.startTime);
       const re = toMin(r.endTime);
-      if (rs < winStart || re > winEnd) continue; // 가용 시간(2단계) 밖 — 보류
-      if (routineItems.some(it => rs < toMin(it.end) && toMin(it.start) < re)) continue; // 루틴-루틴 겹침 보류
+      // 가용 시간(2단계) 밖·루틴-루틴 겹침은 숨기지 않고 '보류'로 표기 — 선택한 루틴이
+      // 어떻게 적용되는지 확인하는 화면에서 조용한 누락을 만들지 않는다(Codex).
+      const held: PreviewItem['held'] =
+        rs < winStart || re > winEnd ? '가용 시간 밖'
+        : routineItems.some(it => !it.held && rs < toMin(it.end) && toMin(it.start) < re) ? '루틴 겹침'
+        : undefined;
       routineItems.push({
         start: r.startTime, end: r.endTime,
         subjectLabel: routineSubjectLabel(r.subject),
-        type: r.type, unitLabel: r.title, isRoutine: true,
+        type: r.type, unitLabel: r.title, isRoutine: true, held,
       });
     }
 
@@ -1122,7 +1128,7 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
 
         // 루틴과 겹치는 슬롯은 제외 — 커서는 이미 전진(BE excludeOverlapping 이 생성 후 필터하는 것과 동형)
         const end = t + blockMinutes;
-        if (routineItems.some(it => t < toMin(it.end) && toMin(it.start) < end)) continue;
+        if (routineItems.some(it => !it.held && t < toMin(it.end) && toMin(it.start) < end)) continue;
         items.push({ start: fmtHM(t), end: fmtHM(end), subjectLabel: subjectLabels[subject], type, unitLabel });
       }
     }
@@ -1173,6 +1179,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
     if (!current) return 0;
     const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
     const spans = current.items
+      .filter((it) => !it.held) // 보류 루틴은 실배치 아님 — 합계 제외
       .map((it) => [toMin(it.start), toMin(it.end)] as const)
       .sort((a, b) => a[0] - b[0]);
     let total = 0;
@@ -1255,7 +1262,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
           <li>· 학습 범위: <strong className="text-white font-mono">{Object.keys(form.subjectUnits ?? {}).length}개 과목 · {Object.values(form.subjectUnits ?? {}).reduce((a, b) => a + (b?.length ?? 0), 0)}개 단원</strong>{form.weaknessAutoReflect ? ' (+ 약점 단원 자동 — 반영 준비 중)' : ''}</li>
           <li>· 시간 분배: <span className="text-pullim-slate-400">AI 자동 (단원 수 + D-day 기반)</span></li>
           <li>· 블록 패턴: {blockPatternMeta[form.blockPattern].label} <span className="text-pullim-slate-500">({blockPatternMeta[form.blockPattern].spec})</span></li>
-          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(해당 요일 미리보기 반영)</span></li>
+          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(시간 맞는 요일만 배치 — 가용 시간 밖·겹침은 보류 표기)</span></li>
           <li>· 동기 스타일: {motivationStyleMeta[form.motivationStyle].label}</li>
           <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON (시간표 반영 준비 중)' : 'OFF'}</li>
           {/* 리마인더 STEP 게이트(NOTIFICATIONS_ENABLED) off면 요약에서도 알림 줄 숨김 — 기본값(푸시·5분 전)이 남아 오해 주는 것 방지 */}
@@ -1323,7 +1330,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
                   {current.offset === 1 ? '내일' : `${current.offset}일 후`} · {current.monthDay} ({current.weekdayLabel}) {current.isWeekend ? '· 주말' : ''}
                 </span>
                 <span className="text-pullim-slate-500 font-mono">
-                  학습 {totalMinutesToday}분 · {current.items.length}블록
+                  학습 {totalMinutesToday}분 · {current.items.filter(it => !it.held).length}블록
                 </span>
               </div>
 
@@ -1392,7 +1399,10 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
 function PreviewBlock({ item }: { item: PreviewItem }) {
   const Icon = blockTypeIcon[item.type];
   return (
-    <li className="bg-card border-pullim-slate-200 flex items-center gap-2.5 rounded-md border p-2 text-[11px]">
+    <li className={cn(
+      'bg-card border-pullim-slate-200 flex items-center gap-2.5 rounded-md border p-2 text-[11px]',
+      item.held && 'border-dashed opacity-60',
+    )}>
       <span className="text-pullim-slate-500 w-24 shrink-0 font-mono text-[10px]">
         {item.start}–{item.end}
       </span>
@@ -1402,6 +1412,11 @@ function PreviewBlock({ item }: { item: PreviewItem }) {
       {item.isRoutine && (
         <span className="bg-pullim-slate-100 text-pullim-slate-600 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
           루틴
+        </span>
+      )}
+      {item.held && (
+        <span className="bg-pullim-slate-100 text-pullim-slate-500 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
+          보류 · {item.held}
         </span>
       )}
       <span className="text-pullim-slate-700 inline-flex items-center gap-1 font-semibold">
