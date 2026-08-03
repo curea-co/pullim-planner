@@ -31,10 +31,20 @@ describe('computeBurnoutFromWeek (실데이터 번아웃 계산)', () => {
     expect(
       computeBurnoutFromWeek({ '2026-07-28': [block({ status: 'done' })] }, TODAY, WEEK),
     ).toBeNull();
-    // 블록은 있지만 완료가 하나도 없으면 판정 보류(null) — 시작 직후 "0점·위험" 방지 (08-03 확정)
+    // 오늘 하루뿐 + 완료 0건 → 판정 보류(null) — 시작 직후 "0점·위험" 방지 (08-03 확정)
     expect(
       computeBurnoutFromWeek({ [TODAY]: [block(), block(), block()] }, TODAY, WEEK),
     ).toBeNull();
+  });
+
+  it('과거 날짜에 블록이 있는데도 완료 0건이면 판정 보류가 아니라 0점·위험 (Codex)', () => {
+    const snap = computeBurnoutFromWeek(
+      { '2026-08-05': [block(), block()], [TODAY]: [block()] },
+      TODAY,
+      WEEK,
+    );
+    expect(snap).not.toBeNull();
+    expect(snap!.score).toBe(0);
   });
 
   it('완료율(streak)을 오늘까지의 학습 블록으로 계산하고 휴식 블록은 제외한다', () => {
