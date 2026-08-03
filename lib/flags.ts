@@ -63,3 +63,13 @@ export const Q_LINK_ENABLED = process.env.NEXT_PUBLIC_Q_LINK_ENABLED === '1';
  * - dev·prod 기본: 미설정 → **차단**(safe-by-default). 회고 BE 준비 후 플래그로 오픈
  */
 export const REFLECTION_ENABLED = process.env.NEXT_PUBLIC_REFLECTION_ENABLED === '1';
+
+/**
+ * 공유(공스타그램 — /planner/share 친구찾기·인증 피드) — 풀림 계정 연동이 고려되지 않아
+ * 우선순위 제외(QA 플래너 #20, 2026-07-31): 친구찾기가 실 사용자 계정을 참조하지 못하고,
+ * 요청 거절 시 재검색 불가 등 플로우가 미완성. off면 LNB·하단탭에서 항목을 제외하고
+ * /planner/share* 라우트는 /planner 로 redirect 한다.
+ * - 로컬/preview 확인용: `NEXT_PUBLIC_STUDYGRAM_ENABLED=1`
+ * - dev·prod 기본: 미설정 → **차단**(safe-by-default). 계정 연동 설계 후 플래그로 오픈
+ */
+export const STUDYGRAM_ENABLED = process.env.NEXT_PUBLIC_STUDYGRAM_ENABLED === '1';

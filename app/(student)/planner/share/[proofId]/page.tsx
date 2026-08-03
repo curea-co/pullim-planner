@@ -1,4 +1,6 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
+import { STUDYGRAM_ENABLED } from '@/lib/flags';
 import ProofDetailContainer from '@/components/features/studygram/containers/ProofDetailContainer';
 
 export default async function ProofDetailPage({
@@ -6,6 +8,7 @@ export default async function ProofDetailPage({
 }: {
   params: Promise<{ proofId: string }>;
 }) {
+  if (!STUDYGRAM_ENABLED) redirect('/planner'); // 계정 연동 미비 — 우선순위 제외 게이트 (QA #20)
   const { proofId } = await params;
   return (
     <Suspense
