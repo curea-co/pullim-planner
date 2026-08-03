@@ -980,7 +980,9 @@ const blockTypeFeatureHint: Record<BlockType, string> = {
 const blockTypeShortLabel: Record<BlockType, string> = {
   concept:      '개념',
   practice:     '문제 풀이',
-  review:       '약점 보강',
+  // BE 생성 라벨(복습·오답)과 정합 — D-14 이내 자동 생성되는 review 를 '약점 보강'으로
+  // 부르면 약점 자동 반영 OFF 설정과 모순돼 보인다(Codex).
+  review:       '복습·오답',
   memorize:     '암기',
   mock:         '모의 시험',
   tutor:        '개념 질문',
