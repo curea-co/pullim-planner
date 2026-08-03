@@ -1163,18 +1163,27 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines, on
   const localPreviews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
 
   // 서버 dry-run(실제 bake 규칙) 우선 — 실패·미주입이면 휴리스틱 폴백. step 진입 시 1회 로드.
-  const [serverDays, setServerDays] = useState<PreviewDay[] | null>(null);
+  // 결과에 요청 키(로더 identity + 날짜)를 함께 저장하고 아래에서 파생으로 걸러 — 이전 폼·
+  // 이전 날짜 기준 결과가 잔존하지 않으면서(Codex) effect 내 동기 setState 도 피한다(lint).
+  const [server, setServer] = useState<{
+    loader: unknown; day: string; days: PreviewDay[];
+  } | null>(null);
   useEffect(() => {
     if (!onServerPreview) return;
     let alive = true;
-    // 새 요청 전 초기화 — 이전 폼·이전 날짜 기준 서버 결과가 실패/자정 이후에도 잔존하지
-    // 않게 한다(Codex). todayIso 의존성으로 자정 경계에서 재조회.
-    setServerDays(null);
     onServerPreview()
-      .then((days) => { if (alive && days && days.length > 0) setServerDays(days); })
+      .then((days) => {
+        if (alive && days && days.length > 0) {
+          setServer({ loader: onServerPreview, day: todayIso, days });
+        }
+      })
       .catch(() => {});
     return () => { alive = false; };
   }, [onServerPreview, todayIso]);
+  const serverDays =
+    server && server.loader === onServerPreview && server.day === todayIso
+      ? server.days
+      : null;
   // 서버 dry-run 은 실제 bake 결과라 선택 루틴이 전부 포함된다(BE 는 가용 창 무관 bake).
   // '보류' 배지는 휴리스틱 폴백 전용 표시 — 서버 경로에선 존재하지 않는 개념.
   const previews = serverDays ?? localPreviews;

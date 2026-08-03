@@ -848,6 +848,8 @@ export type Planner = {
     weekLayoutId?: WeekLayoutId;       // 주간 (옵셔널 — 미지정 시 matrix_by_type)
     paletteId: PaletteId;
   };
+  /** 적용 루틴 id(BE 블록 역산 — 수정 화면 프리필). mock 미보존 시 생략. */
+  appliedRoutineIds?: string[];
 };
 
 /**

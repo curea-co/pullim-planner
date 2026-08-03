@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useCallback, useEffect, useState, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
@@ -12,6 +12,8 @@ import type { Planner, Routine } from '@/lib/mock';
 import { getRoutines } from '@/lib/mock';
 import { findPlanner, updatePlanner } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient, toWriteInput } from '@/lib/planner/client';
+import { mapServerPreview, type PreviewDay } from '@/lib/planner/preview-map';
+import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
 import { usePlannerForm } from '../hooks/use-planner-form';
 import EditPlannerPresenter from '../presenters/EditPlannerPresenter';
@@ -132,9 +134,29 @@ function EditPlannerForm({
     planner ? plannerToForm(planner) : ({} as PlannerForm),
   );
 
-  // 서버 dry-run 미리보기는 **create 전용** — PATCH 는 루틴을 bake 하지 않아(BE 계약)
-  // edit 에 붙이면 STEP5 선택과 미리보기·저장 결과가 어긋난다(Codex). edit 는 휴리스틱 유지,
-  // 루틴 재적용은 BE PATCH bake 결정 후 후속.
+  // STEP8 서버 dry-run 미리보기 — PATCH 루틴 재적용(오너 확정 08-03)이 들어와 수정에서도
+  // STEP5 선택(원하는 적용 집합)이 저장 결과와 일치한다. bypass·실패면 휴리스틱 폴백.
+  const form = formState.form;
+  const handleServerPreview = useCallback(async (): Promise<PreviewDay[] | null> => {
+    if (DEV_AUTH_BYPASS) return null;
+    try {
+      const res = await plannerClient.preview({
+        ...toWriteInput(formToPlannerPatch(form)),
+        routineApplications: form.routineIds.map((routineId) => ({
+          routineId,
+          endRange: 'exam' as const,
+        })),
+      });
+      return mapServerPreview(
+        res.blocks,
+        todayIsoKst(),
+        form.examStartDate ?? null,
+        form.examEndDate ?? null,
+      );
+    } catch {
+      return null;
+    }
+  }, [form]);
 
   async function handleSave(submitted: PlannerForm) {
     // 로컬 dev 우회 — 실 API 대신 공유 mock store를 갱신한다.
@@ -151,7 +173,14 @@ function EditPlannerForm({
       // customization 은 PUT /planners 가 갱신하지 않는다(전용 엔드포인트 소유, BE 보존).
       // 따라서 폼 결과를 그대로 보낸다 — 굳이 customization 을 실으면 꾸미기 탭에서 방금 저장한
       // 값과 stale 충돌만 생긴다 (codex R4). toWriteInput 결과에 customization 이 있어도 BE 무시.
-      await plannerClient.update(id, toWriteInput(formToPlannerPatch(submitted)));
+      await plannerClient.update(id, {
+        ...toWriteInput(formToPlannerPatch(submitted)),
+        // STEP5 선택 = 원하는 적용 집합 전체 — BE 가 현재 적용과 diff(추가 bake·해제 삭제).
+        routineApplications: submitted.routineIds.map((routineId) => ({
+          routineId,
+          endRange: 'exam' as const,
+        })),
+      });
       toast.success('✓ 변경 사항 저장 완료', {
         description: `${submitted.examName} — 다음 활성화 시 반영됩니다`,
         duration: 3000,
@@ -177,6 +206,7 @@ function EditPlannerForm({
       onJump={formState.jumpTo}
       onSave={handleSave}
       routines={routines}
+      onServerPreview={handleServerPreview}
     />
   );
 }
