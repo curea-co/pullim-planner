@@ -1043,6 +1043,7 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
   const cycleMinutes = blockMinutes + restMinutes;
 
   const examStart = form.examStartDate || null;
+  const examEnd = form.examEndDate || examStart;
   const days: PreviewDay[] = [];
 
   // BE generateSchedule(pullim-api generate-schedule.ts) 정합 — 과목·단원 순환 커서는
@@ -1056,7 +1057,9 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
     const dt = addDaysUTC(todayISO, i);
     const dtISO = `${dt.y}-${pad2(dt.m)}-${pad2(dt.d)}`;
     const isWeekend = dt.weekday === 0 || dt.weekday === 6;
-    const isExamDay = !!examStart && dtISO === examStart;
+    // 범위 시험은 기간(시작~종료) 전체가 시험일 — 둘째 날 이후도 🚩·루틴 노출(Codex).
+    const inExamRange = !!examStart && !!examEnd && examStart <= dtISO && dtISO <= examEnd;
+    const isExamDay = inExamRange;
     const range = isWeekend ? form.weekendHours : form.weekdayHours;
     const winStart = range.start * 60;
     const winEnd = range.end * 60;
@@ -1065,8 +1068,6 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
     // 해당 요일에만 bake 된다(가용 창 무관·루틴-루틴 겹침 허용). 시험일 미정이면 bake 없음.
     const routineDay = (dt.weekday + 6) % 7; // jsDay(0=일) → routine weekday(0=월)
     const routineItems: PreviewItem[] = [];
-    const examEnd = form.examEndDate || examStart;
-    const inExamRange = !!examStart && !!examEnd && examStart <= dtISO && dtISO <= examEnd;
     if (inExamRange) {
       for (const id of form.routineIds) {
         const r = routineMap ? routineMap.get(id) : findRoutine(id);
@@ -1083,8 +1084,8 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
 
     // 생성 블록 — BE 규칙: 가용 창 전체를 슬롯으로 채우고, 유형은 D-day 구간별
     // (D-30+ 개념·암기 / D-15~30 개념·문제 / D-14 이내 문제·복습), 임박 구간 일요일
-    // 첫 슬롯은 주 1회 모의(mock). 시험 당일은 생성하지 않는다(BE 는 전날까지).
-    if (!isExamDay) {
+    // 첫 슬롯은 주 1회 모의(mock). 시험 시작일부터는 생성하지 않는다(BE 는 전날까지).
+    if (!examStart || dtISO < examStart) {
       const dday = examStart
         ? Math.round((Date.parse(examStart) - Date.parse(dtISO)) / dayMs)
         : 999; // 시험일 미정 — 평시 유형으로 근사
@@ -1131,7 +1132,8 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
       items,
     });
 
-    if (isExamDay) break;
+    // 범위 시험은 종료일까지 순회 후 종료 — 시작일에서 끊으면 둘째 날 이후가 잘린다(Codex).
+    if (examEnd && dtISO >= examEnd) break;
   }
 
   return days;
