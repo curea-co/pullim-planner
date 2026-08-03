@@ -980,7 +980,9 @@ const blockTypeFeatureHint: Record<BlockType, string> = {
 const blockTypeShortLabel: Record<BlockType, string> = {
   concept:      '개념',
   practice:     '문제 풀이',
-  review:       '약점 보강',
+  // BE 생성 라벨(복습·오답)과 정합 — D-14 이내 자동 생성되는 review 를 '약점 보강'으로
+  // 부르면 약점 자동 반영 OFF 설정과 모순돼 보인다(Codex).
+  review:       '복습·오답',
   memorize:     '암기',
   mock:         '모의 시험',
   tutor:        '개념 질문',
@@ -1014,6 +1016,8 @@ type PreviewItem = {
   unitLabel: string;
   /** 5단계에서 고른 루틴으로 들어간 블록 */
   isRoutine?: boolean;
+  /** 배치 보류 사유 — 숨기지 않고 표기한다(선택 루틴 누락 인지 가능, Codex). */
+  held?: '가용 시간 밖' | '루틴 겹침';
 };
 
 type PreviewDay = {
@@ -1043,65 +1047,94 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
   const cycleMinutes = blockMinutes + restMinutes;
 
   const examStart = form.examStartDate || null;
+  const examEnd = form.examEndDate || examStart;
   const days: PreviewDay[] = [];
+
+  // BE generateSchedule(pullim-api generate-schedule.ts) 정합 — 과목·단원 순환 커서는
+  // 날짜를 넘어 이어진다(인터리빙 + 전 기간 단원 커버리지). 노션 #49 전까지의 근사.
+  let subjectCursor = 0;
+  const unitCursor: Record<string, number> = {};
+  const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+  const dayMs = 86_400_000;
 
   for (let i = 1; i <= 7; i++) {
     const dt = addDaysUTC(todayISO, i);
     const dtISO = `${dt.y}-${pad2(dt.m)}-${pad2(dt.d)}`;
+    // 시험 종료일 이후는 미리보기 자체가 없다 — 종료일=오늘이면 빈 하루가 남지 않게
+    // 날짜 카드를 만들기 전에 끊는다(Codex). 종료일 당일까지는 push 후 다음 턴에 종료.
+    if (examEnd && dtISO > examEnd) break;
     const isWeekend = dt.weekday === 0 || dt.weekday === 6;
+    // 범위 시험은 기간(시작~종료) 전체가 시험일 — 둘째 날 이후도 🚩·루틴 노출(Codex).
+    const inExamRange = !!examStart && !!examEnd && examStart <= dtISO && dtISO <= examEnd;
+    const isExamDay = inExamRange;
     const range = isWeekend ? form.weekendHours : form.weekdayHours;
-    const startHour = range.start;
-    const endHour = range.end;
-    const availableMin = (endHour - startHour) * 60;
+    const winStart = range.start * 60;
+    const winEnd = range.end * 60;
 
-    // 가용 시간이 짧으면 블록 수 감소 — 최소 2, 최대 4
-    const maxBlocks = Math.max(0, Math.min(4, Math.floor(availableMin / cycleMinutes)));
-
-    const items: PreviewItem[] = [];
-    for (let b = 0; b < maxBlocks; b++) {
-      const startMin = startHour * 60 + b * cycleMinutes;
-      const endMin = startMin + blockMinutes;
-      const subject = subjectKeys[b % subjectKeys.length];
-      const subjectLabel = subjectLabels[subject];
-      const units = form.subjectUnits?.[subject] ?? [];
-      const unitRaw = units[b % Math.max(1, units.length)] ?? '약점 단원';
-      const unitLabel = resolveUnitLabel(unitRaw);
-
-      // 블록 타입 분포 — 약점 보강 ON이면 첫 블록은 review, 아니면 concept
-      const type: BlockType =
-        b === 0 ? (form.weaknessAutoReflect ? 'review' : 'concept')
-        : b === 1 ? 'practice'
-        : b === 2 ? 'memorize'
-        : 'practice';
-
-      items.push({
-        start: fmtHM(startMin),
-        end: fmtHM(endMin),
-        subjectLabel,
-        type,
-        unitLabel,
-      });
-    }
-
-    // 5단계에서 고른 루틴을 해당 요일 미리보기에 반영 (mock — 실제 적용·영속은 06-30 실 BE)
-    // 가용 시간(2단계) 밖이거나 기존 블록과 겹치면 보류한다(수동/자동 우선 — OI-3).
-    const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
-    const winStart = startHour * 60;
-    const winEnd = endHour * 60;
+    // 루틴을 먼저 배치 — BE bakeRoutines 정합: 오늘~시험 종료일의 해당 요일에 bake 된다
+    // (준비 기간 포함 — 2026-08-03 오너 확정 확대, pullim-api #478). 가용 창 밖·루틴-루틴
+    // 겹침은 미리보기 표시에서만 보류(2단계 설정과의 모순 방지 — Codex).
     const routineDay = (dt.weekday + 6) % 7; // jsDay(0=일) → routine weekday(0=월)
+    const routineItems: PreviewItem[] = [];
     for (const id of form.routineIds) {
       const r = routineMap ? routineMap.get(id) : findRoutine(id);
       if (!r || !r.weekdays.some(w => w === routineDay)) continue;
       const rs = toMin(r.startTime);
       const re = toMin(r.endTime);
-      if (rs < winStart || re > winEnd) continue;                       // 가용 시간 밖
-      if (items.some(it => rs < toMin(it.end) && toMin(it.start) < re)) continue; // 겹침 보류
-      items.push({
+      // 가용 시간(2단계) 밖·루틴-루틴 겹침은 숨기지 않고 '보류'로 표기 — 선택한 루틴이
+      // 어떻게 적용되는지 확인하는 화면에서 조용한 누락을 만들지 않는다(Codex).
+      const held: PreviewItem['held'] =
+        rs < winStart || re > winEnd ? '가용 시간 밖'
+        : routineItems.some(it => !it.held && rs < toMin(it.end) && toMin(it.start) < re) ? '루틴 겹침'
+        : undefined;
+      routineItems.push({
         start: r.startTime, end: r.endTime,
         subjectLabel: routineSubjectLabel(r.subject),
-        type: r.type, unitLabel: r.title, isRoutine: true,
+        type: r.type, unitLabel: r.title, isRoutine: true, held,
       });
     }
+
+    const items: PreviewItem[] = [...routineItems];
+
+    // 생성 블록 — BE 규칙: 가용 창 전체를 슬롯으로 채우고, 유형은 D-day 구간별
+    // (D-30+ 개념·암기 / D-15~30 개념·문제 / D-14 이내 문제·복습), 임박 구간 일요일
+    // 첫 슬롯은 주 1회 모의(mock). 시험 시작일부터는 생성하지 않는다(BE 는 전날까지).
+    if (!examStart || dtISO < examStart) {
+      const dday = examStart
+        ? Math.round((Date.parse(examStart) - Date.parse(dtISO)) / dayMs)
+        : 999; // 시험일 미정 — 평시 유형으로 근사
+      const dayTypes: readonly BlockType[] =
+        dday > 30 ? ['concept', 'memorize']
+        : dday > 14 ? ['concept', 'practice']
+        : ['practice', 'review'];
+      const mockFirstSlot = dday <= 30 && dt.weekday === 0;
+
+      let slotIdx = 0;
+      for (let t = winStart; t + blockMinutes <= winEnd; t += cycleMinutes) {
+        const subject = subjectKeys[subjectCursor % subjectKeys.length];
+        subjectCursor += 1;
+        const isMock = mockFirstSlot && slotIdx === 0;
+        const type: BlockType = isMock ? 'mock' : dayTypes[slotIdx % dayTypes.length];
+        slotIdx += 1;
+
+        // 단원 라운드로빈 — 과목별 커서로 커리큘럼을 순차로 훑는다(모의 블록은 단원 없음).
+        let unitLabel = '';
+        if (!isMock) {
+          const units = form.subjectUnits?.[subject] ?? [];
+          if (units.length > 0) {
+            const cursor = unitCursor[subject] ?? 0;
+            unitLabel = resolveUnitLabel(units[cursor % units.length] ?? '');
+            unitCursor[subject] = cursor + 1;
+          }
+        }
+
+        // 루틴과 겹치는 슬롯은 제외 — 커서는 이미 전진(BE excludeOverlapping 이 생성 후 필터하는 것과 동형)
+        const end = t + blockMinutes;
+        if (routineItems.some(it => !it.held && t < toMin(it.end) && toMin(it.start) < end)) continue;
+        items.push({ start: fmtHM(t), end: fmtHM(end), subjectLabel: subjectLabels[subject], type, unitLabel });
+      }
+    }
+
     items.sort((a, b) => a.start.localeCompare(b.start));
 
     days.push({
@@ -1109,11 +1142,9 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
       monthDay: `${dt.m}/${dt.d}`,
       weekdayLabel: WEEKDAY_LABELS[dt.weekday],
       isWeekend,
-      isExamDay: !!examStart && dtISO === examStart,
+      isExamDay,
       items,
     });
-
-    if (examStart && dtISO === examStart) break;
   }
 
   return days;
@@ -1145,11 +1176,29 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
   const previews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
   const safeIdx = Math.min(previewIdx, Math.max(0, previews.length - 1));
   const current = previews[safeIdx];
-  const totalMinutesToday = current?.items.reduce((s, it) => {
-    const [sh, sm] = it.start.split(':').map(Number);
-    const [eh, em] = it.end.split(':').map(Number);
-    return s + (eh * 60 + em) - (sh * 60 + sm);
-  }, 0) ?? 0;
+  // 합계는 구간 병합으로 — 루틴-루틴 겹침(BE 허용)을 중복 집계하지 않는다(Codex).
+  const totalMinutesToday = useMemo(() => {
+    if (!current) return 0;
+    const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+    const spans = current.items
+      .filter((it) => !it.held) // 보류 루틴은 실배치 아님 — 합계 제외
+      .map((it) => [toMin(it.start), toMin(it.end)] as const)
+      .sort((a, b) => a[0] - b[0]);
+    let total = 0;
+    let start = -1;
+    let end = -1;
+    for (const [s, e] of spans) {
+      if (s > end) {
+        if (end > start) total += end - start;
+        start = s;
+        end = e;
+      } else {
+        end = Math.max(end, e);
+      }
+    }
+    if (end > start) total += end - start;
+    return total;
+  }, [current]);
 
   function activate() {
     if (!form.examName.trim()) {
@@ -1212,12 +1261,12 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
         <ul className="text-pullim-slate-300 mt-2 space-y-1 text-[11px]">
           <li>· 목표: <strong className="text-white">{form.examName || '미설정'}</strong> ({examTypeMeta[form.examType ?? 'mock'].label}{form.examStartDate ? ` · ${form.examStartDate}` : ''}{(examTypeMeta[form.examType ?? 'mock'].isRange && form.examEndDate && form.examEndDate !== form.examStartDate) ? ` ~ ${form.examEndDate}` : ''}) — {formatTarget(form)}</li>
           <li>· 주간 학습 가능: <strong className="text-pullim-lemon font-mono">{weekly}시간</strong></li>
-          <li>· 학습 범위: <strong className="text-white font-mono">{Object.keys(form.subjectUnits ?? {}).length}개 과목 · {Object.values(form.subjectUnits ?? {}).reduce((a, b) => a + (b?.length ?? 0), 0)}개 단원</strong>{form.weaknessAutoReflect ? ' (+ 약점 단원 자동)' : ''}</li>
-          <li>· 시간 분배: <span className="text-pullim-slate-400">AI 자동 (단원 수 + 약점 + D-day 기반)</span></li>
+          <li>· 학습 범위: <strong className="text-white font-mono">{Object.keys(form.subjectUnits ?? {}).length}개 과목 · {Object.values(form.subjectUnits ?? {}).reduce((a, b) => a + (b?.length ?? 0), 0)}개 단원</strong>{form.weaknessAutoReflect ? ' (+ 약점 단원 자동 — 반영 준비 중)' : ''}</li>
+          <li>· 시간 분배: <span className="text-pullim-slate-400">AI 자동 (단원 수 + D-day 기반)</span></li>
           <li>· 블록 패턴: {blockPatternMeta[form.blockPattern].label} <span className="text-pullim-slate-500">({blockPatternMeta[form.blockPattern].spec})</span></li>
-          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(시간 맞는 요일만 미리보기 반영)</span></li>
+          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(시간 맞는 요일만 배치 — 가용 시간 밖·겹침은 보류 표기)</span></li>
           <li>· 동기 스타일: {motivationStyleMeta[form.motivationStyle].label}</li>
-          <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON' : 'OFF'}</li>
+          <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON (시간표 반영 준비 중)' : 'OFF'}</li>
           {/* 리마인더 STEP 게이트(NOTIFICATIONS_ENABLED) off면 요약에서도 알림 줄 숨김 — 기본값(푸시·5분 전)이 남아 오해 주는 것 방지 */}
           {NOTIFICATIONS_ENABLED && (
             <li>· 알림: {[form.remindPush && '푸시', form.remindBefore5min && '5분 전', form.parentDailyReport && '부모 보고'].filter(Boolean).join(', ') || '없음'}</li>
@@ -1228,7 +1277,9 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
       {previews.length === 0 ? (
         <section className="bg-pullim-slate-50 flex min-h-[120px] flex-col items-center justify-center rounded-lg p-4 text-center">
           <p className="text-pullim-slate-500 text-xs">
-            3단계에서 과목·단원을 추가하면 일주일 미리보기가 자동 생성돼요.
+            {Object.keys(form.subjectUnits ?? {}).length === 0
+              ? '3단계에서 과목·단원을 추가하면 일주일 미리보기가 자동 생성돼요.'
+              : '오늘 이후 표시할 미리보기가 없어요 — 시험이 오늘까지라면 정상이에요.'}
           </p>
         </section>
       ) : (
@@ -1239,7 +1290,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
               미리보기
             </h3>
             <span className="text-pullim-slate-500 text-[10px]">
-              {previews.length}일 생성 · 시험일 도달 시 자동 종료
+              {previews.length}일 생성 · 최대 7일 미리보기
             </span>
           </header>
 
@@ -1281,20 +1332,22 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
                   {current.offset === 1 ? '내일' : `${current.offset}일 후`} · {current.monthDay} ({current.weekdayLabel}) {current.isWeekend ? '· 주말' : ''}
                 </span>
                 <span className="text-pullim-slate-500 font-mono">
-                  학습 {totalMinutesToday}분 · {current.items.length}블록
+                  학습 {totalMinutesToday}분 · {current.items.filter(it => !it.held).length}블록
                 </span>
               </div>
 
               {current.isExamDay && (
                 <aside className="bg-pullim-danger/10 text-pullim-danger mb-2 inline-flex w-full items-start gap-1.5 rounded-md p-2 text-[11px] font-semibold">
                   <Sparkles aria-hidden className="mt-0.5 h-3 w-3 shrink-0" />
-                  <span>{form.examName || '시험'} 당일 — 모의 시험 + 마무리 복습 위주로 자동 구성</span>
+                  <span>{form.examName || '시험'} {form.examEndDate && form.examEndDate !== form.examStartDate ? '기간' : '당일'} — AI 학습 블록은 시험 전날까지만 생성되고, 시험 중엔 선택한 루틴만 반영돼요</span>
                 </aside>
               )}
 
               {current.items.length === 0 ? (
                 <p className="text-pullim-slate-500 py-2 text-center text-[11px] italic">
-                  가용 시간이 너무 짧아요. 2단계에서 시간을 늘려보세요.
+                  {current.isExamDay
+                    ? '시험 기간에는 AI 학습 블록이 생성되지 않아요.'
+                    : '가용 시간이 너무 짧아요. 2단계에서 시간을 늘려보세요.'}
                 </p>
               ) : (
                 <ul className="space-y-1.5">
@@ -1348,7 +1401,10 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
 function PreviewBlock({ item }: { item: PreviewItem }) {
   const Icon = blockTypeIcon[item.type];
   return (
-    <li className="bg-card border-pullim-slate-200 flex items-center gap-2.5 rounded-md border p-2 text-[11px]">
+    <li className={cn(
+      'bg-card border-pullim-slate-200 flex items-center gap-2.5 rounded-md border p-2 text-[11px]',
+      item.held && 'border-dashed opacity-60',
+    )}>
       <span className="text-pullim-slate-500 w-24 shrink-0 font-mono text-[10px]">
         {item.start}–{item.end}
       </span>
@@ -1360,13 +1416,19 @@ function PreviewBlock({ item }: { item: PreviewItem }) {
           루틴
         </span>
       )}
+      {item.held && (
+        <span className="bg-pullim-slate-100 text-pullim-slate-500 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
+          보류 · {item.held}
+        </span>
+      )}
       <span className="text-pullim-slate-700 inline-flex items-center gap-1 font-semibold">
         <Icon aria-hidden className="h-3 w-3" />
         {blockTypeShortLabel[item.type]}
       </span>
       <span className="text-pullim-slate-500 ml-auto truncate">
         {item.unitLabel}
-        <span className="text-pullim-slate-400"> · {blockTypeFeatureHint[item.type]}</span>
+        {/* mock 등 단원 없는 블록은 선행 구분자(·)를 숨긴다 */}
+        <span className="text-pullim-slate-400">{item.unitLabel ? ' · ' : ''}{blockTypeFeatureHint[item.type]}</span>
       </span>
     </li>
   );
