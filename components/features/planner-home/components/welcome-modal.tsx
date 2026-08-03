@@ -6,7 +6,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
   DialogBody, DialogFooter, DialogClose,
 } from '@/components/ui/dialog';
-import { REPORTS_ENABLED, ROUTINE_ENABLED } from '@/lib/flags';
+import { REPORTS_ENABLED, ROUTINE_ENABLED, STUDYGRAM_ENABLED } from '@/lib/flags';
 
 interface WelcomeModalProps {
   open: boolean;
@@ -23,7 +23,10 @@ const FEATURES = [
   ...(REPORTS_ENABLED
     ? [{ icon: BarChart2, title: '성장 리포트', desc: '완료율·학습 시간·컨디션 트렌드를 매일 기록해요.' }]
     : [{ icon: BarChart2, title: '성장 리포트 (출시 예정)', desc: '일·주·월 회고를 준비하고 있어요 — 곧 열려요.' }]),
-  { icon: Share2,       title: '공부 공유',      desc: '오늘 결과를 인증 카드로 만들고 친구와 나눠요.' },
+  // 공유(공스타그램)는 계정 연동 미비로 미노출(QA #20) — 소개도 게이트 뒤로
+  ...(STUDYGRAM_ENABLED
+    ? [{ icon: Share2, title: '공부 공유', desc: '오늘 결과를 인증 카드로 만들고 친구와 나눠요.' }]
+    : []),
 ];
 
 export function WelcomeModal({ open, onClose }: WelcomeModalProps) {
