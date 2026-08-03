@@ -1045,63 +1045,81 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
   const examStart = form.examStartDate || null;
   const days: PreviewDay[] = [];
 
+  // BE generateSchedule(pullim-api generate-schedule.ts) 정합 — 과목·단원 순환 커서는
+  // 날짜를 넘어 이어진다(인터리빙 + 전 기간 단원 커버리지). 노션 #49 전까지의 근사.
+  let subjectCursor = 0;
+  const unitCursor: Record<string, number> = {};
+  const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+  const dayMs = 86_400_000;
+
   for (let i = 1; i <= 7; i++) {
     const dt = addDaysUTC(todayISO, i);
     const dtISO = `${dt.y}-${pad2(dt.m)}-${pad2(dt.d)}`;
     const isWeekend = dt.weekday === 0 || dt.weekday === 6;
+    const isExamDay = !!examStart && dtISO === examStart;
     const range = isWeekend ? form.weekendHours : form.weekdayHours;
-    const startHour = range.start;
-    const endHour = range.end;
-    const availableMin = (endHour - startHour) * 60;
+    const winStart = range.start * 60;
+    const winEnd = range.end * 60;
 
-    // 가용 시간이 짧으면 블록 수 감소 — 최소 2, 최대 4
-    const maxBlocks = Math.max(0, Math.min(4, Math.floor(availableMin / cycleMinutes)));
-
-    const items: PreviewItem[] = [];
-    for (let b = 0; b < maxBlocks; b++) {
-      const startMin = startHour * 60 + b * cycleMinutes;
-      const endMin = startMin + blockMinutes;
-      const subject = subjectKeys[b % subjectKeys.length];
-      const subjectLabel = subjectLabels[subject];
-      const units = form.subjectUnits?.[subject] ?? [];
-      const unitRaw = units[b % Math.max(1, units.length)] ?? '약점 단원';
-      const unitLabel = resolveUnitLabel(unitRaw);
-
-      // 블록 타입 분포 — 약점 보강 ON이면 첫 블록은 review, 아니면 concept
-      const type: BlockType =
-        b === 0 ? (form.weaknessAutoReflect ? 'review' : 'concept')
-        : b === 1 ? 'practice'
-        : b === 2 ? 'memorize'
-        : 'practice';
-
-      items.push({
-        start: fmtHM(startMin),
-        end: fmtHM(endMin),
-        subjectLabel,
-        type,
-        unitLabel,
-      });
-    }
-
-    // 5단계에서 고른 루틴을 해당 요일 미리보기에 반영 (mock — 실제 적용·영속은 06-30 실 BE)
-    // 가용 시간(2단계) 밖이거나 기존 블록과 겹치면 보류한다(수동/자동 우선 — OI-3).
-    const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
-    const winStart = startHour * 60;
-    const winEnd = endHour * 60;
+    // 루틴을 먼저 배치 — BE bake 정책은 루틴 우선(generated 가 회피, excludeOverlapping).
+    // 가용 시간(2단계) 밖이면 보류.
     const routineDay = (dt.weekday + 6) % 7; // jsDay(0=일) → routine weekday(0=월)
+    const routineItems: PreviewItem[] = [];
     for (const id of form.routineIds) {
       const r = routineMap ? routineMap.get(id) : findRoutine(id);
       if (!r || !r.weekdays.some(w => w === routineDay)) continue;
       const rs = toMin(r.startTime);
       const re = toMin(r.endTime);
-      if (rs < winStart || re > winEnd) continue;                       // 가용 시간 밖
-      if (items.some(it => rs < toMin(it.end) && toMin(it.start) < re)) continue; // 겹침 보류
-      items.push({
+      if (rs < winStart || re > winEnd) continue; // 가용 시간 밖
+      if (routineItems.some(it => rs < toMin(it.end) && toMin(it.start) < re)) continue;
+      routineItems.push({
         start: r.startTime, end: r.endTime,
         subjectLabel: routineSubjectLabel(r.subject),
         type: r.type, unitLabel: r.title, isRoutine: true,
       });
     }
+
+    const items: PreviewItem[] = [...routineItems];
+
+    // 생성 블록 — BE 규칙: 가용 창 전체를 슬롯으로 채우고, 유형은 D-day 구간별
+    // (D-30+ 개념·암기 / D-15~30 개념·문제 / D-14 이내 문제·복습), 임박 구간 일요일
+    // 첫 슬롯은 주 1회 모의(mock). 시험 당일은 생성하지 않는다(BE 는 전날까지).
+    if (!isExamDay) {
+      const dday = examStart
+        ? Math.round((Date.parse(examStart) - Date.parse(dtISO)) / dayMs)
+        : 999; // 시험일 미정 — 평시 유형으로 근사
+      const dayTypes: readonly BlockType[] =
+        dday > 30 ? ['concept', 'memorize']
+        : dday > 14 ? ['concept', 'practice']
+        : ['practice', 'review'];
+      const mockFirstSlot = dday <= 30 && dt.weekday === 0;
+
+      let slotIdx = 0;
+      for (let t = winStart; t + blockMinutes <= winEnd; t += cycleMinutes) {
+        const subject = subjectKeys[subjectCursor % subjectKeys.length];
+        subjectCursor += 1;
+        const isMock = mockFirstSlot && slotIdx === 0;
+        const type: BlockType = isMock ? 'mock' : dayTypes[slotIdx % dayTypes.length];
+        slotIdx += 1;
+
+        // 단원 라운드로빈 — 과목별 커서로 커리큘럼을 순차로 훑는다(모의 블록은 단원 없음).
+        let unitLabel = '';
+        if (!isMock) {
+          const units = form.subjectUnits?.[subject] ?? [];
+          if (units.length > 0) {
+            const cursor = unitCursor[subject] ?? 0;
+            unitLabel = resolveUnitLabel(units[cursor % units.length] ?? '');
+            unitCursor[subject] = cursor + 1;
+          }
+        }
+
+        // 루틴과 겹치는 슬롯은 제외 — 커서는 이미 전진(BE excludeOverlapping 이 생성 후 필터하는 것과 동형)
+        const end = t + blockMinutes;
+        if (routineItems.some(it => t < toMin(it.end) && toMin(it.start) < end)) continue;
+        items.push({ start: fmtHM(t), end: fmtHM(end), subjectLabel: subjectLabels[subject], type, unitLabel });
+      }
+    }
+
     items.sort((a, b) => a.start.localeCompare(b.start));
 
     days.push({
@@ -1109,11 +1127,11 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
       monthDay: `${dt.m}/${dt.d}`,
       weekdayLabel: WEEKDAY_LABELS[dt.weekday],
       isWeekend,
-      isExamDay: !!examStart && dtISO === examStart,
+      isExamDay,
       items,
     });
 
-    if (examStart && dtISO === examStart) break;
+    if (isExamDay) break;
   }
 
   return days;
@@ -1288,13 +1306,15 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
               {current.isExamDay && (
                 <aside className="bg-pullim-danger/10 text-pullim-danger mb-2 inline-flex w-full items-start gap-1.5 rounded-md p-2 text-[11px] font-semibold">
                   <Sparkles aria-hidden className="mt-0.5 h-3 w-3 shrink-0" />
-                  <span>{form.examName || '시험'} 당일 — 모의 시험 + 마무리 복습 위주로 자동 구성</span>
+                  <span>{form.examName || '시험'} 당일 — 학습 블록은 전날까지만 생성돼요. 시험에 집중!</span>
                 </aside>
               )}
 
               {current.items.length === 0 ? (
                 <p className="text-pullim-slate-500 py-2 text-center text-[11px] italic">
-                  가용 시간이 너무 짧아요. 2단계에서 시간을 늘려보세요.
+                  {current.isExamDay
+                    ? '시험 당일에는 생성되는 학습 블록이 없어요.'
+                    : '가용 시간이 너무 짧아요. 2단계에서 시간을 늘려보세요.'}
                 </p>
               ) : (
                 <ul className="space-y-1.5">
