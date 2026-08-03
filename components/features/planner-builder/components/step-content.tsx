@@ -1056,6 +1056,9 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
   for (let i = 1; i <= 7; i++) {
     const dt = addDaysUTC(todayISO, i);
     const dtISO = `${dt.y}-${pad2(dt.m)}-${pad2(dt.d)}`;
+    // 시험 종료일 이후는 미리보기 자체가 없다 — 종료일=오늘이면 빈 하루가 남지 않게
+    // 날짜 카드를 만들기 전에 끊는다(Codex). 종료일 당일까지는 push 후 다음 턴에 종료.
+    if (examEnd && dtISO > examEnd) break;
     const isWeekend = dt.weekday === 0 || dt.weekday === 6;
     // 범위 시험은 기간(시작~종료) 전체가 시험일 — 둘째 날 이후도 🚩·루틴 노출(Codex).
     const inExamRange = !!examStart && !!examEnd && examStart <= dtISO && dtISO <= examEnd;
@@ -1131,9 +1134,6 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
       isExamDay,
       items,
     });
-
-    // 범위 시험은 종료일까지 순회 후 종료 — 시작일에서 끊으면 둘째 날 이후가 잘린다(Codex).
-    if (examEnd && dtISO >= examEnd) break;
   }
 
   return days;
@@ -1165,11 +1165,28 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
   const previews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
   const safeIdx = Math.min(previewIdx, Math.max(0, previews.length - 1));
   const current = previews[safeIdx];
-  const totalMinutesToday = current?.items.reduce((s, it) => {
-    const [sh, sm] = it.start.split(':').map(Number);
-    const [eh, em] = it.end.split(':').map(Number);
-    return s + (eh * 60 + em) - (sh * 60 + sm);
-  }, 0) ?? 0;
+  // 합계는 구간 병합으로 — 루틴-루틴 겹침(BE 허용)을 중복 집계하지 않는다(Codex).
+  const totalMinutesToday = useMemo(() => {
+    if (!current) return 0;
+    const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+    const spans = current.items
+      .map((it) => [toMin(it.start), toMin(it.end)] as const)
+      .sort((a, b) => a[0] - b[0]);
+    let total = 0;
+    let start = -1;
+    let end = -1;
+    for (const [s, e] of spans) {
+      if (s > end) {
+        if (end > start) total += end - start;
+        start = s;
+        end = e;
+      } else {
+        end = Math.max(end, e);
+      }
+    }
+    if (end > start) total += end - start;
+    return total;
+  }, [current]);
 
   function activate() {
     if (!form.examName.trim()) {
@@ -1248,7 +1265,9 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
       {previews.length === 0 ? (
         <section className="bg-pullim-slate-50 flex min-h-[120px] flex-col items-center justify-center rounded-lg p-4 text-center">
           <p className="text-pullim-slate-500 text-xs">
-            3단계에서 과목·단원을 추가하면 일주일 미리보기가 자동 생성돼요.
+            {Object.keys(form.subjectUnits ?? {}).length === 0
+              ? '3단계에서 과목·단원을 추가하면 일주일 미리보기가 자동 생성돼요.'
+              : '내일 이후 표시할 미리보기가 없어요 — 1단계에서 시험 날짜를 확인해주세요.'}
           </p>
         </section>
       ) : (
