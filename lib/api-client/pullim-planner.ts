@@ -260,6 +260,24 @@ export interface PullimRoutineClient {
   deleteRoutine(routineId: string): Promise<void>;
 }
 
+/** 미리보기 dry-run 블록 1건 — 저장되지 않은 계산 결과(id 없음). pullim-api PreviewBlockDto 정합. */
+export interface PullimPreviewBlock {
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:MM(:SS)
+  endTime: string;
+  subject: string;
+  type: string;
+  title: string;
+  expectedMinutes: number;
+  source: "routine" | "generated";
+  routineId: string | null;
+}
+
+/** `POST /planner/planners/preview` 응답 — KST 오늘부터 최대 7일, date·startTime 오름차순. */
+export interface PullimPreviewResponse {
+  blocks: PullimPreviewBlock[];
+}
+
 export type PullimPlannerClientConfig = CookieHttpConfig;
 
 export interface PullimPlannerClient {
@@ -273,6 +291,11 @@ export interface PullimPlannerClient {
   blocks(plannerId: string, date?: string): Promise<PullimBlock[]>;
   /** 생성(비활성). `POST /planner/planners`. 생성 전용 입력(루틴 적용 포함). */
   create(input: PullimPlannerCreate): Promise<PullimPlanner>;
+  /**
+   * 미리보기 dry-run(계산만, 저장 없음 — pullim-api #476). `POST /planner/planners/preview` (200).
+   * create 와 동일 bake 규칙 — step8 미리보기를 실제 생성 결과와 정합시킨다.
+   */
+  preview(input: PullimPlannerCreate): Promise<PullimPreviewResponse>;
   /** 수정(편집 필드 교체). `PATCH /planner/planners/:id`. */
   update(id: string, input: PullimPlannerWrite): Promise<PullimPlanner>;
   /** 삭제(활성이면 409). `DELETE /planner/planners/:id`. */
@@ -412,6 +435,14 @@ export function createPullimPlannerClient(
 
     create(input) {
       return mutate<PullimPlanner>("/planner/planners", "POST", input);
+    },
+
+    preview(input) {
+      return mutate<PullimPreviewResponse>(
+        "/planner/planners/preview",
+        "POST",
+        input,
+      );
     },
 
     update(id, input) {

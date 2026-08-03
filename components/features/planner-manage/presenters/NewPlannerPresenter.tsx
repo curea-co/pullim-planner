@@ -3,6 +3,7 @@
 import { PageHeader } from '@/components/shell/page-header';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 import type { Routine } from '@/lib/mock';
+import type { PreviewDay } from '@/lib/planner/preview-map';
 import { PlannerWizard } from '../components/planner-wizard';
 
 interface NewPlannerPresenterProps {
@@ -16,6 +17,7 @@ interface NewPlannerPresenterProps {
   onJump: (n: number) => void;
   onActivate: (submitted: PlannerForm) => void;
   routines?: Routine[];
+  onServerPreview?: () => Promise<PreviewDay[] | null>;
 }
 
 export default function NewPlannerPresenter({
@@ -23,7 +25,7 @@ export default function NewPlannerPresenter({
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
   onActivate,
-  routines,
+  routines, onServerPreview,
 }: NewPlannerPresenterProps) {
   return (
     <div className="space-y-5">
@@ -43,6 +45,7 @@ export default function NewPlannerPresenter({
         mode="create"
         onActivate={onActivate}
         routines={routines}
+        onServerPreview={onServerPreview}
       />
     </div>
   );

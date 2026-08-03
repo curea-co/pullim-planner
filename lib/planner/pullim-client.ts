@@ -71,6 +71,7 @@ export const pullimPlannerClient: PullimPlannerClient &
   completeBlock: on401(rawPullimPlannerClient.completeBlock),
   uncompleteBlock: on401(rawPullimPlannerClient.uncompleteBlock),
   create: on401(rawPullimPlannerClient.create),
+  preview: on401(rawPullimPlannerClient.preview),
   update: on401(rawPullimPlannerClient.update),
   remove: on401(rawPullimPlannerClient.remove),
   activate: on401(rawPullimPlannerClient.activate),

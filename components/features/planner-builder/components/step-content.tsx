@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Bell, Sparkles, Check, AlertCircle, X, Plus,
@@ -18,6 +18,7 @@ import {
   getRoutines, findRoutine, routineSubjectLabel, formatWeekdays, blockTypeMeta,
 } from '@/lib/mock';
 import { BLOCK_TYPE_STRIPE } from '@/lib/planner/block-type-style';
+import { type PreviewDay, type PreviewItem } from '@/lib/planner/preview-map';
 import {
   type PlannerForm, blockPatternMeta, motivationStyleMeta,
   type ExamType, examTypeMeta, todayIsoKst,
@@ -1009,25 +1010,6 @@ function addDaysUTC(iso: string, days: number): { y: number; m: number; d: numbe
   };
 }
 
-type PreviewItem = {
-  start: string; end: string;
-  subjectLabel: string;
-  type: BlockType;
-  unitLabel: string;
-  /** 5단계에서 고른 루틴으로 들어간 블록 */
-  isRoutine?: boolean;
-  /** 배치 보류 사유 — 숨기지 않고 표기한다(선택 루틴 누락 인지 가능, Codex). */
-  held?: '가용 시간 밖' | '루틴 겹침';
-};
-
-type PreviewDay = {
-  offset: number;          // today + offset (1=내일)
-  monthDay: string;        // "4/29"
-  weekdayLabel: string;    // "수"
-  isWeekend: boolean;
-  isExamDay: boolean;
-  items: PreviewItem[];
-};
 
 function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine[]): PreviewDay[] {
   const subjectKeys = Object.keys(form.subjectUnits ?? {}) as SubjectKey[];
@@ -1163,9 +1145,14 @@ type Step8Props = {
   onActivate?: (form: PlannerForm) => void;
   /** 실 루틴(컨테이너 주입) — 미주입 시 mock. 미리보기의 루틴 반영에 사용. */
   routines?: Routine[];
+  /**
+   * 서버 dry-run 미리보기 로더(컨테이너 주입 — pullim-api #476). 성공 시 휴리스틱 대신
+   * 실제 bake 규칙 결과를 표시한다. 미주입(bypass)·실패 시 휴리스틱 폴백.
+   */
+  onServerPreview?: () => Promise<PreviewDay[] | null>;
 };
 
-export function PStep8Activate({ form, mode = 'create', onActivate, routines }: Step8Props) {
+export function PStep8Activate({ form, mode = 'create', onActivate, routines, onServerPreview }: Step8Props) {
   const router = useRouter();
   const [previewIdx, setPreviewIdx] = useState(0);
   const weekdayHours = form.weekdayHours.end - form.weekdayHours.start;
@@ -1173,7 +1160,24 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
 
   // 오늘(KST)을 deps에 포함 — 자정 넘겨 열어둔 화면에서도 미리보기가 다음 렌더에 새 날짜로 갱신(Codex).
   const todayIso = todayIsoKst();
-  const previews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
+  const localPreviews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
+
+  // 서버 dry-run(실제 bake 규칙) 우선 — 실패·미주입이면 휴리스틱 폴백. step 진입 시 1회 로드.
+  const [serverDays, setServerDays] = useState<PreviewDay[] | null>(null);
+  useEffect(() => {
+    if (!onServerPreview) return;
+    let alive = true;
+    // 새 요청 전 초기화 — 이전 폼·이전 날짜 기준 서버 결과가 실패/자정 이후에도 잔존하지
+    // 않게 한다(Codex). todayIso 의존성으로 자정 경계에서 재조회.
+    setServerDays(null);
+    onServerPreview()
+      .then((days) => { if (alive && days && days.length > 0) setServerDays(days); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [onServerPreview, todayIso]);
+  // 서버 dry-run 은 실제 bake 결과라 선택 루틴이 전부 포함된다(BE 는 가용 창 무관 bake).
+  // '보류' 배지는 휴리스틱 폴백 전용 표시 — 서버 경로에선 존재하지 않는 개념.
+  const previews = serverDays ?? localPreviews;
   const safeIdx = Math.min(previewIdx, Math.max(0, previews.length - 1));
   const current = previews[safeIdx];
   // 합계는 구간 병합으로 — 루틴-루틴 겹침(BE 허용)을 중복 집계하지 않는다(Codex).
@@ -1264,7 +1268,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
           <li>· 학습 범위: <strong className="text-white font-mono">{Object.keys(form.subjectUnits ?? {}).length}개 과목 · {Object.values(form.subjectUnits ?? {}).reduce((a, b) => a + (b?.length ?? 0), 0)}개 단원</strong>{form.weaknessAutoReflect ? ' (+ 약점 단원 자동 — 반영 준비 중)' : ''}</li>
           <li>· 시간 분배: <span className="text-pullim-slate-400">AI 자동 (단원 수 + D-day 기반)</span></li>
           <li>· 블록 패턴: {blockPatternMeta[form.blockPattern].label} <span className="text-pullim-slate-500">({blockPatternMeta[form.blockPattern].spec})</span></li>
-          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(시간 맞는 요일만 배치 — 가용 시간 밖·겹침은 보류 표기)</span></li>
+          <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(반영 결과는 아래 미리보기에서 확인)</span></li>
           <li>· 동기 스타일: {motivationStyleMeta[form.motivationStyle].label}</li>
           <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON (시간표 반영 준비 중)' : 'OFF'}</li>
           {/* 리마인더 STEP 게이트(NOTIFICATIONS_ENABLED) off면 요약에서도 알림 줄 숨김 — 기본값(푸시·5분 전)이 남아 오해 주는 것 방지 */}
@@ -1329,7 +1333,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
             <div className="mt-3 rounded-lg border bg-pullim-slate-50 p-3">
               <div className="mb-2 flex items-center justify-between text-[11px]">
                 <span className="text-pullim-slate-700 font-bold">
-                  {current.offset === 1 ? '내일' : `${current.offset}일 후`} · {current.monthDay} ({current.weekdayLabel}) {current.isWeekend ? '· 주말' : ''}
+                  {current.offset === 0 ? '오늘' : current.offset === 1 ? '내일' : `${current.offset}일 후`} · {current.monthDay} ({current.weekdayLabel}) {current.isWeekend ? '· 주말' : ''}
                 </span>
                 <span className="text-pullim-slate-500 font-mono">
                   학습 {totalMinutesToday}분 · {current.items.filter(it => !it.held).length}블록
@@ -1381,7 +1385,9 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
           )}
 
           <p className="text-pullim-slate-500 mt-1.5 text-[10px]">
-            위 시간표는 자동 생성 예시입니다. 실제로 구성되는 시간표는 다를 수 있습니다.
+            {serverDays
+              ? '실제 생성 규칙으로 계산된 미리보기예요. 활성화 시점에 따라 일부 달라질 수 있습니다.'
+              : '위 시간표는 자동 생성 예시입니다. 실제로 구성되는 시간표는 다를 수 있습니다.'}
           </p>
         </section>
       )}

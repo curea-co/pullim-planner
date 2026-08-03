@@ -10,6 +10,7 @@ import {
   plannerStepConfig, type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
 import type { Routine } from '@/lib/mock';
+import type { PreviewDay } from '@/lib/planner/preview-map';
 import { cn } from '@/lib/utils';
 
 /**
@@ -29,6 +30,8 @@ interface PlannerWizardProps {
   onActivate: (submitted: PlannerForm) => void;
   /** 실 루틴(컨테이너 fetch) — STEP5 선택·STEP8 미리보기에 사용. 미주입 시 mock. */
   routines?: Routine[];
+  /** STEP8 서버 dry-run 미리보기 로더(컨테이너 주입) — 미주입 시 휴리스틱. */
+  onServerPreview?: () => Promise<PreviewDay[] | null>;
 }
 
 export function PlannerWizard({
@@ -36,7 +39,7 @@ export function PlannerWizard({
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
   mode, onActivate,
-  routines,
+  routines, onServerPreview,
 }: PlannerWizardProps) {
   const stepInfo = plannerStepConfig[currentStep - 1];
   const StepIcon = stepInfo.icon;
@@ -79,7 +82,7 @@ export function PlannerWizard({
           {stepInfo.key === 'weakness'   && <PStep5Weakness form={form} setForm={setForm} />}
           {stepInfo.key === 'motivation' && <PStep6Motivation form={form} setForm={setForm} />}
           {stepInfo.key === 'reminder'   && <PStep7Reminder form={form} setForm={setForm} />}
-          {stepInfo.key === 'activate'   && <PStep8Activate form={form} mode={mode} onActivate={onActivate} routines={routines} />}
+          {stepInfo.key === 'activate'   && <PStep8Activate form={form} mode={mode} onActivate={onActivate} routines={routines} onServerPreview={onServerPreview} />}
         </div>
 
         <footer className="mt-5 flex items-center justify-between border-t pt-4">

@@ -132,6 +132,10 @@ function EditPlannerForm({
     planner ? plannerToForm(planner) : ({} as PlannerForm),
   );
 
+  // 서버 dry-run 미리보기는 **create 전용** — PATCH 는 루틴을 bake 하지 않아(BE 계약)
+  // edit 에 붙이면 STEP5 선택과 미리보기·저장 결과가 어긋난다(Codex). edit 는 휴리스틱 유지,
+  // 루틴 재적용은 BE PATCH bake 결정 후 후속.
+
   async function handleSave(submitted: PlannerForm) {
     // 로컬 dev 우회 — 실 API 대신 공유 mock store를 갱신한다.
     if (DEV_AUTH_BYPASS) {
