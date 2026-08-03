@@ -1270,7 +1270,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
           <p className="text-pullim-slate-500 text-xs">
             {Object.keys(form.subjectUnits ?? {}).length === 0
               ? '3단계에서 과목·단원을 추가하면 일주일 미리보기가 자동 생성돼요.'
-              : '내일 이후 표시할 미리보기가 없어요 — 1단계에서 시험 날짜를 확인해주세요.'}
+              : '오늘 이후 표시할 미리보기가 없어요 — 시험이 오늘까지라면 정상이에요.'}
           </p>
         </section>
       ) : (
