@@ -141,8 +141,8 @@ export function plannerToForm(p: Planner): PlannerForm {
     weekendHours: { ...p.weekendHours },
     subjectUnits: { ...p.subjectUnits },
     blockPattern: p.blockPattern,
-    // 루틴 적용은 Planner 메타에 미보존(실 BE 연기) — 편집 진입 시 빈 선택으로 시작
-    routineIds: [],
+    // 적용 루틴 프리필 — BE appliedRoutineIds(블록 역산). 미제공(mock 등)이면 빈 선택.
+    routineIds: p.appliedRoutineIds ?? [],
     // 게이트 off 땐 기존 true 값도 false 로 — 출시 예정 상태에서 재저장 시 켜진 채 남지 않게
     weaknessAutoReflect: WEAKNESS_ENABLED ? p.weaknessAutoReflect : false,
     motivationStyle: p.motivationStyle,

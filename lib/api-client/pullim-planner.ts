@@ -94,6 +94,8 @@ export interface PullimPlanner {
   /** ISO. */
   createdAt: string;
   updatedAt: string;
+  /** 적용 루틴 id(블록 routine_id 역산) — 수정 화면 프리필용. 구버전 BE 는 생략. */
+  appliedRoutineIds?: string[];
 }
 
 /** 생성/수정 입력 (`PlannerWriteDto`). */
@@ -242,6 +244,12 @@ export interface PullimPlannerCreate extends PullimPlannerWrite {
 }
 
 /**
+ * 수정 본문 — write 필드 + 선택 `routineApplications`(**원하는 적용 집합 전체** — diff 재적용,
+ * 미제공 시 기존 유지). create 입력과 동일 shape 라 별칭.
+ */
+export type PullimPlannerUpdate = PullimPlannerCreate;
+
+/**
  * 루틴(사용자 단위 라이브러리) 클라이언트 — planner 클라와 같은 cookie-http/CSRF 위에 동작한다.
  * `createPullimPlannerClient` 가 planner 메서드와 함께 반환한다(같은 base·CSRF 공유). planner 자원과
  * 분리된 인터페이스라 `PullimPlannerClient` 소비자(예: FE 어댑터)는 영향받지 않는다.
@@ -296,8 +304,8 @@ export interface PullimPlannerClient {
    * create 와 동일 bake 규칙 — step8 미리보기를 실제 생성 결과와 정합시킨다.
    */
   preview(input: PullimPlannerCreate): Promise<PullimPreviewResponse>;
-  /** 수정(편집 필드 교체). `PATCH /planner/planners/:id`. */
-  update(id: string, input: PullimPlannerWrite): Promise<PullimPlanner>;
+  /** 수정(편집 필드 교체 + 루틴 재적용 diff). `PATCH /planner/planners/:id`. */
+  update(id: string, input: PullimPlannerUpdate): Promise<PullimPlanner>;
   /** 삭제(활성이면 409). `DELETE /planner/planners/:id`. */
   remove(id: string): Promise<void>;
   /** 활성 전환(타 플래너 비활성). `POST /planner/planners/:id/activate`. */

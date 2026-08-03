@@ -42,6 +42,7 @@ export type {
   PullimWeekLayoutId,
   PullimPaletteId,
   PullimPlannerCreate,
+  PullimPlannerUpdate,
   PullimPreviewBlock,
   PullimPreviewResponse,
   PullimRoutineClient,
