@@ -7,7 +7,6 @@ import { FlywheelNote } from '@/components/shell/flywheel-note';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 import { plannerStepConfig } from '@/components/features/planner-builder/components/builder-types';
 import type { Planner, Routine } from '@/lib/mock';
-import type { PreviewDay } from '@/lib/planner/preview-map';
 import { PlannerWizard } from '../components/planner-wizard';
 import { DecorateSection } from '../components/decorate-section';
 import type { EditTab } from '../containers/EditPlannerContainer';
@@ -27,7 +26,6 @@ interface EditPlannerPresenterProps {
   onJump: (n: number) => void;
   onSave: (submitted: PlannerForm) => void;
   routines?: Routine[];
-  onServerPreview?: () => Promise<PreviewDay[] | null>;
 }
 
 export default function EditPlannerPresenter({
@@ -36,7 +34,7 @@ export default function EditPlannerPresenter({
   currentStep, canPrev, canNext,
   onPrev, onNext, onJump,
   onSave,
-  routines, onServerPreview,
+  routines,
 }: EditPlannerPresenterProps) {
   if (!planner) {
     return (
@@ -106,7 +104,6 @@ export default function EditPlannerPresenter({
             mode="edit"
             onActivate={onSave}
             routines={routines}
-            onServerPreview={onServerPreview}
           />
 
           <FlywheelNote>
