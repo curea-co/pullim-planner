@@ -1167,11 +1167,14 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines, on
   useEffect(() => {
     if (!onServerPreview) return;
     let alive = true;
+    // 새 요청 전 초기화 — 이전 폼·이전 날짜 기준 서버 결과가 실패/자정 이후에도 잔존하지
+    // 않게 한다(Codex). todayIso 의존성으로 자정 경계에서 재조회.
+    setServerDays(null);
     onServerPreview()
       .then((days) => { if (alive && days && days.length > 0) setServerDays(days); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [onServerPreview]);
+  }, [onServerPreview, todayIso]);
   const previews = serverDays ?? localPreviews;
   const safeIdx = Math.min(previewIdx, Math.max(0, previews.length - 1));
   const current = previews[safeIdx];

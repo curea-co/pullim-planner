@@ -47,7 +47,9 @@ export function mapServerPreview(
   }
 
   const todayMs = Date.parse(`${todayIso}T00:00:00Z`);
-  const examEnd = examEndDate || examStartDate;
+  // 빈 문자열도 미지정으로 정규화 — 단일일 시험(end 미지정)이 시험일 플래그를 잃지 않게.
+  const examStart = examStartDate || null;
+  const examEnd = examEndDate || examStart;
   const days: PreviewDay[] = [];
   for (let offset = 0; offset <= 6; offset++) {
     const d = new Date(todayMs + offset * DAY_MS);
@@ -55,7 +57,7 @@ export function mapServerPreview(
     if (examEnd && iso > examEnd) break;
     const wd = d.getUTCDay();
     const isExamDay =
-      !!examStartDate && !!examEnd && examStartDate <= iso && iso <= examEnd;
+      !!examStart && !!examEnd && examStart <= iso && iso <= examEnd;
     days.push({
       offset,
       monthDay: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`,
