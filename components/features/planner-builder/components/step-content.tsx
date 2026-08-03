@@ -1067,9 +1067,9 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
     const winStart = range.start * 60;
     const winEnd = range.end * 60;
 
-    // 루틴을 먼저 배치 — 해당 요일이면 준비 기간에도 표시(활성화 전 루틴 적용 검증 목적).
-    // ※ 실제 bake(BE bakeRoutines v1)는 시험기간(시작~종료)에만 굽는다 — 범위 확대 여부는
-    //   BE 결정 사항, 확정 시 #49 dry-run 연동으로 미리보기가 자동 정합된다.
+    // 루틴을 먼저 배치 — BE bakeRoutines 정합: 오늘~시험 종료일의 해당 요일에 bake 된다
+    // (준비 기간 포함 — 2026-08-03 오너 확정 확대, pullim-api #478). 가용 창 밖·루틴-루틴
+    // 겹침은 미리보기 표시에서만 보류(2단계 설정과의 모순 방지 — Codex).
     const routineDay = (dt.weekday + 6) % 7; // jsDay(0=일) → routine weekday(0=월)
     const routineItems: PreviewItem[] = [];
     for (const id of form.routineIds) {
