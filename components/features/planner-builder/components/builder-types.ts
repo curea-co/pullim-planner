@@ -44,7 +44,7 @@ export type PlannerForm = {
   examName: string;
   examStartDate: string;       // YYYY-MM-DD — 단일일자 시 이 필드만 사용
   examEndDate: string;         // YYYY-MM-DD — 범위 시험에서만 의미. 단일이면 start와 동일.
-  targetGrade: string;         // 모의·수능 — 자유 입력 (예: "1등급"). 5등급 체제 대응
+  targetGrade: string;         // 모의·수능 — 숫자 한 자리(1~8, QA #5). UI가 '등급' 서픽스 표기
   targetScore: number;         // 중간·기말 (0–100)
   targetGoal: string;          // 기타 (자유 텍스트)
   motto: string;
@@ -132,7 +132,8 @@ export function plannerToForm(p: Planner): PlannerForm {
     examName: p.examLabel || p.name,
     examStartDate: p.examStartDate,
     examEndDate: p.examEndDate,
-    targetGrade: p.target.kind === 'grade' ? `${p.target.value}등급` : '',
+    // 숫자만 — '등급' 서픽스는 UI 표기(QA #5 숫자 전용 입력과 정합)
+    targetGrade: p.target.kind === 'grade' ? String(p.target.value) : '',
     targetScore: p.target.kind === 'score' ? Number(p.target.value) : 90,
     targetGoal: p.target.kind === 'free' ? String(p.target.value) : '',
     motto: p.motto,
