@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { STUDYGRAM_ENABLED } from '@/lib/flags';
 
 type Props = {
   planner: Planner;
@@ -137,10 +138,13 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
               <Archive className="text-pullim-warn" />
               아카이브
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onShare(planner.id)}>
-              <Share2 className="text-pullim-blue-600" />
-              공유
-            </DropdownMenuItem>
+            {/* 공유는 계정 연동 미비로 플래너 전역 미노출(QA #20 확장, 08-03) — 재오픈은 STUDYGRAM_ENABLED */}
+            {STUDYGRAM_ENABLED && (
+              <DropdownMenuItem onClick={() => onShare(planner.id)}>
+                <Share2 className="text-pullim-blue-600" />
+                공유
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               variant="destructive"
               onClick={() => onDelete(planner.id)}
