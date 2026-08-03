@@ -1281,7 +1281,7 @@ export function PStep8Activate({ form, mode = 'create', onActivate, routines }: 
               미리보기
             </h3>
             <span className="text-pullim-slate-500 text-[10px]">
-              {previews.length}일 생성 · 시험 종료일까지 표시
+              {previews.length}일 생성 · 최대 7일 미리보기
             </span>
           </header>
 
@@ -1410,7 +1410,8 @@ function PreviewBlock({ item }: { item: PreviewItem }) {
       </span>
       <span className="text-pullim-slate-500 ml-auto truncate">
         {item.unitLabel}
-        <span className="text-pullim-slate-400"> · {blockTypeFeatureHint[item.type]}</span>
+        {/* mock 등 단원 없는 블록은 선행 구분자(·)를 숨긴다 */}
+        <span className="text-pullim-slate-400">{item.unitLabel ? ' · ' : ''}{blockTypeFeatureHint[item.type]}</span>
       </span>
     </li>
   );
