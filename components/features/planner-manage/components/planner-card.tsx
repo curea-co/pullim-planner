@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import {
   CalendarClock, Clock, BookOpen, MoreVertical, CheckCircle2,
-  Pencil, Copy, Archive, Trash2, Sparkles, Palette, Share2,
+  Pencil, Copy, Archive, Trash2, Sparkles, Palette,
 } from 'lucide-react';
 import { subjectLabels, type Planner, type SubjectKey } from '@/lib/mock';
 import { todayISO } from '@/lib/mock/planner';
@@ -13,7 +13,6 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { STUDYGRAM_ENABLED } from '@/lib/flags';
 
 type Props = {
   planner: Planner;
@@ -22,7 +21,6 @@ type Props = {
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
   onDecorate: (id: string) => void;
-  onShare: (id: string) => void;
 };
 
 /** 일수 차이(달력일 기준) — 음수면 과거. 오늘(KST)·목표일 모두 날짜-only(로컬 자정)로 정규화해
@@ -47,7 +45,7 @@ function formatRelativeUpdate(iso: string, today = new Date()): string {
   return `${Math.floor(day / 7)}주 전 갱신`;
 }
 
-export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDelete, onDecorate, onShare }: Props) {
+export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDelete, onDecorate }: Props) {
   const router = useRouter();
   const dday = diffDays(planner.examStartDate);
   const subjectCount = Object.keys(planner.subjectUnits).length;
@@ -138,13 +136,6 @@ export function PlannerCard({ planner, onActivate, onDuplicate, onArchive, onDel
               <Archive className="text-pullim-warn" />
               아카이브
             </DropdownMenuItem>
-            {/* 공유는 계정 연동 미비로 플래너 전역 미노출(QA #20 확장, 08-03) — 재오픈은 STUDYGRAM_ENABLED */}
-            {STUDYGRAM_ENABLED && (
-              <DropdownMenuItem onClick={() => onShare(planner.id)}>
-                <Share2 className="text-pullim-blue-600" />
-                공유
-              </DropdownMenuItem>
-            )}
             <DropdownMenuItem
               variant="destructive"
               onClick={() => onDelete(planner.id)}

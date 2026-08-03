@@ -28,7 +28,7 @@ pullim-planner/
 │   ├── ui/                             # shadcn/ui 프리미티브
 │   ├── shell/                          # AppHeader, AppSidebar, BottomNav, nav-config.ts
 │   ├── brand/                          # 로고
-│   ├── features/<도메인>/              # Container/Presenter (planner-home, planner-manage, planner-onboarding, planner-reports, planner-routine, studygram, auth)
+│   ├── features/<도메인>/              # Container/Presenter (planner-home, planner-manage, planner-onboarding, planner-reports, planner-routine, auth)
 │   ├── shared/                         # 진짜 순수 뷰 (d-day-chip 등)
 │   └── planner-builder/ · builder/     # 미이동 (Phase 4에서 features/로 이식 예정)
 ├── lib/
