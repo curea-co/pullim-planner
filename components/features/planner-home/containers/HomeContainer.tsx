@@ -12,6 +12,8 @@ import {
   buildMonthDays, buildWeekDays, ddayFrom, monthDatesFor, monthLabelOf,
   shiftIsoDate, weekDatesFor,
 } from '@/lib/planner/home-data';
+import { computeBurnoutFromWeek } from '@/lib/planner/burnout';
+import type { BurnoutSnapshot } from '@/lib/mock';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
@@ -164,6 +166,8 @@ export default function HomeContainer() {
   //  사라진다 — Codex #124). daySummary/weekMeta(헤더용)는 뷰 맥락대로 두고, 히어로만 분리.
   let heroDaySummary: { done: number; total: number };
   let heroWeekMeta: { totalHours: number; completedHours: number };
+  // 번아웃 — 실모드는 이번 주 실블록(완료 메타 포함)로 계산(QA — mock 하드코딩 대체), bypass는 mock.
+  let burnout: BurnoutSnapshot | null;
   // QA #7 — 활성 계획표 유무. 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요"를 보여준다.
   let hasActivePlanner: boolean;
 
@@ -177,6 +181,7 @@ export default function HomeContainer() {
     monthMeta = getMonthMeta(offset);
     heroDaySummary = plannerProgress(getBlocksForDayOffset(0)); // 실제 오늘
     heroWeekMeta = getWeekMeta(0); // 이번 주
+    burnout = todayBurnout;
   } else {
     const { active, blocksByDate, heroBlocksByDate, todayIso } = real;
     customization = getCustomization(active);
@@ -227,6 +232,7 @@ export default function HomeContainer() {
           heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
         ) / 10,
     };
+    burnout = computeBurnoutFromWeek(heroMerged, todayIso, weekDatesFor(todayIso, 0));
   }
 
   return (
@@ -236,7 +242,7 @@ export default function HomeContainer() {
         examName={examName}
         dday={dday}
         hasActivePlanner={hasActivePlanner}
-        burnoutScore={todayBurnout.score}
+        burnout={burnout}
         daySummary={daySummary}
         weekMeta={weekMeta}
         monthMeta={monthMeta}

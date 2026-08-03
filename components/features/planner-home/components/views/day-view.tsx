@@ -7,7 +7,7 @@ import {
   getBlocksForDayOffset, currentPersona, getDday, nextActiveBlock,
   blockTypeMeta,
   hasQAccess, getBlockColor,
-  type ConditionLevel, type BlockType, type TimeBlock,
+  type BurnoutSnapshot, type ConditionLevel, type BlockType, type TimeBlock,
 } from '@/lib/mock';
 import { getActiveCustomization, type Customization } from '@/lib/hooks/use-planner-customization';
 import { SectionHeading } from '@/components/shell/section-heading';
@@ -35,10 +35,12 @@ interface DayViewProps {
   onCompleteSubmit?: (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => Promise<boolean>;
   /** 실 active 플래너의 꾸미기(layout·palette) — 미주입(dev bypass)이면 mock getActiveCustomization 폴백. */
   customization?: Customization;
+  /** 번아웃 스냅샷(HomeContainer 해석) — null=집계 데이터 없음. */
+  burnout: BurnoutSnapshot | null;
 }
 
 /** 일간 캘린더 본문 — 24h 시계 + 자기보고 패널 + 블록 리스트. */
-export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp, onCompleteSubmit, customization }: DayViewProps) {
+export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp, onCompleteSubmit, customization, burnout }: DayViewProps) {
   const [condition, setCondition] = useState<ConditionLevel>(3);
   const [showLegend, setShowLegend] = useState(false);
   const [trimTimeline, setTrimTimeline] = useState(true);
@@ -144,6 +146,7 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
 
           <ConditionBurnoutPanel
             condition={condition}
+            burnout={burnout}
             onConditionChange={onConditionChange}
           />
         </div>
