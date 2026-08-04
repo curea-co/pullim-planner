@@ -53,12 +53,13 @@ export function ConditionSlider({ value: valueProp, initial = 3, onChange }: Pro
       case 'ArrowRight':
       case 'ArrowUp':
         e.preventDefault();
-        move(value === null ? 3 : (Math.min(5, value + 1) as ConditionLevel));
+        // '선택 전'(null)은 포커스 기준(중앙 3)에서 증감 — roving tabindex 정합(Codex)
+        move(value === null ? 4 : (Math.min(5, value + 1) as ConditionLevel));
         break;
       case 'ArrowLeft':
       case 'ArrowDown':
         e.preventDefault();
-        move(value === null ? 3 : (Math.max(1, value - 1) as ConditionLevel));
+        move(value === null ? 2 : (Math.max(1, value - 1) as ConditionLevel));
         break;
       case 'Home':
         e.preventDefault();

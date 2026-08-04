@@ -217,12 +217,13 @@ export default function HomeContainer() {
     pullimPlannerClient
       .saveCondition(level)
       .then((res) => {
-        if (res.level !== null) {
-          confirmedCondition.current = {
-            date: res.date,
-            level: res.level as ConditionLevel,
-          };
-        }
+        // 최신 요청의 성공만 confirmed 갱신 — 늦게 도착한 이전 성공이 롤백 기준을
+        // 오래된 값으로 오염시키지 않게(Codex).
+        if (seq !== conditionReqSeq.current || res.level === null) return;
+        confirmedCondition.current = {
+          date: res.date,
+          level: res.level as ConditionLevel,
+        };
       })
       .catch(() => {
         if (seq !== conditionReqSeq.current) return; // 이후 선택 있음 — 롤백 금지
