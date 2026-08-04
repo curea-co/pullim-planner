@@ -14,6 +14,7 @@ import {
 } from '@/lib/planner/home-data';
 import { computeBurnoutFromWeek } from '@/lib/planner/burnout';
 import type { BurnoutSnapshot, ConditionLevel } from '@/lib/mock';
+import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
@@ -167,15 +168,27 @@ export default function HomeContainer() {
   }, [realActiveId, burnoutTick, view, offset]);
 
   // 오늘 컨디션(저장+표기용, QA 결정 08-04) — 실모드는 서버 복원·저장, bypass 는 로컬 데모(3).
-  // 상태에 날짜를 실어 **파생**으로 표시한다: 자정이 지나면 어제 값이 자동으로 '선택 전'이
-  // 되고(effect 는 날짜 키로 재조회), 동기 setState 없이 stale 을 걸러낸다(Codex).
+  // KST 오늘을 1분 간격으로 재계산해 자정 전환을 실제로 감지한다(마운트 1회 계산이던
+  // useHomeBlocks.todayIso 로는 effect 가 재실행되지 않음 — Codex). 날짜가 바뀌면 파생이
+  // 자동으로 '선택 전'이 되고, 날짜 키 effect 가 오늘 값을 재조회한다.
+  const [kstToday, setKstToday] = useState(() => todayIsoKst());
+  useEffect(() => {
+    const id = setInterval(() => {
+      setKstToday((prev) => {
+        const now = todayIsoKst();
+        return now === prev ? prev : now;
+      });
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
   const [conditionState, setConditionState] = useState<
     { date: string; level: ConditionLevel } | null
   >(DEV_AUTH_BYPASS ? { date: 'local', level: 3 } : null);
-  const realTodayIso = real.todayIso;
-  // 저장 요청 세대 — ① 실패 롤백은 최신 요청일 때만 ② 늦게 도착한 초기 조회가 방금 고른
-  // 값을 덮지 않게(조회 응답은 세대 0일 때만 반영) — 경쟁 조건 가드(Codex).
+  // 경쟁 가드 — ① 저장 요청 세대(늦은 실패·늦은 조회가 최신 선택을 덮지 않게)
+  // ② 마지막 **서버 확인 값**(confirmed): 실패 롤백은 직전 로컬 값이 아니라 이 값으로만
+  //   복원한다(연속 실패 시 저장 안 된 값이 UI에 남는 회귀 방지 — Codex).
   const conditionReqSeq = useRef(0);
+  const confirmedCondition = useRef<{ date: string; level: ConditionLevel } | null>(null);
   useEffect(() => {
     if (DEV_AUTH_BYPASS) return;
     let alive = true;
@@ -184,30 +197,44 @@ export default function HomeContainer() {
       .condition()
       .then((res) => {
         if (!alive || res.level === null) return;
+        confirmedCondition.current = {
+          date: res.date,
+          level: res.level as ConditionLevel,
+        };
         if (conditionReqSeq.current > 0) return; // 조회 중 사용자가 이미 선택 — 낙관 값 유지
-        setConditionState({ date: res.date, level: res.level as ConditionLevel });
+        setConditionState(confirmedCondition.current);
       })
       .catch(() => {}); // 실패 — '선택 전' 유지(다음 선택 시 저장 시도)
     return () => { alive = false; };
-  }, [realTodayIso]);
+  }, [kstToday]);
   const handleConditionChange = useCallback((level: ConditionLevel) => {
-    setConditionState((prev) => {
-      if (!DEV_AUTH_BYPASS) {
-        const seq = ++conditionReqSeq.current;
-        pullimPlannerClient.saveCondition(level).catch(() => {
-          if (seq !== conditionReqSeq.current) return;
-          setConditionState(prev); // 저장 실패 — 이전 값 복원(미기록이면 '선택 전')
-          toast.error('컨디션 저장에 실패했어요', {
-            description: '네트워크 상태를 확인하고 다시 시도해주세요.',
-          });
+    if (DEV_AUTH_BYPASS) {
+      setConditionState({ date: 'local', level });
+      return;
+    }
+    const seq = ++conditionReqSeq.current;
+    setConditionState({ date: kstToday, level }); // 낙관 반영
+    pullimPlannerClient
+      .saveCondition(level)
+      .then((res) => {
+        if (res.level !== null) {
+          confirmedCondition.current = {
+            date: res.date,
+            level: res.level as ConditionLevel,
+          };
+        }
+      })
+      .catch(() => {
+        if (seq !== conditionReqSeq.current) return; // 이후 선택 있음 — 롤백 금지
+        setConditionState(confirmedCondition.current); // 마지막 서버 확인 값(없으면 '선택 전')
+        toast.error('컨디션 저장에 실패했어요', {
+          description: '네트워크 상태를 확인하고 다시 시도해주세요.',
         });
-      }
-      return { date: DEV_AUTH_BYPASS ? 'local' : realTodayIso, level };
-    });
-  }, [realTodayIso]);
+      });
+  }, [kstToday]);
   const condition: ConditionLevel | null = DEV_AUTH_BYPASS
     ? (conditionState?.level ?? 3)
-    : conditionState && conditionState.date === realTodayIso
+    : conditionState && conditionState.date === kstToday
       ? conditionState.level
       : null;
 
