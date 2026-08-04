@@ -167,34 +167,47 @@ export default function HomeContainer() {
   }, [realActiveId, burnoutTick, view, offset]);
 
   // 오늘 컨디션(저장+표기용, QA 결정 08-04) — 실모드는 서버 복원·저장, bypass 는 로컬 데모(3).
-  // 미기록 null → '선택 전' 표시(자동 저장 금지). 저장 실패 시 이전 값으로 되돌리고 안내.
-  const [condition, setCondition] = useState<ConditionLevel | null>(
-    DEV_AUTH_BYPASS ? 3 : null,
-  );
+  // 상태에 날짜를 실어 **파생**으로 표시한다: 자정이 지나면 어제 값이 자동으로 '선택 전'이
+  // 되고(effect 는 날짜 키로 재조회), 동기 setState 없이 stale 을 걸러낸다(Codex).
+  const [conditionState, setConditionState] = useState<
+    { date: string; level: ConditionLevel } | null
+  >(DEV_AUTH_BYPASS ? { date: 'local', level: 3 } : null);
+  const realTodayIso = real.todayIso;
   useEffect(() => {
     if (DEV_AUTH_BYPASS) return;
     let alive = true;
     pullimPlannerClient
       .condition()
       .then((res) => {
-        if (alive && res.level !== null) setCondition(res.level as ConditionLevel);
+        if (alive && res.level !== null) {
+          setConditionState({ date: res.date, level: res.level as ConditionLevel });
+        }
       })
       .catch(() => {}); // 실패 — '선택 전' 유지(다음 선택 시 저장 시도)
     return () => { alive = false; };
-  }, []);
+  }, [realTodayIso]);
+  // 저장 요청 세대 — 실패 롤백은 **최신 요청일 때만**(늦게 도착한 실패가 이후 선택을 덮지 않게, Codex).
+  const conditionReqSeq = useRef(0);
   const handleConditionChange = useCallback((level: ConditionLevel) => {
-    setCondition((prev) => {
+    setConditionState((prev) => {
       if (!DEV_AUTH_BYPASS) {
+        const seq = ++conditionReqSeq.current;
         pullimPlannerClient.saveCondition(level).catch(() => {
-          setCondition(prev); // 저장 실패 — 이전 값 복원(미기록이면 '선택 전')
+          if (seq !== conditionReqSeq.current) return;
+          setConditionState(prev); // 저장 실패 — 이전 값 복원(미기록이면 '선택 전')
           toast.error('컨디션 저장에 실패했어요', {
             description: '네트워크 상태를 확인하고 다시 시도해주세요.',
           });
         });
       }
-      return level;
+      return { date: DEV_AUTH_BYPASS ? 'local' : realTodayIso, level };
     });
-  }, []);
+  }, [realTodayIso]);
+  const condition: ConditionLevel | null = DEV_AUTH_BYPASS
+    ? (conditionState?.level ?? 3)
+    : conditionState && conditionState.date === realTodayIso
+      ? conditionState.level
+      : null;
 
   const handleCompleteBlock = useCallback(
     async (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => {
