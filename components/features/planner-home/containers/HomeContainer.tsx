@@ -13,7 +13,7 @@ import {
   shiftIsoDate, weekDatesFor,
 } from '@/lib/planner/home-data';
 import { computeBurnoutFromWeek } from '@/lib/planner/burnout';
-import type { BurnoutSnapshot } from '@/lib/mock';
+import type { BurnoutSnapshot, ConditionLevel } from '@/lib/mock';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
@@ -166,6 +166,36 @@ export default function HomeContainer() {
     // (가벼운 read — 성공 상태의 중복 호출도 최신화라 무해, Codex).
   }, [realActiveId, burnoutTick, view, offset]);
 
+  // 오늘 컨디션(저장+표기용, QA 결정 08-04) — 실모드는 서버 복원·저장, bypass 는 로컬 데모(3).
+  // 미기록 null → '선택 전' 표시(자동 저장 금지). 저장 실패 시 이전 값으로 되돌리고 안내.
+  const [condition, setCondition] = useState<ConditionLevel | null>(
+    DEV_AUTH_BYPASS ? 3 : null,
+  );
+  useEffect(() => {
+    if (DEV_AUTH_BYPASS) return;
+    let alive = true;
+    pullimPlannerClient
+      .condition()
+      .then((res) => {
+        if (alive && res.level !== null) setCondition(res.level as ConditionLevel);
+      })
+      .catch(() => {}); // 실패 — '선택 전' 유지(다음 선택 시 저장 시도)
+    return () => { alive = false; };
+  }, []);
+  const handleConditionChange = useCallback((level: ConditionLevel) => {
+    setCondition((prev) => {
+      if (!DEV_AUTH_BYPASS) {
+        pullimPlannerClient.saveCondition(level).catch(() => {
+          setCondition(prev); // 저장 실패 — 이전 값 복원(미기록이면 '선택 전')
+          toast.error('컨디션 저장에 실패했어요', {
+            description: '네트워크 상태를 확인하고 다시 시도해주세요.',
+          });
+        });
+      }
+      return level;
+    });
+  }, []);
+
   const handleCompleteBlock = useCallback(
     async (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => {
       if (!realActiveId) return false;
@@ -286,6 +316,8 @@ export default function HomeContainer() {
         dday={dday}
         hasActivePlanner={hasActivePlanner}
         burnout={burnout}
+        condition={condition}
+        onConditionChange={handleConditionChange}
         daySummary={daySummary}
         weekMeta={weekMeta}
         monthMeta={monthMeta}
