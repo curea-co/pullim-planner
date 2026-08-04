@@ -144,11 +144,14 @@ export default function HomeContainer() {
         if (!alive) return;
         setServerBurnout({
           plannerId: realActiveId,
+          // available:false 의 BE 조건은 '블록 없음·시작 직후(오늘뿐+완료 0)' 뿐 — 기존
+          // null(데이터 부족)과 의미가 동일해 별도 상태 없이 같은 문구('안전도 –' + 데이터
+          // 부족 안내)로 수렴한다(pullim-api #480 api.md 계약).
           snapshot: res.available
             ? {
                 score: res.score!,
                 trend: res.trend!,
-                factors: (res.factors ?? []) as BurnoutSnapshot['factors'],
+                factors: res.factors ?? [],
                 recommendBreak: res.recommendBreak ?? false,
               }
             : null,
