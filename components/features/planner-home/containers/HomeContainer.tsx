@@ -217,20 +217,27 @@ export default function HomeContainer() {
     pullimPlannerClient
       .saveCondition(level)
       .then((res) => {
-        // 최신 요청의 성공만 confirmed 갱신 — 늦게 도착한 이전 성공이 롤백 기준을
-        // 오래된 값으로 오염시키지 않게(Codex).
+        // 최신 요청의 성공만 반영 — 늦게 도착한 이전 성공이 롤백 기준·화면을 오래된
+        // 값으로 오염시키지 않게(Codex).
         if (seq !== conditionReqSeq.current || res.level === null) return;
         confirmedCondition.current = {
           date: res.date,
           level: res.level as ConditionLevel,
         };
+        // 화면도 서버 확정값으로 동기화 — 자정 경계에서 저장이 새 날짜로 확정되면
+        // 낙관 상태의 옛 날짜 키 때문에 '미기록'으로 보이는 어긋남 방지(Codex).
+        setConditionState(confirmedCondition.current);
       })
-      .catch(() => {
+      .catch((error) => {
         if (seq !== conditionReqSeq.current) return; // 이후 선택 있음 — 롤백 금지
         setConditionState(confirmedCondition.current); // 마지막 서버 확인 값(없으면 '선택 전')
-        toast.error('컨디션 저장에 실패했어요', {
-          description: '네트워크 상태를 확인하고 다시 시도해주세요.',
-        });
+        // 401은 on401 래퍼가 전역 세션 만료를 이미 전파 — 네트워크 오류로 오도하지 않게
+        // 토스트 생략(완료 저장 handleCompleteBlock 과 동일 패턴).
+        if (!(error instanceof ApiError && error.statusCode === 401)) {
+          toast.error('컨디션 저장에 실패했어요', {
+            description: '네트워크 상태를 확인하고 다시 시도해주세요.',
+          });
+        }
       });
   }, [kstToday]);
   const condition: ConditionLevel | null = DEV_AUTH_BYPASS
