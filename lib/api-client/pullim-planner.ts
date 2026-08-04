@@ -288,7 +288,7 @@ export interface PullimPreviewResponse {
 
 /** 번아웃 안전도 구성 지표(BE on-read 집계 — QA #48 공식, 가중 5:3:2 정규화). */
 export interface PullimBurnoutFactor {
-  id: "streak" | "emotion" | "rest_usage";
+  id: "streak" | "emotion" | "rest_acceptance";
   label: string;
   value: number;
   unit: "%" | "/5";

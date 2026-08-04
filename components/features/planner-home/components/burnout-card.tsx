@@ -25,8 +25,9 @@ function formatFactor(f: BurnoutFactor): string {
  * sleep(평균 수면 시간)은 사용자 입력이 필요한 값이라 현 데이터로는 추정치(노이즈)이고,
  * rest_usage("쉴래요" 사용)는 해당 기능(QA #15) 제거로 무의미. 유지: streak·emotion·rest_acceptance.
  */
-// rest_usage 는 BE 집계(QA #48)로 실데이터화 — sleep 만 미산출로 유지 숨김.
-const HIDDEN_FACTOR_IDS = new Set<BurnoutFactor['id']>(['sleep']);
+// sleep(미산출)·rest_usage('쉴래요' 사용 — QA #14 확정 숨김)는 계속 숨김.
+// rest_acceptance(휴식 수용률)는 BE 집계(QA #48)로 실산출 — 노출 대상.
+const HIDDEN_FACTOR_IDS = new Set<BurnoutFactor['id']>(['sleep', 'rest_usage']);
 
 /**
  * 번아웃 지수 카드 — 핸드오프 7.2 (지표 가중 평균).

@@ -162,7 +162,9 @@ export default function HomeContainer() {
         if (alive) setServerBurnout(null);
       });
     return () => { alive = false; };
-  }, [realActiveId, burnoutTick]);
+    // deps 에 view·offset 포함 — 호출 실패 후에도 화면 탐색 시 BE 집계를 재시도한다
+    // (가벼운 read — 성공 상태의 중복 호출도 최신화라 무해, Codex).
+  }, [realActiveId, burnoutTick, view, offset]);
 
   const handleCompleteBlock = useCallback(
     async (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => {
