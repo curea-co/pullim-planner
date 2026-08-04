@@ -128,12 +128,43 @@ export default function HomeContainer() {
   // 실패 시 false 반환 → 다이얼로그가 닫히지 않고 재시도 가능. mock 경로(bypass)엔 미주입(데모 유지).
   const realActiveId = real.active?.id;
   const realRefetch = real.refetch;
+
+  // 번아웃 안전도 — BE on-read 집계(QA #48, GET /planner/planners/:id/burnout) 우선.
+  // 로드 전·호출 실패(구버전 BE 포함)는 FE 주간 계산 폴백. available:false 는 판정 보류('–').
+  const [serverBurnout, setServerBurnout] = useState<
+    { plannerId: string; snapshot: BurnoutSnapshot | null } | null
+  >(null);
+  const [burnoutTick, setBurnoutTick] = useState(0);
+  useEffect(() => {
+    if (DEV_AUTH_BYPASS || !realActiveId) return;
+    let alive = true;
+    pullimPlannerClient
+      .burnout(realActiveId)
+      .then((res) => {
+        if (!alive) return;
+        setServerBurnout({
+          plannerId: realActiveId,
+          snapshot: res.available
+            ? {
+                score: res.score!,
+                trend: res.trend!,
+                factors: (res.factors ?? []) as BurnoutSnapshot['factors'],
+                recommendBreak: res.recommendBreak ?? false,
+              }
+            : null,
+        });
+      })
+      .catch(() => {}); // 실패 — FE 폴백 유지(조용히)
+    return () => { alive = false; };
+  }, [realActiveId, burnoutTick]);
+
   const handleCompleteBlock = useCallback(
     async (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => {
       if (!realActiveId) return false;
       try {
         await pullimPlannerClient.completeBlock(realActiveId, blockId, input);
         realRefetch();
+        setBurnoutTick((t) => t + 1); // 완료 기록 반영 — 안전도 재집계
         return true;
       } catch (error) {
         // 401은 on401 래퍼가 전역 세션 만료를 이미 전파(로그인 복구 흐름) — 네트워크 오류 안내로
@@ -232,7 +263,11 @@ export default function HomeContainer() {
           heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
         ) / 10,
     };
-    burnout = computeBurnoutFromWeek(heroMerged, todayIso, weekDatesFor(todayIso, 0));
+    // BE 집계 로드 완료 시 그 결과가 권위(available:false=보류 '–') — 미로드·실패만 FE 폴백.
+    burnout =
+      serverBurnout && serverBurnout.plannerId === active?.id
+        ? serverBurnout.snapshot
+        : computeBurnoutFromWeek(heroMerged, todayIso, weekDatesFor(todayIso, 0));
   }
 
   return (

@@ -286,6 +286,25 @@ export interface PullimPreviewResponse {
   blocks: PullimPreviewBlock[];
 }
 
+/** 번아웃 안전도 구성 지표(BE on-read 집계 — QA #48 공식, 가중 5:3:2 정규화). */
+export interface PullimBurnoutFactor {
+  id: "streak" | "emotion" | "rest_usage";
+  label: string;
+  value: number;
+  unit: "%" | "/5";
+  weight: number;
+  status: "good" | "warn" | "bad";
+}
+
+/** `GET /planner/planners/:id/burnout` 응답 — `available=false` 면 판정 보류(필드 생략). */
+export interface PullimBurnoutResponse {
+  available: boolean;
+  score?: number;
+  trend?: "rising" | "stable" | "falling";
+  factors?: PullimBurnoutFactor[];
+  recommendBreak?: boolean;
+}
+
 export type PullimPlannerClientConfig = CookieHttpConfig;
 
 export interface PullimPlannerClient {
@@ -297,6 +316,8 @@ export interface PullimPlannerClient {
    * (`BlocksQueryDto @IsOptional` + 핸들러 `query.date ?? todayKstIsoDate()`).
    */
   blocks(plannerId: string, date?: string): Promise<PullimBlock[]>;
+  /** 번아웃 안전도 on-read 집계(QA #48). `GET /planner/planners/:id/burnout`. */
+  burnout(plannerId: string): Promise<PullimBurnoutResponse>;
   /** 생성(비활성). `POST /planner/planners`. 생성 전용 입력(루틴 적용 포함). */
   create(input: PullimPlannerCreate): Promise<PullimPlanner>;
   /**
@@ -423,6 +444,13 @@ export function createPullimPlannerClient(
         config,
         `/planner/planners/${plannerId}/blocks`,
         date ? { query: { date } } : undefined,
+      );
+    },
+
+    burnout(plannerId) {
+      return cookieRequest<PullimBurnoutResponse>(
+        config,
+        `/planner/planners/${plannerId}/burnout`,
       );
     },
 
