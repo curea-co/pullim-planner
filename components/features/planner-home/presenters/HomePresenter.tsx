@@ -7,7 +7,7 @@ import type { Customization } from '@/lib/hooks/use-planner-customization';
 import { DayView } from '../components/views/day-view';
 import { WeekView } from '../components/views/week-view';
 import { MonthView } from '../components/views/month-view';
-import { planBaseDate, type BurnoutSnapshot, type MonthDay, type TimeBlock, type WeekDay } from '@/lib/mock/planner';
+import { planBaseDate, type BurnoutSnapshot, type ConditionLevel, type MonthDay, type TimeBlock, type WeekDay } from '@/lib/mock/planner';
 import {
   formatDayNavLabel, formatDayTitle, formatDayRelLabel,
   formatWeekNavLabel, formatWeekTitle,
@@ -24,6 +24,9 @@ interface HomePresenterProps {
   hasActivePlanner?: boolean;
   /** 번아웃 스냅샷 — Container가 해석(실모드: 이번 주 완료 기록 계산 / bypass: mock). null=데이터 없음 */
   burnout: BurnoutSnapshot | null;
+  /** 오늘 컨디션(실 저장) — null=미기록('선택 전'). */
+  condition: ConditionLevel | null;
+  onConditionChange: (level: ConditionLevel) => void;
   daySummary: { done: number; total: number };
   weekMeta: { totalHours: number; completedHours: number };
   monthMeta: { totalBlocks: number };
@@ -56,6 +59,8 @@ export default function HomePresenter({
   dday,
   hasActivePlanner = true,
   burnout,
+  condition,
+  onConditionChange,
   daySummary,
   weekMeta,
   monthMeta,
@@ -173,7 +178,7 @@ export default function HomePresenter({
         }
         action={switchAction}
       >
-        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} />}
+        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} />}
         {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} />}
         {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} />}
       </CalendarShell>

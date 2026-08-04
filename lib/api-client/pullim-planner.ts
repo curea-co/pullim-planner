@@ -305,6 +305,12 @@ export interface PullimBurnoutResponse {
   recommendBreak?: boolean;
 }
 
+/** `GET·PATCH /planner/me/condition` 응답 — 오늘 컨디션(미기록 level null). */
+export interface PullimConditionResponse {
+  date: string; // YYYY-MM-DD(KST 오늘)
+  level: number | null; // 1~5, 미기록 null
+}
+
 export type PullimPlannerClientConfig = CookieHttpConfig;
 
 export interface PullimPlannerClient {
@@ -318,6 +324,10 @@ export interface PullimPlannerClient {
   blocks(plannerId: string, date?: string): Promise<PullimBlock[]>;
   /** 번아웃 안전도 on-read 집계(QA #48). `GET /planner/planners/:id/burnout`. */
   burnout(plannerId: string): Promise<PullimBurnoutResponse>;
+  /** 오늘 컨디션(미기록 level null). `GET /planner/me/condition`. */
+  condition(): Promise<PullimConditionResponse>;
+  /** 오늘 컨디션 멱등 upsert(재선택 덮어쓰기). `PATCH /planner/me/condition`. */
+  saveCondition(level: number): Promise<PullimConditionResponse>;
   /** 생성(비활성). `POST /planner/planners`. 생성 전용 입력(루틴 적용 포함). */
   create(input: PullimPlannerCreate): Promise<PullimPlanner>;
   /**
@@ -452,6 +462,19 @@ export function createPullimPlannerClient(
         config,
         `/planner/planners/${plannerId}/burnout`,
       );
+    },
+
+    condition() {
+      return cookieRequest<PullimConditionResponse>(
+        config,
+        "/planner/me/condition",
+      );
+    },
+
+    saveCondition(level) {
+      return mutate<PullimConditionResponse>("/planner/me/condition", "PATCH", {
+        level,
+      });
     },
 
     completeBlock(plannerId, blockId, input) {

@@ -11,7 +11,8 @@ import { ConditionSlider } from './condition-slider';
 import { BurnoutCard } from './burnout-card';
 
 type Props = {
-  condition: ConditionLevel;
+  /** 오늘 컨디션 — null=미기록('선택 전' 표시). */
+  condition: ConditionLevel | null;
   /** 번아웃 스냅샷 — 실모드는 이번 주 완료 기록 기반 계산값, null=집계 데이터 없음. */
   burnout: BurnoutSnapshot | null;
   onConditionChange: (level: ConditionLevel) => void;
@@ -28,7 +29,8 @@ type Props = {
  */
 export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, defaultOpen = false }: Props) {
   const [open, setOpen] = useState(defaultOpen);
-  const meta = conditionMeta[condition];
+  // 미기록(null)이면 리본 이모지는 중립(선택 전) 표시 — 기본값 이모지 날조 금지.
+  const meta = condition !== null ? conditionMeta[condition] : null;
   // 안전도 시맨틱 — 높을수록 안전. 데이터 없으면(null) 칩 미노출.
   const score = burnout?.score ?? null;
   const burnoutTone = score === null ? null : score >= 70 ? 'good' : score >= 50 ? 'warn' : 'bad';
@@ -55,8 +57,8 @@ export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, d
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {/* 컨디션 칩 — 주관 감정. 상태 문구는 미노출(QA #13), 이모지만 */}
             <span className="bg-pullim-slate-100 text-pullim-slate-900 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold">
-              <span aria-hidden>{meta.emoji}</span>
-              <span className="sr-only">{meta.label}</span>
+              <span aria-hidden>{meta ? meta.emoji : '❔'}</span>
+              <span className="sr-only">{meta ? meta.label : '컨디션 미기록'}</span>
               오늘
             </span>
             {/* 안전도 칩 — 객관 누적 부담 (높을수록 안전). 완료 기록 없으면 '–' (판정 보류, 사용자 확정 08-03) */}
@@ -83,7 +85,7 @@ export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, d
 
       {open && (
         <div id="condition-burnout-body" className="space-y-3 border-t p-3">
-          <ConditionSlider initial={condition} onChange={onConditionChange} />
+          <ConditionSlider value={condition} onChange={onConditionChange} />
           <BurnoutCard burnout={burnout} />
         </div>
       )}

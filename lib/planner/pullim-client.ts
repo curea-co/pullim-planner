@@ -69,6 +69,8 @@ export const pullimPlannerClient: PullimPlannerClient &
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
   burnout: on401(rawPullimPlannerClient.burnout),
+  condition: on401(rawPullimPlannerClient.condition),
+  saveCondition: on401(rawPullimPlannerClient.saveCondition),
   completeBlock: on401(rawPullimPlannerClient.completeBlock),
   uncompleteBlock: on401(rawPullimPlannerClient.uncompleteBlock),
   create: on401(rawPullimPlannerClient.create),

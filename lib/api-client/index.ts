@@ -37,6 +37,7 @@ export type {
   PullimBlock,
   PullimBurnoutFactor,
   PullimBurnoutResponse,
+  PullimConditionResponse,
   PullimExamType,
   PullimBlockPattern,
   PullimMotivationStyle,

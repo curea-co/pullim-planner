@@ -13,7 +13,8 @@ import {
   shiftIsoDate, weekDatesFor,
 } from '@/lib/planner/home-data';
 import { computeBurnoutFromWeek } from '@/lib/planner/burnout';
-import type { BurnoutSnapshot } from '@/lib/mock';
+import type { BurnoutSnapshot, ConditionLevel } from '@/lib/mock';
+import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
@@ -166,6 +167,85 @@ export default function HomeContainer() {
     // (가벼운 read — 성공 상태의 중복 호출도 최신화라 무해, Codex).
   }, [realActiveId, burnoutTick, view, offset]);
 
+  // 오늘 컨디션(저장+표기용, QA 결정 08-04) — 실모드는 서버 복원·저장, bypass 는 로컬 데모(3).
+  // KST 오늘을 1분 간격으로 재계산해 자정 전환을 실제로 감지한다(마운트 1회 계산이던
+  // useHomeBlocks.todayIso 로는 effect 가 재실행되지 않음 — Codex). 날짜가 바뀌면 파생이
+  // 자동으로 '선택 전'이 되고, 날짜 키 effect 가 오늘 값을 재조회한다.
+  const [kstToday, setKstToday] = useState(() => todayIsoKst());
+  useEffect(() => {
+    const id = setInterval(() => {
+      setKstToday((prev) => {
+        const now = todayIsoKst();
+        return now === prev ? prev : now;
+      });
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const [conditionState, setConditionState] = useState<
+    { date: string; level: ConditionLevel } | null
+  >(DEV_AUTH_BYPASS ? { date: 'local', level: 3 } : null);
+  // 경쟁 가드 — ① 저장 요청 세대(늦은 실패·늦은 조회가 최신 선택을 덮지 않게)
+  // ② 마지막 **서버 확인 값**(confirmed): 실패 롤백은 직전 로컬 값이 아니라 이 값으로만
+  //   복원한다(연속 실패 시 저장 안 된 값이 UI에 남는 회귀 방지 — Codex).
+  const conditionReqSeq = useRef(0);
+  const confirmedCondition = useRef<{ date: string; level: ConditionLevel } | null>(null);
+  useEffect(() => {
+    if (DEV_AUTH_BYPASS) return;
+    let alive = true;
+    conditionReqSeq.current = 0; // 새 날짜 — 세대 리셋(오늘 값 복원 허용)
+    pullimPlannerClient
+      .condition()
+      .then((res) => {
+        if (!alive || res.level === null) return;
+        confirmedCondition.current = {
+          date: res.date,
+          level: res.level as ConditionLevel,
+        };
+        if (conditionReqSeq.current > 0) return; // 조회 중 사용자가 이미 선택 — 낙관 값 유지
+        setConditionState(confirmedCondition.current);
+      })
+      .catch(() => {}); // 실패 — '선택 전' 유지(다음 선택 시 저장 시도)
+    return () => { alive = false; };
+  }, [kstToday]);
+  const handleConditionChange = useCallback((level: ConditionLevel) => {
+    if (DEV_AUTH_BYPASS) {
+      setConditionState({ date: 'local', level });
+      return;
+    }
+    const seq = ++conditionReqSeq.current;
+    setConditionState({ date: kstToday, level }); // 낙관 반영
+    pullimPlannerClient
+      .saveCondition(level)
+      .then((res) => {
+        // 최신 요청의 성공만 반영 — 늦게 도착한 이전 성공이 롤백 기준·화면을 오래된
+        // 값으로 오염시키지 않게(Codex).
+        if (seq !== conditionReqSeq.current || res.level === null) return;
+        confirmedCondition.current = {
+          date: res.date,
+          level: res.level as ConditionLevel,
+        };
+        // 화면도 서버 확정값으로 동기화 — 자정 경계에서 저장이 새 날짜로 확정되면
+        // 낙관 상태의 옛 날짜 키 때문에 '미기록'으로 보이는 어긋남 방지(Codex).
+        setConditionState(confirmedCondition.current);
+      })
+      .catch((error) => {
+        if (seq !== conditionReqSeq.current) return; // 이후 선택 있음 — 롤백 금지
+        setConditionState(confirmedCondition.current); // 마지막 서버 확인 값(없으면 '선택 전')
+        // 401은 on401 래퍼가 전역 세션 만료를 이미 전파 — 네트워크 오류로 오도하지 않게
+        // 토스트 생략(완료 저장 handleCompleteBlock 과 동일 패턴).
+        if (!(error instanceof ApiError && error.statusCode === 401)) {
+          toast.error('컨디션 저장에 실패했어요', {
+            description: '네트워크 상태를 확인하고 다시 시도해주세요.',
+          });
+        }
+      });
+  }, [kstToday]);
+  const condition: ConditionLevel | null = DEV_AUTH_BYPASS
+    ? (conditionState?.level ?? 3)
+    : conditionState && conditionState.date === kstToday
+      ? conditionState.level
+      : null;
+
   const handleCompleteBlock = useCallback(
     async (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => {
       if (!realActiveId) return false;
@@ -286,6 +366,8 @@ export default function HomeContainer() {
         dday={dday}
         hasActivePlanner={hasActivePlanner}
         burnout={burnout}
+        condition={condition}
+        onConditionChange={handleConditionChange}
         daySummary={daySummary}
         weekMeta={weekMeta}
         monthMeta={monthMeta}

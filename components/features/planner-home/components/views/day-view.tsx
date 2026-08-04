@@ -37,11 +37,17 @@ interface DayViewProps {
   customization?: Customization;
   /** 번아웃 스냅샷(HomeContainer 해석) — null=집계 데이터 없음. */
   burnout: BurnoutSnapshot | null;
+  /** 오늘 컨디션(실 저장, HomeContainer 소유) — 미주입(bypass)이면 로컬 데모 상태. */
+  condition?: ConditionLevel | null;
+  onConditionChange?: (level: ConditionLevel) => void;
 }
 
 /** 일간 캘린더 본문 — 24h 시계 + 자기보고 패널 + 블록 리스트. */
-export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp, onCompleteSubmit, customization, burnout }: DayViewProps) {
-  const [condition, setCondition] = useState<ConditionLevel>(3);
+export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp, onCompleteSubmit, customization, burnout, condition: conditionProp, onConditionChange }: DayViewProps) {
+  // 실 저장 주입(컨테이너) 우선 — 미주입(bypass·데모)이면 기존 로컬 상태.
+  const [localCondition, setLocalCondition] = useState<ConditionLevel>(3);
+  const condition = conditionProp !== undefined ? conditionProp : localCondition;
+  const handleConditionChange = onConditionChange ?? setLocalCondition;
   const [showLegend, setShowLegend] = useState(false);
   const [trimTimeline, setTrimTimeline] = useState(true);
   const [completingBlock, setCompletingBlock] = useState<TimeBlock | null>(null);
@@ -60,10 +66,6 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
     });
   }
 
-  // QA #13 — 컨디션 선택 시 토스트 미노출. 선택 결과(난이도 조절)를 노골적으로 알리지 않는다.
-  function onConditionChange(level: ConditionLevel) {
-    setCondition(level);
-  }
 
   if (blocks.length === 0) {
     // 기준일(offset 0)인데 비어 있으면 = 활성 시간표에 아직 블록이 없음(신규 — mock 미생성).
@@ -144,10 +146,11 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
             )}
           </section>
 
+          {/* QA #13 — 컨디션 선택 시 토스트 미노출(난이도 조절을 노골적으로 알리지 않음) */}
           <ConditionBurnoutPanel
             condition={condition}
             burnout={burnout}
-            onConditionChange={onConditionChange}
+            onConditionChange={handleConditionChange}
           />
         </div>
 
