@@ -154,7 +154,10 @@ export default function HomeContainer() {
             : null,
         });
       })
-      .catch(() => {}); // 실패 — FE 폴백 유지(조용히)
+      .catch(() => {
+        // 실패(재집계 포함) — stale 서버 스냅샷을 비워 FE 주간 계산 폴백으로 내린다(Codex).
+        if (alive) setServerBurnout(null);
+      });
     return () => { alive = false; };
   }, [realActiveId, burnoutTick]);
 
