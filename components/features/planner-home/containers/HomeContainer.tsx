@@ -173,21 +173,23 @@ export default function HomeContainer() {
     { date: string; level: ConditionLevel } | null
   >(DEV_AUTH_BYPASS ? { date: 'local', level: 3 } : null);
   const realTodayIso = real.todayIso;
+  // 저장 요청 세대 — ① 실패 롤백은 최신 요청일 때만 ② 늦게 도착한 초기 조회가 방금 고른
+  // 값을 덮지 않게(조회 응답은 세대 0일 때만 반영) — 경쟁 조건 가드(Codex).
+  const conditionReqSeq = useRef(0);
   useEffect(() => {
     if (DEV_AUTH_BYPASS) return;
     let alive = true;
+    conditionReqSeq.current = 0; // 새 날짜 — 세대 리셋(오늘 값 복원 허용)
     pullimPlannerClient
       .condition()
       .then((res) => {
-        if (alive && res.level !== null) {
-          setConditionState({ date: res.date, level: res.level as ConditionLevel });
-        }
+        if (!alive || res.level === null) return;
+        if (conditionReqSeq.current > 0) return; // 조회 중 사용자가 이미 선택 — 낙관 값 유지
+        setConditionState({ date: res.date, level: res.level as ConditionLevel });
       })
       .catch(() => {}); // 실패 — '선택 전' 유지(다음 선택 시 저장 시도)
     return () => { alive = false; };
   }, [realTodayIso]);
-  // 저장 요청 세대 — 실패 롤백은 **최신 요청일 때만**(늦게 도착한 실패가 이후 선택을 덮지 않게, Codex).
-  const conditionReqSeq = useRef(0);
   const handleConditionChange = useCallback((level: ConditionLevel) => {
     setConditionState((prev) => {
       if (!DEV_AUTH_BYPASS) {
