@@ -35,6 +35,8 @@ export type {
   PullimPlannerHours,
   PullimPlannerCustomization,
   PullimBlock,
+  PullimBurnoutFactor,
+  PullimBurnoutResponse,
   PullimExamType,
   PullimBlockPattern,
   PullimMotivationStyle,

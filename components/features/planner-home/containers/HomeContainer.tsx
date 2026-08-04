@@ -128,12 +128,51 @@ export default function HomeContainer() {
   // 실패 시 false 반환 → 다이얼로그가 닫히지 않고 재시도 가능. mock 경로(bypass)엔 미주입(데모 유지).
   const realActiveId = real.active?.id;
   const realRefetch = real.refetch;
+
+  // 번아웃 안전도 — BE on-read 집계(QA #48, GET /planner/planners/:id/burnout) 우선.
+  // 로드 전·호출 실패(구버전 BE 포함)는 FE 주간 계산 폴백. available:false 는 판정 보류('–').
+  const [serverBurnout, setServerBurnout] = useState<
+    { plannerId: string; snapshot: BurnoutSnapshot | null } | null
+  >(null);
+  const [burnoutTick, setBurnoutTick] = useState(0);
+  useEffect(() => {
+    if (DEV_AUTH_BYPASS || !realActiveId) return;
+    let alive = true;
+    pullimPlannerClient
+      .burnout(realActiveId)
+      .then((res) => {
+        if (!alive) return;
+        setServerBurnout({
+          plannerId: realActiveId,
+          // available:false 의 BE 조건은 '블록 없음·시작 직후(오늘뿐+완료 0)' 뿐 — 기존
+          // null(데이터 부족)과 의미가 동일해 별도 상태 없이 같은 문구('안전도 –' + 데이터
+          // 부족 안내)로 수렴한다(pullim-api #480 api.md 계약).
+          snapshot: res.available
+            ? {
+                score: res.score!,
+                trend: res.trend!,
+                factors: res.factors ?? [],
+                recommendBreak: res.recommendBreak ?? false,
+              }
+            : null,
+        });
+      })
+      .catch(() => {
+        // 실패(재집계 포함) — stale 서버 스냅샷을 비워 FE 주간 계산 폴백으로 내린다(Codex).
+        if (alive) setServerBurnout(null);
+      });
+    return () => { alive = false; };
+    // deps 에 view·offset 포함 — 호출 실패 후에도 화면 탐색 시 BE 집계를 재시도한다
+    // (가벼운 read — 성공 상태의 중복 호출도 최신화라 무해, Codex).
+  }, [realActiveId, burnoutTick, view, offset]);
+
   const handleCompleteBlock = useCallback(
     async (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => {
       if (!realActiveId) return false;
       try {
         await pullimPlannerClient.completeBlock(realActiveId, blockId, input);
         realRefetch();
+        setBurnoutTick((t) => t + 1); // 완료 기록 반영 — 안전도 재집계
         return true;
       } catch (error) {
         // 401은 on401 래퍼가 전역 세션 만료를 이미 전파(로그인 복구 흐름) — 네트워크 오류 안내로
@@ -232,7 +271,11 @@ export default function HomeContainer() {
           heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
         ) / 10,
     };
-    burnout = computeBurnoutFromWeek(heroMerged, todayIso, weekDatesFor(todayIso, 0));
+    // BE 집계 로드 완료 시 그 결과가 권위(available:false=보류 '–') — 미로드·실패만 FE 폴백.
+    burnout =
+      serverBurnout && serverBurnout.plannerId === active?.id
+        ? serverBurnout.snapshot
+        : computeBurnoutFromWeek(heroMerged, todayIso, weekDatesFor(todayIso, 0));
   }
 
   return (
