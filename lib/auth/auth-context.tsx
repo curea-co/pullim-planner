@@ -14,6 +14,7 @@ import {
   type PullimMeProfile,
   type PullimProfileUpsert,
 } from '@/lib/api-client';
+import { osPlanLabel, type EntitlementFlags } from '@/lib/plan-label';
 
 import { onPullimSessionExpired, pullimSession } from './pullim-session-client';
 
@@ -34,6 +35,11 @@ export interface AuthContextValue {
   status: AuthStatus;
   /** pullim-api 세션 프로필(`GET /planner/me`). 흡수 전환 §10 — 자체 BE `AuthUser` 대체. */
   user: PullimMeProfile | null;
+  /**
+   * 헤더 프로필 드롭다운의 플랜 배지 라벨 — `'기본'`·`'유료'`, **조회 전·실패면 빈 문자열**
+   * (배지 미표시). 서버 엔타이틀먼트 파생이라 OS 헤더와 같은 값이 나온다(QA #91).
+   */
+  planLabel: string;
   logout: () => Promise<void>;
   /**
    * 온보딩 완료 — 학습 프로필 upsert(`PATCH /planner/me`) 후 authenticated 로 전환.
@@ -94,6 +100,8 @@ const DEV_BYPASS_PROFILE: PullimMeProfile = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<PullimMeProfile | null>(null);
+  // 플랜 배지 flags — null = 조회 전/실패(배지 미표시), {} = 조회 성공·유료 없음('기본').
+  const [entFlags, setEntFlags] = useState<EntitlementFlags | null>(null);
 
   // session() 으로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
   // 404(온보딩 미완)→authenticated, 그 외(네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만
@@ -185,6 +193,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void loadSession();
   }, [loadSession]);
 
+  // 플랜 배지 소스 — 세션이 확정된 회원에 한해 `GET /me/entitlements` 1회.
+  //   실패(네트워크·5xx·401)는 null 유지 = 배지 미표시. 배지 하나 때문에 셸을 막거나 재시도하지
+  //   않는다. 로그아웃/만료로 status 가 바뀌면 flags 를 버려 이전 계정 배지가 남지 않게 한다.
+  //   DEV_AUTH_BYPASS 는 실 세션이 없어 조회를 건너뛴다(배지 없음).
+  const sessionResolved = status === 'authenticated' || status === 'onboarding';
+  useEffect(() => {
+    if (!sessionResolved || DEV_AUTH_BYPASS) return;
+    let alive = true;
+    void pullimSession.entitlements().then(
+      (res) => {
+        if (alive) setEntFlags(res.flags ?? {});
+      },
+      () => {
+        // 배지 미표시로 낙하 — 조회 실패를 '기본' 으로 위장하지 않는다.
+      },
+    );
+    // 세션이 풀리면(로그아웃·만료) flags 를 버린다 — 다음 계정에 이전 배지가 새지 않게.
+    return () => {
+      alive = false;
+      setEntFlags(null);
+    };
+  }, [sessionResolved]);
+
   const logout = useCallback(async () => {
     // 우회 모드 — 실 세션이 없어 로그아웃은 의미 없다. 인증 상태를 고정해 미리보기를 유지한다
     // (안 그러면 unauthenticated 로 빠져 보호 라우트가 /login 으로 튕긴다 — codex).
@@ -239,6 +270,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       user,
+      planLabel: osPlanLabel(entFlags),
       logout,
       completeOnboarding,
       retry,
@@ -246,6 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       status,
       user,
+      entFlags,
       logout,
       completeOnboarding,
       retry,
