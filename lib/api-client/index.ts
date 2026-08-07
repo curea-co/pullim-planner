@@ -16,6 +16,7 @@ export type {
   PullimSessionResponse,
   PullimMeProfile,
   PullimAccountMe,
+  PullimEntitlements,
   PullimProfileUpsert,
 } from "./pullim-session";
 // pullim-api planner 도메인 데이터 클라이언트 (cookie-http 위 래퍼) — 흡수 전환 §10 cutover 용.

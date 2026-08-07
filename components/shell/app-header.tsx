@@ -63,7 +63,7 @@ function AuthCluster() {
 
 function ProfileMenu() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, planLabel } = useAuth();
 
   // 헤더 프로필은 실 인증 사용자(pullim-api /planner/me). 본문 도메인 데이터는 아직 mock(GATED).
   const name = user?.name ?? '';
@@ -88,8 +88,19 @@ function ProfileMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
         <DropdownMenuGroup>
+          {/* 신원 — OS 헤더(pullim-web OsTopbar) 정합: 이름 + 플랜 배지 / 보조행(QA #91).
+              이름 오른쪽 슬롯은 OS 와 같이 **플랜 배지**('기본'·'유료')가 갖는다. 배지는 서버
+              엔타이틀먼트 파생이라 조회 전·실패면 렌더하지 않는다(빈 라벨) — 유료 회원에게
+              '기본' 을 단정하지 않기 위해. 학년(sub)은 기존대로 아래 보조행. */}
           <DropdownMenuLabel className="px-2 py-1.5">
-            <div className="text-pullim-slate-900 text-sm font-bold">{name}</div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-pullim-slate-900 truncate text-sm font-bold">{name}</div>
+              {planLabel && (
+                <span className="bg-pullim-slate-100 text-pullim-slate-600 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold">
+                  {planLabel}
+                </span>
+              )}
+            </div>
             <div className="text-pullim-slate-500 text-[11px] font-normal">{sub}</div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>

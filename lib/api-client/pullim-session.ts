@@ -88,6 +88,15 @@ export interface PullimProfileUpsert {
   preferredStudyTime?: string;
 }
 
+/**
+ * 계정 엔타이틀먼트 (`GET /me/entitlements`) — 헤더 플랜 배지('기본'/'유료') 소스(QA #91).
+ * `flags` = 서비스 키 → 레벨(0 없음 · 1 기본 · 2 이상 유료). 나머지 필드(grants·package·tier 등)는
+ * 플래너가 소비하지 않아 선언하지 않는다(계약 확장에 영향받지 않게).
+ */
+export interface PullimEntitlements {
+  flags: Record<string, number>;
+}
+
 export interface PullimSessionClientConfig extends CookieHttpConfig {
   /**
    * non-HttpOnly CSRF 쿠키 이름(env별). `cookie-http` 자동보강에도 쓰이고, 부트스트랩 토큰을
@@ -124,6 +133,11 @@ export interface PullimSessionClient {
    * 본인 표시 용도. 401 미인증.
    */
   accountMe(): Promise<PullimAccountMe>;
+  /**
+   * 계정 엔타이틀먼트 (`GET /me/entitlements`) — 헤더 플랜 배지 판정용. 401 미인증.
+   * 배지 하나를 위한 부가 조회라 실패는 호출부가 삼킨다(배지 미표시).
+   */
+  entitlements(): Promise<PullimEntitlements>;
   /**
    * 학습 프로필 멱등 upsert (`PATCH /planner/me`) — 온보딩 완료. CSRF 동봉 PATCH.
    * 성공 시 갱신된 프로필(=`session()` shape). 이후 `session()` 200(404 limbo 해소).
@@ -297,6 +311,11 @@ export function createPullimSessionClient(
     accountMe() {
       // GET — CSRF 면제. owner-only 실명(name, ADR-048) 포함 — 표시 용도로만 소비(로그·저장 금지).
       return cookieRequest<PullimAccountMe>(cfg, "/me");
+    },
+
+    entitlements() {
+      // GET — CSRF 면제. 플랜 배지 판정 권위는 서버다(플래너가 자체 판정하지 않는다 — QA #91).
+      return cookieRequest<PullimEntitlements>(cfg, "/me/entitlements");
     },
 
     updateProfile(input) {
