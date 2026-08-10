@@ -1,128 +1,145 @@
 @AGENTS.md
 
-# 풀림 플래너 작업 가이드 (모노레포)
+# 풀림 플래너 작업 가이드
 
-이 리포는 [curea-co/pullim](https://github.com/curea-co/pullim) 의 BE 구조를 차용한 **bun workspace 모노레포**입니다. `pullim-planner`는 향후 `pullim` 플랫폼의 하위 도메인으로 흡수될 SaaS 단위로, 본 리포는 그 흡수 전 단계의 단독 운영체입니다.
+풀림 플래너 FE — Next.js 16 (App Router), 단일 앱 리포 (모노레포 아님). 학생용 학습 플래너 (시간표, 블록, 컨디션, 번아웃, 리포트).
 
-마이그레이션 plan(권위): [proc/plan/2026-05-26_pullim-be-adoption.md](proc/plan/2026-05-26_pullim-be-adoption.md)
+- 도메인 권위: [input/docs-archive/08_풀림_플래너_핸드오프.md](input/docs-archive/08_풀림_플래너_핸드오프.md)
+- BE: **pullim-api** (별도 리포 `/Users/sungho/pullim-api`, `src/planner/`) — 로그인/세션(쿠키 SSO)·planner 데이터 모두 pullim-api 가 담당 (흡수 전환 §10 cutover 완료). 이 리포에 BE 코드 없음
+- 로컬 SSO 런북: [proc/2026-06-29_planner-local-sso-setup.md](proc/2026-06-29_planner-local-sso-setup.md) — `planner.pullim.local:3006` + `api.pullim.local:3000`(pullim-api) + `pullim.local:3001`(pullim-web 중앙 로그인)
 
-## ⛔ 최상위 규칙 — PR은 FE/BE를 섞지 말고 단위로 쪼개 올린다 (MUST)
+> ⚠️ **plan 문서 경로 표기 주의** — `proc/plan/*.md` 문서들은 모노레포 시절(`apps/planner/...`) 또는 그 이전(`src/...`) 기준으로 서술돼 있다. 실제 코드는 2026-07-31 평탄화로 리포 루트 직속(`app/`, `components/`, `lib/`)이다. plan 의 의도·완료기준만 참고하고 경로는 현재 트리 기준으로 해석할 것.
 
-> **이 항목은 본 리포의 최상위 규칙이다. 작업 편의·속도보다 우선하며 반드시 준수한다.**
+## ⛔ 최상위 규칙 — PR은 작은 단위로 쪼개 올린다 (MUST)
 
-- **FE 변경과 BE 변경을 하나의 PR에 함께 담지 않는다.** PR은 변경 단위로 분리한다 — 예: `apps/planner`(FE) PR / `apps/backend`(BE) PR / `packages/*`(공유) PR 을 각각 따로 올린다.
-- **이유**: FE+BE를 한꺼번에 올리면 PR diff가 **Codex Review가 한 번에 탐지·수렴할 수 있는 depth를 초과**한다. 그 결과 코덱스가 매 라운드 새 지적을 내며 리뷰가 무한 반복(COMMENTED 누적)되어 머지가 끝나지 않는다. 단위를 쪼개면 각 PR diff가 작아져 리뷰가 수렴한다.
-- **한 PR = 한 계층/한 단위.** 공유 타입·패키지 변경은 그것을 쓰는 FE/BE PR보다 **먼저** 별도 PR로 올린다.
-- 부득이 FE/BE를 한 PR에 묶어야 하는 예외는 **사용자 명시 승인 후에만** 허용한다.
+- PR diff가 **Codex Review가 한 번에 탐지·수렴할 수 있는 depth를 초과**하면 리뷰가 무한 반복(COMMENTED 누적)되어 머지가 끝나지 않는다. 한 PR = 한 관심사.
+- **Codex Review 통과** — PR 머지 전 필수.
 
-## 1. 모노레포 구조
+## 디렉터리 구조 (src/ 없음 — 리포 루트 직속)
 
 ```
 pullim-planner/
-├── apps/
-│   ├── planner/        # Next.js 16 (App Router) — 학생용 학습 플래너 FE
-│   └── backend/        # NestJS 11 — Planner 도메인 BE (Phase β 이후 본격)
-├── packages/
-│   ├── types/          # BE↔FE 공유 타입 (현재 빈 placeholder)
-│   ├── api-client/     # FE → BE fetch 래퍼 (현재 빈 placeholder)
-│   └── auth/           # IAuthProvider 추상화 + MockAuthProvider (현재 빈 placeholder)
-├── proc/               # plan / spec / knowhow / archive / research
-├── input/              # 기획 문서 (docs-archive 권위)
-├── daily_outcome/      # PM 일일 보고
-├── docker-compose.yml  # 로컬 Postgres 16
-├── turbo.json
-├── tsconfig.base.json
-├── package.json        # workspace root
-└── bun.lock
+├── app/                                # App Router
+│   ├── (student)/                      # 플래너 라우트 그룹
+│   ├── login/ · signup/                # 인증 (signup → login redirect)
+│   ├── layout.tsx · globals.css
+│   └── opengraph-image.tsx · twitter-image.tsx
+├── components/
+│   ├── ui/                             # shadcn/ui 프리미티브
+│   ├── shell/                          # AppHeader, AppSidebar, BottomNav, nav-config.ts
+│   ├── brand/                          # 로고
+│   ├── features/<도메인>/              # Container/Presenter (planner-home, planner-manage, planner-onboarding, planner-reports, planner-routine, auth)
+│   ├── shared/                         # 진짜 순수 뷰 (d-day-chip 등)
+│   └── planner-builder/ · builder/     # 미이동 (Phase 4에서 features/로 이식 예정)
+├── lib/
+│   ├── api-client/                     # pullim-api fetch 래퍼 (쿠키 SSO + CSRF) — 구 packages/api-client
+│   ├── auth/                           # auth-context, pullim-session-client
+│   ├── mock/                           # mock 데이터 (pullim-api 로 점진 교체 중)
+│   ├── planner/                        # 도메인 helper (d-day-tier, day-nav, pullim-client 등)
+│   ├── hooks/ · tokens/
+│   └── utils.ts                        # cn 등
+├── public/
+├── __tests__/                          # Jest 단위 테스트
+├── config/jest.setup.ts                # 공통 Jest mock (next/navigation 등)
+├── test/setup.ts                       # 앱 Jest setup
+├── proc/                               # plan / spec / knowhow / archive / research
+├── input/                              # 기획 문서 (docs-archive 권위)
+├── jest.config.ts · tsconfig.json · next.config.ts
+├── package.json · bun.lock             # bun (워크스페이스 아님)
+└── Dockerfile
 ```
 
-## 2. 작업 영역별 boundary
+## UI 컴포넌트 — shadcn/ui 사용
 
-### apps/planner — Planner FE
-- **편집 영역**: 페이지, 컴포넌트, mock, lib, public 등 자유
-- **앱별 상세 가이드**: [apps/planner/CLAUDE.md](apps/planner/CLAUDE.md) — UI 컴포넌트 소스, i18n 미도입, 디렉터리, 코드 패턴, 테스트 등
-- **AI 리뷰어 가이드**: [apps/planner/AGENTS.md](apps/planner/AGENTS.md) — Must/Should Fix 체크리스트
-- **도메인 컴포넌트** — `apps/planner/components/features/<domain>/{containers,presenters,components,hooks}/` 컨벤션 ([AGENTS.md](AGENTS.md) Container/Presenter 표 참조)
-  - 진행 중인 재편: [proc/plan/2026-05-26_container-presenter-adoption.md](proc/plan/2026-05-26_container-presenter-adoption.md) ⚠️ **plan 본문은 D-Lite 이전 작성** — 경로 표기가 `src/components/...`, `src/app/...` 기준이다. 실제 코드는 이미 `src/` 제거됨 (`apps/planner/{app,components,lib}/...`). plan 의 의도·완료기준만 참고하고 경로는 현재 트리 기준으로 해석할 것
-  - `features/`로 이동된 도메인:
-    - `planner-reports` (Phase 1 — Container/Presenter 분리 완료)
-    - `planner-manage` (Phase 2 — list/new/edit 3 페이지 분리 + `usePlannerForm` hook + `PlannerWizard` 컴포넌트)
-    - `planner-home` (Phase 3 — `HomeContainer`/`HomePresenter` + `planner/*` 28개 컴포넌트 전체 흡수)
-    - `planner-onboarding` (Phase 3 — `OnboardingContainer`/`OnboardingPresenter`, widget은 planner-home에서 빌려옴)
-  - 미이동 (잔여): `apps/planner/components/{planner-builder,builder}/` — Phase 4에서 이동 예정
-  - **cross-feature import** — feature 간 컴포넌트 직접 import 허용 (예: `planner-reports` Presenter가 `planner-home`의 `today-reflection` 사용, `planner-onboarding`이 `planner-home`의 widget들 사용). 단 widget 소유권은 명확히
-- **공유 컴포넌트** (`apps/planner/components/shared/*`) — **진짜 순수 뷰**만. 다음 조건 모두 충족:
-  - state·router·side effect·mock selector 일체 없음
-  - **도메인 계산도 없음** (예: tier 분류, label 조합, 시험·블록·플래너 관련 분기). 필요한 모든 표시값은 props로 주입
-  - 도메인 계산이 필요하면 `@/lib/planner/*`(또는 적절한 lib)에 helper(예: `composeDDayChipProps`)를 두고 호출자가 compose 후 spread
-  - 현재 거주자: `d-day-chip.tsx` (compose된 props만 받음 — tier/label/title/showCalIcon)
-  - pullim `apps/web/components/shared/` 패턴 차용. **widget 추가는 신중** (`shared/`가 잡동사니 저장소가 되는 것 방지)
-- **셸**(`apps/planner/components/shell/*`), **UI 프리미티브**(`apps/planner/components/ui/*`), **brand**(`apps/planner/components/brand/*`), **tokens**(`apps/planner/lib/tokens/*`)는 플래너 단일 도메인이라 자유롭게 수정 가능 (글로벌 셸/프리미티브로 유지)
-- mock 메타 구조(`apps/planner/lib/mock/planner.ts` 등) 변경은 BE entity와 정합 깨질 수 있으니 신중
+**shadcn/ui + Base UI** 로컬 프리미티브 기반. (pullim 정본의 `@pullim/design-system` 미사용 — 별 트랙)
 
-### apps/backend — Planner BE (NestJS)
-- **편집 영역**: `apps/backend/src/modules/planner/` 등 planner 도메인 모듈, entities — Phase β 이후부터
-- pullim 패턴 그대로 차용: controller / use-cases / service / interface / infrastructure
-- **BE 전역 인프라**(`apps/backend/src/{common,config,database}/`)는 §4 글로벌 작업으로 분리 — Phase β에서 pullim common 패턴 차용 시 신중 수정 (bootstrap·filters·guards·interceptors 등은 `common/` 하위)
-- 다른 도메인(user/auth/workbook 등) 추가는 **사용자 명시 확인 필요** (현 차용 결정 = planner 단일 도메인)
+```
+@/components/ui/*       ← shadcn/ui 프리미티브 (Button, Card, Dialog, Input, Tabs 등)
+lucide-react            ← 아이콘 (직접 import 허용)
+sonner                  ← toast (직접 import 허용)
+@base-ui/react          ← 일부 복합 컴포넌트
+```
 
-### packages/* — 공유 패키지
-- 편집 시 apps/planner와 apps/backend 양쪽에 영향 → 신중
-- 현재는 빈 placeholder, Phase β·δ에서 본격 구현
+- DS 패키지(`@pullim/design-system`) 미설치 — import 시도 금지
+- 새 shadcn 컴포넌트는 `bunx shadcn@latest add <name>` 로 추가 (`components.json` 의 css 경로는 `app/globals.css`)
+- `cn` → `@/lib/utils`
 
-### 공통 문서 (read only)
-- `input/docs-archive/00_풀림_기능기획_Skill.md` — 기획 작성 가이드
-- `input/docs-archive/04_풀림_종합_마스터.md` — 풀림 전체 IA 컨텍스트
-- `input/docs-archive/06_풀림_시간표_세부기획.md` — 시간표 세부 기획
-- `input/docs-archive/08_풀림_플래너_핸드오프.md` — **플래너 도메인 권위** (이 리포의 source of truth)
-- `proc/spec/2026-05-18_be-api-design.md` — BE API 설계 spec (Phase α 머지 후 갱신됨)
+## i18n — 미도입
 
-## 3. 명령어
+- 사용자 노출 텍스트 **한국어 하드코딩** 허용 (next-intl 미설치)
+- `useTranslations()` 패턴 도입 금지 (별 트랙)
+
+## 관측 / 분석
+
+- **Sentry 미설치** — `@sentry/*` import 금지
+- **`@pullim/analytics`, `@pullim/remote-config` 미설치** — import 금지
+- **`@vercel/analytics` 도입 완료** — `app/layout.tsx` 의 `<Analytics />`, `track()` 호출 패턴 허용
+- 에러는 `console.error` 또는 `toast.error` 로만 처리
+
+## 데이터 레이어 — pullim-api (쿠키 SSO) + mock 잔존
+
+- 세션/로그인: `lib/auth/auth-context.tsx` → `pullimSession`(`lib/auth/pullim-session-client.ts`) → pullim-api `/auth/*`, `/planner/me`
+- planner 데이터: `lib/planner/client.ts`(re-export) → `lib/planner/pullim-client.ts` → pullim-api `/planner/*`
+- fetch 래퍼: `lib/api-client/` (cookie-http + CSRF, 401 시 세션 만료 전파)
+- 화면 상당수는 아직 `lib/mock/*` 폴백 — dev bypass(`NEXT_PUBLIC_DEV_AUTH_BYPASS=1` + localhost)에서는 mock 으로 렌더
+- 자체 NestJS BE(구 apps/backend)와 Bearer 클라이언트는 **2026-07-31 폐기 완료** — `fetch("/api/...")` 직접 호출 금지, 새 엔드포인트는 pullim-api 에 추가
+
+## Container/Presenter 패턴
+
+```
+components/features/<도메인>/
+├── containers/     ← 상태, 핸들러, fetch/mock 호출. "use client"
+├── presenters/     ← 순수 렌더링. props만 받음
+├── components/     ← 도메인 내부 재사용 UI
+├── hooks/          ← 도메인 hook (선택)
+└── types.ts        ← 공유 타입 (선택)
+```
+
+- `app/(student)/.../page.tsx` 는 Container만 import + Suspense 래핑
+  - **예외 — thin redirect/래퍼 페이지** (~20줄 이하): `/planner/calendar`, `/planner/day`, `/planner/week`, `/planner/month`, `/planner/builder` 등
+- Container에서 `useState`/`useCallback`/`useRouter` 사용
+- Presenter / 하위 컴포넌트에서 API 호출 / 라우팅 hook 사용 금지 (간단한 UI 상태 useState 는 허용)
+
+### cross-feature import 정책
+- feature A의 widget을 feature B에서 import 허용 (widget 소유권이 한쪽에 명확할 때)
+- 양방향 의존 금지 (feature 그래프가 사이클 없도록)
+- 빌려오는 쪽은 widget을 **있는 그대로** 사용 (감싸서 동작 변경 금지)
+- 진짜 순수 프리젠테이션(state·router·side effect·도메인 계산 없음)만 `components/shared/` 승격 — 표시값은 전부 props 주입, 도메인 계산은 `lib/planner/*` helper 로
+
+## 스타일링
+
+- Tailwind CSS v4 만 사용 (인라인 style 금지)
+- 모바일 우선 반응형: 기본 → `md:` → `lg:`
+- shadcn semantic 토큰 우선: `text-foreground`, `bg-background`, `border-border`
+- 교육 서비스 특성상 **촘촘한 UI 권장**, 과도한 여백 지양
+
+## 수정 금지 영역 (사용자 명시 확인 필요)
+
+| 경로 | 이유 |
+|---|---|
+| `lib/hooks/` | 개발자 전용 |
+| `package.json` | 의존성 변경 |
+| `next.config.ts` · `tsconfig.json` | 설정 변경 |
+| `.github/workflows/**` | CI/Codex Review 자동화 |
+| 이 가이드 / AGENTS.md / README.md | 컨벤션 변경은 별도 작업으로 |
+
+## 명령어
 
 | 작업 | 명령 |
 |---|---|
 | 의존성 설치 | `bun install` |
-| Planner FE dev (port 3030) | `bun run dev:planner` |
-| Backend dev (port 4030) | `bun run dev:backend` |
-| 둘 다 dev (turbo 병렬) | `bun run dev` |
-| Planner build (standalone) | `bun run build:planner` |
-| Backend build | `bun run build:backend` |
-| 전체 build | `bun run build` |
-| 전체 typecheck | `bun run typecheck` |
-| 전체 lint | `bun run lint` |
-| Postgres 컨테이너 | `bun run db:up` / `db:down` / `db:reset` |
+| dev (port 3006) | `bun run dev` |
+| build (standalone) | `bun run build` |
+| typecheck | `bun run typecheck` |
+| lint | `bun run lint` |
+| test (Jest) | `bun run test` |
 
-특정 워크스페이스에만 명령 실행:
-```
-bun --filter @pullim-planner/planner <script>
-bun --filter @pullim-planner/backend <script>
-```
+환경변수는 리포 루트 `.env.local` (템플릿: `.env.example`). 로컬 SSO 값은 런북 참조.
 
-## 4. 락인 컨벤션
+## Orchestration 체크리스트 (작업 마치기 전)
 
-이 리포는 *영구 플래너 락인*이라 별도 도메인 선언 없이도 planner boundary가 기본값입니다.
-
-### 해도 되는 것 (편집)
-- `apps/planner/` 내 페이지·컴포넌트·mock·lib 수정·신규
-- `apps/backend/src/modules/planner/` 내 BE 작업 (Phase β 이후)
-- 마이그레이션 plan(`proc/plan/2026-05-26_pullim-be-adoption.md`) 의 Phase 진행
-
-### 사용자 명시 확인 필요 (글로벌 작업)
-- root 파일(`package.json`, `turbo.json`, `tsconfig.base.json`, `docker-compose.yml`) 편집
-- `.github/workflows/**` 편집 (CI/Codex Review 등 저장소 전체 자동화 동작 변경)
-- `packages/*` 내부 인터페이스 변경 (apps 양쪽 영향)
-- `apps/backend/src/{common,config,database}/*` 편집 (BE 전역 영향. bootstrap·filters·guards·interceptors 등은 `common/` 하위)
-- 새 도메인 모듈 추가 (user, auth, workbook 등 — pullim에서 추가 차용)
-- 이 가이드 / AGENTS.md / README.md 편집
-
-## 5. Orchestration 체크리스트 (작업 마치기 전)
-
-1. **`apps/planner/components/shell/nav-config.ts`** — `plannerSection` 안 href가 실제 라우트와 일치하는지
+1. **`components/shell/nav-config.ts`** — `plannerSection` 안 href가 실제 라우트와 일치하는지
 2. **`input/docs-archive/08_풀림_플래너_핸드오프.md`** — 권위 문서의 IA·용어와 코드가 어긋나지 않는지
-3. **`apps/planner/lib/mock/planner.ts`** — 시간표·블록·컨디션·번아웃 등 시그니처 데이터 구조 일관성
-4. **`apps/backend/src/entities/`** (Phase γ 이후) — entity 시그니처와 mock·spec 정합
+3. **`lib/mock/planner.ts`** — 시간표·블록·컨디션·번아웃 등 시그니처 데이터 구조 일관성 (pullim-api 계약과 정합)
+4. **커밋 전**: `bun run typecheck` · `bun run lint` · `bun run test` 통과
 5. **Codex Review 통과** — PR 머지 전 필수
-
-## 6. 컨벤션 변경
-
-이 가이드 자체를 수정해야 할 때는 **글로벌 작업**으로 분리. 일반 작업 중에 이 파일을 수정하지 말 것.

@@ -60,3 +60,7 @@ daily_outcome/
 
 # 기획 산출물 (대용량 PDF·스크린샷 — Drive/Notion 공유, git 제외)
 proc/screendoc/
+
+# 세션 도구 산출물 (Claude Code / Playwright MCP)
+.omc/
+.playwright-mcp/
