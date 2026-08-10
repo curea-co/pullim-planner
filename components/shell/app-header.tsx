@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, LogOut, Settings } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -110,26 +110,25 @@ function ProfileMenu() {
               '매뉴얼'·'문의하기'는 제거: 온보딩은 최초 1회로 충분하고, 문의는 레일 카드(RailFooter)로
               충분하다는 제품 결정. md 미만에서 온보딩·문의 진입점이 없어지는 것은 **수용된 트레이드오프**
               (Codex #154·#157 지적을 오너가 명시적으로 검토 후 반려).
+              **메뉴 항목 아이콘 없음** — OS 사용자 메뉴는 텍스트만 쓴다(OsTopbar 링크 nav·로그아웃
+              버튼 모두 글리프 없음). 플래너만 lucide 아이콘을 달면 같은 메뉴가 서로 달라 보인다(QA(OS) #91).
               OS 설정은 외부 앱이라 하드 내비게이션(쿠키 Domain=.pullim.ai 자동 동반).
               URL 은 티어 안전장치(osHomeUrl — env 미설정이면 항목 미노출) 재사용. */}
           {osHomeUrl() && (
             <DropdownMenuItem
               onClick={() => { window.location.href = `${osHomeUrl()}/os/settings`; }}
-              className="gap-1.5 px-2 py-1.5 text-sm"
+              className="px-2 py-1.5 text-sm"
             >
-              <Settings className="h-4 w-4" />
               설정
             </DropdownMenuItem>
           )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem
-            onClick={handleLogout}
-            variant="destructive"
-            className="gap-1.5 px-2 py-1.5 text-sm"
-          >
-            <LogOut className="h-4 w-4" />
+          {/* 로그아웃 — OS(pullim-web OsTopbar)는 본문 잉크색 버튼이다(`color: var(--ink-2)`).
+              destructive(빨강)는 OS 에 없는 위험 강조라 QA(OS) #91 에서 '검은색' 으로 정정.
+              variant 를 default 로 두면 팝오버 본문색(text-popover-foreground)을 그대로 상속한다. */}
+          <DropdownMenuItem onClick={handleLogout} className="px-2 py-1.5 text-sm">
             로그아웃
           </DropdownMenuItem>
         </DropdownMenuGroup>
