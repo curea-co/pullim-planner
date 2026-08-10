@@ -65,6 +65,29 @@ bun run dev               # Next.js dev (port 3006)
 
 - **Bun ≥ 1.3** — 패키지 매니저·런타임
 
+## Docker 이미지 빌드
+
+`Dockerfile` 은 있지만(standalone 출력, `docker buildx build`) **이 레포에는 아직 이미지를 빌드·푸시하는 CI 워크플로가 없다**(`.github/workflows/ci.yml` 은 lint/typecheck/test/`next build` 까지만 — dev 배포는 위 Vercel). 수동으로 이미지를 빌드하는 주체는 `next build` 가 브라우저 번들에 굽는 `NEXT_PUBLIC_*` 값을 **반드시 `--build-arg` 로 전달**해야 한다(`.dockerignore` 가 `.env*` 를 제외해 이미지 안엔 로컬 값이 없음 — 컨테이너 런타임에 env 를 넣어도 이미 구워진 브라우저 코드엔 반영되지 않는다):
+
+```bash
+docker buildx build --platform linux/arm64 -f Dockerfile \
+  --build-arg NEXT_PUBLIC_PULLIM_API_URL=https://dev-api.pullim.ai \
+  --build-arg NEXT_PUBLIC_PULLIM_CSRF_COOKIE=dev-pullim-csrf \
+  --build-arg NEXT_PUBLIC_PULLIM_LOGIN_URL=<환경별 로그인 host> \
+  --build-arg NEXT_PUBLIC_PULLIM_OS_URL=<환경별 OS host> \
+  --build-arg NEXT_PUBLIC_DEV_AUTH_BYPASS=0 \
+  --build-arg NEXT_PUBLIC_ENABLE_DEV_RESET=false \
+  --build-arg NEXT_PUBLIC_ROUTINE_ENABLED=1 \
+  --build-arg NEXT_PUBLIC_REPORTS_ENABLED=1 \
+  --build-arg NEXT_PUBLIC_WEAKNESS_ENABLED=1 \
+  --build-arg NEXT_PUBLIC_NOTIFICATIONS_ENABLED=1 \
+  --build-arg NEXT_PUBLIC_Q_LINK_ENABLED=1 \
+  --build-arg NEXT_PUBLIC_REFLECTION_ENABLED=1 \
+  .
+```
+
+값 설명은 `.env.example`. 시크릿(비-`NEXT_PUBLIC_*`)은 build arg 로 넘기지 않는다 — 런타임 env 로만.
+
 ## 기술 스택
 
 | 레이어 | 기술 |
