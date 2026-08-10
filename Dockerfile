@@ -19,7 +19,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # 이미지에서 제외하므로 이 값들은 오직 --build-arg 로만 주입할 수 있다(시크릿 아닌 공개값만 —
 # 실제 값은 레포 루트 .env.example 참고. 이 레포에는 이미지를 빌드하는 CI 워크플로가 아직
 # 없으므로 — ci.yml 은 lint/typecheck/test/`next build` 까지만 수행 — 이미지를 빌드하는
-# 주체가 환경(local/dev/prod)에 맞는 값을 아래 키로 넘겨야 한다. PR 본문 참고).
+# 주체가 환경(local/dev/prod)에 맞는 값을 아래 키로 넘겨야 한다. 빌드 예시·키별 성격은
+# proc/2026-08-10_planner-docker-build-args.md 참고).
 # ⚠️ 전부가 "브라우저 번들 전용"은 아니다 — NEXT_PUBLIC_ROUTINE_ENABLED·NEXT_PUBLIC_REPORTS_ENABLED
 # 는 Server Component(app/(student)/planner/routine/*·reports/page.tsx)가 모듈 스코프에서
 # process.env 로 직접 읽어 redirect 게이트에 쓴다 — server.js 실행 시점에도 실제로 필요하므로
