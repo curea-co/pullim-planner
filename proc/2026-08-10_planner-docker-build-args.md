@@ -25,15 +25,17 @@ docker buildx build --platform linux/arm64 -f Dockerfile \
   --build-arg NEXT_PUBLIC_PULLIM_OS_URL=<환경별 OS host> \
   --build-arg NEXT_PUBLIC_DEV_AUTH_BYPASS=0 \
   --build-arg NEXT_PUBLIC_ENABLE_DEV_RESET=false \
-  --build-arg NEXT_PUBLIC_ROUTINE_ENABLED=1 \
-  --build-arg NEXT_PUBLIC_REPORTS_ENABLED=1 \
-  --build-arg NEXT_PUBLIC_WEAKNESS_ENABLED=1 \
-  --build-arg NEXT_PUBLIC_NOTIFICATIONS_ENABLED=1 \
-  --build-arg NEXT_PUBLIC_Q_LINK_ENABLED=1 \
-  --build-arg NEXT_PUBLIC_REFLECTION_ENABLED=1 \
+  --build-arg NEXT_PUBLIC_ROUTINE_ENABLED=0 \
+  --build-arg NEXT_PUBLIC_REPORTS_ENABLED=0 \
+  --build-arg NEXT_PUBLIC_WEAKNESS_ENABLED=0 \
+  --build-arg NEXT_PUBLIC_NOTIFICATIONS_ENABLED=0 \
+  --build-arg NEXT_PUBLIC_Q_LINK_ENABLED=0 \
+  --build-arg NEXT_PUBLIC_REFLECTION_ENABLED=0 \
   .
 ```
 
 값 설명은 `.env.example`. 시크릿(비-`NEXT_PUBLIC_*`)은 build arg 로 넘기지 않는다 — 런타임 env 로만.
+
+⚠️ 기능 플래그 6개(`ROUTINE`/`REPORTS`/`WEAKNESS`/`NOTIFICATIONS`/`Q_LINK`/`REFLECTION`)는 **BE 미구현 표면의 mock 노출을 막는 게이트**라 위 예시도 `.env.example` 과 같이 차단(`0`)을 기본으로 둔다. 켜는 것은 해당 표면의 BE 가 준비된 뒤 **의도적으로 그 키만** `1` 로 바꾸는 것 — `NEXT_PUBLIC_*` 는 `next build` 시점에 번들에 구워지므로 잘못 켠 값은 이미지 재빌드 전까지 되돌릴 수 없다.
 
 위 `--build-arg` 플래그는 스테이지별로 중복 전달할 필요 없다 — Docker 가 같은 이름의 최상위 build-arg 값을 `builder`·`runner` 양쪽 `ARG` 선언에 그대로 공급하므로, 한 번의 `docker buildx build` 호출로 `NEXT_PUBLIC_ROUTINE_ENABLED`·`NEXT_PUBLIC_REPORTS_ENABLED` 가 브라우저 번들과 `runner` 스테이지 `server.js` 런타임에 동일하게 반영된다.
