@@ -124,12 +124,27 @@ export default function NewPlannerContainer() {
    * `router.replace` 대신 네이티브 `history.replaceState` 를 쓰는 이유 — 쿼리만 바꾸는
    * 라우팅이라도 세그먼트 재렌더가 끼면 방금 세팅한 `done` 이 날아갈 위험이 있는데, 완료
    * 화면은 이 한 번뿐인 자리라 그 실패가 치명적이다. Next App Router 는 네이티브 history
-   * 메서드를 지원하고 `useSearchParams` 와도 동기화되므로 표식은 그대로 읽힌다.
+   * 메서드를 지원하고 `useSearchParams` 와도 동기화되므로 표식은 그대로 읽힌다
+   * (Next 16 문서 "Linking and Navigating — Native History API").
+   *
+   * state 는 `null` 로 덮지 않고 **현재 엔트리의 payload 를 이어받는다** — 통째로 지우면
+   * 이 엔트리에 실려 있던 값이 같이 사라져 뒤로/앞으로 복원이 어긋난다 (codex).
+   *
+   * 단 Next 내부 표식(`__NA`/`_N`)만은 빼고 넘긴다. App Router 가 패치한 replaceState 는
+   * 그 키가 실려 오면 "Next 내부가 부른 호출"로 보고 라우터 URL 동기화를 건너뛰는데
+   * (무한루프 방지 분기), 그러면 `useSearchParams` 가 표식을 못 읽고 다음 라우터 커밋이
+   * 표식 없는 원래 URL 로 되돌려 버려 중복 생성 차단 자체가 무너진다. 빼고 넘기면 Next 가
+   * 현재 엔트리의 `__NA`·내부 트리를 다시 붙여 주므로 복원 정보도 그대로 산다.
    */
   function stampCreated(plannerId: string) {
     if (typeof window === 'undefined') return;
+    const prev: unknown = window.history.state;
+    const carried: Record<string, unknown> =
+      prev && typeof prev === 'object' ? { ...(prev as Record<string, unknown>) } : {};
+    delete carried.__NA;
+    delete carried._N;
     window.history.replaceState(
-      null,
+      carried,
       '',
       `${window.location.pathname}?${CREATED_PARAM}=${encodeURIComponent(plannerId)}`,
     );

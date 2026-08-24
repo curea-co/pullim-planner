@@ -95,6 +95,31 @@ describe('활성화 성공 — 완료 화면과 생성 표식', () => {
     // 완료 화면으로 갈아끼우는 것뿐 — 새 히스토리 엔트리를 쌓지 않는다.
     expect(mockPush).not.toHaveBeenCalled();
   });
+
+  it('표식을 붙여도 현재 엔트리의 history state payload 를 지우지 않는다', async () => {
+    mockCreate.mockResolvedValue({ id: 'planner-1', name: '2026 9월 모의평가' });
+    mockActivate.mockResolvedValue(undefined);
+    // 이 엔트리에 이미 실려 있는 state — App Router 가 뒤로/앞으로 복원에 쓰는 내부 트리와
+    // 그 밖의 payload 를 흉내낸다. 표식을 붙이면서 이걸 통째로 날리면 복원이 깨진다 (codex).
+    window.history.replaceState(
+      { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: { tree: 'stub' }, keep: 'me' },
+      '',
+      '/planner/manage/new',
+    );
+
+    await renderContainer();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: WIZARD })); });
+
+    expect(window.location.search).toBe('?created=planner-1');
+    expect(window.history.state).toMatchObject({
+      __PRIVATE_NEXTJS_INTERNALS_TREE: { tree: 'stub' },
+      keep: 'me',
+    });
+    // 단 Next 내부 표식(__NA/_N)은 실어 보내지 않는다 — 실어 보내면 App Router 가 패치한
+    // replaceState 가 "내부 호출"로 보고 URL 동기화를 건너뛴다. 실제 앱에서는 Next 가
+    // 현재 엔트리의 __NA 를 다시 붙여 주므로 복원 정보는 그대로 남는다.
+    expect(window.history.state).not.toHaveProperty('__NA');
+  });
 });
 
 describe('활성화 실패(부분 성공) — 완료 화면을 띄우지 않는다', () => {
