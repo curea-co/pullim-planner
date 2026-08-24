@@ -19,6 +19,7 @@ import {
 } from '@/lib/mock';
 import { BLOCK_TYPE_STRIPE } from '@/lib/planner/block-type-style';
 import { type PreviewDay, type PreviewItem } from '@/lib/planner/preview-map';
+import { RoutineConflictNotice } from './routine-conflict-notice';
 import { daysBetween } from '@/lib/planner/exam-presets';
 import {
   type PlannerForm, type ScopeState, blockPatternMeta, motivationStyleMeta,
@@ -1180,10 +1181,15 @@ type ConfirmProps = {
    * 실제 bake 규칙 결과를 표시한다. 미주입(bypass)·실패 시 휴리스틱 폴백.
    */
   onServerPreview?: () => Promise<PreviewDay[] | null>;
+  /**
+   * 루틴 원본 시각 수정(`PATCH /planner/routines/:routineId`) — 충돌 배너의 '옮기기' 조치용.
+   * 미주입이면 그 조치를 노출하지 않는다.
+   */
+  onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;
 };
 
 export function PStep4Confirm({
-  form, setForm, scope, mode = 'create', expert, onActivate, routines, onServerPreview,
+  form, setForm, scope, mode = 'create', expert, onActivate, routines, onServerPreview, onUpdateRoutine,
 }: ConfirmProps) {
   const router = useRouter();
   const [previewIdx, setPreviewIdx] = useState(0);
@@ -1300,6 +1306,17 @@ export function PStep4Confirm({
           )}
         </ul>
       </section>
+
+      {/* 루틴 ↔ 학습 가능 시간 충돌 — 서버 미리보기가 뜨는 환경에서도 폼·루틴만으로 판정하므로
+          미리보기 소스와 무관하게 항상 정확하다(BE 는 가용 창과 무관하게 bake 한다). */}
+      {ROUTINE_ENABLED && routines && (
+        <RoutineConflictNotice
+          form={form}
+          setForm={setForm}
+          routines={routines}
+          onUpdateRoutine={onUpdateRoutine}
+        />
+      )}
 
       {previews.length === 0 ? (
         <section className="bg-pullim-slate-50 flex min-h-[120px] flex-col items-center justify-center rounded-lg p-4 text-center">

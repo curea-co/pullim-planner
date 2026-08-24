@@ -16,6 +16,7 @@ import { mapServerPreview, type PreviewDay } from '@/lib/planner/preview-map';
 import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
 import { usePlannerForm } from '../hooks/use-planner-form';
+import { useRoutineTimeUpdate } from '../hooks/use-routine-time-update';
 import EditPlannerPresenter from '../presenters/EditPlannerPresenter';
 
 export type EditTab = 'config' | 'layout';
@@ -134,6 +135,9 @@ function EditPlannerForm({
     planner ? plannerToForm(planner) : ({} as PlannerForm),
   );
 
+  // 4단계 충돌 배너의 '옮기기' — 루틴 원본 시각을 PATCH 한다(확인 다이얼로그 뒤).
+  const handleUpdateRoutine = useRoutineTimeUpdate(routines, setRoutines);
+
   // STEP8 서버 dry-run 미리보기 — PATCH 루틴 재적용(오너 확정 08-03)이 들어와 수정에서도
   // STEP5 선택(원하는 적용 집합)이 저장 결과와 일치한다. bypass·실패면 휴리스틱 폴백.
   const form = formState.form;
@@ -227,6 +231,7 @@ function EditPlannerForm({
       onSave={handleSave}
       routines={routines}
       onServerPreview={handleServerPreview}
+      onUpdateRoutine={handleUpdateRoutine}
     />
   );
 }

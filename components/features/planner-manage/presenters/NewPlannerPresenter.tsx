@@ -22,6 +22,7 @@ interface NewPlannerPresenterProps {
   onActivate: (submitted: PlannerForm) => void;
   routines?: Routine[];
   onServerPreview?: () => Promise<PreviewDay[] | null>;
+  onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;
 }
 
 export default function NewPlannerPresenter({
@@ -30,7 +31,7 @@ export default function NewPlannerPresenter({
   currentStep, canPrev, canNext, blockedReason, maxReachable,
   onPrev, onNext, onJump,
   onActivate,
-  routines, onServerPreview,
+  routines, onServerPreview, onUpdateRoutine,
 }: NewPlannerPresenterProps) {
   return (
     <div className="space-y-5">
@@ -55,6 +56,7 @@ export default function NewPlannerPresenter({
         onActivate={onActivate}
         routines={routines}
         onServerPreview={onServerPreview}
+        onUpdateRoutine={onUpdateRoutine}
       />
     </div>
   );
