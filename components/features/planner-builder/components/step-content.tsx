@@ -1195,7 +1195,7 @@ type ConfirmProps = {
    * 활성화·저장 버튼 클릭 시 호출. 부모가 createPlanner / updatePlanner 호출 + redirect 처리.
    * 미주입 시 toast + router.push('/planner') 기본 동작.
    */
-  onActivate?: (form: PlannerForm) => void;
+  onActivate?: (form: PlannerForm, summary?: ActivateSummary) => void;
   /** 실 루틴(컨테이너 주입) — 미주입 시 mock. 미리보기의 루틴 반영에 사용. */
   routines?: Routine[];
   /**
@@ -1209,6 +1209,9 @@ type ConfirmProps = {
    */
   onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;
 };
+
+/** 활성화 시점의 미리보기 집계 — 완료 화면 리캡용. */
+export type ActivateSummary = { previewDays: number; previewBlocks: number };
 
 export function PStep4Confirm({
   form, setForm, scope, mode = 'create', expert, onActivate, routines, onServerPreview, onUpdateRoutine,
@@ -1301,7 +1304,12 @@ export function PStep4Confirm({
     }
 
     if (onActivate) {
-      onActivate(form);
+      // 완료 화면이 "무엇이 만들어졌는지" 를 숫자로 보여줄 수 있게 미리보기 집계를 함께 넘긴다.
+      // 보류 루틴은 실배치가 아니라 제외한다.
+      onActivate(form, {
+        previewDays: previews.length,
+        previewBlocks: previews.reduce((n, d) => n + d.items.filter((it) => !it.held).length, 0),
+      });
       return;
     }
 

@@ -1,5 +1,7 @@
 'use client';
 
+import type { ActivateSummary } from '@/components/features/planner-builder/components/step-content';
+
 import { PageHeader } from '@/components/shell/page-header';
 import type { PlannerForm, ScopeState } from '@/components/features/planner-builder/components/builder-types';
 import type { Routine } from '@/lib/mock';
@@ -19,7 +21,7 @@ interface NewPlannerPresenterProps {
   onPrev: () => void;
   onNext: () => void;
   onJump: (n: number) => void;
-  onActivate: (submitted: PlannerForm) => void;
+  onActivate: (submitted: PlannerForm, summary?: ActivateSummary) => void;
   routines?: Routine[];
   onServerPreview?: () => Promise<PreviewDay[] | null>;
   onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;

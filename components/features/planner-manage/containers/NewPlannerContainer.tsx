@@ -14,6 +14,11 @@ import { plannerClient, toWriteInput } from '@/lib/planner/client';
 import { mapServerPreview, type PreviewDay } from '@/lib/planner/preview-map';
 import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
+import type { ActivateSummary } from '@/components/features/planner-builder/components/step-content';
+import { WizardDone, type WizardDoneSummary } from '@/components/features/planner-builder/components/wizard-done';
+import { blockPatternMeta, examTypeMeta, resolvedExamName } from '@/components/features/planner-builder/components/builder-types';
+import { daysBetween } from '@/lib/planner/exam-presets';
+import { ROUTINE_ENABLED } from '@/lib/flags';
 import { usePlannerForm } from '../hooks/use-planner-form';
 import { useRoutineTimeUpdate } from '../hooks/use-routine-time-update';
 import NewPlannerPresenter from '../presenters/NewPlannerPresenter';
@@ -35,6 +40,9 @@ export default function NewPlannerContainer() {
       .catch(() => { if (alive) setRoutines([]); });
     return () => { alive = false; };
   }, []);
+
+  // 활성화 성공 후 완료 화면 — 관리 목록으로 곧장 튕기면 방금 만든 게 뭔지 볼 자리가 없다.
+  const [done, setDone] = useState<WizardDoneSummary | null>(null);
 
   // 4단계 충돌 배너의 '옮기기' — 루틴 원본 시각을 PATCH 한다(확인 다이얼로그 뒤).
   const handleUpdateRoutine = useRoutineTimeUpdate(routines, setRoutines);
@@ -63,7 +71,27 @@ export default function NewPlannerContainer() {
     }
   }, [form]);
 
-  async function handleActivate(submitted: PlannerForm) {
+  /** 활성화 직후 보여줄 리캡 — 폼과 미리보기 집계에서만 만든다(추가 fetch 없음). */
+  function buildDoneSummary(submitted: PlannerForm, summary?: ActivateSummary): WizardDoneSummary {
+    const units = submitted.subjectUnits ?? {};
+    const dday = submitted.examStartDate
+      ? daysBetween(todayIsoKst(), submitted.examStartDate)
+      : null;
+    return {
+      plannerName: resolvedExamName(submitted),
+      ddayLabel: dday === null ? null : dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY' : `D+${-dday}`,
+      examLabel: examTypeMeta[submitted.examType ?? 'mock'].label,
+      subjectCount: Object.keys(units).length,
+      unitCount: Object.values(units).reduce((a, b) => a + (b?.length ?? 0), 0),
+      previewBlocks: summary?.previewBlocks ?? 0,
+      previewDays: summary?.previewDays ?? 0,
+      patternLabel: blockPatternMeta[submitted.blockPattern].label,
+      patternSpec: blockPatternMeta[submitted.blockPattern].spec,
+      routineCount: ROUTINE_ENABLED ? submitted.routineIds.length : null,
+    };
+  }
+
+  async function handleActivate(submitted: PlannerForm, summary?: ActivateSummary) {
     // 로컬 dev 우회 — pullim-api CORS/쿠키 미지원 환경에서 실 API 대신 공유 mock store에
     // 생성·활성화한다. ManagePlannersContainer 의 confirmActivate 와 동일 store(lib/mock/planner)라
     // 관리/홈 화면과 일관되며, 위저드를 끝까지 검증할 수 있다.
@@ -74,11 +102,7 @@ export default function NewPlannerContainer() {
         appliedRoutineIds: submitted.routineIds,
       });
       activatePlanner(planner.id);
-      toast.success('🎯 새 시간표 활성화 완료', {
-        description: `${planner.name} — 홈 시간표가 생성됐어요`,
-        duration: 3000,
-      });
-      router.push('/planner/manage');
+      setDone(buildDoneSummary(submitted, summary));
       return;
     }
     // create 와 activate 를 분리해 부분 성공을 구분한다 — 한 catch 로 뭉치면 create 성공 후
@@ -99,10 +123,8 @@ export default function NewPlannerContainer() {
     }
     try {
       await plannerClient.activate(planner.id);
-      toast.success('🎯 새 시간표 활성화 완료', {
-        description: `${planner.name} — 홈 시간표가 생성됐어요`,
-        duration: 3000,
-      });
+      setDone(buildDoneSummary(submitted, summary));
+      return;
     } catch {
       // 생성은 성공 — 재시도로 중복 생성되지 않게 안내만 하고 관리 화면으로 보낸다.
       toast.warning('시간표는 생성됐지만 활성화에 실패했어요', {
@@ -111,6 +133,16 @@ export default function NewPlannerContainer() {
       });
     }
     router.push('/planner/manage');
+  }
+
+  if (done) {
+    return (
+      <WizardDone
+        summary={done}
+        onHome={() => router.push('/planner')}
+        onManage={() => router.push('/planner/manage')}
+      />
+    );
   }
 
   return (
