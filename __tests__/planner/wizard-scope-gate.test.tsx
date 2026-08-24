@@ -155,7 +155,23 @@ describe('확인 게이트 — 확인 전에는 넘어가지 못한다', () => {
     click('영어');
     click(/시험 범위가 따로 있어/);
 
-    expect(blocker()).toBe('시험 범위를 골라주세요');
+    expect(blocker()).toBe('영어 시험 범위를 골라주세요');
+  });
+
+  it('직접 고르기 확인은 과목별이다 — 나중에 추가한 과목도 다시 묻는다', () => {
+    // 전역 플래그였을 때는 영어를 편집해 증명이 서면 뒤에 추가한 수학이 자동으로 채워진
+    // 전 범위 그대로 통과했다 — '직접 고르기' 를 고른 의미가 사라진다(Codex).
+    render(<Harness />);
+    click('영어');
+    click(/시험 범위가 따로 있어/);
+    fireEvent.click(screen.getAllByRole('button', { name: /단원 직접 편집/ })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /적용/ }));
+    expect(blocker()).toBeNull();
+
+    click('수학');
+    expect(blocker()).toBe('수학 선택과목을 골라주세요');
+    click('미적분');
+    expect(blocker()).toBe('수학 시험 범위를 골라주세요');
   });
 
   it('답을 바꾸면 이전 답의 증명은 무효가 된다', () => {
@@ -165,7 +181,7 @@ describe('확인 게이트 — 확인 전에는 넘어가지 못한다', () => {
     expect(blocker()).toBeNull();
 
     click(/시험 범위가 따로 있어/);
-    expect(blocker()).toBe('시험 범위를 골라주세요');
+    expect(blocker()).toBe('영어 시험 범위를 골라주세요');
   });
 });
 
@@ -178,7 +194,6 @@ describe('수정 모드 — 만들 때 답한 걸 다시 묻지 않는다', () =
     const scope = initialScopeState(saved);
 
     expect(scope.answer).toBe('custom');
-    expect(scope.customTouched).toBe(true);
     expect(scope.settled).toEqual(['math', 'english']);
     expect(scopeBlocker(saved, scope)).toBeNull();
   });

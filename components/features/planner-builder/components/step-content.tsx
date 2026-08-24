@@ -244,6 +244,10 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
         ) : null}
       </div>
 
+      {/* 자유 목표는 최소 경로에서도 받는다 — 시험명처럼 파생할 근거가 없고, 비우면
+          BE `target.value`(free 는 비빈 문자열 필수)에 걸려 저장 자체가 실패한다. */}
+      {examType === 'other' && !expert && <TargetField form={form} setForm={setForm} />}
+
       {/* 자동 시험명 — 이름은 시험 종류·날짜에서 파생한다. 고치려면 '직접 설정'. */}
       <section className="bg-pullim-slate-900 flex items-center justify-between gap-3 rounded-xl p-3.5 text-white">
         <div className="min-w-0">

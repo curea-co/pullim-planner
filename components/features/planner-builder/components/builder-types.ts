@@ -272,8 +272,6 @@ export type ScopeState = {
   electives: Partial<Record<SubjectKey, string[]>>;
   /** 과목별 '마지막으로 배운 단원' — progress 답변의 증명 */
   progressCut: Partial<Record<SubjectKey, string>>;
-  /** custom 답변의 증명 — 단원을 실제로 손댔는가 */
-  customTouched: boolean;
   /** 범위가 이미 확정된 과목 — 수정 모드 프리필·단원 직접 편집으로 넣은 과목 */
   settled: SubjectKey[];
 };
@@ -286,11 +284,11 @@ export function initialScopeState(form: PlannerForm): ScopeState {
   const units = form.subjectUnits ?? {};
   const subjects = Object.keys(units) as SubjectKey[];
   if (subjects.length === 0) {
-    return { answer: null, electives: {}, progressCut: {}, customTouched: false, settled: [] };
+    return { answer: null, electives: {}, progressCut: {}, settled: [] };
   }
   const electives: Partial<Record<SubjectKey, string[]>> = {};
   for (const s of subjects) electives[s] = inferElectives(s, units[s] ?? []);
-  return { answer: 'custom', electives, progressCut: {}, customTouched: true, settled: subjects };
+  return { answer: 'custom', electives, progressCut: {}, settled: subjects };
 }
 
 /** 선택과목을 아직 고르지 않아 범위를 확정할 수 없는 과목인가 */
@@ -302,6 +300,12 @@ export function needsElective(subject: SubjectKey, scope: ScopeState): boolean {
 
 /** 1단계를 통과하지 못하는 이유 — 없으면 null */
 export function goalBlocker(form: PlannerForm): string | null {
+  // 자유 목표는 **학생만 아는 값**이라 최소 경로에서도 받는다. 시험명처럼 파생할 근거가 없고
+  // (BE `target.value` 는 free 일 때 비빈 문자열 필수라 빈 값이면 저장 자체가 400 이다),
+  // 비워 두면 모든 플래너가 '자유 목표' 라는 같은 이름으로 저장된다.
+  if (form.examType === 'other' && !form.targetGoal?.trim()) {
+    return '무엇을 목표로 할지 적어주세요';
+  }
   if (!form.examStartDate) return '시험 날짜를 정해주세요';
   // 계획표는 미래 대상 — 이미 **종료된** 시험 차단. 판정은 종료일 기준(진행 중 범위 시험은
   // 기존 시작일 그대로 저장 가능해야 한다). 단일 시험은 종료일=시작일이라 동작 동일.
@@ -325,7 +329,14 @@ export function scopeBlocker(form: PlannerForm, scope: ScopeState): string | nul
     const noCut = subjects.find(s => !scope.settled.includes(s) && !scope.progressCut[s]);
     if (noCut) return `${subjectLabels[noCut] ?? noCut} 진도를 눌러주세요`;
   }
-  if (scope.answer === 'custom' && !scope.customTouched) return '시험 범위를 골라주세요';
+  if (scope.answer === 'custom') {
+    // 확인은 **과목별**이다. 전역 플래그로 두면 영어를 직접 편집한 뒤 수학을 새로 추가했을 때
+    // 수학은 자동으로 채워진 전 범위 그대로 통과한다 — '직접 고르기' 를 고른 의미가 사라진다(Codex).
+    const unconfirmed = subjects.find(s => !scope.settled.includes(s));
+    if (unconfirmed) {
+      return `${subjectLabels[unconfirmed] ?? unconfirmed} 시험 범위를 골라주세요`;
+    }
+  }
 
   // 과목만 있고 단원이 비면 시간표가 만들어지지 않는다 — 직접 편집으로 비웠을 때 방어.
   const emptySubject = subjects.find(s => (units[s]?.length ?? 0) === 0);

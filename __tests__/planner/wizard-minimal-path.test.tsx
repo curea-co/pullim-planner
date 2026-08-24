@@ -10,7 +10,7 @@ jest.mock('sonner', () => ({ toast: { error: jest.fn(), success: jest.fn(), warn
 
 import {
   autoExamName, initialPlannerForm, initialScopeState, plannerStepConfig,
-  resolvedExamName, withAutoExamName, formToPlannerPatch, hasCustomBasics,
+  resolvedExamName, withAutoExamName, formToPlannerPatch, hasCustomBasics, goalBlocker,
   type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
 import { examPresets, presetNameForDate } from '@/lib/planner/exam-presets';
@@ -68,6 +68,29 @@ describe('시험일 프리셋', () => {
     const [next] = examPresets('suneung', TODAY);
     expect(presetNameForDate('suneung', next.date)).toBe(next.name);
     expect(presetNameForDate('suneung', '2026-11-01')).toBeNull();
+  });
+});
+
+describe('자유 목표 — 최소 경로에서도 받는다', () => {
+  // 시험명은 종류·날짜에서 파생할 수 있지만 자유 목표는 파생할 근거가 없다. 게다가 BE
+  // `target.value` 는 free 일 때 비빈 문자열 필수라, 비워 두면 저장이 400 으로 실패한다.
+  it('목표를 적기 전에는 1단계를 통과하지 못한다', () => {
+    const form = formWith({ examType: 'other', examStartDate: '2026-12-01', targetGoal: '' });
+    expect(goalBlocker(form)).toBe('무엇을 목표로 할지 적어주세요');
+  });
+
+  it('목표를 적으면 통과한다', () => {
+    const form = formWith({ examType: 'other', examStartDate: '2026-12-01', targetGoal: '토익 750점' });
+    expect(goalBlocker(form)).toBeNull();
+  });
+
+  it('공백만 적은 것은 통과로 치지 않는다', () => {
+    const form = formWith({ examType: 'other', examStartDate: '2026-12-01', targetGoal: '   ' });
+    expect(goalBlocker(form)).not.toBeNull();
+  });
+
+  it('시험 종류에는 목표를 요구하지 않는다', () => {
+    expect(goalBlocker(formWith({ examType: 'mock', examStartDate: '2026-12-01' }))).toBeNull();
   });
 });
 

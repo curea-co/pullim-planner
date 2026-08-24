@@ -111,7 +111,7 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
   function setAnswer(answer: ScopeAnswer) {
     if (scope.answer === answer) return;
     // 답을 바꾸면 범위를 처음부터 다시 정한다 — 이전 답의 증명(커트·직접 편집)은 무효.
-    commit({ ...scope, answer, progressCut: {}, customTouched: false, settled: [] });
+    commit({ ...scope, answer, progressCut: {}, settled: [] });
   }
 
   function setCut(s: SubjectKey, unit: string) {
@@ -125,7 +125,6 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
   function saveUnits(s: SubjectKey, next: string[]) {
     const nextScope: ScopeState = {
       ...scope,
-      customTouched: true,
       settled: scope.settled.includes(s) ? scope.settled : [...scope.settled, s],
     };
     setScope(nextScope);
