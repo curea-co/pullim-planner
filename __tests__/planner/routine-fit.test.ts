@@ -147,6 +147,18 @@ describe('diagnoseRoutineFit', () => {
     expect(widenWindows(form, diagnoseRoutineFit(form, rs), 'r2').weekdayHours).toEqual({ start: 7, end: 23 });
   });
 
+  it('겹침 보류는 fetch 순이 아니라 form.routineIds 순으로 정한다', () => {
+    // Codex 재현 — 목록은 [r1, r2] 로 오지만 선택 순서는 [r2, r1]. 미리보기는 선택 순서대로
+    // 훑으며 뒤에 오는 r1 을 보류로 그리므로, 배너의 조치 대상도 r1 이어야 한다.
+    const rs = [
+      routine({ id: 'r1', title: '수학 인강', startTime: '19:00', endTime: '20:00' }),
+      routine({ id: 'r2', title: '영어 듣기', startTime: '19:30', endTime: '20:30' }),
+    ];
+    const issues = diagnoseRoutineFit(formWith({ routineIds: ['r2', 'r1'] }), rs);
+    expect(issues.map(i => [i.routineId, i.held])).toEqual([['r1', '루틴 겹침']]);
+    expect(issues[0].title).toBe('수학 인강');
+  });
+
   it('창을 담으려면 필요한 시각을 시 단위로 알려준다', () => {
     const [issue] = diagnoseRoutineFit(formWith({ routineIds: ['r1'] }), [routine({ id: 'r1', startTime: '16:30', endTime: '17:20' })]);
     expect(issue.needStartHour).toBe(16);

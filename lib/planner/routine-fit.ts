@@ -99,6 +99,8 @@ export function subtractRanges(win: [number, number], busy: readonly [number, nu
  * 루틴(창 밖인데 서로도 겹침)에서 겹침이 창 사유를 지우면 배너에서 '넓히기' 조치가 사라져
  * 학생이 창 충돌 자체를 놓친다(Codex).
  *
+ * @param routines **넘긴 순서가 곧 우선순위** — 겹침은 "먼저 놓인 쪽이 이기고 뒤가 밀린다"
+ *   라서 배열 순서가 결과를 바꾼다. 권위 있는 순서는 `form.routineIds` 다(아래 참조).
  * @param routineDay 0=월 … 6=일 (mock `Routine.weekdays` 와 동일 좌표계)
  */
 export function placeRoutinesForDay(
@@ -152,7 +154,16 @@ const WEEKEND_DAYS = [5, 6] as const;
  * 조치가 서로 다르기 때문이다 — 창 문제는 '넓히기'로 풀리지만 겹침은 그대로 남는다.
  */
 export function diagnoseRoutineFit(form: PlannerForm, routines: readonly Routine[]): RoutineFitIssue[] {
-  const selected = routines.filter(r => form.routineIds.includes(r.id));
+  // 겹침은 "먼저 놓인 쪽이 이기고 뒤가 밀린다" 라서 **순서가 결과를 바꾼다**. 그 권위 있는
+  // 순서는 fetch 순(최신순 등)이 아니라 `form.routineIds` 다 — 확인 단계 미리보기가
+  // (`step-content.tsx` 의 `generatePreview`) `form.routineIds` 를 그대로 훑으며 뒤에
+  // 오는 루틴을 '루틴 겹침'으로 보류시키기 때문. `routines` 순서로 재구성하면
+  // routineIds=[r2, r1] · routines=[r1, r2] 인 경우 미리보기는 r1 을 보류로 그리는데
+  // 배너는 r2 를 문제 루틴으로 안내해 조치 대상이 어긋난다(Codex).
+  const byId = new Map(routines.map(r => [r.id, r]));
+  const selected = form.routineIds
+    .map(id => byId.get(id))
+    .filter((r): r is Routine => r !== undefined);
   if (selected.length === 0) return [];
 
   const contexts = [
@@ -245,6 +256,9 @@ export function suggestMoveIn(
   const winEnd = Math.min(...wins.map(w => w.end)) * 60;
   if (winEnd - winStart < length) return null;
 
+  // 여기서는 `routines` 순서를 맞출 필요가 없다 — 겹침 우선순위를 따지지 않고 선택한
+  // 다른 루틴을 **전부** 점유로 빼며, `subtractRanges` 가 시작 시각으로 정렬해 병합하므로
+  // 입력 순서가 결과를 바꾸지 않는다.
   const busy = routines
     .filter(r => r.id !== routineId && form.routineIds.includes(r.id))
     .filter(r => r.weekdays.some(w => target.weekdays.includes(w)))

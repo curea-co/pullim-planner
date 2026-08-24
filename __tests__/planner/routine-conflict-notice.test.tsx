@@ -131,6 +131,20 @@ describe('루틴 충돌 배너', () => {
     expect(screen.getByTestId('hours')).toHaveTextContent('평일 7-23');
   });
 
+  it('조치 대상은 fetch 순이 아니라 선택 순서로 정해진다', () => {
+    // Codex 재현 — 루틴 목록은 [r1, r2] 로(최신순 등) 오지만 선택 순서는 [r2, r1].
+    // 미리보기는 선택 순서대로 훑어 r1 을 보류로 그리므로 배너도 r1 을 가리켜야 한다.
+    const rs = [
+      routine({ id: 'r1', title: '수학 인강', startTime: '19:00', endTime: '20:00' }),
+      routine({ id: 'r2', title: '영어 듣기', startTime: '19:30', endTime: '20:30' }),
+    ];
+    render(<Harness routines={rs} initial={{ routineIds: ['r2', 'r1'] }} />);
+    expect(screen.getByText('루틴 1개가 학습 시간과 어긋나요')).toBeInTheDocument();
+    expect(screen.getByText('수학 인강')).toBeInTheDocument();
+    expect(screen.queryByText('영어 듣기')).not.toBeInTheDocument();
+    expect(screen.getByText(/19:00–20:00 인데 평일은 다른 루틴과 겹쳐요/)).toBeInTheDocument();
+  });
+
   it('평일·주말 양쪽에 걸리면 한 카드로 묶고 양쪽을 넓힌다', () => {
     const everyday = routine({ id: 'r1', title: '아침 영단어', startTime: '07:30', endTime: '08:00', weekdays: [0, 1, 2, 3, 4, 5, 6] });
     render(<Harness routines={[everyday]} />);
