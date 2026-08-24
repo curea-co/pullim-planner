@@ -39,8 +39,10 @@ function groupByRoutine(issues: readonly RoutineFitIssue[]): Grouped[] {
 }
 
 /**
- * 한 루틴이 평일·주말에서 **다른 사유로** 걸릴 수 있다(평일은 창 밖, 주말은 다른 루틴과 겹침).
- * 첫 이슈만 보고 문장을 만들면 나머지 사유가 통째로 숨는다(Codex) — 창별로 다 적는다.
+ * 한 루틴이 평일·주말에서 **다른 사유로** 걸릴 수 있고(평일은 창 밖, 주말은 다른 루틴과 겹침),
+ * 같은 창에서 **창 밖이면서 겹치기까지** 할 수도 있다(07:00–08:00 과 07:30–08:30 을 평일
+ * 18–23 창에 함께 얹은 경우). 첫 이슈만 보고 문장을 만들면 나머지 사유가 통째로 숨는다
+ * (Codex) — 사유마다 다 적는다.
  */
 function describe(group: Grouped): string {
   const parts = group.issues.map(issue => {

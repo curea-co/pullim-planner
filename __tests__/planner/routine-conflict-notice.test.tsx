@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 jest.mock('sonner', () => ({ toast: { error: jest.fn(), success: jest.fn(), warning: jest.fn() } }));
 
@@ -107,6 +107,28 @@ describe('루틴 충돌 배너', () => {
     expect(card).toHaveTextContent('평일 학습 시간(18:00–23:00)을 벗어나 있어요');
     expect(card).toHaveTextContent('주말은 다른 루틴과 겹쳐요');
     expect(screen.getByText('학습 시간을 넓혀도 루틴끼리의 겹침은 남아요.')).toBeInTheDocument();
+  });
+
+  it('창 밖이면서 겹치면 넓히기와 겹침 안내를 둘 다 준다', () => {
+    // Codex 재현 — 평일 창 18–23 에 07:00–08:00 · 07:30–08:30 을 함께 골랐다. 겹침이
+    // 창 사유를 덮으면 뒤 루틴 카드에서 '넓히기'가 사라져 창 충돌 자체를 못 본다.
+    const rs = [
+      routine({ id: 'r1', title: '아침 영단어', startTime: '07:00', endTime: '08:00' }),
+      routine({ id: 'r2', title: '아침 수학', startTime: '07:30', endTime: '08:30' }),
+    ];
+    render(<Harness routines={rs} initial={{ routineIds: ['r1', 'r2'] }} />);
+
+    const summary = screen.getByText(/07:30–08:30 인데/);
+    expect(summary).toHaveTextContent('평일 학습 시간(18:00–23:00)을 벗어나 있어요');
+    expect(summary).toHaveTextContent('평일은 다른 루틴과 겹쳐요');
+
+    // 겹침 안내는 겹치는 쪽 카드에만 붙는다(앞 루틴은 창 밖이기만 하다).
+    const card = within(summary.closest('li') as HTMLElement);
+    expect(card.getByText('학습 시간을 넓혀도 루틴끼리의 겹침은 남아요.')).toBeInTheDocument();
+
+    // 넓히기는 07:30 루틴을 담을 만큼 창을 되돌린다 — 겹침 때문에 사라지지 않는다.
+    fireEvent.click(card.getByRole('button', { name: '학습 시간 07:00–23:00 로 넓히기' }));
+    expect(screen.getByTestId('hours')).toHaveTextContent('평일 7-23');
   });
 
   it('평일·주말 양쪽에 걸리면 한 카드로 묶고 양쪽을 넓힌다', () => {

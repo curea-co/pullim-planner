@@ -28,12 +28,13 @@ describe('subtractRanges', () => {
   });
 });
 
-describe('placeRoutinesForDay — 보류 사유 3종', () => {
+describe('placeRoutinesForDay — 창 사유 + 겹침 플래그', () => {
   const win = [18 * 60, 23 * 60] as const;
 
   it('창을 완전히 벗어나면 가용 시간 밖', () => {
     const [placed] = placeRoutinesForDay([routine({ id: 'r1', startTime: '07:30', endTime: '08:00' })], 0, win[0], win[1]);
     expect(placed.held).toBe('가용 시간 밖');
+    expect(placed.overlapping).toBe(false);
   });
 
   it('한쪽 끝만 물리면 가용 시간 걸침', () => {
@@ -44,18 +45,31 @@ describe('placeRoutinesForDay — 보류 사유 3종', () => {
   it('창 안에 온전히 들어가면 보류 없음', () => {
     const [placed] = placeRoutinesForDay([routine({ id: 'r1' })], 0, win[0], win[1]);
     expect(placed.held).toBeUndefined();
+    expect(placed.overlapping).toBe(false);
   });
 
   it('요일이 다르면 배치하지 않는다', () => {
     expect(placeRoutinesForDay([routine({ id: 'r1', weekdays: [6] })], 0, win[0], win[1])).toEqual([]);
   });
 
-  it('앞선 루틴과 겹치면 루틴 겹침', () => {
+  it('앞선 루틴과 겹치면 overlapping', () => {
     const placed = placeRoutinesForDay(
       [routine({ id: 'r1', startTime: '19:00', endTime: '20:00' }), routine({ id: 'r2', startTime: '19:30', endTime: '20:30' })],
       0, win[0], win[1],
     );
-    expect(placed.map(p => p.held)).toEqual([undefined, '루틴 겹침']);
+    expect(placed.map(p => p.overlapping)).toEqual([false, true]);
+    expect(placed.map(p => p.held)).toEqual([undefined, undefined]);
+  });
+
+  it('창 밖이면서 서로 겹치면 창 사유가 겹침에 지워지지 않는다', () => {
+    // Codex 재현 — 평일 창 18–23 에 07:00–08:00 · 07:30–08:30 을 함께 얹은 경우.
+    // 겹침이 held 를 덮어쓰면 뒤 루틴의 창 충돌이 통째로 사라진다.
+    const placed = placeRoutinesForDay(
+      [routine({ id: 'r1', startTime: '07:00', endTime: '08:00' }), routine({ id: 'r2', startTime: '07:30', endTime: '08:30' })],
+      0, win[0], win[1],
+    );
+    expect(placed.map(p => p.held)).toEqual(['가용 시간 밖', '가용 시간 밖']);
+    expect(placed.map(p => p.overlapping)).toEqual([false, true]);
   });
 });
 
@@ -74,6 +88,16 @@ describe('busyRanges — 더블부킹 방지', () => {
       0, 18 * 60, 23 * 60,
     );
     expect(busyRanges(placed)).toEqual([[19 * 60, 20 * 60]]);
+  });
+
+  it('창 밖 + 겹침이 동시에 나도 점유 계산은 그대로다', () => {
+    // 플래그 분리 전후로 동작이 같아야 한다 — 앞 루틴은 창 밖이어도 점유,
+    // 겹쳐서 밀려난 뒤 루틴만 점유에서 빠진다.
+    const placed = placeRoutinesForDay(
+      [routine({ id: 'r1', startTime: '07:00', endTime: '08:00' }), routine({ id: 'r2', startTime: '07:30', endTime: '08:30' })],
+      0, 18 * 60, 23 * 60,
+    );
+    expect(busyRanges(placed)).toEqual([[7 * 60, 8 * 60]]);
   });
 });
 
@@ -101,6 +125,26 @@ describe('diagnoseRoutineFit', () => {
 
   it('창 안에 들어가는 루틴은 진단에 남지 않는다', () => {
     expect(diagnoseRoutineFit(formWith({ routineIds: ['r1'] }), [routine({ id: 'r1' })])).toEqual([]);
+  });
+
+  it('창 밖이면서 겹치면 두 사유를 다 남긴다', () => {
+    // Codex 재현 — 창 사유가 겹침에 덮이면 '넓히기' 조치가 배너에서 사라진다.
+    const rs = [
+      routine({ id: 'r1', title: '아침 영단어', startTime: '07:00', endTime: '08:00' }),
+      routine({ id: 'r2', title: '아침 수학', startTime: '07:30', endTime: '08:30' }),
+    ];
+    const issues = diagnoseRoutineFit(formWith({ routineIds: ['r1', 'r2'] }), rs);
+    expect(issues.filter(i => i.routineId === 'r1').map(i => i.held)).toEqual(['가용 시간 밖']);
+    expect(issues.filter(i => i.routineId === 'r2').map(i => i.held)).toEqual(['가용 시간 밖', '루틴 겹침']);
+  });
+
+  it('창 밖 + 겹침이어도 창 사유가 남아 넓히기 계산이 산다', () => {
+    const form = formWith({ routineIds: ['r1', 'r2'] });
+    const rs = [
+      routine({ id: 'r1', startTime: '07:00', endTime: '08:00' }),
+      routine({ id: 'r2', startTime: '07:30', endTime: '08:30' }),
+    ];
+    expect(widenWindows(form, diagnoseRoutineFit(form, rs), 'r2').weekdayHours).toEqual({ start: 7, end: 23 });
   });
 
   it('창을 담으려면 필요한 시각을 시 단위로 알려준다', () => {

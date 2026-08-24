@@ -13,8 +13,14 @@
 import type { Routine } from '@/lib/mock';
 import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
 
+/**
+ * 창과의 관계로 생기는 보류 — 창을 넓히거나 루틴을 창 안으로 옮기면 풀린다.
+ * 루틴끼리의 겹침은 창을 아무리 넓혀도 풀리지 않아 **여기 넣지 않는다**.
+ */
+export type WindowHeldReason = '가용 시간 밖' | '가용 시간 걸침';
+
 /** 배치 보류 사유 — 숨기지 않고 표기한다(선택한 루틴의 조용한 누락 방지). */
-export type HeldReason = '가용 시간 밖' | '가용 시간 걸침' | '루틴 겹침';
+export type HeldReason = WindowHeldReason | '루틴 겹침';
 
 /** 하루치 창에 놓인 루틴 한 건 — 분 단위 좌표를 함께 들고 다닌다. */
 export type PlacedRoutine = {
@@ -25,12 +31,19 @@ export type PlacedRoutine = {
   endMin: number;
   start: string;
   end: string;
-  held?: HeldReason;
+  /** **창과의 관계만** 담는다. 겹침은 `overlapping` 으로 따로 든다. */
+  held?: WindowHeldReason;
+  /** 앞서 놓인 활성 루틴과 시각이 물리는가 — 창 사유와 동시에 참일 수 있다. */
+  overlapping: boolean;
 };
 
 export type RoutineFitIssue = {
   routineId: string;
   title: string;
+  /**
+   * 한 루틴이 한 창에서 창 사유와 겹침을 **동시에** 가질 수 있다. 그때는 사유마다
+   * 한 건씩(총 2건) 나온다 — 조치가 서로 다르므로 하나로 접으면 한쪽이 숨는다.
+   */
   held: HeldReason;
   /** 루틴의 현재 시각 */
   start: string;
@@ -78,9 +91,13 @@ export function subtractRanges(win: [number, number], busy: readonly [number, nu
 /**
  * 하루치 루틴 배치 + 보류 판정.
  *
- * 보류 사유를 **셋으로 나눈다** — 창을 완전히 벗어난 것(`가용 시간 밖`)과 한쪽 끝만 물린 것
+ * 창 사유를 **둘로 나눈다** — 창을 완전히 벗어난 것(`가용 시간 밖`)과 한쪽 끝만 물린 것
  * (`가용 시간 걸침`)은 학생이 취할 조치가 다르다. 앞의 것은 루틴을 옮기거나 끄면 되지만,
  * 뒤의 것은 창을 조금 넓히는 것으로 해결된다.
+ *
+ * 루틴끼리의 겹침은 `held` 를 덮어쓰지 않고 **별도 플래그**(`overlapping`)로 든다. 둘 다인
+ * 루틴(창 밖인데 서로도 겹침)에서 겹침이 창 사유를 지우면 배너에서 '넓히기' 조치가 사라져
+ * 학생이 창 충돌 자체를 놓친다(Codex).
  *
  * @param routineDay 0=월 … 6=일 (mock `Routine.weekdays` 와 동일 좌표계)
  */
@@ -96,19 +113,18 @@ export function placeRoutinesForDay(
     const startMin = toMinutes(r.startTime);
     const endMin = toMinutes(r.endTime);
 
-    let held: HeldReason | undefined;
+    let held: WindowHeldReason | undefined;
     if (endMin <= winStart || startMin >= winEnd) held = '가용 시간 밖';
     else if (startMin < winStart || endMin > winEnd) held = '가용 시간 걸침';
 
-    // 겹침 판정은 **보류 여부와 무관하게** 한다. 보류된 루틴을 겹침 계산에서 빼면
-    // 창을 걸친 루틴 위에 생성 블록이 그대로 얹혀 더블부킹이 난다.
-    if (out.some(it => it.held !== '루틴 겹침' && startMin < it.endMin && it.startMin < endMin)) {
-      held = '루틴 겹침';
-    }
+    // 겹침 판정은 **창 사유와 무관하게** 한다. 창 밖·걸침인 루틴을 겹침 계산에서 빼면
+    // 창을 걸친 루틴 위에 생성 블록이 그대로 얹혀 더블부킹이 난다. 앞서 겹침으로 밀려난
+    // 루틴은 실제로 그 시각을 쓰지 않으므로 기준에서 뺀다.
+    const overlapping = out.some(it => !it.overlapping && startMin < it.endMin && it.startMin < endMin);
 
     out.push({
       routineId: r.id, title: r.title,
-      startMin, endMin, start: r.startTime, end: r.endTime, held,
+      startMin, endMin, start: r.startTime, end: r.endTime, held, overlapping,
     });
   }
   return out;
@@ -116,11 +132,10 @@ export function placeRoutinesForDay(
 
 /**
  * 실제로 그 시각에 무언가를 하고 있는 구간 — 생성 블록이 피해야 할 점유 목록.
- * 창 밖이든 걸치든 점유는 점유다. 동시에 둘을 할 수는 없으니 `루틴 겹침`으로
- * 밀려난 것만 뺀다.
+ * 창 밖이든 걸치든 점유는 점유다. 동시에 둘을 할 수는 없으니 겹침으로 밀려난 것만 뺀다.
  */
 export function busyRanges(placed: readonly PlacedRoutine[]): [number, number][] {
-  return placed.filter(it => it.held !== '루틴 겹침').map(it => [it.startMin, it.endMin] as [number, number]);
+  return placed.filter(it => !it.overlapping).map(it => [it.startMin, it.endMin] as [number, number]);
 }
 
 const WEEKDAY_DAYS = [0, 1, 2, 3, 4] as const;
@@ -132,6 +147,9 @@ const WEEKEND_DAYS = [5, 6] as const;
  * 같은 루틴이 한 창의 여러 요일에서 같은 사유로 걸리면 한 건으로 접는다 — 학생에게
  * "월·화·수·목·금 다섯 번 걸립니다"는 정보가 아니라 소음이다. 평일·주말 양쪽에 걸리면
  * 창이 다르니 2건으로 남긴다(조치가 창마다 따로 필요하다).
+ *
+ * 한 루틴이 같은 창에서 **창 밖이면서 다른 루틴과도 겹치면** 사유마다 한 건씩 낸다.
+ * 조치가 서로 다르기 때문이다 — 창 문제는 '넓히기'로 풀리지만 겹침은 그대로 남는다.
  */
 export function diagnoseRoutineFit(form: PlannerForm, routines: readonly Routine[]): RoutineFitIssue[] {
   const selected = routines.filter(r => form.routineIds.includes(r.id));
@@ -150,22 +168,26 @@ export function diagnoseRoutineFit(form: PlannerForm, routines: readonly Routine
     const winEnd = ctx.win.end * 60;
     for (const day of ctx.days) {
       for (const placed of placeRoutinesForDay(selected, day, winStart, winEnd)) {
-        if (!placed.held) continue;
-        const dedupeKey = `${placed.routineId}|${placed.held}|${ctx.key}`;
-        if (seen.has(dedupeKey)) continue;
-        seen.add(dedupeKey);
-        issues.push({
-          routineId: placed.routineId,
-          title: placed.title,
-          held: placed.held,
-          start: placed.start,
-          end: placed.end,
-          scopeLabel: ctx.label,
-          windowKey: ctx.key,
-          windowLabel: `${fromMinutes(winStart)}–${fromMinutes(winEnd)}`,
-          needStartHour: Math.floor(placed.startMin / 60),
-          needEndHour: Math.ceil(placed.endMin / 60),
-        });
+        const reasons: HeldReason[] = [];
+        if (placed.held) reasons.push(placed.held);
+        if (placed.overlapping) reasons.push('루틴 겹침');
+        for (const held of reasons) {
+          const dedupeKey = `${placed.routineId}|${held}|${ctx.key}`;
+          if (seen.has(dedupeKey)) continue;
+          seen.add(dedupeKey);
+          issues.push({
+            routineId: placed.routineId,
+            title: placed.title,
+            held,
+            start: placed.start,
+            end: placed.end,
+            scopeLabel: ctx.label,
+            windowKey: ctx.key,
+            windowLabel: `${fromMinutes(winStart)}–${fromMinutes(winEnd)}`,
+            needStartHour: Math.floor(placed.startMin / 60),
+            needEndHour: Math.ceil(placed.endMin / 60),
+          });
+        }
       }
     }
   }
