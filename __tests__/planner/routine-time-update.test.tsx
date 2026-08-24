@@ -92,8 +92,8 @@ describe('useRoutineTimeUpdate — 시각만 바꾸는 부분 수정', () => {
     expect(setRoutines).toHaveBeenCalledTimes(1);
     const next = setRoutines.mock.calls[0][0] as Routine[];
     expect(next).toHaveLength(2);
-    // 서버가 정규화한 'HH:MM:SS' 를 그대로 반영한다.
-    expect(next[0]).toMatchObject({ id: 'r1', startTime: '19:00:00', endTime: '20:00:00' });
+    // 서버가 'HH:MM:SS' 를 줘도 뷰 계약대로 'HH:MM' 이 상태에 들어간다.
+    expect(next[0]).toMatchObject({ id: 'r1', startTime: '19:00', endTime: '20:00' });
     expect(next[1]).toBe(other);
   });
 

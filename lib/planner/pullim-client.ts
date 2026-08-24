@@ -122,6 +122,11 @@ export function toPullimWrite(
  * pullim-api 루틴(`PullimRoutine`) → FE 뷰 `Routine` 어댑터.
  * 요일은 비트마스크(`weekdayMask`) → 배열(`maskToWeekdays`, 0=월…6=일)로 변환한다.
  * subject/type 은 BE 가 string 이지만 BE 가 FE enum 집합으로만 발급하므로 뷰 union 으로 단언한다.
+ *
+ * 시각은 여기서 `HH:MM` 으로 자른다 — DB 컬럼이 `time`(HH:MM:SS)이라 어느 응답 경로든 초까지
+ * 새어나올 수 있는데, 뷰 계약(`Routine` 의 `startTime`/`endTime` = "HH:MM")을 쓰는 화면들이
+ * (위저드 4·5단계, 루틴 목록/폼) 값을 그대로 렌더하기 때문이다. 서버 블록 시각을 자르는
+ * `preview-map` 의 `toPreviewItem` 과 동형으로 어댑터 한 곳에서 막는다.
  */
 export function pullimToRoutine(r: PullimRoutine): Routine {
   return {
@@ -129,8 +134,8 @@ export function pullimToRoutine(r: PullimRoutine): Routine {
     title: r.title,
     subject: r.subject as RoutineSubject,
     type: r.type as BlockType,
-    startTime: r.startTime,
-    endTime: r.endTime,
+    startTime: r.startTime.slice(0, 5),
+    endTime: r.endTime.slice(0, 5),
     weekdays: maskToWeekdays(r.weekdayMask) as Routine['weekdays'],
   };
 }

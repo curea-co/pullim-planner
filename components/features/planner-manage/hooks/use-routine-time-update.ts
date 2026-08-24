@@ -36,7 +36,7 @@ export function useRoutineTimeUpdate(
           routineId,
           toRoutineTimePatch(patch.startTime, patch.endTime),
         );
-        // 서버가 정규화한 값(예: 'HH:MM:SS')을 그대로 반영한다.
+        // 서버 응답을 반영한다 — 시각의 `HH:MM` 정규화는 `pullimToRoutine` 이 맡는다.
         setRoutines(routines.map(r => (r.id === routineId ? pullimToRoutine(saved) : r)));
         return;
       }
