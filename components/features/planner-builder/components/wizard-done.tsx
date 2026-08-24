@@ -9,7 +9,8 @@ import { Check } from 'lucide-react';
  * 없다(토스트는 3초 뒤 사라진다). 답한 것이 어떤 시간표가 됐는지 한 번 보여주고 보낸다.
  *
  * 여기서 약속하지 않는 것 — 완료 기록으로 시간표를 자동 조정하는 기능은 아직 없다.
- * 문구가 그걸 암시하지 않도록 한다.
+ * 문구가 그걸 암시하지 않도록 한다. 같은 이유로 **확인되지 않은 숫자를 확정처럼 쓰지 않는다**
+ * (`blocks.estimated` 참고).
  */
 export type WizardDoneSummary = {
   plannerName: string;
@@ -18,9 +19,14 @@ export type WizardDoneSummary = {
   examLabel: string;
   subjectCount: number;
   unitCount: number;
-  /** 미리보기 7일에 잡힌 블록 수 — 배치 결과를 숫자로 확인시킨다 */
-  previewBlocks: number;
-  previewDays: number;
+  /**
+   * 미리보기 7일 집계 — 배치 결과를 숫자로 확인시킨다.
+   *
+   * `estimated: true` 면 서버 dry-run 이 아니라 FE 휴리스틱 근사다(루틴 처리 등 BE bake 와
+   * 규칙이 달라 실제보다 적게 셀 수 있다) — '예상' 으로 표기하고 실제는 홈에서 보라고 안내한다.
+   * 집계 자체를 못 받았으면 `null` — 0개라고 지어내지 않고 블록 줄을 패턴만으로 바꾼다 (codex).
+   */
+  blocks: { days: number; count: number; estimated: boolean } | null;
   patternLabel: string;
   patternSpec: string;
   /** 루틴 게이트가 켜졌을 때만 — 꺼져 있으면 null */
@@ -34,10 +40,18 @@ type Props = {
 };
 
 export function WizardDone({ summary, onHome, onManage }: Props) {
+  const pattern = `${summary.patternLabel}(${summary.patternSpec})`;
+  const blocks = summary.blocks;
   const rows: [string, string][] = [
     ['목표', summary.ddayLabel ? `${summary.examLabel} · ${summary.ddayLabel}` : summary.examLabel],
     ['학습 범위', `${summary.subjectCount}과목 · ${summary.unitCount}단원`],
-    ['블록', `${summary.previewDays}일 ${summary.previewBlocks}개 · ${summary.patternLabel}(${summary.patternSpec})`],
+    // 확정 수치(서버 dry-run)일 때만 "7일 21개" 로 단언한다. 휴리스틱이면 '예상' 을 붙이고,
+    // 집계가 아예 없으면 숫자를 지어내지 않고 패턴만 남긴다.
+    blocks
+      ? blocks.estimated
+        ? ['블록(예상)', `${blocks.days}일 약 ${blocks.count}개 · ${pattern}`]
+        : ['블록', `${blocks.days}일 ${blocks.count}개 · ${pattern}`]
+      : ['블록 패턴', pattern],
   ];
   if (summary.routineCount !== null) {
     rows.push(['내 루틴', summary.routineCount > 0 ? `${summary.routineCount}개 적용` : '적용 안 함']);
@@ -70,6 +84,13 @@ export function WizardDone({ summary, onHome, onManage }: Props) {
           </div>
         ))}
       </dl>
+
+      {/* 휴리스틱 집계일 때만 — 실제로 만들어진 블록 수는 이 화면이 확인해 주지 못한다 */}
+      {blocks?.estimated && (
+        <p className="text-pullim-slate-400 mx-auto mt-2 max-w-md text-left text-[11px] leading-relaxed">
+          블록 수는 앱이 계산한 예상치예요 — 실제로 만들어진 시간표는 홈에서 확인하세요.
+        </p>
+      )}
 
       <div className="mt-6 flex flex-wrap justify-center gap-2">
         <button

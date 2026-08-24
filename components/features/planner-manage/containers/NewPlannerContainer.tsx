@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import {
@@ -25,8 +25,18 @@ import NewPlannerPresenter from '../presenters/NewPlannerPresenter';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
+/**
+ * 생성 완료 표식 쿼리. 활성화에 성공하면 이 쿼리를 붙여 위저드 URL 을 **완료 화면 URL 로
+ * 덮는다**(history replace). 새로고침·뒤로가기로 같은 엔트리에 돌아와도 빈 위저드가 다시
+ * 열리지 않으므로, 같은 입력으로 한 번 더 활성화해 중복 플래너를 만드는 경로가 막힌다 (codex).
+ */
+const CREATED_PARAM = 'created';
+
 export default function NewPlannerContainer() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  /** 생성 표식이 붙은 URL 로 들어왔는가 — 붙어 있으면 이 히스토리 엔트리는 위저드가 아니다. */
+  const createdId = searchParams.get(CREATED_PARAM);
   const formState = usePlannerForm(seededPlannerForm());
 
   // STEP5·미리보기용 루틴 — bypass는 mock(초기값), 배포는 실 API로 교체(dev QA #4: 실 루틴 노출).
@@ -43,6 +53,16 @@ export default function NewPlannerContainer() {
 
   // 활성화 성공 후 완료 화면 — 관리 목록으로 곧장 튕기면 방금 만든 게 뭔지 볼 자리가 없다.
   const [done, setDone] = useState<WizardDoneSummary | null>(null);
+
+  /**
+   * 생성 표식만 있고 리캡이 없다 = 완료 URL 을 **새 문서로** 다시 연 경우(새로고침·히스토리
+   * 재방문·링크 공유). 리캡은 메모리에만 있으니 복원할 수 없다. 이때 위저드를 다시 열면
+   * 이미 만들어진 플래너와 무관한 빈 위저드가 뜨고 중복 생성이 가능해지므로, 방금 만든
+   * 플래너가 보이는 관리 화면으로 보낸다.
+   */
+  useEffect(() => {
+    if (createdId && !done) router.replace('/planner/manage');
+  }, [createdId, done, router]);
 
   // 4단계 충돌 배너의 '옮기기' — 루틴 원본 시각을 PATCH 한다(확인 다이얼로그 뒤).
   const handleUpdateRoutine = useRoutineTimeUpdate(routines, setRoutines);
@@ -83,12 +103,36 @@ export default function NewPlannerContainer() {
       examLabel: examTypeMeta[submitted.examType ?? 'mock'].label,
       subjectCount: Object.keys(units).length,
       unitCount: Object.values(units).reduce((a, b) => a + (b?.length ?? 0), 0),
-      previewBlocks: summary?.previewBlocks ?? 0,
-      previewDays: summary?.previewDays ?? 0,
+      // 4단계 집계를 그대로 옮기되 출처를 함께 넘긴다 — 휴리스틱 근사(`local`)는 실제 bake 와
+      // 규칙이 달라 실제보다 적을 수 있어 '예상' 으로 표기된다. 집계가 없으면 null(0 으로 지어내지 않음).
+      blocks: summary
+        ? {
+            days: summary.previewDays,
+            count: summary.previewBlocks,
+            estimated: summary.source !== 'server',
+          }
+        : null,
       patternLabel: blockPatternMeta[submitted.blockPattern].label,
       patternSpec: blockPatternMeta[submitted.blockPattern].spec,
       routineCount: ROUTINE_ENABLED ? submitted.routineIds.length : null,
     };
+  }
+
+  /**
+   * 완료 화면으로 넘어가면서 위저드 URL 을 생성 표식이 붙은 URL 로 덮는다.
+   *
+   * `router.replace` 대신 네이티브 `history.replaceState` 를 쓰는 이유 — 쿼리만 바꾸는
+   * 라우팅이라도 세그먼트 재렌더가 끼면 방금 세팅한 `done` 이 날아갈 위험이 있는데, 완료
+   * 화면은 이 한 번뿐인 자리라 그 실패가 치명적이다. Next App Router 는 네이티브 history
+   * 메서드를 지원하고 `useSearchParams` 와도 동기화되므로 표식은 그대로 읽힌다.
+   */
+  function stampCreated(plannerId: string) {
+    if (typeof window === 'undefined') return;
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}?${CREATED_PARAM}=${encodeURIComponent(plannerId)}`,
+    );
   }
 
   async function handleActivate(submitted: PlannerForm, summary?: ActivateSummary) {
@@ -103,6 +147,7 @@ export default function NewPlannerContainer() {
       });
       activatePlanner(planner.id);
       setDone(buildDoneSummary(submitted, summary));
+      stampCreated(planner.id);
       return;
     }
     // create 와 activate 를 분리해 부분 성공을 구분한다 — 한 catch 로 뭉치면 create 성공 후
@@ -124,9 +169,12 @@ export default function NewPlannerContainer() {
     try {
       await plannerClient.activate(planner.id);
       setDone(buildDoneSummary(submitted, summary));
+      stampCreated(planner.id);
       return;
     } catch {
       // 생성은 성공 — 재시도로 중복 생성되지 않게 안내만 하고 관리 화면으로 보낸다.
+      // 완료 화면은 띄우지 않는다(만들어지지 않은 상태를 만들어졌다고 하지 않는다). 이 경로는
+      // 곧바로 화면을 떠나므로 생성 표식도 남기지 않는다 — 표식은 완료 화면에 머무는 경우의 장치다.
       toast.warning('시간표는 생성됐지만 활성화에 실패했어요', {
         description: `${planner.name} — 관리 화면에서 활성화해 주세요`,
         duration: 4000,
@@ -142,6 +190,13 @@ export default function NewPlannerContainer() {
         onHome={() => router.push('/planner')}
         onManage={() => router.push('/planner/manage')}
       />
+    );
+  }
+
+  // 생성 표식이 붙은 URL 인데 리캡이 없다 — 위저드를 열지 않는다(위 effect 가 관리 화면으로 보낸다).
+  if (createdId) {
+    return (
+      <p className="text-pullim-slate-400 py-10 text-center text-sm">시간표 관리로 이동 중…</p>
     );
   }
 

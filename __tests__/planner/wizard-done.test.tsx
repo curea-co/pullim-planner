@@ -1,8 +1,9 @@
 /**
  * 완료 화면 — 활성화 직후 "무엇이 만들어졌는지" 를 보여주는 자리.
  *
- * 지키려는 것: **약속하지 않은 기능을 암시하지 않는다.** 완료 기록으로 시간표를 자동
- * 조정하는 기능은 아직 없다.
+ * 지키려는 것 두 가지.
+ * 1. **약속하지 않은 기능을 암시하지 않는다.** 완료 기록으로 시간표를 자동 조정하는 기능은 아직 없다.
+ * 2. **확인되지 않은 숫자를 확정처럼 말하지 않는다.** 블록 수는 서버 dry-run 결과일 때만 단언한다.
  */
 import { render, screen, fireEvent } from '@testing-library/react';
 import { WizardDone, type WizardDoneSummary } from '@/components/features/planner-builder/components/wizard-done';
@@ -13,8 +14,7 @@ const summary = (over: Partial<WizardDoneSummary> = {}): WizardDoneSummary => ({
   examLabel: '모의고사',
   subjectCount: 3,
   unitCount: 27,
-  previewBlocks: 21,
-  previewDays: 7,
+  blocks: { days: 7, count: 21, estimated: false },
   patternLabel: '집중형',
   patternSpec: '50분 + 10분',
   routineCount: 2,
@@ -58,5 +58,36 @@ describe('위저드 완료 화면', () => {
     fireEvent.click(screen.getByRole('button', { name: '시간표 관리' }));
     expect(onHome).toHaveBeenCalledTimes(1);
     expect(onManage).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('블록 수 — 확정 수치일 때만 단언한다', () => {
+  it('서버 dry-run 집계는 확정 문구로 쓴다', () => {
+    render(<WizardDone summary={summary()} onHome={noop} onManage={noop} />);
+    expect(screen.getByText('블록')).toBeInTheDocument();
+    expect(screen.getByText('7일 21개 · 집중형(50분 + 10분)')).toBeInTheDocument();
+    expect(screen.queryByText(/예상치/)).not.toBeInTheDocument();
+  });
+
+  it('휴리스틱 집계면 확정 문구를 쓰지 않는다', () => {
+    // FE 근사는 BE bake 규칙(루틴 처리 등)과 달라 실제보다 적게 셀 수 있다 — '예상' 으로 표기한다.
+    render(
+      <WizardDone
+        summary={summary({ blocks: { days: 7, count: 21, estimated: true } })}
+        onHome={noop}
+        onManage={noop}
+      />,
+    );
+    expect(screen.getByText('블록(예상)')).toBeInTheDocument();
+    expect(screen.getByText('7일 약 21개 · 집중형(50분 + 10분)')).toBeInTheDocument();
+    expect(screen.queryByText('7일 21개 · 집중형(50분 + 10분)')).not.toBeInTheDocument();
+    expect(screen.getByText(/예상치/)).toBeInTheDocument();
+  });
+
+  it('집계를 못 받았으면 0개라고 지어내지 않는다', () => {
+    render(<WizardDone summary={summary({ blocks: null })} onHome={noop} onManage={noop} />);
+    expect(screen.queryByText(/0개/)).not.toBeInTheDocument();
+    expect(screen.getByText('블록 패턴')).toBeInTheDocument();
+    expect(screen.getByText('집중형(50분 + 10분)')).toBeInTheDocument();
   });
 });
