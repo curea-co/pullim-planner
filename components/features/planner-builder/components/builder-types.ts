@@ -323,18 +323,49 @@ export function needsElective(subject: SubjectKey, scope: ScopeState): boolean {
   return spec.choose > 0 && (scope.electives[subject]?.length ?? 0) < spec.choose;
 }
 
+/**
+ * 목표 등급 허용 범위 — 입력 UI(`TargetField` 의 grade 분기)가
+ * `e.target.value.replace(/[^1-8]/g, '').slice(0, 1)` 로 한 자리 1~8 만 남긴다(QA #5).
+ * 순수 함수 쪽 검증도 같은 범위를 써야 UI 와 판정이 어긋나지 않는다.
+ */
+const GRADE_MIN = 1;
+const GRADE_MAX = 8;
+
+/** 목표 점수 허용 범위 — 입력 UI 가 `min=0 max=100` + '100점 만점' 표기로 잘라 넣는 값 */
+const SCORE_MIN = 0;
+const SCORE_MAX = 100;
+
 /** 1단계를 통과하지 못하는 이유 — 없으면 null */
 export function goalBlocker(form: PlannerForm): string | null {
   // 목표는 시간표 배치를 바꾸지 않지만 BE `target` 이 필수라 **묻지 않으면 학생이 정하지
   // 않은 값이 저장된다.** 빈 등급이 `parseInt('') || 1` 로 1등급이 됐고, 자유 목표는
-  // 비빈 문자열 필수라 저장 자체가 400 이었다(Codex). 점수는 화면에 기본값이 보이므로
-  // 학생이 확인한 값으로 본다.
+  // 비빈 문자열 필수라 저장 자체가 400 이었다(Codex).
+  //
+  // 값의 **범위**까지 여기서 본다. 입력 UI 는 범위 밖 타이핑을 막지만 수정 모드 프리필
+  // (`plannerToForm`)은 저장된 값을 그대로 되살리고, BE `planner-write.dto.ts` 는
+  // grade/score 를 '유한 number' 로만 검증한다 — 레거시/오염 데이터의 9 등급 같은 값이
+  // 1단계를 통과하면 `formToPlannerPatch` 가 그 값을 그대로 다시 전송한다(Codex).
   const targetKind = examTypeMeta[form.examType ?? 'mock'].targetKind;
   if (targetKind === 'free' && !form.targetGoal?.trim()) {
     return '무엇을 목표로 할지 적어주세요';
   }
-  if (targetKind === 'grade' && !form.targetGrade?.trim()) {
-    return '목표 등급을 정해주세요';
+  if (targetKind === 'grade') {
+    const raw = form.targetGrade?.trim();
+    // '비어 있음'과 '범위 밖'은 학생이 할 일이 다르다 — 적어야 하는지, 고쳐야 하는지.
+    if (!raw) return '목표 등급을 정해주세요';
+    const grade = Number(raw);
+    if (!Number.isInteger(grade) || grade < GRADE_MIN || grade > GRADE_MAX) {
+      return `목표 등급은 ${GRADE_MIN}~${GRADE_MAX} 중에서 정해주세요`;
+    }
+  }
+  if (targetKind === 'score') {
+    // 점수는 화면에 기본값이 보이므로 '비어 있음'은 묻지 않는다(폴백도 화면과 같은 값).
+    // 다만 범위 밖 프리필은 막는다 — 그대로 저장하면 BE 검증(유한 number)은 통과하지만
+    // 100점 만점 UI 와 어긋난 값이 남고, `Number(...)` 가 NaN 이면 저장이 400 으로 튄다.
+    const score = form.targetScore ?? initialPlannerForm.targetScore;
+    if (!Number.isFinite(score) || score < SCORE_MIN || score > SCORE_MAX) {
+      return `목표 점수는 ${SCORE_MIN}~${SCORE_MAX} 사이로 정해주세요`;
+    }
   }
   if (!form.examStartDate) return '시험 날짜를 정해주세요';
   // 계획표는 미래 대상 — 이미 **종료된** 시험 차단. 판정은 종료일 기준(진행 중 범위 시험은

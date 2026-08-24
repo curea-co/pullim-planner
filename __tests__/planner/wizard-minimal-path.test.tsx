@@ -11,15 +11,41 @@ jest.mock('sonner', () => ({ toast: { error: jest.fn(), success: jest.fn(), warn
 import {
   autoExamName, initialPlannerForm, initialScopeState, plannerStepConfig,
   resolvedExamName, withAutoExamName, formToPlannerPatch, hasCustomBasics, goalBlocker,
+  plannerToForm,
   type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
 import { examPresets, presetNameForDate } from '@/lib/planner/exam-presets';
 import { PlannerWizard } from '@/components/features/planner-manage/components/planner-wizard';
+import type { Planner } from '@/lib/mock';
 
 const TODAY = '2026-08-24';
 
 function formWith(patch: Partial<PlannerForm>): PlannerForm {
   return { ...initialPlannerForm, ...patch };
+}
+
+/** 수정 모드 프리필(plannerToForm) 검증용 — 저장된 목표만 갈아 끼운다 */
+function plannerWith(target: Planner['target']): Planner {
+  return {
+    id: 'pl_test',
+    name: '테스트 시간표',
+    examType: target.kind === 'score' ? 'final' : 'mock',
+    examLabel: '테스트 시간표',
+    examStartDate: '2026-12-01',
+    examEndDate: '2026-12-01',
+    target,
+    weekdayHours: { start: 18, end: 23 },
+    weekendHours: { start: 10, end: 22 },
+    subjectUnits: { math: ['미적분'] },
+    blockPattern: 'focused',
+    weaknessAutoReflect: false,
+    motivationStyle: 'guided',
+    motto: '',
+    active: false,
+    archived: false,
+    createdAt: '2026-08-01T09:00:00',
+    updatedAt: '2026-08-01T09:00:00',
+  };
 }
 
 describe('위저드 단계 구성', () => {
@@ -95,8 +121,37 @@ describe('목표 — 최소 경로에서도 받는다', () => {
     expect(goalBlocker(formWith({ ...base, targetGrade: '2' }))).toBeNull();
   });
 
+  it('범위 밖 등급은 통과하지 못한다 — 비어 있을 때와 문구를 구분한다', () => {
+    // 입력 UI 는 1~8 만 타이핑되게 막지만, 순수 함수가 범위를 안 보면 프리필 경로가 뚫린다.
+    const base = { examType: 'mock' as const, examStartDate: '2026-12-01' };
+    for (const bad of ['9', '0', '12', '2.5', 'NaN']) {
+      expect(goalBlocker(formWith({ ...base, targetGrade: bad }))).toBe('목표 등급은 1~8 중에서 정해주세요');
+    }
+    for (const ok of ['1', '4', '8']) {
+      expect(goalBlocker(formWith({ ...base, targetGrade: ok }))).toBeNull();
+    }
+  });
+
+  it('수정 모드 프리필로 들어온 오염 등급도 막는다', () => {
+    // plannerToForm 은 저장된 값을 그대로 되살린다 — BE 는 grade 를 유한 number 로만 검증하므로
+    // 레거시 9 등급이 남아 있으면 1단계를 통과하고 formToPlannerPatch 가 다시 전송한다.
+    const form = plannerToForm(plannerWith({ kind: 'grade', value: 9 }));
+    expect(form.targetGrade).toBe('9');
+    expect(goalBlocker(form)).toBe('목표 등급은 1~8 중에서 정해주세요');
+    expect(goalBlocker(plannerToForm(plannerWith({ kind: 'grade', value: 2 })))).toBeNull();
+  });
+
   it('점수 시험은 화면에 기본값이 보이므로 막지 않는다', () => {
     expect(goalBlocker(formWith({ examType: 'midterm', examStartDate: '2026-12-01', examEndDate: '2026-12-03' }))).toBeNull();
+  });
+
+  it('점수도 범위 밖 프리필은 막는다 — UI 는 0~100 을 전제로 한다', () => {
+    const outOfRange = '목표 점수는 0~100 사이로 정해주세요';
+    expect(goalBlocker(plannerToForm(plannerWith({ kind: 'score', value: 250 })))).toBe(outOfRange);
+    expect(goalBlocker(plannerToForm(plannerWith({ kind: 'score', value: -5 })))).toBe(outOfRange);
+    // 숫자가 아닌 값은 Number() 가 NaN 이 되고, 그대로 저장하면 BE 검증에서 400 이 된다.
+    expect(goalBlocker(plannerToForm(plannerWith({ kind: 'score', value: '만점' })))).toBe(outOfRange);
+    expect(goalBlocker(plannerToForm(plannerWith({ kind: 'score', value: 88 })))).toBeNull();
   });
 });
 
