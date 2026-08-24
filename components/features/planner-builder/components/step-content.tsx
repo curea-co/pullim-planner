@@ -1200,11 +1200,25 @@ export function PStep4Confirm({
   const todayIso = todayIsoKst();
   const localPreviews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
 
-  // 서버 dry-run(실제 bake 규칙) 우선 — 실패·미주입이면 휴리스틱 폴백. step 진입 시 1회 로드.
-  // 결과에 요청 키(로더 identity + 날짜)를 함께 저장하고 아래에서 파생으로 걸러 — 이전 폼·
-  // 이전 날짜 기준 결과가 잔존하지 않으면서(Codex) effect 내 동기 setState 도 피한다(lint).
+  // 루틴 목록의 '개정 키' — 서버 dry-run 요청 본문은 루틴 **id 만** 싣고 시각은 서버가 DB 에서
+  // 읽는다. 그래서 충돌 배너의 '시간 안쪽으로 옮기기'(`PATCH /planner/routines/:id`)로 원본
+  // 시각만 바뀌면 폼도 로더 identity 도 그대로여서, 이 키가 없으면 미리보기가 옮기기 전 시각에
+  // 멈춘 채 남는다 — 저장 직전 화면이 실제 저장 결과와 어긋난다(Codex).
+  // 배열 참조가 아니라 **배치에 영향을 주는 값(id·시각·요일)만 이은 문자열**에 의존한다 —
+  // 호출자가 매 렌더 새 배열을 만들어도 내용이 같으면 재요청이 늘지 않는다.
+  const routinesRev = useMemo(
+    () => (routines ?? [])
+      .map(r => `${r.id}@${r.startTime}-${r.endTime}@${r.weekdays.join('')}`)
+      .join('|'),
+    [routines],
+  );
+
+  // 서버 dry-run(실제 bake 규칙) 우선 — 실패·미주입이면 휴리스틱 폴백. 요청 키가 바뀔 때만 로드.
+  // 결과에 요청 키(로더 identity + 날짜 + 루틴 개정)를 함께 저장하고 아래에서 파생으로 걸러 —
+  // 이전 폼·이전 날짜·이전 루틴 시각 기준 결과가 잔존하지 않으면서(Codex) effect 내 동기
+  // setState 도 피한다(lint). 재요청이 도는 동안에는 휴리스틱 폴백이 새 루틴 시각을 보여준다.
   const [server, setServer] = useState<{
-    loader: unknown; day: string; days: PreviewDay[];
+    loader: unknown; day: string; rev: string; days: PreviewDay[];
   } | null>(null);
   useEffect(() => {
     if (!onServerPreview) return;
@@ -1212,14 +1226,14 @@ export function PStep4Confirm({
     onServerPreview()
       .then((days) => {
         if (alive && days && days.length > 0) {
-          setServer({ loader: onServerPreview, day: todayIso, days });
+          setServer({ loader: onServerPreview, day: todayIso, rev: routinesRev, days });
         }
       })
       .catch(() => {});
     return () => { alive = false; };
-  }, [onServerPreview, todayIso]);
+  }, [onServerPreview, todayIso, routinesRev]);
   const serverDays =
-    server && server.loader === onServerPreview && server.day === todayIso
+    server && server.loader === onServerPreview && server.day === todayIso && server.rev === routinesRev
       ? server.days
       : null;
   // 서버 dry-run 은 실제 bake 결과라 선택 루틴이 전부 포함된다(BE 는 가용 창 무관 bake).
