@@ -14,7 +14,6 @@ import {
   formatMonthNavLabel, formatMonthTitle, formatMonthShort,
 } from '@/lib/planner/day-nav';
 import { HomeHero } from '../components/home-hero';
-import { BurnoutThresholdBanner } from '../components/burnout-threshold-banner';
 
 interface HomePresenterProps {
   view: CalendarView;
@@ -160,7 +159,6 @@ export default function HomePresenter({
   return (
     <>
       <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
-      {hasActivePlanner && burnout && <BurnoutThresholdBanner score={burnout.score} />}
       <CalendarShell
         view={view}
         onChangeView={onChangeView}
