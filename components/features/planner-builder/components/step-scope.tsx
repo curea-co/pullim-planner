@@ -119,8 +119,8 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
   function setAnswer(answer: ScopeAnswer) {
     if (scope.answer === answer) return;
     // 답을 바꾸면 범위를 처음부터 다시 정한다 — 이전 답을 전제로 선 확정한 과목(`settled`)은 무효.
-    // 단, 학생이 손수 적은 단원(`manualUnits`)은 남긴다. 여기서 같이 비우면 답을 고르기 전에
-    // [단원 직접 편집]으로 저장한 범위를 자동 범위가 통째로 덮어쓴다(Codex).
+    // 단, 자동 범위로 되돌릴 수 없는 과목(`manualUnits`)은 남긴다. 여기서 같이 비우면
+    // [단원 직접 편집]으로 저장한 범위나 역추론 불가 프리필을 자동 범위가 덮어쓴다(Codex).
     commit({ ...scope, answer, progressCut: {}, settled: [] });
   }
 
@@ -351,7 +351,7 @@ function SubjectCard({
   orderedUnits: string[];
   chosen: string[];
   cut?: string;
-  /** 학생이 단원을 직접 편집한 과목 — 자동 범위가 덮어쓰지 않는다는 걸 배지로 알린다 */
+  /** 자동 범위로 되돌릴 수 없는 과목(직접 편집·역추론 불가 프리필) — 안 덮어쓴다는 걸 배지로 알린다 */
   manual: boolean;
   showCutPicker: boolean;
   onCut: (unit: string) => void;
@@ -386,7 +386,7 @@ function SubjectCard({
           </span>
           {manual && (
             <span className="bg-pullim-slate-100 text-pullim-slate-600 rounded-full px-2 py-0.5 text-[10px] font-bold">
-              직접 편집함
+              직접 정한 범위
             </span>
           )}
         </div>
@@ -482,7 +482,7 @@ const GATE_OPTIONS: { key: ScopeAnswer; label: string; desc: string }[] = [
 
 function ScopeGate({ answer, manualLabels, onAnswer }: {
   answer: ScopeAnswer | null;
-  /** 직접 편집해 답과 무관하게 유지되는 과목 표기명 — 왜 안 바뀌는지 여기서 미리 알린다 */
+  /** 답과 무관하게 범위가 유지되는 과목 표기명 — 왜 안 바뀌는지 여기서 미리 알린다 */
   manualLabels: string[];
   onAnswer: (a: ScopeAnswer) => void;
 }) {
@@ -537,7 +537,7 @@ function ScopeGate({ answer, manualLabels, onAnswer }: {
       {hint && <p className="text-pullim-slate-500 mt-2 text-[11px]">{hint}</p>}
       {manualLabels.length > 0 && (
         <p className="text-pullim-slate-500 mt-1 text-[11px]">
-          직접 편집한 과목(<strong>{manualLabels.join('·')}</strong>)의 범위는 답을 바꿔도 그대로 둬요 —
+          직접 정한 과목(<strong>{manualLabels.join('·')}</strong>)의 범위는 답을 바꿔도 그대로 둬요 —
           자동 범위로 되돌리려면 위에서 과목 칩을 껐다 켜주세요.
         </p>
       )}

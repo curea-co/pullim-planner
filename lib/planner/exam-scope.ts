@@ -144,6 +144,22 @@ export function inferElectives(subject: SubjectKey, units: string[]): string[] {
     .map(o => o.key);
 }
 
+/**
+ * 저장된 단원을 자동 범위로 되돌릴 수 있는가 — 수정 모드 프리필 판정용.
+ *
+ * `false` 면 시스템이 그 과목의 범위를 **재구성할 수 없다**는 뜻이다:
+ *  - 선택과목을 `choose` 만큼 역추론하지 못하거나 (자유 입력 단원만 있는 경우 등)
+ *  - 교육과정 데이터 자체가 없는 과목 (기타 등 — 자동 범위가 빈 배열)
+ *
+ * 이런 프리필을 자동 파생 대상으로 두면, 학생이 게이트 답을 바꾸는 순간 단원이 빈 배열로
+ * 덮어써져 저장해 둔 범위를 통째로 잃는다. 호출부는 '학생이 확정한 범위'로 따로 다뤄야 한다.
+ */
+export function canDeriveScope(subject: SubjectKey, units: string[]): boolean {
+  const spec = subjectScope(subject);
+  if (spec.choose > 0) return inferElectives(subject, units).length >= spec.choose;
+  return spec.fixedUnits.length > 0;
+}
+
 /** 과목 표기명 — 안내 문구 조립용 (lib/mock 재노출) */
 export function subjectLabel(subject: SubjectKey): string {
   return subjectLabels[subject] ?? subject;

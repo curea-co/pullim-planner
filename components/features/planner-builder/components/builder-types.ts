@@ -6,7 +6,7 @@ import {
 import { subjectLabels, type SubjectKey } from '@/lib/mock';
 import { WEAKNESS_ENABLED } from '@/lib/flags';
 import { examPresets, presetNameForDate } from '@/lib/planner/exam-presets';
-import { inferElectives, subjectScope } from '@/lib/planner/exam-scope';
+import { canDeriveScope, inferElectives, subjectScope } from '@/lib/planner/exam-scope';
 
 /**
  * 학생 플래너 빌더 폼 데이터.
@@ -278,7 +278,9 @@ export type ScopeState = {
    */
   settled: SubjectKey[];
   /**
-   * 학생이 [단원 직접 편집]으로 손수 적어 넣은 과목 — **답과 무관하게 유지된다.**
+   * **자동 범위로 되돌릴 수 없는 과목** — 답과 무관하게 단원이 유지된다. 두 경로로 들어온다:
+   *  - 학생이 [단원 직접 편집]으로 손수 적어 넣은 과목
+   *  - 수정 모드 프리필 중 시스템이 재구성할 수 없는 과목(`canDeriveScope` false)
    *
    * `settled` 와 나눠 두는 이유: 수정 모드는 저장된 과목을 전부 `settled` 로 넣는데,
    * 직접 편집까지 같은 배열에 담아 답 변경 시 통째로 보존하면 수정 모드에서 게이트가
@@ -292,8 +294,14 @@ export type ScopeState = {
  * 초기 게이트 상태. 이미 범위가 있는 폼(= 수정 모드)은 확정된 것으로 본다 —
  * 만들 때 답한 걸 고칠 때 다시 묻지 않는다. 새로 만들 때는 아무것도 답하지 않은 상태.
  *
- * 프리필은 `manualUnits` 에 넣지 않는다 — 이번 세션에서 직접 편집한 게 아니므로,
+ * 프리필은 원칙적으로 `manualUnits` 에 넣지 않는다 — 이번 세션에서 직접 편집한 게 아니므로,
  * 답을 바꾸면 새 답 기준으로 다시 파생돼야 한다.
+ *
+ * **예외 — 자동 범위로 되돌릴 수 없는 과목**(`canDeriveScope` false). 선택과목을 역추론할 수
+ * 없는 자유 입력 범위(`math: ['학원 교재 3단원']`)를 파생에 맡기면, 답을 바꾸는 순간
+ * `needsElective` 가 서서 단원이 `[]` 로 덮어써지고 선택과목부터 다시 고르게 된다 —
+ * 학생이 저장해 둔 범위를 확인 한 번에 잃는다(Codex). 되돌릴 수 없는 건 유지가 유일한 답이고,
+ * 자동 범위로 가는 출구는 과목 칩 껐다 켜기(`toggleSubject`)로 남아 있다.
  */
 export function initialScopeState(form: PlannerForm): ScopeState {
   const units = form.subjectUnits ?? {};
@@ -303,11 +311,18 @@ export function initialScopeState(form: PlannerForm): ScopeState {
   }
   const electives: Partial<Record<SubjectKey, string[]>> = {};
   for (const s of subjects) electives[s] = inferElectives(s, units[s] ?? []);
-  return { answer: 'custom', electives, progressCut: {}, settled: subjects, manualUnits: [] };
+  return {
+    answer: 'custom',
+    electives,
+    progressCut: {},
+    settled: subjects,
+    manualUnits: subjects.filter(s => !canDeriveScope(s, units[s] ?? [])),
+  };
 }
 
 /**
- * 그 과목의 범위를 학생이 이미 확인했는가 — 선 확정(`settled`)이거나 직접 편집(`manualUnits`).
+ * 그 과목의 범위를 학생이 이미 확인했는가 — 지금 답 아래의 선 확정(`settled`)이거나
+ * 자동 범위로 되돌릴 수 없는 확정(`manualUnits`).
  * 두 경우 모두 시스템이 단원을 다시 파생해 덮어써서는 안 되고, 게이트 증명도 이미 선 것으로 본다.
  */
 export function isScopeConfirmed(subject: SubjectKey, scope: ScopeState): boolean {

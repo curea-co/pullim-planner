@@ -267,4 +267,44 @@ describe('수정 모드 — 만들 때 답한 걸 다시 묻지 않는다', () =
     expect(latest.form.subjectUnits.english!.length).toBeGreaterThan(1);
     expect(latest.form.subjectUnits.english).toContain('글의 목적');
   });
+
+  it('선택과목이 역추론되는 프리필도 답을 바꾸면 다시 파생된다', () => {
+    // 위 영어(선택과목 없음)와 달리 선택과목이 있는 과목도 역추론만 되면 자동 파생 대상이다.
+    const saved: PlannerForm = { ...startForm, subjectUnits: { math: ['수열의 극한', '도함수의 활용'] } };
+    render(<Harness initial={saved} />);
+    expect(latest.scope.electives.math).toEqual(['미적분']);
+    expect(latest.scope.manualUnits).toEqual([]);
+
+    click(/전 범위 다 해야 해/);
+    // 되짚은 선택과목(미적분) + 고정 단원(수학Ⅰ·Ⅱ)으로 범위가 새로 잡힌다
+    expect(latest.form.subjectUnits.math).toContain('수열');
+    expect(latest.form.subjectUnits.math).toContain('도함수의 활용');
+    expect(latest.form.subjectUnits.math).not.toContain('확률');
+  });
+
+  it('선택과목을 역추론할 수 없는 프리필은 답을 바꿔도 범위를 잃지 않는다', () => {
+    // 자유 입력 단원만 있는 프리필은 시스템이 자동 범위로 되돌릴 수 없다. settled 만 비우면
+    // 이 과목이 다시 파생 대상이 되고, needsElective 가 서서 단원이 [] 로 덮어써진다 —
+    // 학생은 저장해 둔 범위를 확인 한 번에 잃고 선택과목부터 다시 고르게 된다(Codex).
+    const saved: PlannerForm = { ...startForm, subjectUnits: { math: ['학원 교재 3단원'] } };
+    render(<Harness initial={saved} />);
+    expect(latest.scope.manualUnits).toEqual(['math']);
+    expect(blocker()).toBeNull();
+
+    click(/전 범위 다 해야 해/);
+    expect(latest.form.subjectUnits.math).toEqual(['학원 교재 3단원']);
+    // 선택과목을 다시 묻는 화면으로 되돌아가지도 않는다
+    expect(screen.queryByText('선택과목을 골라줘')).toBeNull();
+    expect(blocker()).toBeNull();
+  });
+
+  it('교육과정 데이터가 없는 과목(기타)의 프리필도 유지된다', () => {
+    // '기타'는 자동 범위가 아예 비어 있어 파생에 맡기면 단원이 통째로 사라진다.
+    const saved: PlannerForm = { ...startForm, subjectUnits: { etc: ['논술 특강'] } };
+    render(<Harness initial={saved} />);
+
+    click(/전 범위 다 해야 해/);
+    expect(latest.form.subjectUnits.etc).toEqual(['논술 특강']);
+    expect(blocker()).toBeNull();
+  });
 });
