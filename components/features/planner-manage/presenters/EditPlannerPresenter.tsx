@@ -32,6 +32,7 @@ interface EditPlannerPresenterProps {
   onSave: (submitted: PlannerForm) => void;
   routines?: Routine[];
   onServerPreview?: () => Promise<PreviewDay[] | null>;
+  onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;
 }
 
 export default function EditPlannerPresenter({
@@ -41,7 +42,7 @@ export default function EditPlannerPresenter({
   currentStep, canPrev, canNext, blockedReason, maxReachable,
   onPrev, onNext, onJump,
   onSave,
-  routines, onServerPreview,
+  routines, onServerPreview, onUpdateRoutine,
 }: EditPlannerPresenterProps) {
   if (!planner) {
     return (
@@ -119,6 +120,7 @@ export default function EditPlannerPresenter({
             initialExpert={hasCustomBasics(form)}
             routines={routines}
             onServerPreview={onServerPreview}
+            onUpdateRoutine={onUpdateRoutine}
           />
 
           <FlywheelNote>

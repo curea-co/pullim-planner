@@ -43,6 +43,8 @@ interface PlannerWizardProps {
   routines?: Routine[];
   /** 4단계 서버 dry-run 미리보기 로더(컨테이너 주입) — 미주입 시 휴리스틱. */
   onServerPreview?: () => Promise<PreviewDay[] | null>;
+  /** 루틴 원본 시각 수정 — 4단계 충돌 배너의 '옮기기' 조치용. */
+  onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;
 }
 
 export function PlannerWizard({
@@ -52,7 +54,7 @@ export function PlannerWizard({
   onPrev, onNext, onJump,
   mode, onActivate,
   initialExpert,
-  routines, onServerPreview,
+  routines, onServerPreview, onUpdateRoutine,
 }: PlannerWizardProps) {
   const stepInfo = plannerStepConfig[currentStep - 1];
   const StepIcon = stepInfo.icon;
@@ -118,6 +120,7 @@ export function PlannerWizard({
               onActivate={onActivate}
               routines={routines}
               onServerPreview={onServerPreview}
+              onUpdateRoutine={onUpdateRoutine}
             />
           )}
         </div>

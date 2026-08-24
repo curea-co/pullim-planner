@@ -15,6 +15,7 @@ import { mapServerPreview, type PreviewDay } from '@/lib/planner/preview-map';
 import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
 import { usePlannerForm } from '../hooks/use-planner-form';
+import { useRoutineTimeUpdate } from '../hooks/use-routine-time-update';
 import NewPlannerPresenter from '../presenters/NewPlannerPresenter';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
@@ -34,6 +35,9 @@ export default function NewPlannerContainer() {
       .catch(() => { if (alive) setRoutines([]); });
     return () => { alive = false; };
   }, []);
+
+  // 4단계 충돌 배너의 '옮기기' — 루틴 원본 시각을 PATCH 한다(확인 다이얼로그 뒤).
+  const handleUpdateRoutine = useRoutineTimeUpdate(routines, setRoutines);
 
   // STEP8 서버 dry-run 미리보기(pullim-api #476) — 실제 bake 규칙으로 계산만(저장 없음).
   // bypass·실패면 null → 휴리스틱 폴백. 루틴 적용은 create 와 동일 매핑.
@@ -126,6 +130,7 @@ export default function NewPlannerContainer() {
       onActivate={handleActivate}
       routines={routines}
       onServerPreview={handleServerPreview}
+      onUpdateRoutine={handleUpdateRoutine}
     />
   );
 }
