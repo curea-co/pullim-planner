@@ -72,7 +72,7 @@ export function fromMinutes(min: number): string {
 
 /**
  * 창에서 점유 구간을 뺀 나머지 — 빈 세그먼트 목록.
- * 자투리 배치·루틴 이동 자리 찾기가 모두 이 위에서 돈다.
+ * '시간 안쪽으로 옮기기'(`suggestMoveIn`)의 자리 찾기가 이 위에서 돈다.
  */
 export function subtractRanges(win: [number, number], busy: readonly [number, number][]): [number, number][] {
   const sorted = [...busy].sort((a, b) => a[0] - b[0]);

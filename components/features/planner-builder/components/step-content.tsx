@@ -1092,7 +1092,11 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
       return {
         start: p.start, end: p.end,
         subjectLabel: routineSubjectLabel(r.subject),
-        type: r.type, unitLabel: r.title, isRoutine: true, held: p.held,
+        type: r.type, unitLabel: r.title, isRoutine: true,
+        // 창 밖이면서 겹치기까지 하는 루틴은 **창 사유**를 태그로 쓴다. 태그가 한 줄이라
+        // 하나만 고를 수 있는데, 겹침을 풀어도 창 밖이면 여전히 배치되지 않으니 학생이
+        // 먼저 손대야 할 쪽은 창이다. 두 사유를 다 적는 자리는 아래 확인 배너다.
+        held: p.held ?? (p.overlapping ? '루틴 겹침' : undefined),
       };
     });
 
@@ -1112,7 +1116,17 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
       const mockFirstSlot = dday <= 30 && dt.weekday === 0;
 
       let slotIdx = 0;
-      const pushBlock = (start: number, end: number) => {
+      /**
+       * 슬롯 1건을 **소비**한다 — 과목·단원·slotIdx 커서는 `keep=false`(루틴과 겹쳐 버릴
+       * 슬롯)에서도 전진하고, `items.push` 만 생략한다.
+       *
+       * BE `generateSchedule` 은 가용 창을 슬롯으로 전부 채운 **뒤** `excludeOverlapping`
+       * 으로 루틴과 겹치는 것을 버린다. 즉 버려진 슬롯도 과목 인터리빙·단원 라운드로빈·
+       * 일요일 모의(mock) 판정의 자리를 이미 소비한 상태다. 여기서 겹친 슬롯을 아예
+       * 건너뛰면 첫 슬롯이 루틴과 겹칠 때 다음 블록이 두 번째 슬롯이 아니라 첫 번째 슬롯의
+       * 메타데이터를 가져와 서버 결과와 과목·단원·유형이 통째로 어긋난다(Codex).
+       */
+      const takeSlot = (start: number, end: number, keep: boolean) => {
         const subject = subjectKeys[subjectCursor % subjectKeys.length];
         subjectCursor += 1;
         const isMock = mockFirstSlot && slotIdx === 0;
@@ -1130,6 +1144,8 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
           }
         }
 
+        if (!keep) return; // 버릴 슬롯 — 커서만 전진시키고 화면에는 내보내지 않는다
+
         items.push({
           start: fmtHM(start), end: fmtHM(end),
           subjectLabel: subjectLabels[subject], type, unitLabel,
@@ -1145,8 +1161,7 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
       const busy = busyRanges(placed);
       for (let t = winStart; t + blockMinutes <= winEnd; t += cycleMinutes) {
         const end = t + blockMinutes;
-        if (busy.some(([bs, be]) => t < be && bs < end)) continue;
-        pushBlock(t, end);
+        takeSlot(t, end, !busy.some(([bs, be]) => t < be && bs < end));
       }
     }
 
