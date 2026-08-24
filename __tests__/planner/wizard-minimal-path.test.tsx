@@ -4,6 +4,7 @@
  * 축소의 핵심 약속을 지키는지 본다: 묻는 건 3개뿐이지만 뺀 항목은 사라진 게 아니라
  * '직접 설정'에서 되돌아온다.
  */
+import { useEffect, useState } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 jest.mock('sonner', () => ({ toast: { error: jest.fn(), success: jest.fn(), warning: jest.fn() } }));
@@ -22,6 +23,25 @@ const TODAY = '2026-08-24';
 
 function formWith(patch: Partial<PlannerForm>): PlannerForm {
   return { ...initialPlannerForm, ...patch };
+}
+
+/**
+ * form 상태를 실제로 들고 도는 위저드 — 입력 한 번이 setForm 을 거쳐 다음 렌더까지
+ * 어떻게 반영되는지 본다. 최신 form 은 `onFormChange` 로 흘려보내 검증한다.
+ */
+function StatefulWizard({ start, onFormChange }: { start: PlannerForm; onFormChange: (f: PlannerForm) => void }) {
+  const [form, setForm] = useState(start);
+  const [scope, setScope] = useState(() => initialScopeState(start));
+  useEffect(() => { onFormChange(form); }, [onFormChange, form]);
+  return (
+    <PlannerWizard
+      form={form} setForm={setForm}
+      scope={scope} setScope={setScope}
+      currentStep={1} canPrev={false} canNext blockedReason={null} maxReachable={4}
+      onPrev={jest.fn()} onNext={jest.fn()} onJump={jest.fn()}
+      mode="create" onActivate={jest.fn()}
+    />
+  );
 }
 
 /** 수정 모드 프리필(plannerToForm) 검증용 — 저장된 목표만 갈아 끼운다 */
@@ -173,6 +193,32 @@ describe('자동 시험명', () => {
     const prev = formWith({ examType: 'midterm', examStartDate: '2026-10-14', examName: '내신 마지막 승부' });
     const next = withAutoExamName(prev, { ...prev, examStartDate: '2026-04-21' });
     expect(next.examName).toBe('내신 마지막 승부');
+  });
+
+  it('자유 목표를 적으면 자동 이름도 함께 따라온다', () => {
+    // '자유 목표'로 바꾼 시점엔 목표가 비어 있어 자동 이름이 '자유 목표'로 굳는다.
+    // 그 뒤 목표를 적었는데 이름이 안 따라오면 요약·저장명이 '자유 목표'로 남는다.
+    let latest = initialPlannerForm;
+    render(<StatefulWizard start={initialPlannerForm} onFormChange={f => { latest = f; }} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /자유 목표/ }));
+    expect(latest.examName).toBe('자유 목표');
+
+    fireEvent.change(screen.getByPlaceholderText(/토익 750점/), { target: { value: '토익 750점' } });
+    expect(resolvedExamName(latest)).toBe('토익 750점');
+  });
+
+  it('직접 쓴 이름은 자유 목표를 고쳐도 유지된다', () => {
+    const start = formWith({ examType: 'other' });
+    let latest = start;
+    render(<StatefulWizard start={start} onFormChange={f => { latest = f; }} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /직접 설정/ }));
+    fireEvent.change(screen.getByLabelText('목표 시험명'), { target: { value: '내가 정한 이름' } });
+    fireEvent.change(screen.getByPlaceholderText(/토익 750점/), { target: { value: '토익 750점' } });
+
+    expect(latest.examName).toBe('내가 정한 이름');
+    expect(resolvedExamName(latest)).toBe('내가 정한 이름');
   });
 
   it('이름을 묻지 않아도 저장 페이로드의 name 은 비지 않는다', () => {

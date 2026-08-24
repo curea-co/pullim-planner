@@ -429,14 +429,16 @@ function TargetField({ form, setForm }: Props) {
     );
   }
 
-  // free
+  // free — 자유 목표에서는 자동 시험명이 이 값에서 파생된다(autoExamName). '자유 목표'로
+  // 바꾼 시점의 이름이 그대로 굳지 않도록 목표 입력도 자동 이름 갱신 경로를 태운다.
+  // 학생이 '직접 설정'에서 쓴 이름은 withAutoExamName 이 알아서 지켜 준다.
   return (
     <div>
       <label className="text-pullim-slate-700 mb-1 block text-xs font-bold">목표</label>
       <input
         type="text"
         value={form.targetGoal ?? ''}
-        onChange={e => setForm({ ...form, targetGoal: e.target.value })}
+        onChange={e => setForm(withAutoExamName(form, { ...form, targetGoal: e.target.value }))}
         placeholder="예: 토익 750점, 한자 1급 합격, Pass"
         className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
       />
