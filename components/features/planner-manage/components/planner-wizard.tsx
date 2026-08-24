@@ -1,5 +1,7 @@
 'use client';
 
+import type { ActivateSummary } from '@/components/features/planner-builder/components/step-content';
+
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { StepIndicator } from '@/components/features/planner-builder/components/step-indicator';
@@ -36,7 +38,7 @@ interface PlannerWizardProps {
   onNext: () => void;
   onJump: (n: number) => void;
   mode: 'create' | 'edit';
-  onActivate: (submitted: PlannerForm) => void;
+  onActivate: (submitted: PlannerForm, summary?: ActivateSummary) => void;
   /** 직접 설정을 처음부터 켠 채로 시작 — 기존 값이 숨겨지지 않게(수정 모드) */
   initialExpert?: boolean;
   /** 실 루틴(컨테이너 fetch) — 4단계 조정·미리보기에 사용. 미주입 시 mock. */

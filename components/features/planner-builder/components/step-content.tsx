@@ -1195,7 +1195,7 @@ type ConfirmProps = {
    * 활성화·저장 버튼 클릭 시 호출. 부모가 createPlanner / updatePlanner 호출 + redirect 처리.
    * 미주입 시 toast + router.push('/planner') 기본 동작.
    */
-  onActivate?: (form: PlannerForm) => void;
+  onActivate?: (form: PlannerForm, summary?: ActivateSummary) => void;
   /** 실 루틴(컨테이너 주입) — 미주입 시 mock. 미리보기의 루틴 반영에 사용. */
   routines?: Routine[];
   /**
@@ -1208,6 +1208,19 @@ type ConfirmProps = {
    * 미주입이면 그 조치를 노출하지 않는다.
    */
   onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;
+};
+
+/**
+ * 활성화 시점의 미리보기 집계 — 완료 화면 리캡용.
+ *
+ * `source` 가 값의 출처다. `'server'` 는 서버 dry-run(실제 bake 규칙)이라 저장 결과와 같은
+ * 엔진이 낸 수치지만, `'local'` 은 `generatePreview()` 휴리스틱 근사다(루틴 처리 등 BE bake 와
+ * 규칙이 다를 수 있다). 완료 화면이 확정 문구를 쓸지 예상 문구를 쓸지 여기서 갈린다 (codex).
+ */
+export type ActivateSummary = {
+  previewDays: number;
+  previewBlocks: number;
+  source: 'server' | 'local';
 };
 
 export function PStep4Confirm({
@@ -1301,7 +1314,14 @@ export function PStep4Confirm({
     }
 
     if (onActivate) {
-      onActivate(form);
+      // 완료 화면이 "무엇이 만들어졌는지" 를 숫자로 보여줄 수 있게 미리보기 집계를 함께 넘긴다.
+      // 보류 루틴은 실배치가 아니라 제외한다. 출처(source)도 같이 넘겨 휴리스틱 근사를
+      // 확정 결과처럼 보여주지 않게 한다.
+      onActivate(form, {
+        previewDays: previews.length,
+        previewBlocks: previews.reduce((n, d) => n + d.items.filter((it) => !it.held).length, 0),
+        source: serverDays ? 'server' : 'local',
+      });
       return;
     }
 
