@@ -244,9 +244,11 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
         ) : null}
       </div>
 
-      {/* 자유 목표는 최소 경로에서도 받는다 — 시험명처럼 파생할 근거가 없고, 비우면
-          BE `target.value`(free 는 비빈 문자열 필수)에 걸려 저장 자체가 실패한다. */}
-      {examType === 'other' && !expert && <TargetField form={form} setForm={setForm} />}
+      {/* 목표는 최소 경로에서도 받는다. 시간표 배치를 바꾸지 않는 값이지만 BE `target` 이
+          필수라(`kind` 는 examType 파생, grade/score 는 숫자, free 는 비빈 문자열) 묻지
+          않으면 학생이 정하지 않은 값이 저장된다 — 빈 등급이 1등급으로 박혔다(Codex).
+          '직접 설정' 을 켜면 아래 섹션에서 같은 입력을 편집한다(중복 노출 방지). */}
+      {!expert && <TargetField form={form} setForm={setForm} />}
 
       {/* 자동 시험명 — 이름은 시험 종류·날짜에서 파생한다. 고치려면 '직접 설정'. */}
       <section className="bg-pullim-slate-900 flex items-center justify-between gap-3 rounded-xl p-3.5 text-white">
@@ -300,7 +302,7 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
             />
           </div>
           <p className="text-pullim-slate-500 text-[10px]">
-            목표 등급·다짐은 시간표 배치를 바꾸지 않아요 — 안 써도 됩니다.
+            시험명·다짐은 시간표 배치를 바꾸지 않아요 — 안 써도 됩니다.
           </p>
         </section>
       )}

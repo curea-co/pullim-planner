@@ -242,18 +242,18 @@ export function resolvedExamName(form: PlannerForm): string {
 }
 
 /**
- * 최소 경로에서 뺀 항목(시험명·목표·다짐·동기 스타일)에 학생이 넣은 값이 있는가.
+ * 최소 경로에서 뺀 항목(시험명·다짐·동기 스타일)에 학생이 넣은 값이 있는가.
  * 수정 모드에서 '직접 설정'을 처음부터 켜 둘지 판단한다 — 만들 때 쓴 값이 접힌 채로
  * 숨어 있으면 "고칠 땐 안 보이는" 상태가 된다.
+ *
+ * 목표(등급·점수·자유)는 **최소 경로에 있으므로 여기서 보지 않는다.** 저장된 플래너는
+ * 전부 목표를 갖고 있어서(BE 필수), 목표를 근거로 삼으면 수정 진입이 항상 '직접 설정'
+ * 켜진 상태가 된다.
  */
 export function hasCustomBasics(form: PlannerForm): boolean {
   if (form.motto?.trim()) return true;
   if (form.motivationStyle !== initialPlannerForm.motivationStyle) return true;
-  if (form.examName?.trim() && form.examName !== autoExamName(form)) return true;
-  const kind = examTypeMeta[form.examType ?? 'mock'].targetKind;
-  if (kind === 'grade') return !!form.targetGrade?.trim();
-  if (kind === 'score') return form.targetScore !== initialPlannerForm.targetScore;
-  return !!form.targetGoal?.trim();
+  return !!(form.examName?.trim() && form.examName !== autoExamName(form));
 }
 
 /* ─── 학습 범위 확인 게이트 ────────────────────────────────────────
@@ -300,11 +300,16 @@ export function needsElective(subject: SubjectKey, scope: ScopeState): boolean {
 
 /** 1단계를 통과하지 못하는 이유 — 없으면 null */
 export function goalBlocker(form: PlannerForm): string | null {
-  // 자유 목표는 **학생만 아는 값**이라 최소 경로에서도 받는다. 시험명처럼 파생할 근거가 없고
-  // (BE `target.value` 는 free 일 때 비빈 문자열 필수라 빈 값이면 저장 자체가 400 이다),
-  // 비워 두면 모든 플래너가 '자유 목표' 라는 같은 이름으로 저장된다.
-  if (form.examType === 'other' && !form.targetGoal?.trim()) {
+  // 목표는 시간표 배치를 바꾸지 않지만 BE `target` 이 필수라 **묻지 않으면 학생이 정하지
+  // 않은 값이 저장된다.** 빈 등급이 `parseInt('') || 1` 로 1등급이 됐고, 자유 목표는
+  // 비빈 문자열 필수라 저장 자체가 400 이었다(Codex). 점수는 화면에 기본값이 보이므로
+  // 학생이 확인한 값으로 본다.
+  const targetKind = examTypeMeta[form.examType ?? 'mock'].targetKind;
+  if (targetKind === 'free' && !form.targetGoal?.trim()) {
     return '무엇을 목표로 할지 적어주세요';
+  }
+  if (targetKind === 'grade' && !form.targetGrade?.trim()) {
+    return '목표 등급을 정해주세요';
   }
   if (!form.examStartDate) return '시험 날짜를 정해주세요';
   // 계획표는 미래 대상 — 이미 **종료된** 시험 차단. 판정은 종료일 기준(진행 중 범위 시험은

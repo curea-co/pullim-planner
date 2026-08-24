@@ -71,9 +71,9 @@ describe('시험일 프리셋', () => {
   });
 });
 
-describe('자유 목표 — 최소 경로에서도 받는다', () => {
-  // 시험명은 종류·날짜에서 파생할 수 있지만 자유 목표는 파생할 근거가 없다. 게다가 BE
-  // `target.value` 는 free 일 때 비빈 문자열 필수라, 비워 두면 저장이 400 으로 실패한다.
+describe('목표 — 최소 경로에서도 받는다', () => {
+  // 목표는 시간표 배치를 바꾸지 않지만 BE `target` 이 필수다. 묻지 않으면 학생이 정하지
+  // 않은 값이 저장된다 — 빈 등급은 1등급으로 박히고, 자유 목표는 비빈 문자열 필수라 400.
   it('목표를 적기 전에는 1단계를 통과하지 못한다', () => {
     const form = formWith({ examType: 'other', examStartDate: '2026-12-01', targetGoal: '' });
     expect(goalBlocker(form)).toBe('무엇을 목표로 할지 적어주세요');
@@ -89,8 +89,14 @@ describe('자유 목표 — 최소 경로에서도 받는다', () => {
     expect(goalBlocker(form)).not.toBeNull();
   });
 
-  it('시험 종류에는 목표를 요구하지 않는다', () => {
-    expect(goalBlocker(formWith({ examType: 'mock', examStartDate: '2026-12-01' }))).toBeNull();
+  it('등급 시험은 목표 등급을 정해야 통과한다', () => {
+    const base = { examType: 'mock' as const, examStartDate: '2026-12-01' };
+    expect(goalBlocker(formWith({ ...base, targetGrade: '' }))).toBe('목표 등급을 정해주세요');
+    expect(goalBlocker(formWith({ ...base, targetGrade: '2' }))).toBeNull();
+  });
+
+  it('점수 시험은 화면에 기본값이 보이므로 막지 않는다', () => {
+    expect(goalBlocker(formWith({ examType: 'midterm', examStartDate: '2026-12-01', examEndDate: '2026-12-03' }))).toBeNull();
   });
 });
 
@@ -250,6 +256,8 @@ describe('직접 설정 — 제외 항목 복원', () => {
     expect(hasCustomBasics(formWith({ examType: 'midterm', examStartDate: '2026-10-14' }))).toBe(false);
     expect(hasCustomBasics(formWith({ motto: '영어 빈칸 사수' }))).toBe(true);
     expect(hasCustomBasics(formWith({ motivationStyle: 'spartan' }))).toBe(true);
-    expect(hasCustomBasics(formWith({ examType: 'mock', examStartDate: '2026-09-01', targetGrade: '2' }))).toBe(true);
+    expect(hasCustomBasics(formWith({ examName: '내가 정한 이름' }))).toBe(true);
+    // 목표는 최소 경로에 있다 — 저장된 플래너는 전부 목표를 갖고 있어서(BE 필수) 근거가 될 수 없다.
+    expect(hasCustomBasics(formWith({ examType: 'mock', examStartDate: '2026-09-01', targetGrade: '2' }))).toBe(false);
   });
 });
