@@ -84,7 +84,10 @@ const mockForm = {
   subjectUnits: { 국어: ['화법과 작문'] },
   routineIds: [],
 };
-const mockSummary = { previewDays: 7, previewBlocks: 21, source: 'local' as const };
+/** 4단계가 넘기는 미리보기 집계 — 테스트마다 갈아끼운다(빈 집계 경로 확인용). */
+const DEFAULT_SUMMARY = { previewDays: 7, previewBlocks: 21, source: 'local' as const };
+let mockSummary: { previewDays: number; previewBlocks: number; source: 'server' | 'local' } =
+  DEFAULT_SUMMARY;
 
 const WIZARD = '위저드(테스트) 활성화';
 const DONE_HEADING = '시간표가 활성화됐어요';
@@ -123,6 +126,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   window.history.replaceState(null, '', '/planner/manage/new');
   syncSearchParamsWithHistory();
+  mockSummary = DEFAULT_SUMMARY;
 });
 
 describe('활성화 성공 — 완료 화면과 생성 표식', () => {
@@ -238,5 +242,34 @@ describe('생성 표식 URL 재진입 — 빈 위저드를 다시 열지 않는�
 
     expect(screen.queryByRole('button', { name: WIZARD })).not.toBeInTheDocument();
     expect(mockReplace).toHaveBeenCalledWith('/planner/manage');
+  });
+});
+
+describe('빈 집계 — 0 을 확인 수치처럼 보여주지 않는다', () => {
+  it('미리보기가 비어 있으면 블록 줄 대신 패턴 줄을 띄운다', async () => {
+    // 시험일 = 오늘이면 로컬 미리보기(`generatePreview`)가 내일부터 세므로 빈 배열이 되고,
+    // 집계가 `{days: 0, count: 0}` 으로 넘어온다. 그대로 옮기면 `0일 약 0개` 가 노출된다 (codex).
+    mockSummary = { previewDays: 0, previewBlocks: 0, source: 'local' };
+    mockCreate.mockResolvedValue({ id: 'planner-1', name: '2026 9월 모의평가' });
+    mockActivate.mockResolvedValue(undefined);
+
+    await renderContainer();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: WIZARD })); });
+
+    expect(screen.getByRole('heading', { name: DONE_HEADING })).toBeInTheDocument();
+    expect(screen.queryByText(/0일/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/0개/)).not.toBeInTheDocument();
+    expect(screen.getByText('블록 패턴')).toBeInTheDocument();
+  });
+
+  it('집계가 정상이면 기존대로 숫자를 보여준다', async () => {
+    mockCreate.mockResolvedValue({ id: 'planner-1', name: '2026 9월 모의평가' });
+    mockActivate.mockResolvedValue(undefined);
+
+    await renderContainer();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: WIZARD })); });
+
+    expect(screen.getByText('블록(예상)')).toBeInTheDocument();
+    expect(screen.getByText(/7일 약 21개/)).toBeInTheDocument();
   });
 });

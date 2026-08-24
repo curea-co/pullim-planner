@@ -120,13 +120,19 @@ export default function NewPlannerContainer() {
       unitCount: Object.values(units).reduce((a, b) => a + (b?.length ?? 0), 0),
       // 4단계 집계를 그대로 옮기되 출처를 함께 넘긴다 — 휴리스틱 근사(`local`)는 실제 bake 와
       // 규칙이 달라 실제보다 적을 수 있어 '예상' 으로 표기된다. 집계가 없으면 null(0 으로 지어내지 않음).
-      blocks: summary
-        ? {
-            days: summary.previewDays,
-            count: summary.previewBlocks,
-            estimated: summary.source !== 'server',
-          }
-        : null,
+      //
+      // 0 으로 온 집계도 **없는 것과 같이 다룬다** — 시험일이 오늘이어도 1단계 검증은 통과하는데
+      // (지난 날짜만 막는다), 로컬 미리보기 `generatePreview()` 는 내일부터 세므로 그 경우 빈
+      // 배열이 되어 `0일 약 0개` 가 완료 화면에 뜬다. 일수든 블록 수든 0 이면 방금 만든 것을
+      // 확인시켜 주는 숫자가 아니라 실패처럼 읽히므로, 숫자 대신 패턴 줄로 대체한다 (codex).
+      blocks:
+        summary && summary.previewDays > 0 && summary.previewBlocks > 0
+          ? {
+              days: summary.previewDays,
+              count: summary.previewBlocks,
+              estimated: summary.source !== 'server',
+            }
+          : null,
       patternLabel: blockPatternMeta[submitted.blockPattern].label,
       patternSpec: blockPatternMeta[submitted.blockPattern].spec,
       routineCount: ROUTINE_ENABLED ? submitted.routineIds.length : null,
