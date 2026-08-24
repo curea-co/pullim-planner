@@ -272,28 +272,53 @@ export type ScopeState = {
   electives: Partial<Record<SubjectKey, string[]>>;
   /** 과목별 '마지막으로 배운 단원' — progress 답변의 증명 */
   progressCut: Partial<Record<SubjectKey, string>>;
-  /** 범위가 이미 확정된 과목 — 수정 모드 프리필·단원 직접 편집으로 넣은 과목 */
+  /**
+   * **지금 답 아래에서** 범위가 확정된 과목 — 수정 모드 프리필이 여기 들어온다.
+   * 게이트 답을 바꾸면 이전 답을 전제로 선 확정이라 전부 무효가 된다.
+   */
   settled: SubjectKey[];
+  /**
+   * 학생이 [단원 직접 편집]으로 손수 적어 넣은 과목 — **답과 무관하게 유지된다.**
+   *
+   * `settled` 와 나눠 두는 이유: 수정 모드는 저장된 과목을 전부 `settled` 로 넣는데,
+   * 직접 편집까지 같은 배열에 담아 답 변경 시 통째로 보존하면 수정 모드에서 게이트가
+   * 죽은 컨트롤이 된다(어떤 답을 골라도 범위가 그대로). 반대로 통째로 비우면 학생이
+   * 방금 적은 단원을 자동 범위가 덮어쓴다(Codex). 두 의미를 분리해야 둘 다 지켜진다.
+   */
+  manualUnits: SubjectKey[];
 };
 
 /**
  * 초기 게이트 상태. 이미 범위가 있는 폼(= 수정 모드)은 확정된 것으로 본다 —
  * 만들 때 답한 걸 고칠 때 다시 묻지 않는다. 새로 만들 때는 아무것도 답하지 않은 상태.
+ *
+ * 프리필은 `manualUnits` 에 넣지 않는다 — 이번 세션에서 직접 편집한 게 아니므로,
+ * 답을 바꾸면 새 답 기준으로 다시 파생돼야 한다.
  */
 export function initialScopeState(form: PlannerForm): ScopeState {
   const units = form.subjectUnits ?? {};
   const subjects = Object.keys(units) as SubjectKey[];
   if (subjects.length === 0) {
-    return { answer: null, electives: {}, progressCut: {}, settled: [] };
+    return { answer: null, electives: {}, progressCut: {}, settled: [], manualUnits: [] };
   }
   const electives: Partial<Record<SubjectKey, string[]>> = {};
   for (const s of subjects) electives[s] = inferElectives(s, units[s] ?? []);
-  return { answer: 'custom', electives, progressCut: {}, settled: subjects };
+  return { answer: 'custom', electives, progressCut: {}, settled: subjects, manualUnits: [] };
+}
+
+/**
+ * 그 과목의 범위를 학생이 이미 확인했는가 — 선 확정(`settled`)이거나 직접 편집(`manualUnits`).
+ * 두 경우 모두 시스템이 단원을 다시 파생해 덮어써서는 안 되고, 게이트 증명도 이미 선 것으로 본다.
+ */
+export function isScopeConfirmed(subject: SubjectKey, scope: ScopeState): boolean {
+  return scope.settled.includes(subject) || scope.manualUnits.includes(subject);
 }
 
 /** 선택과목을 아직 고르지 않아 범위를 확정할 수 없는 과목인가 */
 export function needsElective(subject: SubjectKey, scope: ScopeState): boolean {
-  if (scope.settled.includes(subject)) return false;
+  // 직접 편집한 과목까지 다시 물으면 교육과정에 없는 선택과목의 우회로
+  // ([목록에 없어 · 직접 고를래] → 직접 편집)가 답 변경 한 번에 막다른 길로 돌아간다.
+  if (isScopeConfirmed(subject, scope)) return false;
   const spec = subjectScope(subject);
   return spec.choose > 0 && (scope.electives[subject]?.length ?? 0) < spec.choose;
 }
@@ -331,13 +356,13 @@ export function scopeBlocker(form: PlannerForm, scope: ScopeState): string | nul
 
   if (!scope.answer) return '학교 진도를 골라주세요';
   if (scope.answer === 'progress') {
-    const noCut = subjects.find(s => !scope.settled.includes(s) && !scope.progressCut[s]);
+    const noCut = subjects.find(s => !isScopeConfirmed(s, scope) && !scope.progressCut[s]);
     if (noCut) return `${subjectLabels[noCut] ?? noCut} 진도를 눌러주세요`;
   }
   if (scope.answer === 'custom') {
     // 확인은 **과목별**이다. 전역 플래그로 두면 영어를 직접 편집한 뒤 수학을 새로 추가했을 때
     // 수학은 자동으로 채워진 전 범위 그대로 통과한다 — '직접 고르기' 를 고른 의미가 사라진다(Codex).
-    const unconfirmed = subjects.find(s => !scope.settled.includes(s));
+    const unconfirmed = subjects.find(s => !isScopeConfirmed(s, scope));
     if (unconfirmed) {
       return `${subjectLabels[unconfirmed] ?? unconfirmed} 시험 범위를 골라주세요`;
     }

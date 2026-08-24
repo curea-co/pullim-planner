@@ -29,9 +29,9 @@ const startForm: PlannerForm = {
   examEndDate: '2099-05-03',
 };
 
-function Harness() {
-  const [form, setForm] = useState<PlannerForm>(startForm);
-  const [scope, setScope] = useState<ScopeState>(() => initialScopeState(startForm));
+function Harness({ initial = startForm }: { initial?: PlannerForm }) {
+  const [form, setForm] = useState<PlannerForm>(initial);
+  const [scope, setScope] = useState<ScopeState>(() => initialScopeState(initial));
   // 렌더 중 바깥 변수를 건드리지 않는다 — 검증용 스냅샷은 커밋 후 effect 에서 노출
   useEffect(() => { latest = { form, scope }; }, [form, scope]);
   return <PStep3Subjects form={form} setForm={setForm} scope={scope} setScope={setScope} />;
@@ -39,6 +39,15 @@ function Harness() {
 
 const blocker = () => scopeBlocker(latest.form, latest.scope);
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
+
+/** [단원 직접 편집] 모달을 열어 자유 입력 단원 하나만 남긴다 — 교육과정에 없는 값이라 자동 범위와 구분된다 */
+function editUnitsTo(label: string) {
+  fireEvent.click(screen.getAllByRole('button', { name: /단원 직접 편집/ })[0]);
+  fireEvent.click(screen.getByRole('button', { name: '전체 초기화' }));
+  fireEvent.change(screen.getByPlaceholderText(/수능특강 영어 3강/), { target: { value: label } });
+  click('추가');
+  click(/적용/);
+}
 
 describe('선택과목 — 고르기 전에는 범위를 확정하지 않는다', () => {
   it('국어 택1 · 수학 택1 · 탐구 택2 규칙을 갖는다', () => {
@@ -174,6 +183,43 @@ describe('확인 게이트 — 확인 전에는 넘어가지 못한다', () => {
     expect(blocker()).toBe('수학 시험 범위를 골라주세요');
   });
 
+  it('답을 고르기 전에 직접 편집한 단원은 답을 골라도 덮어쓰지 않는다', () => {
+    // 답 변경이 settled 를 통째로 비우던 시절엔, 답하기 전에 저장한 단원을 첫 답 한 번에
+    // 자동 범위가 되살려 덮어썼다 — 학생이 손수 적은 값이 조용히 사라진다(Codex).
+    render(<Harness />);
+    click('영어');
+    editUnitsTo('학원 교재 3단원');
+    expect(latest.form.subjectUnits.english).toEqual(['학원 교재 3단원']);
+
+    click(/시험 범위가 따로 있어/);
+    expect(latest.form.subjectUnits.english).toEqual(['학원 교재 3단원']);
+    // 직접 편집한 과목은 이미 학생이 확인한 범위 — custom 증명도 선다
+    expect(blocker()).toBeNull();
+    // 답 변경으로 선 확정(settled)은 풀리되 직접 편집 표시는 남는다
+    expect(latest.scope.settled).toEqual([]);
+    expect(latest.scope.manualUnits).toEqual(['english']);
+
+    // 다른 답으로 또 바꿔도 마찬가지 — 손수 적은 범위는 학생이 다시 손대기 전까지 유지된다
+    click(/전 범위 다 해야 해/);
+    expect(latest.form.subjectUnits.english).toEqual(['학원 교재 3단원']);
+    // 왜 안 바뀌는지 화면에서도 알린다
+    expect(screen.getByText(/답을 바꿔도 그대로 둬요/)).toBeInTheDocument();
+  });
+
+  it('직접 편집한 과목도 과목 칩을 껐다 켜면 자동 범위로 돌아온다', () => {
+    // 유지가 곧 감옥이 되면 안 된다 — 자동 범위로 돌아갈 출구가 있어야 한다.
+    render(<Harness />);
+    click('영어');
+    editUnitsTo('학원 교재 3단원');
+    click(/전 범위 다 해야 해/);
+
+    click('영어'); // 끄기
+    click('영어'); // 다시 켜기
+    expect(latest.scope.manualUnits).toEqual([]);
+    expect(latest.form.subjectUnits.english!.length).toBeGreaterThan(1);
+    expect(latest.form.subjectUnits.english).not.toContain('학원 교재 3단원');
+  });
+
   it('답을 바꾸면 이전 답의 증명은 무효가 된다', () => {
     render(<Harness />);
     click('영어');
@@ -205,5 +251,20 @@ describe('수정 모드 — 만들 때 답한 걸 다시 묻지 않는다', () =
     };
     const scope = initialScopeState(saved);
     expect(scopeBlocker(saved, scope)).toBeNull();
+  });
+
+  it('프리필은 직접 편집이 아니다 — 답을 바꾸면 범위가 다시 파생된다', () => {
+    // 프리필까지 '직접 편집'으로 묶어 답 변경에서 보존하면, 수정 모드에선 모든 과목이
+    // 보존 대상이라 게이트가 눌러도 아무것도 안 바뀌는 죽은 컨트롤이 된다.
+    const saved: PlannerForm = { ...startForm, subjectUnits: { english: ['빈칸 추론'] } };
+    render(<Harness initial={saved} />);
+    expect(latest.scope.answer).toBe('custom');
+    expect(latest.scope.manualUnits).toEqual([]);
+    expect(blocker()).toBeNull();
+
+    click(/전 범위 다 해야 해/);
+    expect(latest.scope.settled).toEqual([]);
+    expect(latest.form.subjectUnits.english!.length).toBeGreaterThan(1);
+    expect(latest.form.subjectUnits.english).toContain('글의 목적');
   });
 });

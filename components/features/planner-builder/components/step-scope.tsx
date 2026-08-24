@@ -9,7 +9,7 @@ import { daysBetween } from '@/lib/planner/exam-presets';
 import { RequiredMark } from '@/components/shell/required-mark';
 import { UnitEditorModal } from './unit-editor-modal';
 import {
-  needsElective, todayIsoKst,
+  isScopeConfirmed, needsElective, todayIsoKst,
   type PlannerForm, type ScopeAnswer, type ScopeState,
 } from './builder-types';
 
@@ -42,7 +42,8 @@ function deriveUnits(subject: SubjectKey, scope: ScopeState): string[] {
 function withDerivedUnits(form: PlannerForm, scope: ScopeState): PlannerForm {
   const units = { ...(form.subjectUnits ?? {}) };
   for (const s of Object.keys(units) as SubjectKey[]) {
-    if (scope.settled.includes(s)) continue;
+    // 학생이 확인한 범위(선 확정·직접 편집)는 자동 파생이 덮어쓰지 않는다.
+    if (isScopeConfirmed(s, scope)) continue;
     units[s] = deriveUnits(s, scope);
   }
   return { ...form, subjectUnits: units };
@@ -71,7 +72,9 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
       ...scope,
       electives: { ...scope.electives },
       progressCut: { ...scope.progressCut },
+      // 뺐다가 다시 넣은 과목은 처음 고른 것과 같아야 한다 — 확인 흔적을 둘 다 지운다.
       settled: scope.settled.filter(x => x !== s),
+      manualUnits: scope.manualUnits.filter(x => x !== s),
     };
     if (s in nextUnits) {
       delete nextUnits[s];
@@ -96,7 +99,11 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
     commit({ ...scope, electives: { ...scope.electives, [s]: next }, progressCut });
   }
 
-  /** 선택과목 다시 고르기 — 고르면 범위가 새로 잡히고 진도 표시는 초기화된다 */
+  /**
+   * 선택과목 다시 고르기 — 고르면 범위가 새로 잡히고 진도 표시는 초기화된다.
+   * 직접 편집 표시도 함께 푼다: 단원 목록 자체가 새로 잡히므로 이전 편집 결과는 남길 수 없다.
+   * (자동 범위로 되돌리고 싶을 때 쓰는 유일한 출구이기도 하다.)
+   */
   function resetElectives(s: SubjectKey) {
     const progressCut = { ...scope.progressCut };
     delete progressCut[s];
@@ -105,12 +112,15 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
       electives: { ...scope.electives, [s]: [] },
       progressCut,
       settled: scope.settled.filter(x => x !== s),
+      manualUnits: scope.manualUnits.filter(x => x !== s),
     });
   }
 
   function setAnswer(answer: ScopeAnswer) {
     if (scope.answer === answer) return;
-    // 답을 바꾸면 범위를 처음부터 다시 정한다 — 이전 답의 증명(커트·직접 편집)은 무효.
+    // 답을 바꾸면 범위를 처음부터 다시 정한다 — 이전 답을 전제로 선 확정한 과목(`settled`)은 무효.
+    // 단, 학생이 손수 적은 단원(`manualUnits`)은 남긴다. 여기서 같이 비우면 답을 고르기 전에
+    // [단원 직접 편집]으로 저장한 범위를 자동 범위가 통째로 덮어쓴다(Codex).
     commit({ ...scope, answer, progressCut: {}, settled: [] });
   }
 
@@ -121,11 +131,15 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
     commit({ ...scope, progressCut });
   }
 
-  /** 단원 직접 편집 결과 — 그 과목은 학생이 직접 확정한 것으로 본다 */
+  /**
+   * 단원 직접 편집 결과 — 그 과목은 학생이 직접 확정한 것으로 본다.
+   * `manualUnits` 에도 남겨 이후 게이트 답이 바뀌어도 이 결과가 살아남게 한다.
+   */
   function saveUnits(s: SubjectKey, next: string[]) {
     const nextScope: ScopeState = {
       ...scope,
       settled: scope.settled.includes(s) ? scope.settled : [...scope.settled, s],
+      manualUnits: scope.manualUnits.includes(s) ? scope.manualUnits : [...scope.manualUnits, s],
     };
     setScope(nextScope);
     setForm({ ...form, subjectUnits: { ...unitsObj, [s]: next } });
@@ -189,7 +203,8 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
                   orderedUnits={scopeUnits(s, scope.electives[s] ?? [])}
                   chosen={scope.electives[s] ?? []}
                   cut={scope.progressCut[s]}
-                  showCutPicker={scope.answer === 'progress' && !scope.settled.includes(s)}
+                  manual={scope.manualUnits.includes(s)}
+                  showCutPicker={scope.answer === 'progress' && !isScopeConfirmed(s, scope)}
                   onCut={unit => setCut(s, unit)}
                   onEdit={() => setEditing(s)}
                   onResetElectives={() => resetElectives(s)}
@@ -203,7 +218,11 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
 
       {/* 확인 게이트 — 선택과목을 다 고른 뒤에만 묻는다(순서 강제) */}
       {selected.length > 0 && !pendingChoice && (
-        <ScopeGate answer={scope.answer} onAnswer={setAnswer} />
+        <ScopeGate
+          answer={scope.answer}
+          manualLabels={selected.filter(s => scope.manualUnits.includes(s)).map(s => subjectLabels[s] ?? s)}
+          onAnswer={setAnswer}
+        />
       )}
 
       <UnitEditorModal
@@ -324,13 +343,16 @@ function ElectivePicker({
 /* ─── 과목 카드 ─── */
 
 function SubjectCard({
-  subject, units, orderedUnits, chosen, cut, showCutPicker, onCut, onEdit, onResetElectives, onRemove,
+  subject, units, orderedUnits, chosen, cut, manual, showCutPicker,
+  onCut, onEdit, onResetElectives, onRemove,
 }: {
   subject: SubjectKey;
   units: string[];
   orderedUnits: string[];
   chosen: string[];
   cut?: string;
+  /** 학생이 단원을 직접 편집한 과목 — 자동 범위가 덮어쓰지 않는다는 걸 배지로 알린다 */
+  manual: boolean;
   showCutPicker: boolean;
   onCut: (unit: string) => void;
   onEdit: () => void;
@@ -362,6 +384,11 @@ function SubjectCard({
           <span className="text-pullim-slate-500 font-mono text-[11px]">
             {units.length}단원
           </span>
+          {manual && (
+            <span className="bg-pullim-slate-100 text-pullim-slate-600 rounded-full px-2 py-0.5 text-[10px] font-bold">
+              직접 편집함
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -453,7 +480,12 @@ const GATE_OPTIONS: { key: ScopeAnswer; label: string; desc: string }[] = [
   { key: 'custom', label: '시험 범위가 따로 있어', desc: '중간 몇 단원처럼 띄엄띄엄일 때' },
 ];
 
-function ScopeGate({ answer, onAnswer }: { answer: ScopeAnswer | null; onAnswer: (a: ScopeAnswer) => void }) {
+function ScopeGate({ answer, manualLabels, onAnswer }: {
+  answer: ScopeAnswer | null;
+  /** 직접 편집해 답과 무관하게 유지되는 과목 표기명 — 왜 안 바뀌는지 여기서 미리 알린다 */
+  manualLabels: string[];
+  onAnswer: (a: ScopeAnswer) => void;
+}) {
   const hint = useMemo(() => {
     if (answer === 'progress') return '위 과목 카드에서 마지막으로 배운 단원을 눌러주세요.';
     if (answer === 'custom') return '[단원 직접 편집]에서 단원을 켜고 꺼요. 안 맞는 범위로 짜인 시간표는 첫 주부터 어긋나요.';
@@ -503,6 +535,12 @@ function ScopeGate({ answer, onAnswer }: { answer: ScopeAnswer | null; onAnswer:
         })}
       </div>
       {hint && <p className="text-pullim-slate-500 mt-2 text-[11px]">{hint}</p>}
+      {manualLabels.length > 0 && (
+        <p className="text-pullim-slate-500 mt-1 text-[11px]">
+          직접 편집한 과목(<strong>{manualLabels.join('·')}</strong>)의 범위는 답을 바꿔도 그대로 둬요 —
+          자동 범위로 되돌리려면 위에서 과목 칩을 껐다 켜주세요.
+        </p>
+      )}
     </section>
   );
 }
