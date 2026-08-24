@@ -38,14 +38,18 @@ function groupByRoutine(issues: readonly RoutineFitIssue[]): Grouped[] {
   return [...map.values()];
 }
 
+/**
+ * 한 루틴이 평일·주말에서 **다른 사유로** 걸릴 수 있다(평일은 창 밖, 주말은 다른 루틴과 겹침).
+ * 첫 이슈만 보고 문장을 만들면 나머지 사유가 통째로 숨는다(Codex) — 창별로 다 적는다.
+ */
 function describe(group: Grouped): string {
+  const parts = group.issues.map(issue => {
+    if (issue.held === '루틴 겹침') return `${issue.scopeLabel}은 다른 루틴과 겹쳐요`;
+    const verb = issue.held === '가용 시간 걸침' ? '걸쳐 있어요' : '벗어나 있어요';
+    return `${issue.scopeLabel} 학습 시간(${issue.windowLabel})을 ${verb}`;
+  });
   const [first] = group.issues;
-  const scopes = [...new Set(group.issues.map(i => i.scopeLabel))].join('·');
-  if (first.held === '루틴 겹침') {
-    return `다른 루틴과 시간이 겹쳐요 — 같은 시각에 둘을 할 수는 없어요.`;
-  }
-  const verb = first.held === '가용 시간 걸침' ? '걸쳐 있어요' : '벗어나 있어요';
-  return `${first.start}–${first.end} 인데 ${scopes} 학습 시간(${first.windowLabel})을 ${verb}.`;
+  return `${first.start}–${first.end} 인데 ${parts.join(' · ')}.`;
 }
 
 /**
@@ -125,28 +129,38 @@ export function RoutineConflictNotice({ form, setForm, routines, onUpdateRoutine
 
       <ul className="space-y-2">
         {groups.map(group => {
-          const overlap = group.issues[0].held === '루틴 겹침';
+          // 사유가 섞일 수 있으므로 조치를 **사유별로** 판단한다. 창을 넓혀도 루틴끼리의
+          // 겹침은 절대 풀리지 않으므로, 넓히기만으로 끝나지 않는다는 것도 알려준다(Codex).
+          const windowIssues = group.issues.filter(i => i.held !== '루틴 겹침');
+          const hasOverlap = group.issues.some(i => i.held === '루틴 겹침');
           // 라벨은 '루틴이 원하는 시각'이 아니라 **누르면 실제로 만들어질 창**을 보여준다 —
           // 창은 기존 값과 병합(min/max)되므로 둘이 다르다.
           const widened = widenWindows(form, issues, group.routineId);
-          const target = widened[group.issues[0].windowKey];
-          const widenLabel =
-            group.issues.length > 1
-              ? '평일·주말 학습 시간 넓히기'
-              : `학습 시간 ${String(target.start).padStart(2, '0')}:00–${String(target.end).padStart(2, '0')}:00 로 넓히기`;
+          const widenLabel = (() => {
+            if (windowIssues.length !== 1) return '평일·주말 학습 시간 넓히기';
+            const target = widened[windowIssues[0].windowKey];
+            return `학습 시간 ${String(target.start).padStart(2, '0')}:00–${String(target.end).padStart(2, '0')}:00 로 넓히기`;
+          })();
+          // 옮기기는 창 밖·겹침을 한 번에 푼다(도는 요일의 창 교집합에서 다른 루틴을 피해 고른다).
+          const movable = onUpdateRoutine && suggestMoveIn(form, routines, group.routineId) !== null;
           return (
             <li key={group.routineId} className="bg-card border-pullim-slate-200 rounded-lg border p-2.5">
               <p className="text-pullim-slate-900 text-xs font-bold">{group.title}</p>
               <p className="text-pullim-slate-600 mt-0.5 text-[11px] leading-relaxed">{describe(group)}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {!overlap && (
-                  <ActionButton primary onClick={() => widen(group)}>{widenLabel}</ActionButton>
+                {movable && (
+                  <ActionButton primary onClick={() => askMove(group)}>시간 안쪽으로 옮기기</ActionButton>
                 )}
-                {!overlap && onUpdateRoutine && (
-                  <ActionButton onClick={() => askMove(group)}>시간 안쪽으로 옮기기</ActionButton>
+                {windowIssues.length > 0 && (
+                  <ActionButton primary={!movable} onClick={() => widen(group)}>{widenLabel}</ActionButton>
                 )}
                 <ActionButton onClick={() => drop(group.routineId)}>이 시간표에서 빼기</ActionButton>
               </div>
+              {windowIssues.length > 0 && hasOverlap && (
+                <p className="text-pullim-slate-500 mt-1.5 text-[10px]">
+                  학습 시간을 넓혀도 루틴끼리의 겹침은 남아요.
+                </p>
+              )}
             </li>
           );
         })}

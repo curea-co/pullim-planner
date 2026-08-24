@@ -157,6 +157,27 @@ describe('suggestMoveIn', () => {
       .toEqual({ start: '10:00', end: '11:40' }); // 주말 창 10–22
   });
 
+  it('평일·주말에 걸친 루틴은 두 창의 교집합에서 고른다', () => {
+    // 평일 6–23, 주말 10–22 인 시간표. 평일 창만 보면 07:00 을 제안하는데 주말엔 여전히
+    // 창 밖이라, 확인까지 거쳐 PATCH 해도 배너가 그대로 남는다(Codex).
+    const form = formWith({
+      routineIds: ['r1'],
+      weekdayHours: { start: 6, end: 23 },
+      weekendHours: { start: 10, end: 22 },
+    });
+    const target = routine({ id: 'r1', startTime: '07:00', endTime: '07:30', weekdays: [0, 5] });
+    expect(suggestMoveIn(form, [target], 'r1')).toEqual({ start: '10:00', end: '10:30' });
+  });
+
+  it('두 창이 겹치지 않으면 옮길 자리가 없다', () => {
+    const form = formWith({
+      routineIds: ['r1'],
+      weekdayHours: { start: 18, end: 23 },
+      weekendHours: { start: 8, end: 12 },
+    });
+    expect(suggestMoveIn(form, [routine({ id: 'r1', weekdays: [0, 5] })], 'r1')).toBeNull();
+  });
+
   it('자리가 없으면 null', () => {
     const form = formWith({ routineIds: ['r1', 'r2'], weekdayHours: { start: 18, end: 19 } });
     const rs = [

@@ -211,10 +211,17 @@ export function suggestMoveIn(
   const length = toMinutes(target.endTime) - toMinutes(target.startTime);
   if (length <= 0) return null;
 
-  const weekendOnly = target.weekdays.every(w => w >= 5);
-  const win = weekendOnly ? form.weekendHours : form.weekdayHours;
-  const winStart = win.start * 60;
-  const winEnd = win.end * 60;
+  // 루틴이 도는 요일이 평일·주말에 걸치면 **두 창의 교집합** 안에서만 자리를 찾는다.
+  // 한쪽 창만 보면 평일엔 맞지만 주말엔 여전히 창 밖인 시각을 제안하게 되고, 확인 후
+  // PATCH 까지 보내도 배너가 그대로 남는다(Codex).
+  const wins = [
+    target.weekdays.some(w => w <= 4) ? form.weekdayHours : null,
+    target.weekdays.some(w => w >= 5) ? form.weekendHours : null,
+  ].filter((w): w is { start: number; end: number } => w !== null);
+  if (wins.length === 0) return null;
+  const winStart = Math.max(...wins.map(w => w.start)) * 60;
+  const winEnd = Math.min(...wins.map(w => w.end)) * 60;
+  if (winEnd - winStart < length) return null;
 
   const busy = routines
     .filter(r => r.id !== routineId && form.routineIds.includes(r.id))

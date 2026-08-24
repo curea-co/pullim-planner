@@ -83,22 +83,30 @@ describe('루틴 충돌 배너', () => {
     expect(screen.queryByRole('button', { name: '시간 안쪽으로 옮기기' })).not.toBeInTheDocument();
   });
 
-  it('루틴끼리 겹치면 넓히기·옮기기 대신 빼기만 준다', () => {
+  it('루틴끼리 겹치면 넓히기를 주지 않는다 — 창을 넓혀도 안 풀린다', () => {
     const rs = [
       routine({ id: 'r1', title: '수학 인강', startTime: '19:00', endTime: '20:00' }),
       routine({ id: 'r2', title: '영어 듣기', startTime: '19:30', endTime: '20:30' }),
     ];
-    render(
-      <Harness
-        routines={rs}
-        onUpdateRoutine={jest.fn()}
-        initial={{ routineIds: ['r1', 'r2'] }}
-      />,
-    );
-    expect(screen.getByText(/다른 루틴과 시간이 겹쳐요/)).toBeInTheDocument();
+    render(<Harness routines={rs} onUpdateRoutine={jest.fn()} initial={{ routineIds: ['r1', 'r2'] }} />);
+    expect(screen.getByText(/평일은 다른 루틴과 겹쳐요/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /넓히기/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '시간 안쪽으로 옮기기' })).not.toBeInTheDocument();
+    // 옮기기는 다른 루틴을 피해 자리를 찾으므로 겹침도 푼다.
+    expect(screen.getByRole('button', { name: '시간 안쪽으로 옮기기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '이 시간표에서 빼기' })).toBeInTheDocument();
+  });
+
+  it('창마다 사유가 다르면 둘 다 적고, 넓히기로 안 끝난다고 알린다', () => {
+    // 평일은 창(18–23) 밖, 주말은 다른 루틴과 겹침 — 첫 사유만 보면 주말 쪽이 통째로 숨는다(Codex).
+    const rs = [
+      routine({ id: 'r0', title: '주말 모의고사', startTime: '10:00', endTime: '11:40', weekdays: [5] }),
+      routine({ id: 'r1', title: '아침 영단어', startTime: '10:30', endTime: '11:00', weekdays: [0, 5] }),
+    ];
+    render(<Harness routines={rs} onUpdateRoutine={jest.fn()} initial={{ routineIds: ['r0', 'r1'] }} />);
+    const card = screen.getByText(/10:30–11:00 인데/);
+    expect(card).toHaveTextContent('평일 학습 시간(18:00–23:00)을 벗어나 있어요');
+    expect(card).toHaveTextContent('주말은 다른 루틴과 겹쳐요');
+    expect(screen.getByText('학습 시간을 넓혀도 루틴끼리의 겹침은 남아요.')).toBeInTheDocument();
   });
 
   it('평일·주말 양쪽에 걸리면 한 카드로 묶고 양쪽을 넓힌다', () => {
