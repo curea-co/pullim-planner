@@ -2,81 +2,61 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { examTypeMeta, plannerStepConfig, todayIsoKst, type PlannerForm } from '@/components/features/planner-builder/components/builder-types';
-import { subjectLabels, type SubjectKey } from '@/lib/mock';
+import {
+  initialScopeState, maxReachableStep, plannerStepConfig, stepBlocker,
+  type PlannerForm, type ScopeState,
+} from '@/components/features/planner-builder/components/builder-types';
 
 const TOTAL_STEPS = plannerStepConfig.length;
 
 /**
- * 8단계 프로세스 step navigation + form state — new/edit 공유 hook.
+ * 위저드 step navigation + form state — new/edit 공유 hook.
  *
- * 책임: currentStep / form 상태, goPrev/goNext (validation 포함), jumpTo.
+ * 책임: currentStep / form / 학습 범위 게이트 상태, goPrev/goNext(차단 판정 포함), jumpTo.
  * 저장 핸들러(create/activate vs update)는 Container 책임.
  * (임시저장은 서버 draft BE 미구현이라 버튼·핸들러 모두 제거 — soft-open. BE 준비 시 복원.)
+ *
+ * 차단 판정은 builder-types 의 순수 함수(stepBlocker)에 있다 — 화면 인라인 안내와
+ * goNext·활성화 검증이 같은 규칙을 쓰게 하기 위함.
  */
 export function usePlannerForm(initialForm: PlannerForm) {
   const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState<PlannerForm>(initialForm);
+  const [scope, setScope] = useState<ScopeState>(() => initialScopeState(initialForm));
 
   const canPrev = currentStep > 1;
   const canNext = currentStep < TOTAL_STEPS;
+  // 현재 단계에서 다음으로 못 가는 이유 — 화면에도 그대로 노출한다.
+  const blockedReason = stepBlocker(plannerStepConfig[currentStep - 1].key, form, scope);
+  const maxReachable = maxReachableStep(form, scope);
 
   function goPrev() {
     if (canPrev) setCurrentStep(currentStep - 1);
   }
 
   function goNext() {
-    if (currentStep === 1) {
-      if (!form.examName.trim()) {
-        toast.error('목표 시험명을 입력해주세요');
-        return;
-      }
-      if (!form.examStartDate) {
-        toast.error('시험 날짜를 선택해주세요');
-        return;
-      }
-      // 계획표는 미래 대상 — 이미 **종료된** 시험 차단. 신규·수정 공통(사용자 확정 08-03).
-      // 판정은 종료일 기준(Codex) — 진행 중 범위 시험(시작일 과거·종료일 오늘 이후)은 기존
-      // 시작일 그대로 저장 가능해야 한다. 단일 시험은 종료일=시작일이라 동작 동일.
-      if ((form.examEndDate || form.examStartDate) < todayIsoKst()) {
-        toast.error('이미 지난 시험이에요 — 시험 날짜를 오늘 이후로 선택해주세요');
-        return;
-      }
-      // 등급형(모의·수능)은 자유입력 — 숫자가 없으면 저장 시 조용히 1등급으로 치환되므로 차단.
-      // QA #5 — 허용 범위는 1~8 (9등급은 목표 점수가 아님).
-      if (examTypeMeta[form.examType ?? 'mock'].targetKind === 'grade') {
-        const n = parseInt(form.targetGrade, 10);
-        if (!Number.isFinite(n) || n < 1 || n > 8) {
-          toast.error('목표 등급을 1에서 8 사이의 숫자로 입력해주세요');
-          return;
-        }
-      }
-    }
-    if (currentStep === 3) {
-      const units = form.subjectUnits ?? {};
-      const subjectCount = Object.keys(units).length;
-      if (subjectCount === 0) {
-        toast.error('과목과 단원을 1개 이상 추가해주세요');
-        return;
-      }
-      // QA #9 — 과목만 추가하고 단원이 비어 있으면 진행 차단 (모달이 단원 0개 저장을 허용하므로 여기서 방어)
-      const emptySubject = (Object.entries(units) as [SubjectKey, string[]][])
-        .find(([, u]) => !u || u.length === 0);
-      if (emptySubject) {
-        toast.error(`'${subjectLabels[emptySubject[0]] ?? emptySubject[0]}' 과목의 단원을 1개 이상 선택해주세요`);
-        return;
-      }
+    if (blockedReason) {
+      toast.error(blockedReason);
+      return;
     }
     if (canNext) setCurrentStep(currentStep + 1);
   }
 
+  /** 앞 단계가 막혀 있으면 건너뛰지 못한다 — 확인 없이 미리보기로 직행하는 경로 차단 */
   function jumpTo(n: number) {
+    if (n > maxReachable) {
+      const reason = stepBlocker(plannerStepConfig[maxReachable - 1].key, form, scope);
+      if (reason) toast.error(reason);
+      setCurrentStep(maxReachable);
+      return;
+    }
     setCurrentStep(n);
   }
 
   return {
     currentStep, form, setForm,
-    canPrev, canNext,
+    scope, setScope,
+    canPrev, canNext, blockedReason, maxReachable,
     goPrev, goNext, jumpTo,
   };
 }

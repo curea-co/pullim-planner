@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import {
-  initialPlannerForm, formToPlannerPatch,
+  seededPlannerForm, formToPlannerPatch,
   type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
 import { createPlanner, activatePlanner } from '@/lib/mock/planner';
@@ -21,7 +21,7 @@ const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
 export default function NewPlannerContainer() {
   const router = useRouter();
-  const formState = usePlannerForm(initialPlannerForm);
+  const formState = usePlannerForm(seededPlannerForm());
 
   // STEP5·미리보기용 루틴 — bypass는 mock(초기값), 배포는 실 API로 교체(dev QA #4: 실 루틴 노출).
   const [routines, setRoutines] = useState<Routine[]>(() => (DEV_AUTH_BYPASS ? getRoutines() : []));
@@ -113,9 +113,13 @@ export default function NewPlannerContainer() {
     <NewPlannerPresenter
       form={formState.form}
       setForm={formState.setForm}
+      scope={formState.scope}
+      setScope={formState.setScope}
       currentStep={formState.currentStep}
       canPrev={formState.canPrev}
       canNext={formState.canNext}
+      blockedReason={formState.blockedReason}
+      maxReachable={formState.maxReachable}
       onPrev={formState.goPrev}
       onNext={formState.goNext}
       onJump={formState.jumpTo}

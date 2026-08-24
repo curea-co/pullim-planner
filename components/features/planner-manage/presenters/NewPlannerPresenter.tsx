@@ -1,7 +1,7 @@
 'use client';
 
 import { PageHeader } from '@/components/shell/page-header';
-import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
+import type { PlannerForm, ScopeState } from '@/components/features/planner-builder/components/builder-types';
 import type { Routine } from '@/lib/mock';
 import type { PreviewDay } from '@/lib/planner/preview-map';
 import { PlannerWizard } from '../components/planner-wizard';
@@ -9,9 +9,13 @@ import { PlannerWizard } from '../components/planner-wizard';
 interface NewPlannerPresenterProps {
   form: PlannerForm;
   setForm: (f: PlannerForm | ((prev: PlannerForm) => PlannerForm)) => void;
+  scope: ScopeState;
+  setScope: (s: ScopeState | ((prev: ScopeState) => ScopeState)) => void;
   currentStep: number;
   canPrev: boolean;
   canNext: boolean;
+  blockedReason: string | null;
+  maxReachable: number;
   onPrev: () => void;
   onNext: () => void;
   onJump: (n: number) => void;
@@ -22,7 +26,8 @@ interface NewPlannerPresenterProps {
 
 export default function NewPlannerPresenter({
   form, setForm,
-  currentStep, canPrev, canNext,
+  scope, setScope,
+  currentStep, canPrev, canNext, blockedReason, maxReachable,
   onPrev, onNext, onJump,
   onActivate,
   routines, onServerPreview,
@@ -36,9 +41,13 @@ export default function NewPlannerPresenter({
       <PlannerWizard
         form={form}
         setForm={setForm}
+        scope={scope}
+        setScope={setScope}
         currentStep={currentStep}
         canPrev={canPrev}
         canNext={canNext}
+        blockedReason={blockedReason}
+        maxReachable={maxReachable}
         onPrev={onPrev}
         onNext={onNext}
         onJump={onJump}

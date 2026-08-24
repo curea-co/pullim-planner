@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import {
-  plannerToForm, formToPlannerPatch,
+  plannerToForm, formToPlannerPatch, resolvedExamName,
   type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
 import type { Planner, Routine } from '@/lib/mock';
@@ -173,7 +173,7 @@ function EditPlannerForm({
         appliedRoutineIds: submitted.routineIds,
       });
       toast.success('✓ 변경 사항 저장 완료', {
-        description: `${submitted.examName} — 다음 활성화 시 반영됩니다`,
+        description: `${resolvedExamName(submitted)} — 다음 활성화 시 반영됩니다`,
         duration: 3000,
       });
       router.push('/planner/manage');
@@ -198,7 +198,7 @@ function EditPlannerForm({
           : {}),
       });
       toast.success('✓ 변경 사항 저장 완료', {
-        description: `${submitted.examName} — 다음 활성화 시 반영됩니다`,
+        description: `${resolvedExamName(submitted)} — 다음 활성화 시 반영됩니다`,
         duration: 3000,
       });
       router.push('/planner/manage');
@@ -214,9 +214,13 @@ function EditPlannerForm({
       onTabChange={setTab}
       form={formState.form}
       setForm={formState.setForm}
+      scope={formState.scope}
+      setScope={formState.setScope}
       currentStep={formState.currentStep}
       canPrev={formState.canPrev}
       canNext={formState.canNext}
+      blockedReason={formState.blockedReason}
+      maxReachable={formState.maxReachable}
       onPrev={formState.goPrev}
       onNext={formState.goNext}
       onJump={formState.jumpTo}
