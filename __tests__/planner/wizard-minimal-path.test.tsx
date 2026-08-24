@@ -41,6 +41,18 @@ describe('시험일 프리셋', () => {
     }
   });
 
+  it('시험 당일에는 그날 회차를 그대로 준다', () => {
+    // 당일을 지난 것으로 치면 수능날 플래너를 만들 때 이듬해 회차가 잡힌다.
+    // 시험일 하한(goalBlocker)이 `< 오늘` 만 막으므로 프리셋도 당일을 살려야 짝이 맞는다.
+    const [suneung] = examPresets('suneung', '2026-11-19'); // 2026 수능 = 11월 3번째 목
+    expect(suneung.date).toBe('2026-11-19');
+    expect(suneung.name).toBe('2027학년도 수능');
+
+    const [mock] = examPresets('mock', '2026-09-01'); // 9월 모의평가 = 9월 1번째 화
+    expect(mock.date).toBe('2026-09-01');
+    expect(mock.name).toBe('2026 9월 모의평가');
+  });
+
   it('수능은 한 회차만 준다', () => {
     expect(examPresets('suneung', TODAY)).toHaveLength(1);
   });

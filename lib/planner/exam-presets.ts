@@ -58,11 +58,16 @@ function ruleName(rule: PresetRule, year: number): string {
   return rule.academic ? `${year + 1}학년도 ${rule.name}` : `${year} ${rule.name}`;
 }
 
-/** 기준일 다음에 오는 회차 — 올해 회차가 이미 지났으면 내년 회차 */
+/**
+ * 기준일 이후(당일 포함)에 오는 회차 — 올해 회차가 이미 지났으면 내년 회차.
+ *
+ * 당일을 지난 것으로 치면 시험 당일에 플래너를 만들 때 오늘 시험이 아니라 다음 회차가
+ * 잡힌다. 시험일 하한(`goalBlocker`)도 `< 오늘` 만 막으므로 여기서도 당일은 살린다.
+ */
 function nextOccurrence(rule: PresetRule, fromIso: string): string {
   const year = Number(fromIso.slice(0, 4));
   const cand = nthWeekdayOf(year, rule.month, rule.weekday, rule.nth);
-  return cand > fromIso ? cand : nthWeekdayOf(year + 1, rule.month, rule.weekday, rule.nth);
+  return cand >= fromIso ? cand : nthWeekdayOf(year + 1, rule.month, rule.weekday, rule.nth);
 }
 
 /** 두 ISO 날짜 사이 일수 — UTC 기준 */
