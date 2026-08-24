@@ -12,33 +12,52 @@ export type Step = {
 type Props = {
   steps: Step[];
   current: number;
+  /** 지금 갈 수 있는 가장 뒤 단계 — 그 뒤는 누를 수 없다. 미지정이면 전부 허용. */
+  maxReachable?: number;
   onJump: (n: number) => void;
 };
 
+/** Tailwind 는 클래스명을 정적으로 훑으므로 조합해 만들지 않고 사전으로 둔다. */
+const GRID_COLS: Record<number, string> = {
+  1: 'sm:grid-cols-1',
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-3',
+  4: 'sm:grid-cols-4',
+  5: 'sm:grid-cols-5',
+  6: 'sm:grid-cols-6',
+  7: 'sm:grid-cols-7',
+  8: 'sm:grid-cols-8',
+  9: 'sm:grid-cols-9',
+};
+
 /**
- * 8단계 프로세스 진행 표시 — 데스크탑 가로, 모바일 세로 압축.
- * 완료 단계는 체크, 현재 단계는 강조, 미완 단계는 흐림.
+ * 단계 진행 표시 — 데스크탑 가로, 모바일 세로 압축.
+ * 완료 단계는 체크, 현재 단계는 강조, 아직 못 가는 단계는 흐림 + 비활성.
  */
-export function StepIndicator({ steps, current, onJump }: Props) {
+export function StepIndicator({ steps, current, maxReachable, onJump }: Props) {
+  const limit = maxReachable ?? steps.length;
   return (
-    <nav aria-label="봇 빌더 진행" className="bg-card overflow-x-auto rounded-2xl border sm:overflow-hidden">
+    <nav aria-label="시간표 만들기 진행" className="bg-card overflow-x-auto rounded-2xl border sm:overflow-hidden">
       <ol className={cn(
         'flex min-w-max sm:grid sm:min-w-0 divide-pullim-slate-100 divide-x',
-        steps.length >= 9 ? 'sm:grid-cols-9' : 'sm:grid-cols-8',
+        GRID_COLS[steps.length] ?? 'sm:grid-cols-4',
       )}>
         {steps.map(s => {
           const isActive = s.num === current;
           const isDone = s.num < current;
+          const locked = s.num > limit;
           const Icon = s.icon;
           return (
             <li key={s.num} className="min-w-[84px] sm:min-w-0">
               <button
                 type="button"
                 onClick={() => onJump(s.num)}
+                disabled={locked}
                 className={cn(
                   'group flex w-full flex-col items-center gap-1 px-2 py-3 text-center transition-colors',
                   isActive && 'bg-pullim-blue-50',
-                  !isActive && 'hover:bg-pullim-slate-50',
+                  !isActive && !locked && 'hover:bg-pullim-slate-50',
+                  locked && 'cursor-not-allowed opacity-50',
                 )}
               >
                 <span

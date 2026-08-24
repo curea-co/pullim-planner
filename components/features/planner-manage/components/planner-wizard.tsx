@@ -1,54 +1,70 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { StepIndicator } from '@/components/features/planner-builder/components/step-indicator';
 import {
-  PStep1Goal, PStep2Hours, PStep3Subjects, PStep4Pattern, PStep5Routine,
-  PStep5Weakness, PStep6Motivation, PStep7Reminder, PStep8Activate,
+  PStep1Goal, PStep2Hours, PStep4Confirm,
 } from '@/components/features/planner-builder/components/step-content';
+import { PStep3Subjects } from '@/components/features/planner-builder/components/step-scope';
 import {
-  plannerStepConfig, type PlannerForm,
+  plannerStepConfig, type PlannerForm, type ScopeState,
 } from '@/components/features/planner-builder/components/builder-types';
 import type { Routine } from '@/lib/mock';
 import type { PreviewDay } from '@/lib/planner/preview-map';
 import { cn } from '@/lib/utils';
 
 /**
- * 8단계 프로세스 마크업 — new/edit 페이지 공유.
- * 상태/이벤트는 props로 받기만 (presentation).
+ * 위저드 마크업 — new/edit 페이지 공유.
+ * 상태/이벤트는 props로 받기만 (presentation). '직접 설정' 토글만 이 컴포넌트가 들고 있다
+ * (단계를 오가도 유지돼야 하는 표시 상태이지 저장 대상이 아니라서).
  */
 interface PlannerWizardProps {
   form: PlannerForm;
   setForm: (f: PlannerForm | ((prev: PlannerForm) => PlannerForm)) => void;
+  /** 학습 범위 확인 게이트 상태 */
+  scope: ScopeState;
+  setScope: (s: ScopeState | ((prev: ScopeState) => ScopeState)) => void;
   currentStep: number;
   canPrev: boolean;
   canNext: boolean;
+  /** 현재 단계에서 다음으로 못 가는 이유 — 없으면 null */
+  blockedReason: string | null;
+  /** 지금 갈 수 있는 가장 뒤 단계 */
+  maxReachable: number;
   onPrev: () => void;
   onNext: () => void;
   onJump: (n: number) => void;
   mode: 'create' | 'edit';
   onActivate: (submitted: PlannerForm) => void;
-  /** 실 루틴(컨테이너 fetch) — STEP5 선택·STEP8 미리보기에 사용. 미주입 시 mock. */
+  /** 직접 설정을 처음부터 켠 채로 시작 — 기존 값이 숨겨지지 않게(수정 모드) */
+  initialExpert?: boolean;
+  /** 실 루틴(컨테이너 fetch) — 4단계 조정·미리보기에 사용. 미주입 시 mock. */
   routines?: Routine[];
-  /** STEP8 서버 dry-run 미리보기 로더(컨테이너 주입) — 미주입 시 휴리스틱. */
+  /** 4단계 서버 dry-run 미리보기 로더(컨테이너 주입) — 미주입 시 휴리스틱. */
   onServerPreview?: () => Promise<PreviewDay[] | null>;
 }
 
 export function PlannerWizard({
   form, setForm,
-  currentStep, canPrev, canNext,
+  scope, setScope,
+  currentStep, canPrev, canNext, blockedReason, maxReachable,
   onPrev, onNext, onJump,
   mode, onActivate,
+  initialExpert,
   routines, onServerPreview,
 }: PlannerWizardProps) {
   const stepInfo = plannerStepConfig[currentStep - 1];
   const StepIcon = stepInfo.icon;
+  // 축소는 최소 경로를 만드는 것이지 유일 경로로 만드는 게 아니다 — 뺀 설정을 여기서 되돌려 받는다.
+  const [expert, setExpert] = useState(initialExpert ?? false);
 
   return (
     <>
       <StepIndicator
         steps={plannerStepConfig.map(s => ({ num: s.num, label: s.label, icon: s.icon }))}
         current={currentStep}
+        maxReachable={maxReachable}
         onJump={onJump}
       />
 
@@ -70,28 +86,49 @@ export function PlannerWizard({
               </p>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => setExpert(v => !v)}
+            aria-pressed={expert}
+            className={cn(
+              'inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-bold transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500',
+              expert
+                ? 'bg-pullim-blue-600 border-pullim-blue-600 text-white'
+                : 'bg-card border-pullim-slate-200 text-pullim-slate-600 hover:border-pullim-blue-300',
+            )}
+          >
+            <SlidersHorizontal className="h-3 w-3" />
+            직접 설정
+          </button>
         </header>
 
         <div className="min-h-[280px]">
-          {/* 단계 번호가 아니라 key로 렌더 — 루틴 게이트로 단계 수가 8/9로 달라져도 안전 */}
-          {stepInfo.key === 'goal'       && <PStep1Goal form={form} setForm={setForm} />}
-          {stepInfo.key === 'hours'      && <PStep2Hours form={form} setForm={setForm} />}
-          {stepInfo.key === 'subjects'   && <PStep3Subjects form={form} setForm={setForm} />}
-          {stepInfo.key === 'pattern'    && <PStep4Pattern form={form} setForm={setForm} />}
-          {stepInfo.key === 'routine'    && <PStep5Routine form={form} setForm={setForm} routines={routines} />}
-          {stepInfo.key === 'weakness'   && <PStep5Weakness form={form} setForm={setForm} />}
-          {stepInfo.key === 'motivation' && <PStep6Motivation form={form} setForm={setForm} />}
-          {stepInfo.key === 'reminder'   && <PStep7Reminder form={form} setForm={setForm} />}
-          {stepInfo.key === 'activate'   && <PStep8Activate form={form} mode={mode} onActivate={onActivate} routines={routines} onServerPreview={onServerPreview} />}
+          {/* 단계 번호가 아니라 key로 렌더 — 구성이 바뀌어도 안전 */}
+          {stepInfo.key === 'goal'     && <PStep1Goal form={form} setForm={setForm} expert={expert} />}
+          {stepInfo.key === 'hours'    && <PStep2Hours form={form} setForm={setForm} />}
+          {stepInfo.key === 'subjects' && <PStep3Subjects form={form} setForm={setForm} scope={scope} setScope={setScope} />}
+          {stepInfo.key === 'activate' && (
+            <PStep4Confirm
+              form={form}
+              setForm={setForm}
+              scope={scope}
+              mode={mode}
+              expert={expert}
+              onActivate={onActivate}
+              routines={routines}
+              onServerPreview={onServerPreview}
+            />
+          )}
         </div>
 
-        <footer className="mt-5 flex items-center justify-between border-t pt-4">
+        <footer className="mt-5 flex items-center justify-between gap-2 border-t pt-4">
           <button
             type="button"
             onClick={onPrev}
             disabled={!canPrev}
             className={cn(
-              'inline-flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-bold transition-colors',
+              'inline-flex shrink-0 items-center gap-1 rounded-xl px-4 py-2 text-sm font-bold transition-colors',
               canPrev
                 ? 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200'
                 : 'bg-pullim-slate-50 text-pullim-slate-300 cursor-not-allowed',
@@ -101,15 +138,27 @@ export function PlannerWizard({
             이전
           </button>
 
-          <div className="text-pullim-slate-500 hidden sm:block text-[10px] font-mono">
-            {currentStep}/{plannerStepConfig.length} — {stepInfo.label}
-          </div>
+          {/* 막힌 이유는 숨기지 않는다 — 무엇을 더 해야 넘어가는지 그 자리에서 보여준다 */}
+          {blockedReason ? (
+            <p className="text-pullim-danger min-w-0 text-center text-[11px] font-semibold">
+              {blockedReason}
+            </p>
+          ) : (
+            <div className="text-pullim-slate-500 hidden font-mono text-[10px] sm:block">
+              {currentStep}/{plannerStepConfig.length} — {stepInfo.label}
+            </div>
+          )}
 
           {canNext ? (
             <button
               type="button"
               onClick={onNext}
-              className="bg-pullim-blue-600 hover:bg-pullim-blue-700 inline-flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-pullim-sm"
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-pullim-sm transition-colors',
+                blockedReason
+                  ? 'bg-pullim-slate-300 hover:bg-pullim-slate-400'
+                  : 'bg-pullim-blue-600 hover:bg-pullim-blue-700',
+              )}
             >
               다음
               <ChevronRight className="h-4 w-4" />

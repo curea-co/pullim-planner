@@ -1,14 +1,19 @@
 import {
-  Target, Clock, BookOpen, Hourglass, Flame, Heart, Bell, Sparkles, Repeat2,
-  Timer, Waves, Leaf, HandHeart,
+  Target, Clock, BookOpen, Sparkles,
+  Timer, Waves, Leaf, HandHeart, Flame,
   type LucideIcon,
 } from 'lucide-react';
-import type { SubjectKey } from '@/lib/mock';
-import { ROUTINE_ENABLED, WEAKNESS_ENABLED, NOTIFICATIONS_ENABLED } from '@/lib/flags';
+import { subjectLabels, type SubjectKey } from '@/lib/mock';
+import { WEAKNESS_ENABLED } from '@/lib/flags';
+import { examPresets, presetNameForDate } from '@/lib/planner/exam-presets';
+import { canDeriveScope, inferElectives, subjectScope } from '@/lib/planner/exam-scope';
 
 /**
- * 학생 플래너 빌더 8단계 폼 데이터.
+ * 학생 플래너 빌더 폼 데이터.
  * 핸드오프 08 기반.
+ *
+ * 위저드는 **입력 3단계 + 확인 1단계**만 묻는다. 나머지 항목은 여기 기본값으로 채워
+ * 보내고, 학생이 원하면 '직접 설정'에서 되돌려 받는다. 타입·저장 페이로드는 그대로다.
  */
 
 export type BlockPattern = 'pomodoro' | 'focused' | 'deep';
@@ -108,9 +113,7 @@ export const motivationStyleMeta: Record<MotivationStyle, { label: string; descr
   spartan:    { label: '스파르타', Icon: Flame,     description: '미시작 30분 = 알림. 부모/멘토 일일 보고 권장.' },
 };
 
-export type StepKey =
-  | 'goal' | 'hours' | 'subjects' | 'pattern' | 'routine'
-  | 'weakness' | 'motivation' | 'reminder' | 'activate';
+export type StepKey = 'goal' | 'hours' | 'subjects' | 'activate';
 
 export type StepInfo = {
   num: number;
@@ -162,10 +165,13 @@ export function formToPlannerPatch(form: PlannerForm): Omit<Planner, 'id' | 'act
     : kind === 'score' ? { kind: 'score' as const, value: form.targetScore }
     : { kind: 'free' as const, value: form.targetGoal };
 
+  // 시험명은 최소 경로에서 묻지 않는다 — 비어 있으면 시험 종류·날짜에서 파생한 이름으로 채운다.
+  const name = resolvedExamName(form);
+
   return {
-    name: form.examName,
+    name,
     examType: form.examType,
-    examLabel: form.examName,
+    examLabel: name,
     examStartDate: form.examStartDate,
     examEndDate: form.examEndDate || form.examStartDate,
     target,
@@ -179,23 +185,275 @@ export function formToPlannerPatch(form: PlannerForm): Omit<Planner, 'id' | 'act
   };
 }
 
-// 루틴·리마인더 단계는 게이트 off면 제외 — prod에서 미출시 단계/CTA dead-end 방지.
-// (리마인더는 저장처·웹푸시 발송 인프라 미구현 — NOTIFICATIONS_ENABLED 준비 후 오픈)
+/**
+ * 최소 경로 — 학생만 아는 값 3개를 묻고, 결과를 한 번 확인시킨다.
+ *
+ * 시험일(외부 일정) · 하루에 쓸 수 있는 시간(본인 사정) · 시험 범위(학교 진도)는 시스템이
+ * 알아낼 방법이 없다. 그 밖의 항목(시험명·목표·다짐·동기 스타일·알림)은 시간표 배치를
+ * 바꾸지 않으므로 기본값으로 채워 보내고 '직접 설정'에서만 노출한다.
+ *
+ * 블록 패턴·루틴·약점은 4단계 인라인 조정으로 내렸다 — 결과를 보고 고치는 편이 빠르다.
+ */
 const allSteps: readonly Omit<StepInfo, 'num'>[] = [
-  { key: 'goal',       label: '목표',      icon: Target,    title: '목표 · D-day',         description: '' },
-  { key: 'hours',      label: '가용시간',  icon: Clock,     title: '학습 가능 시간',       description: '평일·주말 학습할 수 있는 시간대. 학교/학원 시간 빼고.' },
-  { key: 'subjects',   label: '범위',      icon: BookOpen,  title: '학습 범위',            description: '이번 시험에서 다룰 과목 · 단원 선택. 시간 분배는 AI가 단원 수·D-day로 자동 계산해요.' },
-  { key: 'pattern',    label: '블록',      icon: Hourglass, title: '블록 패턴',            description: '집중 ↔ 휴식 리듬. 본인 집중력에 맞춰 선택.' },
-  { key: 'routine',    label: '루틴',      icon: Repeat2,   title: '루틴 — 반복하는 행동', description: '매일·매주 반복할 행동을 골라 이 시간표에 넣어요. 건너뛰어도 돼요.' },
-  { key: 'weakness',   label: '약점',      icon: Flame,     title: '약점 자동 반영',
-    description: WEAKNESS_ENABLED
-      ? '풀림 분석의 약점 단원을 플래너가 자동으로 더 많이 배정할지.'
-      : '풀림 분석의 약점 단원을 자동 배정하는 기능 — 지금 준비 중이에요.' },
-  { key: 'motivation', label: '동기',      icon: Heart,     title: '동기 부여 스타일',     description: '봇이 어떻게 너를 도울지. 스파르타로 갈수록 알림이 늘어요.' },
-  { key: 'reminder',   label: '알림',      icon: Bell,      title: '리마인더',             description: '카톡·푸시·시작 5분 전 알림. 부모 일일 보고는 동의 필요.' },
-  { key: 'activate',   label: '활성화',    icon: Sparkles,  title: '미리보기 · 활성화',    description: '일주일 자동 생성된 플래너를 확인하고 활성화.' },
+  { key: 'goal',     label: '목표', icon: Target,   title: '무엇을 향해 달릴까?',
+    description: '시험이 있으면 그 날짜에 맞춰 짜요. 시험명은 자동으로 붙여 둡니다.' },
+  { key: 'hours',    label: '하루', icon: Clock,    title: '하루에 얼마나 쓸 수 있어?',
+    description: '이건 AI가 대신 정할 수 없어요. 학원·자습 일정은 본인만 아니까요. 여기서 정한 시간 안에서만 블록을 배치합니다.' },
+  { key: 'subjects', label: '범위', icon: BookOpen, title: '뭘 공부해?',
+    description: '과목을 고르면 단원은 채워 드려요. 선택과목과 진도는 시스템이 알 수 없어서 물어봅니다 — 그 둘을 모르면 채워 넣은 범위가 통째로 틀립니다.' },
+  { key: 'activate', label: '확인', icon: Sparkles, title: '이렇게 짰어요',
+    description: '다음 7일 미리보기예요. 마음에 안 드는 건 아래에서 바로 바꿀 수 있어요.' },
 ];
 
-export const plannerStepConfig: readonly StepInfo[] = allSteps
-  .filter(s => (s.key !== 'routine' || ROUTINE_ENABLED) && (s.key !== 'reminder' || NOTIFICATIONS_ENABLED))
-  .map((s, i) => ({ ...s, num: i + 1 }));
+export const plannerStepConfig: readonly StepInfo[] = allSteps.map((s, i) => ({ ...s, num: i + 1 }));
+
+/* ─── 자동 시험명 ──────────────────────────────────────────────────
+ * 시험명은 최소 경로에서 뺐다 — 시험 종류와 날짜를 알면 이름은 파생값이다.
+ * '직접 설정'에서 학생이 직접 쓴 이름은 이후 자동 갱신에서 건드리지 않는다.
+ */
+
+/** 시험 종류·날짜에서 파생한 이름 */
+export function autoExamName(form: PlannerForm): string {
+  const type = form.examType ?? 'mock';
+  const date = form.examStartDate ?? '';
+  if (type === 'other') return form.targetGoal?.trim() || '자유 목표';
+  if (!date) return examTypeMeta[type].label;
+
+  const year = Number(date.slice(0, 4));
+  const month = Number(date.slice(5, 7));
+  if (type === 'suneung') return presetNameForDate('suneung', date) ?? `${year + 1}학년도 수능`;
+  if (type === 'mock') return presetNameForDate('mock', date) ?? `${year} ${month}월 모의고사`;
+  const term = month <= 7 ? '1학기' : '2학기';
+  return `${year} ${term} ${examTypeMeta[type].label}`;
+}
+
+/**
+ * 시험 종류·날짜를 바꿀 때 이름을 함께 갱신한다.
+ * 직전 이름이 그 시점의 자동 이름과 같았을 때(= 학생이 손대지 않았을 때)만 새 이름으로 바꾼다.
+ */
+export function withAutoExamName(prev: PlannerForm, next: PlannerForm): PlannerForm {
+  const untouched = !prev.examName?.trim() || prev.examName === autoExamName(prev);
+  return untouched ? { ...next, examName: autoExamName(next) } : next;
+}
+
+/** 저장·표시에 쓸 시험명 — 비어 있으면 자동 이름으로 채운다 */
+export function resolvedExamName(form: PlannerForm): string {
+  return form.examName?.trim() || autoExamName(form);
+}
+
+/**
+ * 최소 경로에서 뺀 항목(시험명·다짐·동기 스타일)에 학생이 넣은 값이 있는가.
+ * 수정 모드에서 '직접 설정'을 처음부터 켜 둘지 판단한다 — 만들 때 쓴 값이 접힌 채로
+ * 숨어 있으면 "고칠 땐 안 보이는" 상태가 된다.
+ *
+ * 목표(등급·점수·자유)는 **최소 경로에 있으므로 여기서 보지 않는다.** 저장된 플래너는
+ * 전부 목표를 갖고 있어서(BE 필수), 목표를 근거로 삼으면 수정 진입이 항상 '직접 설정'
+ * 켜진 상태가 된다.
+ */
+export function hasCustomBasics(form: PlannerForm): boolean {
+  if (form.motto?.trim()) return true;
+  if (form.motivationStyle !== initialPlannerForm.motivationStyle) return true;
+  return !!(form.examName?.trim() && form.examName !== autoExamName(form));
+}
+
+/* ─── 학습 범위 확인 게이트 ────────────────────────────────────────
+ * 범위는 시스템이 채우되, **학생이 확인하기 전에는 다음으로 넘어가지 못한다.**
+ * 미리 채운 값은 확인 없이 그냥 통과되기 때문이다. 게이트 상태는 폼이 아니라 위저드
+ * 진행 상태라서 PlannerForm 에 넣지 않는다(저장 페이로드 불변).
+ */
+
+/** 학교 진도에 대한 답 */
+export type ScopeAnswer = 'all' | 'progress' | 'custom';
+
+export type ScopeState = {
+  /** 아직 답하지 않았으면 null */
+  answer: ScopeAnswer | null;
+  /** 과목별로 고른 선택과목 */
+  electives: Partial<Record<SubjectKey, string[]>>;
+  /** 과목별 '마지막으로 배운 단원' — progress 답변의 증명 */
+  progressCut: Partial<Record<SubjectKey, string>>;
+  /**
+   * **지금 답 아래에서** 범위가 확정된 과목 — 수정 모드 프리필이 여기 들어온다.
+   * 게이트 답을 바꾸면 이전 답을 전제로 선 확정이라 전부 무효가 된다.
+   */
+  settled: SubjectKey[];
+  /**
+   * **자동 범위로 되돌릴 수 없는 과목** — 답과 무관하게 단원이 유지된다. 두 경로로 들어온다:
+   *  - 학생이 [단원 직접 편집]으로 손수 적어 넣은 과목
+   *  - 수정 모드 프리필 중 시스템이 재구성할 수 없는 과목(`canDeriveScope` false)
+   *
+   * `settled` 와 나눠 두는 이유: 수정 모드는 저장된 과목을 전부 `settled` 로 넣는데,
+   * 직접 편집까지 같은 배열에 담아 답 변경 시 통째로 보존하면 수정 모드에서 게이트가
+   * 죽은 컨트롤이 된다(어떤 답을 골라도 범위가 그대로). 반대로 통째로 비우면 학생이
+   * 방금 적은 단원을 자동 범위가 덮어쓴다(Codex). 두 의미를 분리해야 둘 다 지켜진다.
+   */
+  manualUnits: SubjectKey[];
+};
+
+/**
+ * 초기 게이트 상태. 이미 범위가 있는 폼(= 수정 모드)은 확정된 것으로 본다 —
+ * 만들 때 답한 걸 고칠 때 다시 묻지 않는다. 새로 만들 때는 아무것도 답하지 않은 상태.
+ *
+ * 프리필은 원칙적으로 `manualUnits` 에 넣지 않는다 — 이번 세션에서 직접 편집한 게 아니므로,
+ * 답을 바꾸면 새 답 기준으로 다시 파생돼야 한다.
+ *
+ * **예외 — 자동 범위로 되돌릴 수 없는 과목**(`canDeriveScope` false). 선택과목을 역추론할 수
+ * 없는 자유 입력 범위(`math: ['학원 교재 3단원']`)를 파생에 맡기면, 답을 바꾸는 순간
+ * `needsElective` 가 서서 단원이 `[]` 로 덮어써지고 선택과목부터 다시 고르게 된다 —
+ * 학생이 저장해 둔 범위를 확인 한 번에 잃는다(Codex). 되돌릴 수 없는 건 유지가 유일한 답이고,
+ * 자동 범위로 가는 출구는 과목 칩 껐다 켜기(`toggleSubject`)로 남아 있다.
+ */
+export function initialScopeState(form: PlannerForm): ScopeState {
+  const units = form.subjectUnits ?? {};
+  const subjects = Object.keys(units) as SubjectKey[];
+  if (subjects.length === 0) {
+    return { answer: null, electives: {}, progressCut: {}, settled: [], manualUnits: [] };
+  }
+  const electives: Partial<Record<SubjectKey, string[]>> = {};
+  for (const s of subjects) electives[s] = inferElectives(s, units[s] ?? []);
+  return {
+    answer: 'custom',
+    electives,
+    progressCut: {},
+    settled: subjects,
+    manualUnits: subjects.filter(s => !canDeriveScope(s, units[s] ?? [])),
+  };
+}
+
+/**
+ * 그 과목의 범위를 학생이 이미 확인했는가 — 지금 답 아래의 선 확정(`settled`)이거나
+ * 자동 범위로 되돌릴 수 없는 확정(`manualUnits`).
+ * 두 경우 모두 시스템이 단원을 다시 파생해 덮어써서는 안 되고, 게이트 증명도 이미 선 것으로 본다.
+ */
+export function isScopeConfirmed(subject: SubjectKey, scope: ScopeState): boolean {
+  return scope.settled.includes(subject) || scope.manualUnits.includes(subject);
+}
+
+/** 선택과목을 아직 고르지 않아 범위를 확정할 수 없는 과목인가 */
+export function needsElective(subject: SubjectKey, scope: ScopeState): boolean {
+  // 직접 편집한 과목까지 다시 물으면 교육과정에 없는 선택과목의 우회로
+  // ([목록에 없어 · 직접 고를래] → 직접 편집)가 답 변경 한 번에 막다른 길로 돌아간다.
+  if (isScopeConfirmed(subject, scope)) return false;
+  const spec = subjectScope(subject);
+  return spec.choose > 0 && (scope.electives[subject]?.length ?? 0) < spec.choose;
+}
+
+/**
+ * 목표 등급 허용 범위 — 입력 UI(`TargetField` 의 grade 분기)가
+ * `e.target.value.replace(/[^1-8]/g, '').slice(0, 1)` 로 한 자리 1~8 만 남긴다(QA #5).
+ * 순수 함수 쪽 검증도 같은 범위를 써야 UI 와 판정이 어긋나지 않는다.
+ */
+const GRADE_MIN = 1;
+const GRADE_MAX = 8;
+
+/** 목표 점수 허용 범위 — 입력 UI 가 `min=0 max=100` + '100점 만점' 표기로 잘라 넣는 값 */
+const SCORE_MIN = 0;
+const SCORE_MAX = 100;
+
+/** 1단계를 통과하지 못하는 이유 — 없으면 null */
+export function goalBlocker(form: PlannerForm): string | null {
+  // 목표는 시간표 배치를 바꾸지 않지만 BE `target` 이 필수라 **묻지 않으면 학생이 정하지
+  // 않은 값이 저장된다.** 빈 등급이 `parseInt('') || 1` 로 1등급이 됐고, 자유 목표는
+  // 비빈 문자열 필수라 저장 자체가 400 이었다(Codex).
+  //
+  // 값의 **범위**까지 여기서 본다. 입력 UI 는 범위 밖 타이핑을 막지만 수정 모드 프리필
+  // (`plannerToForm`)은 저장된 값을 그대로 되살리고, BE `planner-write.dto.ts` 는
+  // grade/score 를 '유한 number' 로만 검증한다 — 레거시/오염 데이터의 9 등급 같은 값이
+  // 1단계를 통과하면 `formToPlannerPatch` 가 그 값을 그대로 다시 전송한다(Codex).
+  const targetKind = examTypeMeta[form.examType ?? 'mock'].targetKind;
+  if (targetKind === 'free' && !form.targetGoal?.trim()) {
+    return '무엇을 목표로 할지 적어주세요';
+  }
+  if (targetKind === 'grade') {
+    const raw = form.targetGrade?.trim();
+    // '비어 있음'과 '범위 밖'은 학생이 할 일이 다르다 — 적어야 하는지, 고쳐야 하는지.
+    if (!raw) return '목표 등급을 정해주세요';
+    const grade = Number(raw);
+    if (!Number.isInteger(grade) || grade < GRADE_MIN || grade > GRADE_MAX) {
+      return `목표 등급은 ${GRADE_MIN}~${GRADE_MAX} 중에서 정해주세요`;
+    }
+  }
+  if (targetKind === 'score') {
+    // 점수는 화면에 기본값이 보이므로 '비어 있음'은 묻지 않는다(폴백도 화면과 같은 값).
+    // 다만 범위 밖 프리필은 막는다 — 그대로 저장하면 BE 검증(유한 number)은 통과하지만
+    // 100점 만점 UI 와 어긋난 값이 남고, `Number(...)` 가 NaN 이면 저장이 400 으로 튄다.
+    const score = form.targetScore ?? initialPlannerForm.targetScore;
+    if (!Number.isFinite(score) || score < SCORE_MIN || score > SCORE_MAX) {
+      return `목표 점수는 ${SCORE_MIN}~${SCORE_MAX} 사이로 정해주세요`;
+    }
+  }
+  if (!form.examStartDate) return '시험 날짜를 정해주세요';
+  // 계획표는 미래 대상 — 이미 **종료된** 시험 차단. 판정은 종료일 기준(진행 중 범위 시험은
+  // 기존 시작일 그대로 저장 가능해야 한다). 단일 시험은 종료일=시작일이라 동작 동일.
+  if ((form.examEndDate || form.examStartDate) < todayIsoKst()) {
+    return '이미 지난 시험이에요 — 시험 날짜를 오늘 이후로 선택해주세요';
+  }
+  return null;
+}
+
+/** 3단계를 통과하지 못하는 이유 — 없으면 null */
+export function scopeBlocker(form: PlannerForm, scope: ScopeState): string | null {
+  const units = form.subjectUnits ?? {};
+  const subjects = Object.keys(units) as SubjectKey[];
+  if (subjects.length === 0) return '과목을 하나 이상 골라주세요 — 단원은 자동으로 채워집니다';
+
+  const pendingChoice = subjects.find(s => needsElective(s, scope));
+  if (pendingChoice) return `${subjectLabels[pendingChoice] ?? pendingChoice} 선택과목을 골라주세요`;
+
+  if (!scope.answer) return '학교 진도를 골라주세요';
+  if (scope.answer === 'progress') {
+    const noCut = subjects.find(s => !isScopeConfirmed(s, scope) && !scope.progressCut[s]);
+    if (noCut) return `${subjectLabels[noCut] ?? noCut} 진도를 눌러주세요`;
+  }
+  if (scope.answer === 'custom') {
+    // 확인은 **과목별**이다. 전역 플래그로 두면 영어를 직접 편집한 뒤 수학을 새로 추가했을 때
+    // 수학은 자동으로 채워진 전 범위 그대로 통과한다 — '직접 고르기' 를 고른 의미가 사라진다(Codex).
+    const unconfirmed = subjects.find(s => !isScopeConfirmed(s, scope));
+    if (unconfirmed) {
+      return `${subjectLabels[unconfirmed] ?? unconfirmed} 시험 범위를 골라주세요`;
+    }
+  }
+
+  // 과목만 있고 단원이 비면 시간표가 만들어지지 않는다 — 직접 편집으로 비웠을 때 방어.
+  const emptySubject = subjects.find(s => (units[s]?.length ?? 0) === 0);
+  if (emptySubject) {
+    return `'${subjectLabels[emptySubject] ?? emptySubject}' 과목의 단원을 1개 이상 선택해주세요`;
+  }
+  return null;
+}
+
+/** 해당 단계를 통과하지 못하는 이유 — 없으면 null */
+export function stepBlocker(key: StepKey, form: PlannerForm, scope: ScopeState): string | null {
+  if (key === 'goal') return goalBlocker(form);
+  if (key === 'subjects') return scopeBlocker(form, scope);
+  return null;
+}
+
+/** 지금 갈 수 있는 가장 뒤 단계 — 앞 단계가 막혀 있으면 건너뛰지 못한다 */
+export function maxReachableStep(form: PlannerForm, scope: ScopeState): number {
+  for (let i = 0; i < plannerStepConfig.length; i++) {
+    if (stepBlocker(plannerStepConfig[i].key, form, scope)) return i + 1;
+  }
+  return plannerStepConfig.length;
+}
+
+/** 프리셋 회차가 있는 시험 종류인가 — 수능·모의고사는 전국이 같은 날 치른다 */
+export function presetsForExamType(examType: ExamType, todayIso: string) {
+  if (examType !== 'mock' && examType !== 'suneung') return [];
+  return examPresets(examType, todayIso);
+}
+
+/**
+ * 새 시간표의 시작 폼 — 기본 시험 종류의 회차가 하나뿐이면 날짜·이름까지 채워 둔다.
+ * 카드는 이미 골라져 있는데 날짜만 비어 있으면 학생이 "고른 카드를 또 눌러야" 하는 상태가 된다.
+ * 채운 값은 1단계 날짜 입력에서 그대로 고칠 수 있다.
+ */
+export function seededPlannerForm(todayIso = todayIsoKst()): PlannerForm {
+  const presets = presetsForExamType(initialPlannerForm.examType, todayIso);
+  if (presets.length !== 1) return initialPlannerForm;
+  return withAutoExamName(initialPlannerForm, {
+    ...initialPlannerForm,
+    examStartDate: presets[0].date,
+    examEndDate: presets[0].date,
+  });
+}

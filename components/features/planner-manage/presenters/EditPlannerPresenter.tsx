@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { Palette, ListChecks } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { FlywheelNote } from '@/components/shell/flywheel-note';
-import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
-import { plannerStepConfig } from '@/components/features/planner-builder/components/builder-types';
+import type { PlannerForm, ScopeState } from '@/components/features/planner-builder/components/builder-types';
+import { hasCustomBasics, plannerStepConfig } from '@/components/features/planner-builder/components/builder-types';
 import type { Planner, Routine } from '@/lib/mock';
 import type { PreviewDay } from '@/lib/planner/preview-map';
 import { PlannerWizard } from '../components/planner-wizard';
@@ -19,9 +19,13 @@ interface EditPlannerPresenterProps {
   onTabChange: (tab: EditTab) => void;
   form: PlannerForm;
   setForm: (f: PlannerForm | ((prev: PlannerForm) => PlannerForm)) => void;
+  scope: ScopeState;
+  setScope: (s: ScopeState | ((prev: ScopeState) => ScopeState)) => void;
   currentStep: number;
   canPrev: boolean;
   canNext: boolean;
+  blockedReason: string | null;
+  maxReachable: number;
   onPrev: () => void;
   onNext: () => void;
   onJump: (n: number) => void;
@@ -33,7 +37,8 @@ interface EditPlannerPresenterProps {
 export default function EditPlannerPresenter({
   planner, tab, onTabChange,
   form, setForm,
-  currentStep, canPrev, canNext,
+  scope, setScope,
+  currentStep, canPrev, canNext, blockedReason, maxReachable,
   onPrev, onNext, onJump,
   onSave,
   routines, onServerPreview,
@@ -97,14 +102,21 @@ export default function EditPlannerPresenter({
           <PlannerWizard
             form={form}
             setForm={setForm}
+            scope={scope}
+            setScope={setScope}
             currentStep={currentStep}
             canPrev={canPrev}
             canNext={canNext}
+            blockedReason={blockedReason}
+            maxReachable={maxReachable}
             onPrev={onPrev}
             onNext={onNext}
             onJump={onJump}
             mode="edit"
             onActivate={onSave}
+            // 만들 때 넣은 값(시험명·목표·다짐·동기)이 있으면 접어 두지 않는다 —
+            // 고칠 때 안 보이면 유실된 것과 다름없다.
+            initialExpert={hasCustomBasics(form)}
             routines={routines}
             onServerPreview={onServerPreview}
           />
