@@ -1,5 +1,6 @@
 import type { PullimPreviewBlock } from '@/lib/api-client';
 import { routineSubjectLabel, subjectLabels, type BlockType, type RoutineSubject } from '@/lib/mock';
+import type { HeldReason } from './routine-fit';
 
 /**
  * step8 미리보기 도메인 타입 — FE 휴리스틱(`generatePreview`)과 서버 dry-run
@@ -13,7 +14,7 @@ export type PreviewItem = {
   /** 5단계에서 고른 루틴으로 들어간 블록 */
   isRoutine?: boolean;
   /** 배치 보류 사유 — 숨기지 않고 표기한다(선택 루틴 누락 인지 가능, Codex). */
-  held?: '가용 시간 밖' | '루틴 겹침';
+  held?: HeldReason;
 };
 
 export type PreviewDay = {

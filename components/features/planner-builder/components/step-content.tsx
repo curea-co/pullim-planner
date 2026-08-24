@@ -20,6 +20,7 @@ import {
 import { BLOCK_TYPE_STRIPE } from '@/lib/planner/block-type-style';
 import { type PreviewDay, type PreviewItem } from '@/lib/planner/preview-map';
 import { RoutineConflictNotice } from './routine-conflict-notice';
+import { busyRanges, placeRoutinesForDay } from '@/lib/planner/routine-fit';
 import { daysBetween } from '@/lib/planner/exam-presets';
 import {
   type PlannerForm, type ScopeState, blockPatternMeta, motivationStyleMeta,
@@ -1062,7 +1063,6 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
   // 날짜를 넘어 이어진다(인터리빙 + 전 기간 단원 커버리지). 노션 #49 전까지의 근사.
   let subjectCursor = 0;
   const unitCursor: Record<string, number> = {};
-  const toMin = (hm: string) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
   const dayMs = 86_400_000;
 
   for (let i = 1; i <= 7; i++) {
@@ -1083,24 +1083,18 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
     // (준비 기간 포함 — 2026-08-03 오너 확정 확대, pullim-api #478). 가용 창 밖·루틴-루틴
     // 겹침은 미리보기 표시에서만 보류(2단계 설정과의 모순 방지 — Codex).
     const routineDay = (dt.weekday + 6) % 7; // jsDay(0=일) → routine weekday(0=월)
-    const routineItems: PreviewItem[] = [];
-    for (const id of form.routineIds) {
-      const r = routineMap ? routineMap.get(id) : findRoutine(id);
-      if (!r || !r.weekdays.some(w => w === routineDay)) continue;
-      const rs = toMin(r.startTime);
-      const re = toMin(r.endTime);
-      // 가용 시간(2단계) 밖·루틴-루틴 겹침은 숨기지 않고 '보류'로 표기 — 선택한 루틴이
-      // 어떻게 적용되는지 확인하는 화면에서 조용한 누락을 만들지 않는다(Codex).
-      const held: PreviewItem['held'] =
-        rs < winStart || re > winEnd ? '가용 시간 밖'
-        : routineItems.some(it => !it.held && rs < toMin(it.end) && toMin(it.start) < re) ? '루틴 겹침'
-        : undefined;
-      routineItems.push({
-        start: r.startTime, end: r.endTime,
+    const dayRoutines = form.routineIds
+      .map((id) => (routineMap ? routineMap.get(id) : findRoutine(id)))
+      .filter((r): r is Routine => !!r);
+    const placed = placeRoutinesForDay(dayRoutines, routineDay, winStart, winEnd);
+    const routineItems: PreviewItem[] = placed.map((p) => {
+      const r = dayRoutines.find((it) => it.id === p.routineId)!;
+      return {
+        start: p.start, end: p.end,
         subjectLabel: routineSubjectLabel(r.subject),
-        type: r.type, unitLabel: r.title, isRoutine: true, held,
-      });
-    }
+        type: r.type, unitLabel: r.title, isRoutine: true, held: p.held,
+      };
+    });
 
     const items: PreviewItem[] = [...routineItems];
 
@@ -1118,7 +1112,7 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
       const mockFirstSlot = dday <= 30 && dt.weekday === 0;
 
       let slotIdx = 0;
-      for (let t = winStart; t + blockMinutes <= winEnd; t += cycleMinutes) {
+      const pushBlock = (start: number, end: number) => {
         const subject = subjectKeys[subjectCursor % subjectKeys.length];
         subjectCursor += 1;
         const isMock = mockFirstSlot && slotIdx === 0;
@@ -1136,10 +1130,23 @@ function generatePreview(form: PlannerForm, todayISO: string, routines?: Routine
           }
         }
 
-        // 루틴과 겹치는 슬롯은 제외 — 커서는 이미 전진(BE excludeOverlapping 이 생성 후 필터하는 것과 동형)
+        items.push({
+          start: fmtHM(start), end: fmtHM(end),
+          subjectLabel: subjectLabels[subject], type, unitLabel,
+        });
+      };
+
+      // 격자는 BE `generateSchedule` 과 같다 — 창 시작에서 고정 스텝, 창 끝 잔여는 버림.
+      // 미리보기는 **저장 결과의 근사**라서 서버가 만들지 않는 블록을 지어내면 안 된다.
+      //
+      // 점유 집합만 `busyRanges` 로 바꾼다 — 창을 걸쳐 '보류'로 표기된 루틴도 점유로 센다.
+      // BE 는 가용 창과 무관하게 루틴을 굽고(`bakeRoutines`) 겹치는 생성 블록을 버리므로
+      // (`excludeOverlapping`), 보류를 점유에서 빼면 서버엔 없는 블록이 화면에만 생긴다.
+      const busy = busyRanges(placed);
+      for (let t = winStart; t + blockMinutes <= winEnd; t += cycleMinutes) {
         const end = t + blockMinutes;
-        if (routineItems.some(it => !it.held && t < toMin(it.end) && toMin(it.start) < end)) continue;
-        items.push({ start: fmtHM(t), end: fmtHM(end), subjectLabel: subjectLabels[subject], type, unitLabel });
+        if (busy.some(([bs, be]) => t < be && bs < end)) continue;
+        pushBlock(t, end);
       }
     }
 
