@@ -5,15 +5,36 @@
  * 히스토리 재방문으로 그 엔트리에 다시 들어와도 빈 위저드가 열리지 않아야 하고, 활성화가
  * 실패했을 때는 표식도 완료 화면도 남지 않아야 한다.
  */
+import { useSyncExternalStore } from 'react';
 import { act, render, screen, fireEvent } from '@testing-library/react';
+import { flushSync } from 'react-dom';
 
 let mockSearch = '';
+/**
+ * `useSearchParams` 를 정적 문자열이 아니라 **구독 가능한 store** 로 흉내낸다 — 실제 Next 는
+ * `history.replaceState` 와 동기화되므로, 표식을 붙인 순간 값이 바뀌고 렌더가 끼어들 수 있다.
+ * 정적 mock 으로는 그 경로 자체가 재현되지 않는다 (codex).
+ */
+const mockSearchListeners = new Set<() => void>();
+function mockSetSearch(next: string) {
+  mockSearch = next;
+  mockSearchListeners.forEach((listen) => listen());
+}
+function mockSubscribeSearch(listen: () => void) {
+  mockSearchListeners.add(listen);
+  return () => { mockSearchListeners.delete(listen); };
+}
+// jest.mock 팩토리는 `mock` 으로 시작하는 바깥 변수만 참조할 수 있어 별칭으로 넘긴다.
+const mockUseSyncExternalStore = useSyncExternalStore;
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: mockReplace, prefetch: jest.fn(), back: jest.fn() }),
   usePathname: () => '/planner/manage/new',
-  useSearchParams: () => new URLSearchParams(mockSearch),
+  useSearchParams: () =>
+    new URLSearchParams(
+      mockUseSyncExternalStore(mockSubscribeSearch, () => mockSearch, () => mockSearch),
+    ),
 }));
 
 const mockToast = { success: jest.fn(), error: jest.fn(), warning: jest.fn() };
@@ -75,10 +96,33 @@ async function renderContainer() {
   return utils;
 }
 
+/**
+ * 실제 Next 처럼 `history.replaceState` 와 `useSearchParams` 를 **동기화**한다 — 표식을 붙이면
+ * 그 순간부터 `created` 가 읽힌다. 정적 문자열 mock 이던 시절에는 표식이 붙은 뒤의 렌더를
+ * 흉내낼 수 없어, 성공 직후 경로를 테스트가 아예 지나가지 못했다 (codex).
+ *
+ * `flushSyncOnStamp` 를 켜면 표식이 붙는 순간 렌더를 강제한다 — 리캡(state)이 아직 커밋되지
+ * 않은 렌더가 실제로 한 번 끼는, 지적받은 그 순서를 만든다.
+ */
+function syncSearchParamsWithHistory({ flushSyncOnStamp = false } = {}) {
+  const nativeReplaceState = window.history.replaceState.bind(window.history);
+  jest
+    .spyOn(window.history, 'replaceState')
+    .mockImplementation((state: unknown, unused: string, url?: string | URL | null) => {
+      nativeReplaceState(state, unused, url);
+      const applyToSearchParams = () => mockSetSearch(window.location.search.replace(/^\?/, ''));
+      if (flushSyncOnStamp) flushSync(applyToSearchParams);
+      else applyToSearchParams();
+    });
+}
+
 beforeEach(() => {
   mockSearch = '';
+  mockSearchListeners.clear();
+  jest.restoreAllMocks();
   jest.clearAllMocks();
   window.history.replaceState(null, '', '/planner/manage/new');
+  syncSearchParamsWithHistory();
 });
 
 describe('활성화 성공 — 완료 화면과 생성 표식', () => {
@@ -120,6 +164,23 @@ describe('활성화 성공 — 완료 화면과 생성 표식', () => {
     // 현재 엔트리의 __NA 를 다시 붙여 주므로 복원 정보는 그대로 남는다.
     expect(window.history.state).not.toHaveProperty('__NA');
   });
+
+  it('표식이 리캡보다 먼저 반영되는 렌더가 껴도 완료 화면을 지킨다', async () => {
+    // 표식이 붙는 순간 렌더를 강제한다 — `createdId` 는 있고 `done` 은 아직 없는 렌더를
+    // 실제로 한 번 끼워 넣어, 재진입 redirect 가 여기서 발화하지 않는지 본다.
+    jest.restoreAllMocks();
+    syncSearchParamsWithHistory({ flushSyncOnStamp: true });
+    mockCreate.mockResolvedValue({ id: 'planner-1', name: '2026 9월 모의평가' });
+    mockActivate.mockResolvedValue(undefined);
+
+    await renderContainer();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: WIZARD })); });
+
+    // 표식이 먼저 보였다고 해서 관리 화면으로 튕기면 안 된다 — 이 마운트에서 방금 만들었다.
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: DONE_HEADING })).toBeInTheDocument();
+    expect(window.location.search).toBe('?created=planner-1');
+  });
 });
 
 describe('활성화 실패(부분 성공) — 완료 화면을 띄우지 않는다', () => {
@@ -159,5 +220,23 @@ describe('생성 표식 URL 재진입 — 빈 위저드를 다시 열지 않는�
     expect(mockReplace).toHaveBeenCalledWith('/planner/manage');
     // 위저드가 없으니 같은 입력으로 한 번 더 create 할 경로 자체가 없다.
     expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it('직전 마운트에서 만들었더라도 새 마운트면 관리 화면으로 보낸다', async () => {
+    // "방금 만들었다" 는 **이 마운트 한정** 사실이어야 한다. 모듈 스코프에 남겨 두면
+    // 새로고침·재진입에서도 억제가 살아 빈 위저드가 다시 열리고 중복 생성이 뚫린다.
+    mockCreate.mockResolvedValue({ id: 'planner-1', name: '2026 9월 모의평가' });
+    mockActivate.mockResolvedValue(undefined);
+
+    const first = await renderContainer();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: WIZARD })); });
+    expect(screen.getByRole('heading', { name: DONE_HEADING })).toBeInTheDocument();
+    first.unmount();
+
+    // 표식이 붙은 URL 을 새로 여는 상황 — 리캡은 메모리에만 있었으므로 남아 있지 않다.
+    await renderContainer();
+
+    expect(screen.queryByRole('button', { name: WIZARD })).not.toBeInTheDocument();
+    expect(mockReplace).toHaveBeenCalledWith('/planner/manage');
   });
 });

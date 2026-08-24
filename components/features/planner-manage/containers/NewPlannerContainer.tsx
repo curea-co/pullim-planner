@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
@@ -55,12 +55,27 @@ export default function NewPlannerContainer() {
   const [done, setDone] = useState<WizardDoneSummary | null>(null);
 
   /**
+   * 이 마운트에서 방금 만들었는가 — 아래 재진입 redirect 를 억제하는 플래그.
+   *
+   * 성공 경로는 `setDone()` 과 `stampCreated()` 를 같은 틱에 부르는데, 표식(URL)이 리캡
+   * (state)보다 먼저 반영되는 렌더가 한 번이라도 끼면 `createdId` 는 있고 `done` 은 없는
+   * 상태가 되어 redirect 가 발화하고, 이 화면의 존재 이유인 완료 화면이 통째로 사라진다.
+   * ref 는 렌더/커밋 타이밍과 무관하게 즉시 참이 되므로 두 갱신의 순서에 기대지 않는다 (codex).
+   *
+   * 새로고침·히스토리 재진입은 **새 마운트**라 이 ref 가 다시 false 로 시작한다 — 중복 생성
+   * 차단 장치는 그대로다.
+   */
+  const justCreatedRef = useRef(false);
+
+  /**
    * 생성 표식만 있고 리캡이 없다 = 완료 URL 을 **새 문서로** 다시 연 경우(새로고침·히스토리
    * 재방문·링크 공유). 리캡은 메모리에만 있으니 복원할 수 없다. 이때 위저드를 다시 열면
    * 이미 만들어진 플래너와 무관한 빈 위저드가 뜨고 중복 생성이 가능해지므로, 방금 만든
    * 플래너가 보이는 관리 화면으로 보낸다.
    */
   useEffect(() => {
+    // 방금 이 마운트에서 표식을 붙인 경우는 재진입이 아니다 — 리캡이 곧 뒤따른다.
+    if (justCreatedRef.current) return;
     if (createdId && !done) router.replace('/planner/manage');
   }, [createdId, done, router]);
 
@@ -137,6 +152,9 @@ export default function NewPlannerContainer() {
    * 현재 엔트리의 `__NA`·내부 트리를 다시 붙여 주므로 복원 정보도 그대로 산다.
    */
   function stampCreated(plannerId: string) {
+    // 표식을 붙이기 **전에** 세운다 — replaceState 동기화가 리캡보다 먼저 렌더에 반영돼도
+    // 재진입 redirect 가 발화하지 않도록.
+    justCreatedRef.current = true;
     if (typeof window === 'undefined') return;
     const prev: unknown = window.history.state;
     const carried: Record<string, unknown> =
@@ -208,7 +226,8 @@ export default function NewPlannerContainer() {
     );
   }
 
-  // 생성 표식이 붙은 URL 인데 리캡이 없다 — 위저드를 열지 않는다(위 effect 가 관리 화면으로 보낸다).
+  // 생성 표식이 붙은 URL 인데 리캡이 없다 — 위저드를 열지 않는다. 재진입이면 위 effect 가
+  // 관리 화면으로 보내고, 방금 만든 경우라면 곧 도착할 리캡이 이 자리를 완료 화면으로 바꾼다.
   if (createdId) {
     return (
       <p className="text-pullim-slate-400 py-10 text-center text-sm">시간표 관리로 이동 중…</p>
