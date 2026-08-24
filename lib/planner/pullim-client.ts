@@ -156,3 +156,22 @@ export function toRoutinePatch(
 ): PullimRoutinePatch {
   return toRoutineWrite(form);
 }
+
+/**
+ * 루틴 시각만 옮기는 부분 수정 본문 — 실제로 바뀐 시각 2개와 거기서 파생되는
+ * `expectedMinutes` 만 담는다(`RoutinePatchDto = PartialType(RoutineWriteDto)` — 보낸 필드만 갱신).
+ *
+ * `expectedMinutes` 는 BE 가 재계산하지 않고 받은 값을 그대로 저장하므로(`RoutinesService.toPatch`)
+ * 시각과 함께 보내야 소요 시간이 어긋나지 않는다. 반대로 title/subject/type/weekdayMask 는
+ * 이 동작이 건드리는 값이 아니라 보내지 않는다 — 다른 탭·기기에서 바뀐 값을 stale 로 덮어쓰지 않게.
+ */
+export function toRoutineTimePatch(
+  startTime: string,
+  endTime: string,
+): PullimRoutinePatch {
+  return {
+    startTime,
+    endTime,
+    expectedMinutes: minutesBetween(startTime, endTime),
+  };
+}

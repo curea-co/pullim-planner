@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import type { Routine } from '@/lib/mock';
 import { updateRoutine as updateMockRoutine } from '@/lib/mock/routine';
-import { pullimPlannerClient, pullimToRoutine, toRoutinePatch } from '@/lib/planner/pullim-client';
+import { pullimPlannerClient, pullimToRoutine, toRoutineTimePatch } from '@/lib/planner/pullim-client';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
@@ -15,8 +15,9 @@ const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
  * 그래서 화면에서만 옮기는 시늉을 하지 않고 실제로 `PATCH /planner/routines/:routineId` 를
  * 호출한다 — 다른 시간표에도 반영된다는 사실은 호출 전 확인 다이얼로그가 알린다.
  *
- * 시각만 바꿔도 BE 는 전체 필드를 받는 부분 수정 본문을 쓰므로(`toRoutinePatch`), 목록에
- * 들고 있던 루틴에 새 시각을 얹어 보낸다.
+ * PATCH 본문에는 **실제로 바뀐 필드만** 담는다(`toRoutineTimePatch` — 시각 2개 + 파생값
+ * `expectedMinutes`). 제목/과목/유형/요일까지 화면에 들고 있던 값으로 되보내면 다른 탭·기기에서
+ * 방금 바꾼 값을 stale 로 덮어쓴다.
  */
 export function useRoutineTimeUpdate(
   routines: Routine[],
@@ -33,10 +34,7 @@ export function useRoutineTimeUpdate(
       } else {
         const saved = await pullimPlannerClient.updateRoutine(
           routineId,
-          toRoutinePatch({
-            title: next.title, subject: next.subject, type: next.type,
-            startTime: next.startTime, endTime: next.endTime, weekdays: next.weekdays,
-          }),
+          toRoutineTimePatch(patch.startTime, patch.endTime),
         );
         // 서버가 정규화한 값(예: 'HH:MM:SS')을 그대로 반영한다.
         setRoutines(routines.map(r => (r.id === routineId ? pullimToRoutine(saved) : r)));
