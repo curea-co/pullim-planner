@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import type { Routine } from '@/lib/mock';
 import { updateRoutine as updateMockRoutine } from '@/lib/mock/routine';
 import { pullimPlannerClient, pullimToRoutine, toRoutineTimePatch } from '@/lib/planner/pullim-client';
@@ -18,16 +18,19 @@ const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
  * PATCH 본문에는 **실제로 바뀐 필드만** 담는다(`toRoutineTimePatch` — 시각 2개 + 파생값
  * `expectedMinutes`). 제목/과목/유형/요일까지 화면에 들고 있던 값으로 되보내면 다른 탭·기기에서
  * 방금 바꾼 값을 stale 로 덮어쓴다.
+ *
+ * 상태 교체는 **함수형 업데이트**로만 한다 — 네트워크 왕복 사이에 들어온 다른 루틴 변경
+ * (추가/삭제/다른 수정)을 클로저에 캡처된 옛 목록으로 덮어쓰지 않기 위해서다.
  */
 export function useRoutineTimeUpdate(
   routines: Routine[],
-  setRoutines: (next: Routine[]) => void,
+  setRoutines: Dispatch<SetStateAction<Routine[]>>,
 ) {
   return useCallback(
     async (routineId: string, patch: { startTime: string; endTime: string }) => {
+      // 없는 id 로 PATCH 를 쏘지 않도록 호출 **전에** 목록에서 확인한다.
       const current = routines.find(r => r.id === routineId);
       if (!current) throw new Error('루틴을 찾지 못했어요');
-      const next: Routine = { ...current, ...patch };
 
       if (DEV_AUTH_BYPASS) {
         updateMockRoutine(routineId, patch);
@@ -37,10 +40,10 @@ export function useRoutineTimeUpdate(
           toRoutineTimePatch(patch.startTime, patch.endTime),
         );
         // 서버 응답을 반영한다 — 시각의 `HH:MM` 정규화는 `pullimToRoutine` 이 맡는다.
-        setRoutines(routines.map(r => (r.id === routineId ? pullimToRoutine(saved) : r)));
+        setRoutines(list => list.map(r => (r.id === routineId ? pullimToRoutine(saved) : r)));
         return;
       }
-      setRoutines(routines.map(r => (r.id === routineId ? next : r)));
+      setRoutines(list => list.map(r => (r.id === routineId ? { ...r, ...patch } : r)));
     },
     [routines, setRoutines],
   );

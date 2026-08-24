@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { renderHook, act } from '@testing-library/react';
 import type { PullimRoutine, PullimRoutinePatch } from '@/lib/api-client';
 import type { Routine } from '@/lib/mock';
@@ -90,11 +91,47 @@ describe('useRoutineTimeUpdate — 시각만 바꾸는 부분 수정', () => {
     });
 
     expect(setRoutines).toHaveBeenCalledTimes(1);
-    const next = setRoutines.mock.calls[0][0] as Routine[];
+    // 함수형 업데이트라 updater 를 현재 목록에 적용해 결과를 본다.
+    const updater = setRoutines.mock.calls[0][0] as (list: Routine[]) => Routine[];
+    const next = updater([routine, other]);
     expect(next).toHaveLength(2);
     // 서버가 'HH:MM:SS' 를 줘도 뷰 계약대로 'HH:MM' 이 상태에 들어간다.
     expect(next[0]).toMatchObject({ id: 'r1', startTime: '19:00', endTime: '20:00' });
     expect(next[1]).toBe(other);
+  });
+
+  it('PATCH 응답을 기다리는 사이 들어온 루틴 변경을 덮어쓰지 않는다', async () => {
+    let resolvePatch: (saved: PullimRoutine) => void = () => {};
+    mockUpdateRoutine.mockReturnValue(
+      new Promise<PullimRoutine>(resolve => {
+        resolvePatch = resolve;
+      }),
+    );
+    const added: Routine = { ...routine, id: 'r3', title: '왕복 중 추가된 루틴' };
+
+    // 실제 `useState` 를 물려 함수형 업데이트가 최신 상태 기준으로 도는지 본다.
+    const { result } = renderHook(() => {
+      const [routines, setRoutines] = useState<Routine[]>([routine]);
+      return { routines, setRoutines, update: useRoutineTimeUpdate(routines, setRoutines) };
+    });
+
+    const pending = result.current.update('r1', { startTime: '19:00', endTime: '20:00' });
+    // 응답 전에 다른 루틴이 추가된다.
+    act(() => {
+      result.current.setRoutines(prev => [...prev, added]);
+    });
+    await act(async () => {
+      resolvePatch(savedRoutine);
+      await pending;
+    });
+
+    expect(result.current.routines).toHaveLength(2);
+    expect(result.current.routines[0]).toMatchObject({
+      id: 'r1',
+      startTime: '19:00',
+      endTime: '20:00',
+    });
+    expect(result.current.routines[1]).toBe(added);
   });
 
   it('목록에 없는 루틴이면 호출하지 않고 던진다', async () => {
