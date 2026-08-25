@@ -21,10 +21,10 @@ import { cn } from '@/lib/utils';
  * 상태/이벤트는 props로 받기만 (presentation). 펼침 상태(`expert`)만 이 컴포넌트가 들고 있다
  * (단계를 오가도 유지돼야 하는 표시 상태이지 저장 대상이 아니라서).
  *
- * **토글은 1단계 본문 안에만 둔다.** 헤더 우측 고정 자리에 두면 2·3단계에서는 아무것도
- * 열지 않는 죽은 버튼이 되고, 4단계도 기본 플래그(알림·약점 차단)에서는 열 게 없다.
- * 상태 자체는 위저드가 계속 들고 있으므로, 1단계에서 켜 두면 플래그가 열린 환경의
- * 4단계 조정 패널(알림·약점)도 그대로 펼쳐진다.
+ * **`expert` 는 1단계 전용 개념이다** — 여는 것도, 토글이 놓이는 자리도 1단계 본문뿐.
+ * 헤더 우측 고정 자리에 두면 2·3·4단계에서 아무것도 열지 않는 죽은 버튼이 된다.
+ * 4단계 조정 패널의 알림·약점은 각자의 기능 플래그로만 노출한다 — 여기 묶어 두면
+ * 플래그를 켠 환경에서 그 설정들이 4단계에서 사라진 것처럼 보인다(Codex).
  */
 interface PlannerWizardProps {
   form: PlannerForm;
@@ -108,7 +108,6 @@ export function PlannerWizard({
               setForm={setForm}
               scope={scope}
               mode={mode}
-              expert={expert}
               onActivate={onActivate}
               routines={routines}
               onServerPreview={onServerPreview}

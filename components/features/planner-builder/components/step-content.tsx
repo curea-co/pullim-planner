@@ -1128,8 +1128,6 @@ type ConfirmProps = {
   scope: ScopeState;
   /** 'create' (기본) — 새 시간표 활성화 / 'edit' — 기존 변경 저장 */
   mode?: ConfirmMode;
-  /** 1단계에서 켠 펼침 상태 — 게이트가 열린 항목(알림·약점)을 조정 패널에 펼친다 */
-  expert?: boolean;
   /**
    * 활성화·저장 버튼 클릭 시 호출. 부모가 createPlanner / updatePlanner 호출 + redirect 처리.
    * 미주입 시 toast + router.push('/planner') 기본 동작.
@@ -1163,7 +1161,7 @@ export type ActivateSummary = {
 };
 
 export function PStep4Confirm({
-  form, setForm, scope, mode = 'create', expert, onActivate, routines, onServerPreview, onUpdateRoutine,
+  form, setForm, scope, mode = 'create', onActivate, routines, onServerPreview, onUpdateRoutine,
 }: ConfirmProps) {
   const router = useRouter();
   const [previewIdx, setPreviewIdx] = useState(0);
@@ -1452,7 +1450,7 @@ export function PStep4Confirm({
         </section>
       )}
 
-      <TunerPanel form={form} setForm={setForm} expert={expert} routines={routines} />
+      <TunerPanel form={form} setForm={setForm} routines={routines} />
 
       <button
         type="button"
@@ -1491,11 +1489,10 @@ function TunerSection({
 }
 
 function TunerPanel({
-  form, setForm, expert, routines,
+  form, setForm, routines,
 }: {
   form: PlannerForm;
   setForm: (next: PlannerForm) => void;
-  expert?: boolean;
   routines?: Routine[];
 }) {
   const fmt = (h: number) => (h === 24 ? '24' : String(h).padStart(2, '0'));
@@ -1546,14 +1543,16 @@ function TunerPanel({
         </TunerSection>
       )}
 
-      {/* 알림·약점은 각자의 기능 게이트가 열려 있고, 1단계에서 펼침을 켜 뒀을 때만 나온다.
-          둘 다 기본 차단이라 기본 상태에서 이 분기는 아무것도 렌더하지 않는다. */}
-      {expert && NOTIFICATIONS_ENABLED && (
+      {/* 알림·약점은 **각자의 기능 게이트로만** 나온다. 1단계 '시험명·다짐 직접 쓰기'(`expert`)에
+          묶어 두면 플래그를 켠 환경에서 이 설정들이 4단계에서 사라진 것처럼 보이고, 수정 플로우도
+          무관해 보이는 1단계 토글을 찾기 전까지 조정할 수 없다(Codex). 둘 다 기본 차단이라
+          기본 상태에서는 여전히 아무것도 렌더하지 않는다. */}
+      {NOTIFICATIONS_ENABLED && (
         <TunerSection title="알림">
           <PStep7Reminder form={form} setForm={setForm} />
         </TunerSection>
       )}
-      {expert && WEAKNESS_ENABLED && (
+      {WEAKNESS_ENABLED && (
         <TunerSection title="약점 자동 반영" value={form.weaknessAutoReflect ? 'ON' : 'OFF'}>
           <PStep5Weakness form={form} setForm={setForm} />
         </TunerSection>

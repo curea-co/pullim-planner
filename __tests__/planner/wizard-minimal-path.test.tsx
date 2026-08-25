@@ -10,6 +10,23 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 jest.mock('sonner', () => ({ toast: { error: jest.fn(), success: jest.fn(), warning: jest.fn() } }));
 
+/**
+ * 기능 플래그 — `lib/flags` 는 모듈 로드 시점의 env 로 상수를 굳혀서 테스트에서 env 를
+ * 갈아 끼워도 반영되지 않는다. getter 로 감싼 mock 을 두고 케이스마다 값만 바꾼다.
+ * (나머지 플래그는 실제 값 그대로 — 기본 차단)
+ */
+const mockFlags = { notifications: false, weakness: false };
+jest.mock('@/lib/flags', () => ({
+  ...jest.requireActual('@/lib/flags'),
+  get NOTIFICATIONS_ENABLED() { return mockFlags.notifications; },
+  get WEAKNESS_ENABLED() { return mockFlags.weakness; },
+}));
+
+beforeEach(() => {
+  mockFlags.notifications = false;
+  mockFlags.weakness = false;
+});
+
 import {
   autoExamName, initialPlannerForm, initialScopeState, plannerStepConfig,
   resolvedExamName, withAutoExamName, formToPlannerPatch, hasCustomBasics, goalBlocker,
@@ -299,8 +316,8 @@ describe('시험명·다짐 직접 쓰기 — 제외 항목 복원', () => {
   });
 
   it('1단계 밖에서는 토글을 렌더하지 않는다', () => {
-    // 2·3단계는 `expert` 로 여는 게 처음부터 없었고, 4단계도 동기 부여 스타일을 뺀 뒤로는
-    // 기본 플래그(알림·약점 차단)에서 열 항목이 남지 않는다 — 죽은 버튼을 두지 않는다.
+    // 2·3단계는 `expert` 로 여는 게 처음부터 없었고, 4단계도 알림·약점이 각자의 기능
+    // 플래그로 분리된 뒤로는 `expert` 로 열 항목이 없다 — 죽은 버튼을 두지 않는다.
     const form = formWith({
       examType: 'midterm',
       examStartDate: '2099-05-01',
@@ -377,5 +394,70 @@ describe('시험명·다짐 직접 쓰기 — 제외 항목 복원', () => {
     expect(hasCustomBasics(formWith({ motivationStyle: 'spartan' }))).toBe(false);
     // 목표는 최소 경로에 있다 — 저장된 플래너는 전부 목표를 갖고 있어서(BE 필수) 근거가 될 수 없다.
     expect(hasCustomBasics(formWith({ examType: 'mock', examStartDate: '2026-09-01', targetGrade: '2' }))).toBe(false);
+  });
+});
+
+/**
+ * 4단계 알림·약점 — **각자의 기능 플래그로만** 노출한다.
+ *
+ * 1단계 '시험명·다짐 직접 쓰기'(`expert`)에 묶어 두면, 플래그를 켠 환경에서 이 설정들이
+ * 4단계에서 사라진 것처럼 보이고 수정 플로우도 무관해 보이는 1단계 토글을 찾기 전까지는
+ * 조정할 수 없다(Codex). `expert` 는 1단계 전용 개념으로 둔다.
+ */
+describe('4단계 알림·약점 — 기능 플래그로만 노출', () => {
+  const step4Form = formWith({
+    examType: 'midterm',
+    examStartDate: '2099-05-01',
+    examEndDate: '2099-05-03',
+    subjectUnits: { english: ['빈칸 추론', '어법'] },
+  });
+
+  function renderStep4(props: Partial<React.ComponentProps<typeof PlannerWizard>> = {}) {
+    return render(
+      <PlannerWizard
+        form={step4Form} setForm={jest.fn()}
+        scope={initialScopeState(step4Form)} setScope={jest.fn()}
+        currentStep={4} canPrev canNext={false} blockedReason={null} maxReachable={4}
+        onPrev={jest.fn()} onNext={jest.fn()} onJump={jest.fn()}
+        mode="create" onActivate={jest.fn()}
+        {...props}
+      />,
+    );
+  }
+
+  /** 조정 패널 섹션 제목(`<summary>` 안) — 본문 h4·요약 줄의 같은 문구와 구분한다 */
+  const sectionTitle = (name: string) => screen.queryByText(name, { selector: 'summary span' });
+
+  it('기본 플래그(둘 다 차단)에서는 두 섹션 모두 없다', () => {
+    renderStep4();
+    expect(screen.queryByText('알림')).toBeNull();
+    expect(screen.queryByText('약점 자동 반영')).toBeNull();
+    // 요약 줄도 같은 기준 — 고칠 수 없는 설정을 값으로만 보여주지 않는다
+    expect(screen.queryByText(/약점 자동 반영:/)).toBeNull();
+    expect(screen.queryByText(/알림:/)).toBeNull();
+  });
+
+  it('알림 플래그를 켜면 1단계 토글과 무관하게 알림 섹션이 뜬다', () => {
+    mockFlags.notifications = true;
+    renderStep4();
+    expect(sectionTitle('알림')).toBeInTheDocument();
+    expect(screen.getByText('앱 푸시')).toBeInTheDocument();
+    expect(screen.queryByText('약점 자동 반영')).toBeNull();
+  });
+
+  it('약점 플래그를 켜면 1단계 토글과 무관하게 약점 섹션이 뜬다', () => {
+    mockFlags.weakness = true;
+    renderStep4();
+    expect(sectionTitle('약점 자동 반영')).toBeInTheDocument();
+    expect(screen.queryByText('알림')).toBeNull();
+  });
+
+  it('수정 진입(펼침 꺼짐)에서도 켜진 플래그의 섹션은 그대로 보인다', () => {
+    // hasCustomBasics() 가 false 라 initialExpert 가 꺼진 채 들어와도 4단계는 영향 없다
+    mockFlags.notifications = true;
+    mockFlags.weakness = true;
+    renderStep4({ mode: 'edit', initialExpert: false });
+    expect(sectionTitle('알림')).toBeInTheDocument();
+    expect(sectionTitle('약점 자동 반영')).toBeInTheDocument();
   });
 });
