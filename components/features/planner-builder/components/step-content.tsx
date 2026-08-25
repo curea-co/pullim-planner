@@ -225,6 +225,18 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
             <span className="text-pullim-slate-400 ml-1">· {examLength}일간</span>
           )}
         </p>
+        {/* 프리셋 날짜가 '추정치'임을 알리는 유일한 자리 — 보조 문구 정리(2026-08-24) 때 지웠다가
+            오너 결정으로 복원했다. 10px 회색은 안 보인다는 지적이라 warn 배너 + 12px 로 되돌린다
+            (`routine-conflict-notice` 의 색 배너 패턴을 따른다). */}
+        {presets.length > 0 && (
+          <aside className="border-pullim-warn/40 bg-pullim-warn-bg text-pullim-slate-700 mt-2 flex items-start gap-1.5 rounded-lg border p-2 text-xs leading-relaxed">
+            <AlertCircle className="text-pullim-warn mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>
+              이 날짜는 <strong className="text-pullim-slate-900">관례로 계산한 추정치</strong>라 해마다
+              어긋날 수 있어요. 학교에서 받은 일정과 다르면 위에서 바로 고치세요.
+            </span>
+          </aside>
+        )}
       </div>
 
       {/* 목표는 최소 경로에서도 받는다. 시간표 배치를 바꾸지 않는 값이지만 BE `target` 이
@@ -850,9 +862,13 @@ export function PStep7Reminder({ form, setForm }: Props) {
         value={form.remindBefore5min}
         onToggle={() => setForm({ ...form, remindBefore5min: !form.remindBefore5min })}
       />
+      {/* 부모 일일 보고만 동의 고지를 남긴다 — 제3자에게 학습 기록이 나가는 유일한 토글이라
+          고지 없이 켜지면 안 된다(오너 결정 2026-08-24). 나머지 두 줄의 설명은 복원하지 않는다.
+          10px 회색이 아니라 12px + warn 색으로 둔다. */}
       <ToggleRow
         Icon={Users}
         label="부모 일일 보고"
+        note="하루 학습 요약이 부모에게 자동 전송돼요. 본인·부모 양측 동의 후에만 켜집니다."
         value={form.parentDailyReport}
         onToggle={() => setForm({ ...form, parentDailyReport: !form.parentDailyReport })}
       />
@@ -861,10 +877,13 @@ export function PStep7Reminder({ form, setForm }: Props) {
 }
 
 function ToggleRow({
-  Icon, label, value, onToggle,
+  Icon, label, note, value, onToggle,
 }: {
   Icon: React.ComponentType<{ className?: string }>;
-  label: string; value: boolean; onToggle: () => void;
+  label: string;
+  /** 켜기 전에 반드시 읽어야 하는 고지. 없으면 라벨 한 줄만 — 설명용 보조 문구는 두지 않는다. */
+  note?: string;
+  value: boolean; onToggle: () => void;
 }) {
   return (
     <label className="bg-card border-pullim-slate-200 flex cursor-pointer items-center gap-3 rounded-xl border p-3">
@@ -876,7 +895,12 @@ function ToggleRow({
       >
         <Icon className="h-4 w-4" />
       </span>
-      <h4 className="text-pullim-slate-900 min-w-0 flex-1 text-sm font-bold">{label}</h4>
+      <div className="min-w-0 flex-1">
+        <h4 className="text-pullim-slate-900 text-sm font-bold">{label}</h4>
+        {note && (
+          <p className="text-pullim-warn mt-0.5 text-xs leading-relaxed font-semibold">{note}</p>
+        )}
+      </div>
       <input
         type="checkbox"
         checked={value}
@@ -1393,6 +1417,38 @@ export function PStep4Confirm({
               </nav>
             </div>
           )}
+
+          {/* QA #43 고지 — 학생이 보고 있는 게 '실제 계산 결과'인지 '근사'인지 가른다.
+              보조 문구 정리(2026-08-24)로 지웠다가 오너 결정으로 복원. 10px 회색이 안 보인다는
+              지적이라 색 배너 + 12px 로 바꾼다: 서버 dry-run 은 파랑(확정 규칙),
+              휴리스틱 폴백은 warn(예시일 뿐). 색으로도 두 경로가 구분된다. */}
+          <aside
+            className={cn(
+              'mt-2 flex items-start gap-1.5 rounded-lg border p-2 text-xs leading-relaxed',
+              serverDays
+                ? 'border-pullim-blue-200 bg-pullim-blue-50 text-pullim-slate-700'
+                : 'border-pullim-warn/40 bg-pullim-warn-bg text-pullim-slate-700',
+            )}
+          >
+            {serverDays ? (
+              <Check className="text-pullim-blue-600 mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            ) : (
+              <AlertCircle className="text-pullim-warn mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            )}
+            <span>
+              {serverDays ? (
+                <>
+                  <strong className="text-pullim-slate-900">실제 생성 규칙으로 계산된 미리보기</strong>예요.
+                  활성화 시점에 따라 일부 달라질 수 있습니다.
+                </>
+              ) : (
+                <>
+                  위 시간표는 <strong className="text-pullim-slate-900">자동 생성 예시</strong>입니다.
+                  실제로 구성되는 시간표는 다를 수 있습니다.
+                </>
+              )}
+            </span>
+          </aside>
         </section>
       )}
 
