@@ -115,7 +115,7 @@ export default function EditPlannerPresenter({
             onJump={onJump}
             mode="edit"
             onActivate={onSave}
-            // 만들 때 넣은 값(시험명·목표·다짐·동기)이 있으면 접어 두지 않는다 —
+            // 만들 때 넣은 값(시험명·다짐)이 있으면 1단계에서 접어 두지 않는다 —
             // 고칠 때 안 보이면 유실된 것과 다름없다.
             initialExpert={hasCustomBasics(form)}
             routines={routines}

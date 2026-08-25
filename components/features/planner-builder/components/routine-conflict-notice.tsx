@@ -122,10 +122,6 @@ export function RoutineConflictNotice({ form, setForm, routines, onUpdateRoutine
           <h3 className="text-pullim-slate-900 text-xs font-bold">
             루틴 {groups.length}개가 학습 시간과 어긋나요
           </h3>
-          <p className="text-pullim-slate-600 mt-0.5 text-[11px] leading-relaxed">
-            루틴은 시간표마다 따로 만드는 게 아니라 한 번 만들어 여러 시간표에 얹는 거예요.
-            그래서 이 시간표의 학습 시간과 맞는지는 여기서만 확인할 수 있어요.
-          </p>
         </div>
       </header>
 

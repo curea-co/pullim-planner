@@ -202,8 +202,9 @@ describe('확인 게이트 — 확인 전에는 넘어가지 못한다', () => {
     // 다른 답으로 또 바꿔도 마찬가지 — 손수 적은 범위는 학생이 다시 손대기 전까지 유지된다
     click(/전 범위 다 해야 해/);
     expect(latest.form.subjectUnits.english).toEqual(['학원 교재 3단원']);
-    // 왜 안 바뀌는지 화면에서도 알린다
-    expect(screen.getByText(/답을 바꿔도 그대로 둬요/)).toBeInTheDocument();
+    // 왜 안 바뀌는지 화면에서도 알린다 — 게이트 하단 설명 문구는 걷어냈고(오너 지시 2026-08-24)
+    // 과목 카드의 '직접 정한 범위' 배지가 그 표식을 계속 진다.
+    expect(screen.getByText('직접 정한 범위')).toBeInTheDocument();
   });
 
   it('직접 편집한 과목도 과목 칩을 껐다 켜면 자동 범위로 돌아온다', () => {

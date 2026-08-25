@@ -66,7 +66,9 @@ describe('블록 수 — 확정 수치일 때만 단언한다', () => {
     render(<WizardDone summary={summary()} onHome={noop} onManage={noop} />);
     expect(screen.getByText('블록')).toBeInTheDocument();
     expect(screen.getByText('7일 21개 · 집중형(50분 + 10분)')).toBeInTheDocument();
-    expect(screen.queryByText(/예상치/)).not.toBeInTheDocument();
+    // '예상' 표기는 확정 수치일 때 붙지 않는다 (하단 보조 문구는 제거 — 행 라벨이 그 역할을 한다)
+    expect(screen.queryByText('블록(예상)')).not.toBeInTheDocument();
+    expect(screen.queryByText(/약 21개/)).not.toBeInTheDocument();
   });
 
   it('휴리스틱 집계면 확정 문구를 쓰지 않는다', () => {
@@ -81,7 +83,6 @@ describe('블록 수 — 확정 수치일 때만 단언한다', () => {
     expect(screen.getByText('블록(예상)')).toBeInTheDocument();
     expect(screen.getByText('7일 약 21개 · 집중형(50분 + 10분)')).toBeInTheDocument();
     expect(screen.queryByText('7일 21개 · 집중형(50분 + 10분)')).not.toBeInTheDocument();
-    expect(screen.getByText(/예상치/)).toBeInTheDocument();
   });
 
   it('집계를 못 받았으면 0개라고 지어내지 않는다', () => {

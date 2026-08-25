@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Lightbulb, Pencil, Sparkles, X } from 'lucide-react';
+import { useState } from 'react';
+import { Lightbulb, Pencil, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { subjectLabels, type SubjectKey } from '@/lib/mock';
 import { scopeUnits, subjectScope } from '@/lib/planner/exam-scope';
@@ -174,11 +174,6 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
             );
           })}
         </div>
-        {selected.length === 0 && (
-          <p className="text-pullim-slate-500 mt-1.5 text-[11px]">
-            과목을 하나 이상 골라주세요 — 단원은 자동으로 채워집니다.
-          </p>
-        )}
       </section>
 
       {selected.length > 0 && <ScopeNote form={form} totalUnits={totalUnits} pending={!!pendingChoice} />}
@@ -218,11 +213,7 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
 
       {/* 확인 게이트 — 선택과목을 다 고른 뒤에만 묻는다(순서 강제) */}
       {selected.length > 0 && !pendingChoice && (
-        <ScopeGate
-          answer={scope.answer}
-          manualLabels={selected.filter(s => scope.manualUnits.includes(s)).map(s => subjectLabels[s] ?? s)}
-          onAnswer={setAnswer}
-        />
+        <ScopeGate answer={scope.answer} onAnswer={setAnswer} />
       )}
 
       <UnitEditorModal
@@ -300,9 +291,7 @@ function ElectivePicker({
           <X className="h-4 w-4" />
         </button>
       </header>
-      <p className="text-pullim-slate-600 mb-2 text-[11px]">
-        {spec.prompt} <span className="text-pullim-slate-400">— 시스템은 알 수 없어요</span>
-      </p>
+      <h5 className="text-pullim-slate-700 mb-2 text-xs font-bold">{spec.prompt}</h5>
       <div className="flex flex-wrap gap-1.5">
         {spec.options.map(o => {
           const on = chosen.includes(o.key);
@@ -333,9 +322,6 @@ function ElectivePicker({
           목록에 없어 · 직접 고를래
         </button>
       </div>
-      <p className="text-pullim-slate-500 mt-2 text-[10px]">
-        한 번만 고르면 <strong>다음 시간표부터는 안 물어봐요.</strong>
-      </p>
     </section>
   );
 }
@@ -412,9 +398,7 @@ function SubjectCard({
 
       {showCutPicker ? (
         <>
-          <p className="text-pullim-slate-600 mb-1.5 text-[11px]">
-            <strong>마지막으로 배운 단원</strong>을 눌러요. 그 뒤는 자동으로 빠집니다.
-          </p>
+          <h5 className="text-pullim-slate-700 mb-1.5 text-xs font-bold">마지막으로 배운 단원</h5>
           <ul className="flex flex-wrap gap-1">
             {orderedUnits.map((u, i) => {
               const cutIdx = cut ? orderedUnits.indexOf(cut) : -1;
@@ -474,25 +458,16 @@ function SubjectCard({
 
 /* ─── 확인 게이트 ─── */
 
-const GATE_OPTIONS: { key: ScopeAnswer; label: string; desc: string }[] = [
-  { key: 'all', label: '전 범위 다 해야 해', desc: '수능·모의고사처럼 출제 범위가 고정' },
-  { key: 'progress', label: '진도 나간 데까지', desc: '과목마다 "여기까지" 한 번만 누르면 끝' },
-  { key: 'custom', label: '시험 범위가 따로 있어', desc: '중간 몇 단원처럼 띄엄띄엄일 때' },
+const GATE_OPTIONS: { key: ScopeAnswer; label: string }[] = [
+  { key: 'all', label: '전 범위 다 해야 해' },
+  { key: 'progress', label: '진도 나간 데까지' },
+  { key: 'custom', label: '시험 범위가 따로 있어' },
 ];
 
-function ScopeGate({ answer, manualLabels, onAnswer }: {
+function ScopeGate({ answer, onAnswer }: {
   answer: ScopeAnswer | null;
-  /** 답과 무관하게 범위가 유지되는 과목 표기명 — 왜 안 바뀌는지 여기서 미리 알린다 */
-  manualLabels: string[];
   onAnswer: (a: ScopeAnswer) => void;
 }) {
-  const hint = useMemo(() => {
-    if (answer === 'progress') return '위 과목 카드에서 마지막으로 배운 단원을 눌러주세요.';
-    if (answer === 'custom') return '[단원 직접 편집]에서 단원을 켜고 꺼요. 안 맞는 범위로 짜인 시간표는 첫 주부터 어긋나요.';
-    if (answer === 'all') return '출제 범위 전체를 그대로 잡았어요.';
-    return null;
-  }, [answer]);
-
   return (
     <section
       className={cn(
@@ -504,10 +479,6 @@ function ScopeGate({ answer, manualLabels, onAnswer }: {
         <h4 className="text-pullim-slate-900 text-sm font-bold">
           학교 진도는 어디까지 나갔어?<RequiredMark />
         </h4>
-        <p className="text-pullim-slate-500 mt-0.5 inline-flex items-center gap-1 text-[11px]">
-          <Sparkles aria-hidden className="h-3 w-3" />
-          이건 AI가 알 수 없어요 — 학교마다 다르니까요.
-        </p>
       </header>
       <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
         {GATE_OPTIONS.map(o => {
@@ -529,18 +500,10 @@ function ScopeGate({ answer, manualLabels, onAnswer }: {
               <span className={cn('text-xs font-bold', on ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
                 {o.label}
               </span>
-              <span className="text-pullim-slate-500 mt-0.5 text-[10px] leading-snug">{o.desc}</span>
             </button>
           );
         })}
       </div>
-      {hint && <p className="text-pullim-slate-500 mt-2 text-[11px]">{hint}</p>}
-      {manualLabels.length > 0 && (
-        <p className="text-pullim-slate-500 mt-1 text-[11px]">
-          직접 정한 과목(<strong>{manualLabels.join('·')}</strong>)의 범위는 답을 바꿔도 그대로 둬요 —
-          자동 범위로 되돌리려면 위에서 과목 칩을 껐다 켜주세요.
-        </p>
-      )}
     </section>
   );
 }
