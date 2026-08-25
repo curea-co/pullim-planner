@@ -1,6 +1,6 @@
 import {
   Target, Clock, BookOpen, Sparkles,
-  Timer, Waves, Leaf, HandHeart, Flame,
+  Timer, Waves,
   type LucideIcon,
 } from 'lucide-react';
 import { subjectLabels, type SubjectKey } from '@/lib/mock';
@@ -13,7 +13,8 @@ import { canDeriveScope, inferElectives, subjectScope } from '@/lib/planner/exam
  * 핸드오프 08 기반.
  *
  * 위저드는 **입력 3단계 + 확인 1단계**만 묻는다. 나머지 항목은 여기 기본값으로 채워
- * 보내고, 학생이 원하면 '직접 설정'에서 되돌려 받는다. 타입·저장 페이로드는 그대로다.
+ * 보내고, 학생이 원하면 1단계 '시험명·다짐 직접 쓰기'에서 되돌려 받는다.
+ * 타입·저장 페이로드는 그대로다.
  */
 
 export type BlockPattern = 'pomodoro' | 'focused' | 'deep';
@@ -70,7 +71,10 @@ export type PlannerForm = {
   weaknessAutoReflect: boolean;
   /** @deprecated 의미 모호로 v2에서 제거 */
   weaknessWeight?: number;
-  // Step 7 — 동기 스타일
+  /**
+   * 동기 스타일 — **화면에서 고를 수 없다**(선택 UI 제거, 2026-08-24). BE 계약(`motivationStyle`
+   * 필수)이라 필드는 유지하고 기본값을 그대로 실어 보낸다. 다시 묻게 되면 여기부터 살린다.
+   */
   motivationStyle: MotivationStyle;
   // Step 8 — 리마인더
   remindKakao: boolean;
@@ -101,17 +105,16 @@ export const initialPlannerForm: PlannerForm = {
   parentDailyReport: false,
 };
 
-export const blockPatternMeta: Record<BlockPattern, { label: string; description: string; Icon: LucideIcon; spec: string }> = {
-  pomodoro: { label: '포모도로',   Icon: Timer,  description: '짧은 집중 + 짧은 휴식 — 산만한 날에도 시작하기 쉬움',         spec: '25분 집중 / 5분 휴식 · 4사이클 후 긴 휴식' },
-  focused:  { label: '집중',       Icon: Target, description: '평균 학생이 가장 효과 좋은 패턴 — 균형형',                    spec: '50분 집중 / 10분 휴식' },
-  deep:     { label: '딥워크',     Icon: Waves,  description: '한 단원을 끝까지 — 시험 직전·휴일에 추천',                    spec: '90분 집중 / 15분 휴식' },
+/** 카드 보조 설명은 뺐다 — 라벨과 spec(집중/휴식 분)만으로 고른다. */
+export const blockPatternMeta: Record<BlockPattern, { label: string; Icon: LucideIcon; spec: string }> = {
+  pomodoro: { label: '포모도로',   Icon: Timer,  spec: '25분 집중 / 5분 휴식 · 4사이클 후 긴 휴식' },
+  focused:  { label: '집중',       Icon: Target, spec: '50분 집중 / 10분 휴식' },
+  deep:     { label: '딥워크',     Icon: Waves,  spec: '90분 집중 / 15분 휴식' },
 };
 
-export const motivationStyleMeta: Record<MotivationStyle, { label: string; description: string; Icon: LucideIcon }> = {
-  autonomous: { label: '자율형',   Icon: Leaf,      description: '봇이 잔소리 안 함. 진도·페이스 본인이 관리.' },
-  guided:     { label: '가이드형', Icon: HandHeart, description: '오늘 목표·휴식 알림. 안 시작하면 한 번 부드럽게 환기.' },
-  spartan:    { label: '스파르타', Icon: Flame,     description: '미시작 30분 = 알림. 부모/멘토 일일 보고 권장.' },
-};
+/* 동기 스타일 표시 메타(`motivationStyleMeta`)는 제거했다 — 학생이 고를 수 있는 화면이
+ * 어디에도 없는데 요약에만 값이 뜨던 상태였다(오너 지적 2026-08-24). `PlannerForm.motivationStyle`
+ * 자체는 BE 계약이라 그대로 두고 기본값('guided')으로 계속 전송한다. */
 
 export type StepKey = 'goal' | 'hours' | 'subjects' | 'activate';
 
@@ -189,8 +192,8 @@ export function formToPlannerPatch(form: PlannerForm): Omit<Planner, 'id' | 'act
  * 최소 경로 — 학생만 아는 값 3개를 묻고, 결과를 한 번 확인시킨다.
  *
  * 시험일(외부 일정) · 하루에 쓸 수 있는 시간(본인 사정) · 시험 범위(학교 진도)는 시스템이
- * 알아낼 방법이 없다. 그 밖의 항목(시험명·목표·다짐·동기 스타일·알림)은 시간표 배치를
- * 바꾸지 않으므로 기본값으로 채워 보내고 '직접 설정'에서만 노출한다.
+ * 알아낼 방법이 없다. 그 밖의 항목(시험명·다짐·알림)은 시간표 배치를 바꾸지 않으므로
+ * 기본값으로 채워 보내고 1단계 '시험명·다짐 직접 쓰기'에서만 노출한다.
  *
  * 블록 패턴·루틴·약점은 4단계 인라인 조정으로 내렸다 — 결과를 보고 고치는 편이 빠르다.
  */
@@ -242,17 +245,18 @@ export function resolvedExamName(form: PlannerForm): string {
 }
 
 /**
- * 최소 경로에서 뺀 항목(시험명·다짐·동기 스타일)에 학생이 넣은 값이 있는가.
- * 수정 모드에서 '직접 설정'을 처음부터 켜 둘지 판단한다 — 만들 때 쓴 값이 접힌 채로
- * 숨어 있으면 "고칠 땐 안 보이는" 상태가 된다.
+ * 최소 경로에서 뺀 항목(시험명·다짐)에 학생이 넣은 값이 있는가.
+ * 수정 모드에서 1단계 '시험명·다짐 직접 쓰기'를 처음부터 펼쳐 둘지 판단한다 —
+ * 만들 때 쓴 값이 접힌 채로 숨어 있으면 "고칠 땐 안 보이는" 상태가 된다.
  *
  * 목표(등급·점수·자유)는 **최소 경로에 있으므로 여기서 보지 않는다.** 저장된 플래너는
- * 전부 목표를 갖고 있어서(BE 필수), 목표를 근거로 삼으면 수정 진입이 항상 '직접 설정'
- * 켜진 상태가 된다.
+ * 전부 목표를 갖고 있어서(BE 필수), 목표를 근거로 삼으면 수정 진입이 항상 펼친 상태가 된다.
+ *
+ * 동기 스타일도 보지 않는다 — 고를 수 있는 화면이 없어졌으므로 저장된 값이 기본값과
+ * 달라도 그건 **학생이 넣은 값이 아니다**(옛 버전·BE 기본값). 펼쳐 둘 근거가 될 수 없다.
  */
 export function hasCustomBasics(form: PlannerForm): boolean {
   if (form.motto?.trim()) return true;
-  if (form.motivationStyle !== initialPlannerForm.motivationStyle) return true;
   return !!(form.examName?.trim() && form.examName !== autoExamName(form));
 }
 

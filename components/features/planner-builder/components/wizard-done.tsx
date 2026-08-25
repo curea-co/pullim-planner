@@ -85,13 +85,6 @@ export function WizardDone({ summary, onHome, onManage }: Props) {
         ))}
       </dl>
 
-      {/* 휴리스틱 집계일 때만 — 실제로 만들어진 블록 수는 이 화면이 확인해 주지 못한다 */}
-      {blocks?.estimated && (
-        <p className="text-pullim-slate-400 mx-auto mt-2 max-w-md text-left text-[11px] leading-relaxed">
-          블록 수는 앱이 계산한 예상치예요 — 실제로 만들어진 시간표는 홈에서 확인하세요.
-        </p>
-      )}
-
       <div className="mt-6 flex flex-wrap justify-center gap-2">
         <button
           type="button"

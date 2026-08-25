@@ -3,7 +3,7 @@
 import type { ActivateSummary } from '@/components/features/planner-builder/components/step-content';
 
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StepIndicator } from '@/components/features/planner-builder/components/step-indicator';
 import {
   PStep1Goal, PStep2Hours, PStep4Confirm,
@@ -18,8 +18,13 @@ import { cn } from '@/lib/utils';
 
 /**
  * 위저드 마크업 — new/edit 페이지 공유.
- * 상태/이벤트는 props로 받기만 (presentation). '직접 설정' 토글만 이 컴포넌트가 들고 있다
+ * 상태/이벤트는 props로 받기만 (presentation). 펼침 상태(`expert`)만 이 컴포넌트가 들고 있다
  * (단계를 오가도 유지돼야 하는 표시 상태이지 저장 대상이 아니라서).
+ *
+ * **토글은 1단계 본문 안에만 둔다.** 헤더 우측 고정 자리에 두면 2·3단계에서는 아무것도
+ * 열지 않는 죽은 버튼이 되고, 4단계도 기본 플래그(알림·약점 차단)에서는 열 게 없다.
+ * 상태 자체는 위저드가 계속 들고 있으므로, 1단계에서 켜 두면 플래그가 열린 환경의
+ * 4단계 조정 패널(알림·약점)도 그대로 펼쳐진다.
  */
 interface PlannerWizardProps {
   form: PlannerForm;
@@ -39,7 +44,7 @@ interface PlannerWizardProps {
   onJump: (n: number) => void;
   mode: 'create' | 'edit';
   onActivate: (submitted: PlannerForm, summary?: ActivateSummary) => void;
-  /** 직접 설정을 처음부터 켠 채로 시작 — 기존 값이 숨겨지지 않게(수정 모드) */
+  /** 1단계 '시험명·다짐 직접 쓰기'를 처음부터 펼친 채로 시작 — 기존 값이 숨겨지지 않게(수정 모드) */
   initialExpert?: boolean;
   /** 실 루틴(컨테이너 fetch) — 4단계 조정·미리보기에 사용. 미주입 시 mock. */
   routines?: Routine[];
@@ -90,26 +95,11 @@ export function PlannerWizard({
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setExpert(v => !v)}
-            aria-pressed={expert}
-            className={cn(
-              'inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-bold transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500',
-              expert
-                ? 'bg-pullim-blue-600 border-pullim-blue-600 text-white'
-                : 'bg-card border-pullim-slate-200 text-pullim-slate-600 hover:border-pullim-blue-300',
-            )}
-          >
-            <SlidersHorizontal className="h-3 w-3" />
-            직접 설정
-          </button>
         </header>
 
         <div className="min-h-[280px]">
           {/* 단계 번호가 아니라 key로 렌더 — 구성이 바뀌어도 안전 */}
-          {stepInfo.key === 'goal'     && <PStep1Goal form={form} setForm={setForm} expert={expert} />}
+          {stepInfo.key === 'goal'     && <PStep1Goal form={form} setForm={setForm} expert={expert} onExpertChange={setExpert} />}
           {stepInfo.key === 'hours'    && <PStep2Hours form={form} setForm={setForm} />}
           {stepInfo.key === 'subjects' && <PStep3Subjects form={form} setForm={setForm} scope={scope} setScope={setScope} />}
           {stepInfo.key === 'activate' && (

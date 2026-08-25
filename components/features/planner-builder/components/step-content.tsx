@@ -7,6 +7,7 @@ import {
   Smartphone, Users, BookOpenCheck, Sunrise,
   Target, PencilLine, BookOpen, Brain,
   Coffee, FileText, Mic, MessageCircle, ChevronLeft, ChevronRight, ChevronDown, Repeat2,
+  SlidersHorizontal,
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,7 +24,7 @@ import { RoutineConflictNotice } from './routine-conflict-notice';
 import { busyRanges, placeRoutinesForDay } from '@/lib/planner/routine-fit';
 import { daysBetween } from '@/lib/planner/exam-presets';
 import {
-  type PlannerForm, type ScopeState, blockPatternMeta, motivationStyleMeta,
+  type PlannerForm, type ScopeState, blockPatternMeta,
   type ExamType, examTypeMeta, todayIsoKst,
   autoExamName, withAutoExamName, resolvedExamName, presetsForExamType,
   goalBlocker, scopeBlocker,
@@ -44,7 +45,12 @@ type Props = {
 /** 시험 4종은 대등한 형제라 카드 격자로. '기타'(자유 목표)는 성격이 달라 아래 한 줄로 뺀다. */
 const examTypeCards: ExamType[] = ['mock', 'suneung', 'midterm', 'final'];
 
-export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean }) {
+export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
+  /** 시험명·다짐 묶음을 펼친 상태인가 — 위저드가 단계 이동과 무관하게 들고 있는 표시 상태 */
+  expert?: boolean;
+  /** 미주입이면 토글 자체를 렌더하지 않는다(펼침 상태를 밖에서만 정하는 경우) */
+  onExpertChange?: (next: boolean) => void;
+}) {
   const examType = form.examType ?? 'mock';
   const meta = examTypeMeta[examType];
   // 오늘(KST)은 렌더마다 계산 — 모듈 상수로 캐시하면 자정 이후 min/D-day가 goNext/activate의
@@ -112,7 +118,6 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
           {examTypeCards.map(t => {
             const m = examTypeMeta[t];
             const selected = examType === t;
-            const ps = presetsForExamType(t, todayIso);
             return (
               <button
                 key={t}
@@ -129,13 +134,6 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
               >
                 <span className={cn('text-sm font-bold', selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
                   {m.label}
-                </span>
-                <span className="text-pullim-slate-500 mt-0.5 text-[10px] leading-snug">
-                  {ps.length === 1
-                    ? `${ps[0].name} · D-${daysBetween(todayIso, ps[0].date)}`
-                    : ps.length > 1
-                      ? '2개 회차 — 아래에서 고르기'
-                      : '날짜 직접 · 보통 3~5일간'}
                 </span>
               </button>
             );
@@ -155,9 +153,6 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
         >
           <span className={cn('text-sm font-bold', examType === 'other' ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
             자유 목표
-          </span>
-          <span className="text-pullim-slate-500 mt-0.5 text-[10px]">
-            자격증 · 방학 선행 · 개념서 한 권 · 습관 잡기
           </span>
         </button>
       </section>
@@ -197,9 +192,6 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
               );
             })}
           </div>
-          <p className="text-pullim-slate-500 mt-1 text-[10px]">
-            가장 가까운 시험이 코앞이라 준비할 시간이 거의 없어요. 그래서 다음 회차도 같이 뒀어요.
-          </p>
         </section>
       )}
 
@@ -233,26 +225,15 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
             <span className="text-pullim-slate-400 ml-1">· {examLength}일간</span>
           )}
         </p>
-        {presets.length > 0 && (
-          <p className="text-pullim-slate-500 mt-1 text-[10px] leading-relaxed">
-            수능·모의평가·학력평가는 전국이 같은 날이라 날짜를 채워 뒀어요. 다만 <strong>관례로 계산한
-            값</strong>이라 해마다 어긋날 수 있어요 — 학교에서 받은 일정과 다르면 위에서 바로 고치세요.
-          </p>
-        )}
-        {examType === 'midterm' || examType === 'final' ? (
-          <p className="text-pullim-slate-500 mt-1 text-[10px]">
-            학교 시험 일정표에 있는 시작일 · 종료일이에요. 학교마다 달라서 직접 받습니다.
-          </p>
-        ) : null}
       </div>
 
       {/* 목표는 최소 경로에서도 받는다. 시간표 배치를 바꾸지 않는 값이지만 BE `target` 이
           필수라(`kind` 는 examType 파생, grade/score 는 숫자, free 는 비빈 문자열) 묻지
           않으면 학생이 정하지 않은 값이 저장된다 — 빈 등급이 1등급으로 박혔다(Codex).
-          '직접 설정' 을 켜면 아래 섹션에서 같은 입력을 편집한다(중복 노출 방지). */}
+          아래 '시험명·다짐 직접 쓰기' 를 펼치면 같은 입력을 그쪽에서 편집한다(중복 노출 방지). */}
       {!expert && <TargetField form={form} setForm={setForm} />}
 
-      {/* 자동 시험명 — 이름은 시험 종류·날짜에서 파생한다. 고치려면 '직접 설정'. */}
+      {/* 자동 시험명 — 이름은 시험 종류·날짜에서 파생한다. 고치려면 아래 토글을 펼친다. */}
       <section className="bg-pullim-slate-900 flex items-center justify-between gap-3 rounded-xl p-3.5 text-white">
         <div className="min-w-0">
           <div className="text-pullim-lemon text-[10px] font-bold tracking-wider uppercase">
@@ -260,21 +241,32 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
           </div>
           <div className="mt-0.5 truncate text-sm font-bold">{resolvedExamName(form)}</div>
         </div>
-        <div className="shrink-0 text-right">
-          <div className="text-pullim-lemon font-mono text-lg font-bold">{dDayLabel}</div>
-          <div className="text-pullim-slate-400 text-[10px]">
-            {dDay === null ? '날짜를 정해주세요'
-              : dDay > 30 ? '준비 기간이 넉넉해요'
-              : dDay > 14 ? '개념과 문제를 섞을 시기'
-              : '문제·복습 위주로 짤게요'}
-          </div>
-        </div>
+        <div className="text-pullim-lemon shrink-0 font-mono text-lg font-bold">{dDayLabel}</div>
       </section>
 
-      {/* 직접 설정 — 시간표 배치를 바꾸지 않는 항목들. 최소 경로에서는 묻지 않는다. */}
+      {/* 시험명·다짐 — 시간표 배치를 바꾸지 않아 최소 경로에서는 묻지 않는다.
+          토글은 이 단계 안에, 여는 필드 바로 위에 둔다(위저드 헤더 고정 자리가 아니라). */}
+      {onExpertChange && (
+        <button
+          type="button"
+          onClick={() => onExpertChange(!expert)}
+          aria-pressed={expert}
+          aria-expanded={expert}
+          className={cn(
+            'inline-flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-bold transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500',
+            expert
+              ? 'bg-pullim-blue-600 border-pullim-blue-600 text-white'
+              : 'bg-card border-pullim-slate-200 text-pullim-slate-600 hover:border-pullim-blue-300',
+          )}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          시험명·다짐 직접 쓰기
+        </button>
+      )}
+
       {expert && (
         <section className="border-pullim-slate-200 space-y-3 rounded-xl border border-dashed p-3.5">
-          <p className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">직접 설정</p>
           <div>
             <label htmlFor="exam-name" className="text-pullim-slate-700 mb-1 block text-xs font-bold">
               목표 시험명
@@ -287,9 +279,6 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
               placeholder={autoExamName(form)}
               className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
             />
-            <p className="text-pullim-slate-500 mt-1 text-[10px]">
-              비워 두면 <strong>{autoExamName(form)}</strong>으로 저장돼요.
-            </p>
           </div>
           <TargetField form={form} setForm={setForm} />
           <div>
@@ -303,9 +292,6 @@ export function PStep1Goal({ form, setForm, expert }: Props & { expert?: boolean
               className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
             />
           </div>
-          <p className="text-pullim-slate-500 text-[10px]">
-            시험명·다짐은 시간표 배치를 바꾸지 않아요 — 안 써도 됩니다.
-          </p>
         </section>
       )}
     </div>
@@ -444,9 +430,6 @@ function TargetField({ form, setForm }: Props) {
         placeholder="예: 토익 750점, 한자 1급 합격, Pass"
         className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full rounded-lg border px-3 py-2 text-sm outline-none"
       />
-      <p className="text-pullim-slate-500 mt-1 text-[10px]">
-        등급·점수가 없는 시험은 목표를 자유롭게 적어주세요.
-      </p>
     </div>
   );
 }
@@ -458,10 +441,10 @@ function TargetField({ form, setForm }: Props) {
  * 한 번은 마주보게 한다. 고른 뒤 아래 슬라이더로 세밀하게 조정할 수 있다.
  */
 const hourPresets = [
-  { key: 'school',  label: '학교만',      desc: '방과 후 저녁에 몰아서',  weekday: { start: 18, end: 23 }, weekend: { start: 10, end: 22 } },
-  { key: 'academy', label: '학원 다녀',   desc: '학원 끝나고 늦게부터',   weekday: { start: 21, end: 24 }, weekend: { start: 13, end: 22 } },
-  { key: 'self',    label: '자습실 위주', desc: '방과 후부터 길게',       weekday: { start: 16, end: 22 }, weekend: { start: 9,  end: 21 } },
-  { key: 'holiday', label: '방학·재수',   desc: '하루 전체를 쓸 수 있어', weekday: { start: 9,  end: 22 }, weekend: { start: 9,  end: 22 } },
+  { key: 'school',  label: '학교만',      weekday: { start: 18, end: 23 }, weekend: { start: 10, end: 22 } },
+  { key: 'academy', label: '학원 다녀',   weekday: { start: 21, end: 24 }, weekend: { start: 13, end: 22 } },
+  { key: 'self',    label: '자습실 위주', weekday: { start: 16, end: 22 }, weekend: { start: 9,  end: 21 } },
+  { key: 'holiday', label: '방학·재수',   weekday: { start: 9,  end: 22 }, weekend: { start: 9,  end: 22 } },
 ] as const;
 
 const fmtHour = (h: number) => (h === 24 ? '24' : String(h).padStart(2, '0'));
@@ -470,11 +453,6 @@ export function PStep2Hours({ form, setForm }: Props) {
   const weekdayDuration = form.weekdayHours.end - form.weekdayHours.start;
   const weekendDuration = form.weekendHours.end - form.weekendHours.start;
   const weeklyTotal = weekdayDuration * 5 + weekendDuration * 2;
-
-  // 시험까지 실제로 쓸 수 있는 총량 — 다음 단계에서 이 예산에 맞춰 범위를 잡는다.
-  const todayIso = todayIsoKst();
-  const dDay = form.examStartDate ? daysBetween(todayIso, form.examStartDate) : null;
-  const untilExam = dDay !== null && dDay > 0 ? Math.round((weeklyTotal * dDay) / 7) : null;
 
   function updateRange(key: 'weekdayHours' | 'weekendHours', side: 'start' | 'end', value: number) {
     const cur = form[key];
@@ -514,7 +492,6 @@ export function PStep2Hours({ form, setForm }: Props) {
                 <span className={cn('text-sm font-bold', selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
                   {p.label}
                 </span>
-                <span className="text-pullim-slate-500 mt-0.5 text-[10px]">{p.desc}</span>
                 <span className="text-pullim-slate-500 mt-1 font-mono text-[10px]">
                   평일 {fmtHour(p.weekday.start)}–{fmtHour(p.weekday.end)} · 주말 {fmtHour(p.weekend.start)}–{fmtHour(p.weekend.end)}
                 </span>
@@ -522,7 +499,6 @@ export function PStep2Hours({ form, setForm }: Props) {
             );
           })}
         </div>
-        <p className="text-pullim-slate-500 mt-1.5 text-[10px]">고른 뒤 아래에서 세밀하게 조정할 수 있어요.</p>
       </section>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -544,24 +520,13 @@ export function PStep2Hours({ form, setForm }: Props) {
         />
       </div>
 
-      {/* QA #6·#8 — 연산식 안내·28h 미만 주의 문구 제거 (합계 + 시험까지 쓸 수 있는 총량만 노출) */}
+      {/* QA #6·#8 — 연산식 안내·28h 미만 주의 문구 제거. 주간 합계 숫자만 남긴다 */}
       <section className="bg-pullim-slate-50 rounded-xl p-3.5">
         <div className="flex items-center justify-between text-xs">
           <span className="text-pullim-slate-700 font-semibold">주간 학습 가능 시간</span>
           <span className="text-pullim-blue-600 font-mono text-base font-bold">{weeklyTotal}시간</span>
         </div>
-        {untilExam !== null && (
-          <p className="text-pullim-slate-600 mt-1.5 text-[11px] leading-relaxed">
-            시험까지 D-{dDay} — 지금 설정이면 약 <strong className="text-pullim-blue-700 font-mono">{untilExam}시간</strong>을
-            쓸 수 있어요. 다음 단계에서 이 예산에 맞춰 범위를 잡습니다.
-          </p>
-        )}
       </section>
-
-      <p className="text-pullim-slate-500 text-[10px] leading-relaxed">
-        쉬는 시간·이동 시간은 빼고 <strong>실제로 책을 펼 수 있는 시간</strong>만 잡아주세요. 넉넉하게 잡으면
-        못 지키는 블록이 쌓이고, 짧게 잡으면 범위를 못 끝냅니다.
-      </p>
     </div>
   );
 }
@@ -685,7 +650,6 @@ export function PStep4Pattern({ form, setForm }: Props) {
               <h4 className={cn('mt-1 text-sm font-bold', selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
                 {meta.label}
               </h4>
-              <p className="text-pullim-slate-500 mt-0.5 text-[10px] leading-snug">{meta.description}</p>
               <span className="bg-pullim-slate-100 text-pullim-slate-700 mt-2 rounded-full px-2 py-0.5 font-mono text-[9px] font-bold">
                 {meta.spec}
               </span>
@@ -717,9 +681,6 @@ export function PStep5Routine({ form, setForm, routines: routinesProp }: Props &
       <div className="border-pullim-slate-200 bg-pullim-slate-50/50 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-12 text-center">
         <Repeat2 className="text-pullim-slate-400 h-7 w-7" aria-hidden />
         <p className="text-pullim-slate-700 text-sm font-bold">등록된 루틴이 없어요</p>
-        <p className="text-pullim-slate-500 text-xs">
-          반복하는 행동을 먼저 등록하면 여기서 골라 넣을 수 있어요. (건너뛰어도 돼요)
-        </p>
         <RoutineLeaveButton className="text-pullim-blue-700 hover:bg-pullim-blue-50 mt-1 inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500">
           루틴 관리로
         </RoutineLeaveButton>
@@ -729,9 +690,6 @@ export function PStep5Routine({ form, setForm, routines: routinesProp }: Props &
 
   return (
     <div className="space-y-3">
-      <p className="text-pullim-slate-500 text-xs">
-        이 시간표에 넣을 반복 행동을 골라요. 시간이 맞는 요일은 마지막 단계 미리보기에 들어가요(기존 블록과 겹치면 제외). 건너뛰어도 돼요.
-      </p>
       <ul className="space-y-2">
         {routines.map((r) => {
           const checked = selected.has(r.id);
@@ -826,11 +784,6 @@ export function PStep5Weakness({ form, setForm }: Props) {
           출시 예정
         </div>
         <h4 className="text-pullim-slate-900 mt-0.5 text-sm font-bold">약점 자동 반영 — 준비 중이에요</h4>
-        <p className="text-pullim-slate-500 mt-1 text-[11px] leading-relaxed">
-          풀림 분석이 공부 기록에서 약한 단원을 찾아내면, 시간표를 만들 때 그 단원을
-          먼저 배정해 드리는 기능이에요. 열리면 이 단계에서 켤 수 있어요. 지금은
-          다음 단계로 넘어가면 돼요.
-        </p>
       </div>
     );
   }
@@ -838,12 +791,7 @@ export function PStep5Weakness({ form, setForm }: Props) {
   return (
     <div className="space-y-4">
       <label className="bg-card border-pullim-slate-200 flex items-center justify-between rounded-xl border p-3.5">
-        <div>
-          <h4 className="text-pullim-slate-900 text-sm font-bold">약점 자동 반영</h4>
-          <p className="text-pullim-slate-500 mt-0.5 text-[11px] leading-relaxed">
-            풀림 분석에서 발견한 약점 단원을 플래너에 우선 배정. 끄면 본인이 직접 단원 선택.
-          </p>
-        </div>
+        <h4 className="text-pullim-slate-900 text-sm font-bold">약점 자동 반영</h4>
         <input
           type="checkbox"
           checked={form.weaknessAutoReflect}
@@ -880,36 +828,9 @@ export function PStep5Weakness({ form, setForm }: Props) {
   );
 }
 
-/* ─── Step 6 — 동기 부여 스타일 ─── */
-export function PStep6Motivation({ form, setForm }: Props) {
-  return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-      {(Object.keys(motivationStyleMeta) as Array<keyof typeof motivationStyleMeta>).map(s => {
-        const meta = motivationStyleMeta[s];
-        const selected = form.motivationStyle === s;
-        return (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setForm({ ...form, motivationStyle: s })}
-            className={cn(
-              'flex flex-col items-start rounded-xl border-2 p-3 text-left transition-colors',
-              selected
-                ? 'border-pullim-blue-500 bg-pullim-blue-50'
-                : 'border-pullim-slate-200 hover:border-pullim-slate-300',
-            )}
-          >
-            <meta.Icon className="text-pullim-blue-600 h-6 w-6" aria-hidden />
-            <h4 className={cn('mt-1 text-sm font-bold', selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
-              {meta.label}
-            </h4>
-            <p className="text-pullim-slate-500 mt-0.5 text-[10px] leading-snug">{meta.description}</p>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+/* 동기 부여 스타일 선택 UI(`PStep6Motivation`)는 제거했다 — 위저드 어느 단계에서도 열리지
+ * 않는데 확인 요약에만 값이 떴다(오너 지적 2026-08-24). `form.motivationStyle` 은 BE 계약이라
+ * 기본값 그대로 계속 전송한다. 다시 물으려면 여기 컴포넌트부터 되살린다. */
 
 /* ─── Step 7 — 알림 ─── */
 export function PStep7Reminder({ form, setForm }: Props) {
@@ -920,21 +841,18 @@ export function PStep7Reminder({ form, setForm }: Props) {
       <ToggleRow
         Icon={Smartphone}
         label="앱 푸시"
-        description="모바일 앱 알림. 가장 즉각적."
         value={form.remindPush}
         onToggle={() => setForm({ ...form, remindPush: !form.remindPush })}
       />
       <ToggleRow
         Icon={Bell}
         label="시작 5분 전 미리 알림"
-        description="휴식·이동 시간 확보. 추천."
         value={form.remindBefore5min}
         onToggle={() => setForm({ ...form, remindBefore5min: !form.remindBefore5min })}
       />
       <ToggleRow
         Icon={Users}
         label="부모 일일 보고"
-        description="하루 학습 요약을 부모에게 자동 전송. 본인·부모 양측 동의 후 활성."
         value={form.parentDailyReport}
         onToggle={() => setForm({ ...form, parentDailyReport: !form.parentDailyReport })}
       />
@@ -943,10 +861,10 @@ export function PStep7Reminder({ form, setForm }: Props) {
 }
 
 function ToggleRow({
-  Icon, label, description, value, onToggle,
+  Icon, label, value, onToggle,
 }: {
   Icon: React.ComponentType<{ className?: string }>;
-  label: string; description: string; value: boolean; onToggle: () => void;
+  label: string; value: boolean; onToggle: () => void;
 }) {
   return (
     <label className="bg-card border-pullim-slate-200 flex cursor-pointer items-center gap-3 rounded-xl border p-3">
@@ -958,10 +876,7 @@ function ToggleRow({
       >
         <Icon className="h-4 w-4" />
       </span>
-      <div className="min-w-0 flex-1">
-        <h4 className="text-pullim-slate-900 text-sm font-bold">{label}</h4>
-        <p className="text-pullim-slate-500 text-[11px] leading-relaxed">{description}</p>
-      </div>
+      <h4 className="text-pullim-slate-900 min-w-0 flex-1 text-sm font-bold">{label}</h4>
       <input
         type="checkbox"
         checked={value}
@@ -1189,7 +1104,7 @@ type ConfirmProps = {
   scope: ScopeState;
   /** 'create' (기본) — 새 시간표 활성화 / 'edit' — 기존 변경 저장 */
   mode?: ConfirmMode;
-  /** '직접 설정' — 최소 경로에서 뺀 설정(동기 스타일·알림·약점)을 펼친다 */
+  /** 1단계에서 켠 펼침 상태 — 게이트가 열린 항목(알림·약점)을 조정 패널에 펼친다 */
   expert?: boolean;
   /**
    * 활성화·저장 버튼 클릭 시 호출. 부모가 createPlanner / updatePlanner 호출 + redirect 처리.
@@ -1350,9 +1265,8 @@ export function PStep4Confirm({
           <li>· 블록 패턴: {blockPatternMeta[form.blockPattern].label} <span className="text-pullim-slate-500">({blockPatternMeta[form.blockPattern].spec})</span></li>
           {/* 루틴 게이트 off면 요약에서도 숨긴다 — 고를 수 없는 항목을 '없음'으로 보여주지 않는다 */}
           {ROUTINE_ENABLED && (
-            <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>} <span className="text-pullim-slate-500">(반영 결과는 아래 미리보기에서 확인)</span></li>
+            <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>}</li>
           )}
-          <li>· 동기 스타일: {motivationStyleMeta[form.motivationStyle].label}</li>
           {WEAKNESS_ENABLED && (
             <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON (시간표 반영 준비 중)' : 'OFF'}</li>
           )}
@@ -1389,8 +1303,8 @@ export function PStep4Confirm({
             <h3 className="text-pullim-slate-900 text-sm font-bold">
               미리보기
             </h3>
-            <span className="text-pullim-slate-500 text-[10px]">
-              {previews.length}일 생성 · 최대 7일 미리보기
+            <span className="text-pullim-slate-500 font-mono text-[10px]">
+              {previews.length}일
             </span>
           </header>
 
@@ -1479,12 +1393,6 @@ export function PStep4Confirm({
               </nav>
             </div>
           )}
-
-          <p className="text-pullim-slate-500 mt-1.5 text-[10px]">
-            {serverDays
-              ? '실제 생성 규칙으로 계산된 미리보기예요. 활성화 시점에 따라 일부 달라질 수 있습니다.'
-              : '위 시간표는 자동 생성 예시입니다. 실제로 구성되는 시간표는 다를 수 있습니다.'}
-          </p>
         </section>
       )}
 
@@ -1544,7 +1452,9 @@ function TunerPanel({
 
   return (
     <section className="space-y-2">
-      <h3 className="text-pullim-slate-700 text-xs font-bold">마음에 안 들면 여기서 바로</h3>
+      {/* 여기 항목 대부분(블록 길이·루틴)은 앞 단계에서 묻지 않은 것이라 '고치는' 자리가
+          아니라 '정하는' 자리다 — 제목도 그렇게 부른다(오너 지적 2026-08-24). */}
+      <h3 className="text-pullim-slate-700 text-xs font-bold">어떻게 짤지 여기서 정해요</h3>
 
       <TunerSection
         title="학습 가능 시간"
@@ -1568,9 +1478,6 @@ function TunerPanel({
             onEnd={v => updateRange('weekendHours', 'end', v)}
           />
         </div>
-        <p className="text-pullim-slate-500 text-[10px]">
-          2단계에서 정한 시간이에요. 미리보기를 보고 안 맞으면 여기서 바로 줄이거나 늘리세요.
-        </p>
       </TunerSection>
 
       <TunerSection title="블록 길이" value={blockPatternMeta[form.blockPattern].spec}>
@@ -1583,34 +1490,17 @@ function TunerPanel({
         </TunerSection>
       )}
 
-      {expert ? (
-        <>
-          <TunerSection title="동기 부여 스타일" value={motivationStyleMeta[form.motivationStyle].label}>
-            <PStep6Motivation form={form} setForm={setForm} />
-            <p className="text-pullim-slate-500 text-[10px]">
-              알림 문구의 톤만 좌우하고 시간표는 바뀌지 않아요.
-            </p>
-          </TunerSection>
-          {NOTIFICATIONS_ENABLED && (
-            <TunerSection title="알림">
-              <PStep7Reminder form={form} setForm={setForm} />
-            </TunerSection>
-          )}
-          {WEAKNESS_ENABLED && (
-            <TunerSection title="약점 자동 반영" value={form.weaknessAutoReflect ? 'ON' : 'OFF'}>
-              <PStep5Weakness form={form} setForm={setForm} />
-            </TunerSection>
-          )}
-          <p className="text-pullim-slate-500 text-[10px] leading-relaxed">
-            <strong>직접 설정 모드</strong> — 최소 경로에서 뺐던 설정을 펼쳐 두었어요. 위에서 다시 끌 수 있습니다.
-          </p>
-        </>
-      ) : (
-        <p className="text-pullim-slate-500 text-[10px] leading-relaxed">
-          <strong>여기서 안 물어보는 것</strong> — 시험명·목표 등급·한 줄 다짐·동기 부여 스타일
-          {NOTIFICATIONS_ENABLED ? '·알림' : ''}은 시간표를 바꾸지 않아서 뺐어요. 직접 정하고 싶으면
-          위 <strong>직접 설정</strong>을 켜세요.
-        </p>
+      {/* 알림·약점은 각자의 기능 게이트가 열려 있고, 1단계에서 펼침을 켜 뒀을 때만 나온다.
+          둘 다 기본 차단이라 기본 상태에서 이 분기는 아무것도 렌더하지 않는다. */}
+      {expert && NOTIFICATIONS_ENABLED && (
+        <TunerSection title="알림">
+          <PStep7Reminder form={form} setForm={setForm} />
+        </TunerSection>
+      )}
+      {expert && WEAKNESS_ENABLED && (
+        <TunerSection title="약점 자동 반영" value={form.weaknessAutoReflect ? 'ON' : 'OFF'}>
+          <PStep5Weakness form={form} setForm={setForm} />
+        </TunerSection>
       )}
     </section>
   );

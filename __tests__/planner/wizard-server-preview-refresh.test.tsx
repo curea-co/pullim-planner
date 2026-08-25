@@ -30,8 +30,17 @@ const serverDay = (start: string, end: string): PreviewDay[] => [{
   items: [{ start, end, subjectLabel: '영어', type: 'concept', unitLabel: '아침 영단어', isRoutine: true }],
 }];
 
-/** 서버 경로일 때만 뜨는 고지 — 휴리스틱 폴백과 구분하는 표식. */
-const SERVER_NOTE = /실제 생성 규칙으로 계산된 미리보기예요/;
+/**
+ * 서버 결과가 화면에 떠 있는가.
+ *
+ * 하단 고지 문구("실제 생성 규칙으로 계산된…")를 표식으로 쓰던 것을 보조 문구 정리(2026-08-24)로
+ * 걷어냈다. 대신 **'보류' 배지**로 가른다 — 창(평일 18–23) 밖 07:30 루틴을 휴리스틱 폴백은
+ * 보류로 표시하지만, 서버 dry-run 은 BE bake 규칙 그대로라 보류 개념 자체가 없다.
+ */
+function expectServerResultShown() {
+  expect(screen.getByText('07:30–08:00')).toBeInTheDocument();
+  expect(screen.queryByText(/보류/)).not.toBeInTheDocument();
+}
 
 function renderStep4(routines: Routine[], onServerPreview: () => Promise<PreviewDay[] | null>) {
   return render(
@@ -79,7 +88,8 @@ describe('4단계 서버 미리보기 — 루틴 목록 변화 반영', () => {
       .mockReturnValueOnce(new Promise(() => {})); // 두 번째 요청은 계속 진행 중
 
     const { rerender } = renderStep4([routine('07:30', '08:00')], onServerPreview);
-    expect(await screen.findByText(SERVER_NOTE)).toBeInTheDocument();
+    // 서버 응답 전에는 휴리스틱 폴백이 같은 시각을 '보류'로 그린다 — 서버 결과가 올 때까지 기다린다.
+    await waitFor(() => expectServerResultShown());
 
     rerender(
       <PStep4Confirm
@@ -93,7 +103,7 @@ describe('4단계 서버 미리보기 — 루틴 목록 변화 반영', () => {
 
     await waitFor(() => expect(onServerPreview).toHaveBeenCalledTimes(2));
     // 이전 결과는 즉시 무효 — 휴리스틱 폴백으로 내려앉는다(옛 시각을 계속 보여주지 않는다).
-    expect(screen.queryByText(SERVER_NOTE)).not.toBeInTheDocument();
+    expect(screen.queryByText('07:30–08:00')).not.toBeInTheDocument();
   });
 
   it('루틴 내용이 같으면 배열 참조가 새로 와도 다시 부르지 않는다', async () => {
@@ -101,7 +111,8 @@ describe('4단계 서버 미리보기 — 루틴 목록 변화 반영', () => {
       .mockResolvedValue(serverDay('07:30', '08:00'));
 
     const { rerender } = renderStep4([routine('07:30', '08:00')], onServerPreview);
-    expect(await screen.findByText(SERVER_NOTE)).toBeInTheDocument();
+    // 서버 응답 전에는 휴리스틱 폴백이 같은 시각을 '보류'로 그린다 — 서버 결과가 올 때까지 기다린다.
+    await waitFor(() => expectServerResultShown());
 
     // 컨테이너가 매 렌더 새 배열을 만들어도 재요청이 늘지 않아야 한다.
     for (let i = 0; i < 3; i += 1) {
@@ -116,7 +127,7 @@ describe('4단계 서버 미리보기 — 루틴 목록 변화 반영', () => {
       );
     }
 
-    await waitFor(() => expect(screen.getByText(SERVER_NOTE)).toBeInTheDocument());
+    await waitFor(() => expectServerResultShown());
     expect(onServerPreview).toHaveBeenCalledTimes(1);
   });
 });
