@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { DevResetButton } from '@/components/shell/dev-reset-button';
+import { SchemeProvider } from '@/components/shell/theme-provider';
 import './globals.css';
 import './os-topbar.css'; // OS 공통 헤더(topbar) vendored — .os-root 스코프
 
@@ -70,6 +71,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
+    // data-theme = PUDS 성격 축(고정). 명암 축은 data-scheme 이며 SchemeProvider 가 클라이언트에서 붙인다.
     <html
       lang="ko"
       data-theme="pullim-os"
@@ -77,12 +79,14 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="bg-background text-foreground min-h-full font-sans">
-        <AuthProvider>
-          <TooltipProvider delay={120}>{children}</TooltipProvider>
-          {/* dev 전용 — 첫 접근(로그인→온보딩) 시연 리셋. 로그인 화면에서도 보이도록 전역 마운트 */}
-          <DevResetButton />
-        </AuthProvider>
-        <Toaster position="top-center" closeButton richColors />
+        <SchemeProvider>
+          <AuthProvider>
+            <TooltipProvider delay={120}>{children}</TooltipProvider>
+            {/* dev 전용 — 첫 접근(로그인→온보딩) 시연 리셋. 로그인 화면에서도 보이도록 전역 마운트 */}
+            <DevResetButton />
+          </AuthProvider>
+          <Toaster position="top-center" closeButton richColors />
+        </SchemeProvider>
         <Analytics />
       </body>
     </html>
