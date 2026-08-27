@@ -13,14 +13,14 @@ PUDS 디자인 시스템 차트를 **vendoring**(복사)해 쓰는 자리. 로�
 
 ## vendoring 절차 (donut 기준) · 개정 2026-08-26
 
-**`donut.tsx` 는 PUDS v0.3.0 레지스트리와 바이트 단위로 동일하다. 로컬 델타 0.**
+**`donut.tsx` 는 PUDS v0.4.2 레지스트리와 바이트 단위로 동일하다. 로컬 델타 0.**
 따라서 드리프트 점검이 곧 `diff` 다:
 
 ```bash
 # 1) 버전 고정 URL 에서 원본을 받는다.
-#    ⚠ 경로의 버전(/v/0.3.0/)이 components.json 의 @puds 와 반드시 같아야 한다.
+#    ⚠ 경로의 버전(/v/0.4.2/)이 components.json 의 @puds 와 반드시 같아야 한다.
 #    ⚠ /r/donut.json 은 항상 main 최신이라 여기서 쓰면 안 된다 — 시점이 갈린다.
-curl -s https://pullim-design-system.vercel.app/v/0.3.0/donut.json \
+curl -s https://pullim-design-system.vercel.app/v/0.4.2/donut.json \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['files'][0]['content'],end='')" \
   > /tmp/donut-upstream.tsx
 

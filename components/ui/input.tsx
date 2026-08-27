@@ -34,10 +34,10 @@ export const Textarea = React.forwardRef<
       "border-[var(--border-default)] hover:border-[var(--border-strong)]",
       "focus:outline-none focus:border-[var(--color-action-primary)] focus:ring-[3px] focus:ring-[color-mix(in_oklch,var(--color-action-primary)_25%,transparent)]",
       "placeholder:text-[var(--text-tertiary)]",
+      "break-keep wrap-break-word leading-[var(--leading-kr-body)] tracking-[var(--tracking-kr-body)]",
       invalid && "border-[var(--color-danger-500)]",
       className
     )}
-    style={{ wordBreak: "keep-all", overflowWrap: "break-word", lineHeight: 1.7, letterSpacing: "-0.011em" }}
     {...props}
   />
 ));
@@ -128,7 +128,7 @@ export function Field({
 
   return (
     <div className={cn("flex flex-col gap-[var(--gap-sm)]", className)}>
-      <label id={labelId} htmlFor={id} className="text-[length:var(--text-sm)] font-medium text-[var(--text-primary)]" style={{ letterSpacing: "-0.008em" }}>
+      <label id={labelId} htmlFor={id} className="text-[length:var(--text-sm)] font-medium text-[var(--text-primary)] tracking-[var(--tracking-kr-small)]">
         {label}
         {required && <span className="text-[var(--text-danger)] ml-[var(--gap-xs)]">*</span>}
       </label>

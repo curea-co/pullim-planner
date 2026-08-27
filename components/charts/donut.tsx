@@ -88,6 +88,7 @@ export const Donut = React.forwardRef<HTMLDivElement, DonutProps>(
     let acc = 0;
     return (
       <div ref={ref} className={cn("inline-flex flex-col items-center gap-3", className)} lang="ko">
+        {/* size 는 prop — SVG 치수와 같은 값이어야 해서 런타임 인라인 유지 */}
         <div className="relative" style={{ width: size, height: size }}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={ariaLabel}>
             {segments.map((seg, i) => {
@@ -116,17 +117,15 @@ export const Donut = React.forwardRef<HTMLDivElement, DonutProps>(
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               {centerLabel && (
                 <div
-                  className="text-[var(--text-primary)] font-bold tabular-nums"
-                  style={{ fontSize: size * 0.16, letterSpacing: "-0.03em", lineHeight: 1 }}
+                  className="text-[var(--text-primary)] font-bold tabular-nums tracking-[-0.03em] leading-none"
+                  // fontSize 만 size 비례 계산값이라 인라인에 남는다
+                  style={{ fontSize: size * 0.16 }}
                 >
                   {centerLabel}
                 </div>
               )}
               {centerSubLabel && (
-                <div
-                  className="text-[var(--text-secondary)] text-[length:var(--text-xs)] mt-1"
-                  style={{ letterSpacing: "-0.005em" }}
-                >
+                <div className="text-[var(--text-secondary)] text-[length:var(--text-xs)] mt-1 tracking-[var(--tracking-kr-micro)]">
                   {centerSubLabel}
                 </div>
               )}
@@ -139,10 +138,11 @@ export const Donut = React.forwardRef<HTMLDivElement, DonutProps>(
               <li key={seg.label} className="flex items-center gap-2 tabular-nums">
                 <span
                   className="w-2.5 h-2.5 rounded-[var(--radius-full)] flex-shrink-0"
+                  // 세그먼트 색은 데이터(seg.color) 또는 인덱스로 고른 토큰 — 런타임
                   style={{ background: seg.color ?? defaultColors[i % defaultColors.length] }}
                   aria-hidden="true"
                 />
-                <span className="text-[var(--text-secondary)] truncate" style={{ letterSpacing: "-0.005em" }}>
+                <span className="text-[var(--text-secondary)] truncate tracking-[var(--tracking-kr-micro)]">
                   {seg.label}
                 </span>
                 <span className="ml-auto font-semibold text-[var(--text-primary)]">
