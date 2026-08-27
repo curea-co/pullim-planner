@@ -20,8 +20,10 @@ export const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttribut
     <h3
       ref={ref}
       lang="ko"
-      className={cn("text-[length:var(--text-lg)]", className)}
-      style={{ fontWeight: "var(--font-weight-h)" as React.CSSProperties["fontWeight"], letterSpacing: "-0.022em", wordBreak: "keep-all" }}
+      className={cn(
+        "text-[length:var(--text-lg)] font-[var(--font-weight-h)] tracking-[-0.022em] break-keep",
+        className
+      )}
       {...props}
     />
   )
@@ -33,8 +35,10 @@ export const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTML
     <p
       ref={ref}
       lang="ko"
-      className={cn("text-[length:var(--text-sm)] text-[var(--text-secondary)]", className)}
-      style={{ lineHeight: 1.65, wordBreak: "keep-all", overflowWrap: "break-word" }}
+      className={cn(
+        "text-[length:var(--text-sm)] text-[var(--text-secondary)] leading-[var(--leading-kr-lead)] break-keep break-words",
+        className
+      )}
       {...props}
     />
   )
@@ -53,7 +57,7 @@ export const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
   ({ label, value, delta, trend = "up", className }, ref) => (
     <Card ref={ref} className={cn("p-[var(--pad-lg)]", className)}>
       <div className="text-[length:var(--text-sm)] text-[var(--text-secondary)]">{label}</div>
-      <div className="text-[length:var(--text-3xl)] font-bold mt-1 tabular-nums" style={{ letterSpacing: "-0.03em" }}>
+      <div className="text-[length:var(--text-3xl)] font-bold mt-1 tabular-nums tracking-[-0.03em]">
         {value}
       </div>
       {delta && (

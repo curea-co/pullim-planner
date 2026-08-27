@@ -13,7 +13,12 @@ import { cn } from "@/lib/cn";
  * single 16px-tall bar via tokens.
  */
 const skeletonVariants = cva(
-  "block rounded-[var(--radius-md)] bg-[length:200%_100%] [animation:cuds-skeleton-sweep_1.4s_ease-in-out_infinite] motion-reduce:animate-none",
+  cn(
+    "block rounded-[var(--radius-md)]",
+    "bg-[image:linear-gradient(90deg,var(--surface-sunken),var(--surface-canvas),var(--surface-sunken))]",
+    "bg-[length:200%_100%]",
+    "[animation:cuds-skeleton-sweep_1.4s_ease-in-out_infinite] motion-reduce:animate-none"
+  ),
   {
     variants: {
       shape: {
@@ -31,7 +36,7 @@ export interface SkeletonProps
     VariantProps<typeof skeletonVariants> {}
 
 export const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
-  ({ className, shape, style, ...props }, ref) => {
+  ({ className, shape, ...props }, ref) => {
     return (
       <>
         {/* Scoped keyframes — kept inline so the primitive is self-contained */}
@@ -41,11 +46,6 @@ export const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
           aria-hidden="true"
           role="presentation"
           className={cn(skeletonVariants({ shape }), className)}
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, var(--surface-sunken), var(--surface-canvas), var(--surface-sunken))",
-            ...style,
-          }}
           {...props}
         />
       </>
