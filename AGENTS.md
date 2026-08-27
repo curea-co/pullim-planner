@@ -11,7 +11,8 @@ This version (Next.js 16) has breaking changes — APIs, conventions, and file s
 - BE: **pullim-api** (별도 리포) — 세션(쿠키 SSO + CSRF)·planner 데이터 모두 pullim-api. 이 리포에 BE 코드 없음 (구 apps/backend 는 2026-07-31 폐기)
 - 인증: `lib/auth/auth-context.tsx` + `lib/api-client/` (쿠키 세션). dev 화면 확인은 `NEXT_PUBLIC_DEV_AUTH_BYPASS=1` + localhost
 - i18n: 미도입 (한국어 하드코딩 허용)
-- UI: `@/components/ui/*` (shadcn/ui + Base UI). DS 패키지 미사용
+- UI: 3레인 — ① PUDS 원격 벤더링(`app/tokens/*`·`lib/cn.ts`·일부 `components/ui/*`·`components/charts/donut`) ② 로컬 base-ui 프리미티브(`components/ui/*`) ③ 서비스 고유. DS npm 패키지 미사용 (Must Fix §1)
+- 테마: `data-theme="pullim-os"`(성격, layout.tsx 고정) + `data-scheme="light|dark"`(명암, next-themes). 기본 light
 - 관측: Sentry / `@pullim/analytics` / `@pullim/remote-config` 미도입. `@vercel/analytics` 도입 완료 (`app/layout.tsx` `<Analytics />`, `track()` 허용)
 - 상태: useState (UI), Container 내부에서 상태/핸들러 직접 관리
 - 도메인 권위: `input/docs-archive/08_풀림_플래너_핸드오프.md`
@@ -21,9 +22,11 @@ This version (Next.js 16) has breaking changes — APIs, conventions, and file s
 ```
 pullim-planner/
 ├── app/                                # App Router (Container import + Suspense)
+│   ├── tokens/                         # PUDS 토큰 벤더링 — 로컬 수정 금지
 │   └── (student)/                      # 플래너 라우트 그룹
 ├── components/
-│   ├── ui/                             # shadcn/ui 프리미티브
+│   ├── ui/                             # 프리미티브 — 3레인 혼재 (Must Fix §1 판별표)
+│   ├── charts/                         # PUDS 차트 벤더링 (donut)
 │   ├── shell/                          # AppHeader, AppSidebar, BottomNav, nav-config.ts
 │   ├── brand/
 │   ├── features/<도메인>/              # planner-home, planner-manage, planner-onboarding, planner-reports, planner-routine, auth
@@ -35,7 +38,8 @@ pullim-planner/
 │   ├── mock/                           # mock 데이터
 │   ├── planner/                        # 도메인 helper + pullim-client
 │   ├── hooks/ · tokens/
-│   └── utils.ts
+│   ├── cn.ts                           # PUDS 벤더링 (@puds/cn)
+│   └── utils.ts                        # cn 재export
 ├── __tests__/                          # Jest 단위 테스트
 └── package.json · jest.config.ts · tsconfig.json
 ```
@@ -44,10 +48,35 @@ pullim-planner/
 
 ## Must Fix (병합 차단)
 
-### 1. UI 컴포넌트 소스
-- `@/components/ui/*` (shadcn/ui) 사용 — 이 앱은 DS 패키지 미설치
-- `lucide-react`, `sonner` 직접 import **허용**
-- ❌ 금지 import: `@pullim/design-system/*`, `@pullim/ui`, MUI / FontAwesome 등 미설치 패키지
+### 1. UI 컴포넌트 소스 — 3레인
+
+UI 소스는 세 갈래이고 **레인마다 규칙이 다르다.** 전체 판별표·설치 절차는 `CLAUDE.md § UI 컴포넌트`.
+
+| 레인 | 파일 | 규칙 |
+|---|---|---|
+| ① **PUDS 원격 벤더링** | `app/tokens/*.css` · `lib/cn.ts` · `components/ui/{card,badge,input,skeleton}.tsx` · `components/charts/donut.tsx` | ❌ **로컬 수정 금지** — 직접 고치는 PR 은 반려. PUDS 저장소에서 고치고 재설치한다 |
+| ② **로컬 base-ui 프리미티브** | `components/ui/{button,dialog,sheet,tabs,avatar,label,separator,scroll-area,dropdown-menu,tooltip,progress}.tsx` | ❌ **PUDS 프리미티브로 교체 금지** (수정 자체는 자유) |
+| ③ **서비스 고유** | `components/ui/{meta-row,sonner}.tsx` · `app/os-topbar.css` · `components/{shell,features,shared,brand}/*` | 자유 |
+
+- ✅ 허용 import: `@/components/ui/*` · `@/components/charts/*` · `@base-ui/react` · `@/lib/cn` · `@/lib/utils` · `lucide-react` · `sonner`
+- ❌ 금지 import: `@pullim/design-system/*`, `@pullim/ui`, `@radix-ui/*`, MUI / FontAwesome 등 미설치 패키지
+- ❌ DS npm 패키지 미설치 — PUDS 는 의존성이 아니라 `components.json` 의 `@puds` 레지스트리에서 **소스를 복사**해 온다
+
+**레인 ② 를 PUDS 로 갈아끼우지 않는 이유** — 엔진이 다르다. 이 리포는 `@base-ui/react`, PUDS 프리미티브는 Radix.
+`shadcn add @puds/dialog` 는 덮어쓰기라 `DialogBody`·`showOverlay` 를 쓰는 호출부 10개가 즉시 깨진다.
+`proc/plan/2026-07-01_planner-puds-full-reskin.md` 의 명시 결정("Base UI→Radix 엔진 교체는 안 함")을
+뒤집는 게 아니라 **잇는** 규칙이다 — **토큰은 PUDS, 엔진은 로컬.**
+
+**새 PUDS 컴포넌트 도입 판정** — 레지스트리 아이템의 `dependencies` 에 `@radix-ui/*` 가 있으면 도입 불가:
+```bash
+curl -s https://pullim-design-system.vercel.app/v/0.3.0/<name>.json | jq '.dependencies, .registryDependencies'
+```
+`components.json` 의 `@puds` URL 은 **경로로 버전 고정**돼 있다 — `…vercel.app/v/0.3.0/{name}.json`.
+`/v/<버전>/` 은 PUDS 저장소 `registry-releases/<버전>/` 에 커밋된 스냅샷이라 main 에 무엇이 푸시돼도 변하지 않는다.
+
+❌ **`/r/{name}.json` 으로 바꾸는 변경은 반려.** 같은 호스트지만 `/r/` 은 **항상 main 최신**을 가리켜
+설치 시점마다 소스가 갈린다. 업그레이드는 **경로의 버전만** 교체(`/v/<이전>/` → `/v/<새 버전>/`)한 뒤
+재설치 + `git diff` 리뷰. `components/charts/README.md` 의 URL 도 같은 버전으로 맞춘다.
 
 ### 2. i18n
 - **i18n 미도입 — 한국어 하드코딩 허용**
@@ -100,7 +129,11 @@ pullim-planner/
 ### 9. 스타일링
 - **Tailwind CSS v4 만** (인라인 `style={{...}}` 금지)
 - shadcn semantic 토큰 우선: `text-foreground`, `bg-background`, `border-border`
-- `cn` 유틸: `@/lib/utils`
+  — 이 토큰들이 PUDS 명암 축(`data-scheme`)을 자동으로 따라간다. 고정 명도 램프(`text-pullim-slate-900` 등)는
+  `--pl-*` 우회로 반전은 되지만 신규 코드에는 의미 토큰을 쓴다
+- 다크는 `data-scheme`(속성) 축 하나뿐. **`data-theme="dark"` 금지**(성격 슬롯을 뺏어 테마가 풀린다),
+  `.dark` 클래스 축도 폐기. 새 `dark:` 유틸리티도 지양 — 의미 토큰이면 자동으로 따라온다
+- `cn` 유틸: `@/lib/utils` (PUDS 벤더링 컴포넌트는 원본대로 `@/lib/cn` — 같은 구현)
 - 모바일 우선 반응형: 기본 → `md:` → `lg:`
 - 교육 서비스 — **촘촘한 UI 권장**, 과도한 여백 지양
 
