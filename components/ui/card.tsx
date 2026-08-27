@@ -1,104 +1,73 @@
-import * as React from "react"
+import * as React from "react";
+import { cn } from "@/lib/cn";
 
-import { cn } from "@/lib/utils"
-
-function Card({
-  className,
-  size = "default",
-  ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
-  return (
+export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
     <div
-      data-slot="card"
-      data-size={size}
+      ref={ref}
       className={cn(
-        // PUDS(pullim-jr) 카드 레시피 — surface-raised + subtle border + radius-lg(24px) + shadow-sm.
-        "group/card flex flex-col gap-4 overflow-hidden rounded-[var(--puds-radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] py-4 text-sm text-card-foreground shadow-[var(--shadow-sm)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-[var(--puds-radius-lg)] *:[img:last-child]:rounded-b-[var(--puds-radius-lg)]",
+        "bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-[var(--pad-lg)] shadow-[var(--shadow-sm)]",
         className
       )}
       {...props}
     />
   )
+);
+Card.displayName = "Card";
+
+export const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
+  ({ className, ...props }, ref) => (
+    <h3
+      ref={ref}
+      lang="ko"
+      className={cn("text-[length:var(--text-lg)]", className)}
+      style={{ fontWeight: "var(--font-weight-h)" as React.CSSProperties["fontWeight"], letterSpacing: "-0.022em", wordBreak: "keep-all" }}
+      {...props}
+    />
+  )
+);
+CardTitle.displayName = "CardTitle";
+
+export const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, ...props }, ref) => (
+    <p
+      ref={ref}
+      lang="ko"
+      className={cn("text-[length:var(--text-sm)] text-[var(--text-secondary)]", className)}
+      style={{ lineHeight: 1.65, wordBreak: "keep-all", overflowWrap: "break-word" }}
+      {...props}
+    />
+  )
+);
+CardDescription.displayName = "CardDescription";
+
+export interface StatCardProps {
+  label: string;
+  value: React.ReactNode;
+  delta?: React.ReactNode;
+  trend?: "up" | "down";
+  className?: string;
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-header"
-      className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-[var(--puds-radius-lg)] px-4 group-data-[size=sm]/card:px-3 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-4 group-data-[size=sm]/card:[.border-b]:pb-3",
-        className
+export const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
+  ({ label, value, delta, trend = "up", className }, ref) => (
+    <Card ref={ref} className={cn("p-[var(--pad-lg)]", className)}>
+      <div className="text-[length:var(--text-sm)] text-[var(--text-secondary)]">{label}</div>
+      <div className="text-[length:var(--text-3xl)] font-bold mt-1 tabular-nums" style={{ letterSpacing: "-0.03em" }}>
+        {value}
+      </div>
+      {delta && (
+        <div
+          className={cn(
+            "text-[length:var(--text-xs)] mt-1 inline-flex items-center gap-1",
+            trend === "up" ? "text-[var(--color-success-600)]" : "text-[var(--color-danger-600)]"
+          )}
+        >
+          <span>{trend === "up" ? "▲" : "▼"}</span>
+          {delta}
+        </div>
       )}
-      {...props}
-    />
+    </Card>
   )
-}
-
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-title"
-      className={cn(
-        "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-description"
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    />
-  )
-}
-
-function CardAction({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-action"
-      className={cn(
-        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-content"
-      className={cn("px-4 group-data-[size=sm]/card:px-3", className)}
-      {...props}
-    />
-  )
-}
-
-function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-footer"
-      className={cn(
-        "flex items-center rounded-b-[var(--puds-radius-lg)] border-t bg-muted/50 p-4 group-data-[size=sm]/card:p-3",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-export {
-  Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,
-}
+);
+StatCard.displayName = "StatCard";
