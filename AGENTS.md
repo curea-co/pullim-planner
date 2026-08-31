@@ -60,18 +60,45 @@ UI 소스는 세 갈래이고 **레인마다 규칙이 다르다.** 전체 판�
 
 - ✅ 허용 import: `@/components/ui/*` · `@/components/charts/*` · `@base-ui/react` · `@/lib/cn` · `@/lib/utils` · `lucide-react` · `sonner`
 - ❌ 금지 import: `@pullim/design-system/*`, `@pullim/ui`, `@radix-ui/*`, MUI / FontAwesome 등 미설치 패키지
+  — `@radix-ui/*` 는 **이 리포에 설치돼 있지 않다**는 뜻이다(`package.json` 의 프리미티브 의존성은 `@base-ui/react` 하나, 소스 import 0건).
+  PUDS 가 Radix 를 문다는 뜻이 **아니다** — v0.5.0 부터 PUDS 도 Radix 를 쓰지 않는다.
 - ❌ DS npm 패키지 미설치 — PUDS 는 의존성이 아니라 `components.json` 의 `@puds` 레지스트리에서 **소스를 복사**해 온다
 
-**레인 ② 를 PUDS 로 갈아끼우지 않는 이유** — 엔진이 다르다. 이 리포는 `@base-ui/react`, PUDS 프리미티브는 Radix.
-`shadcn add @puds/dialog` 는 덮어쓰기라 `DialogBody`·`showOverlay` 를 쓰는 호출부 10개가 즉시 깨진다.
-`proc/plan/2026-07-01_planner-puds-full-reskin.md` 의 명시 결정("Base UI→Radix 엔진 교체는 안 함")을
-뒤집는 게 아니라 **잇는** 규칙이다 — **토큰은 PUDS, 엔진은 로컬.**
+**레인 ② 를 PUDS 로 갈아끼우지 않는 이유** — 규칙은 그대로지만 **근거가 바뀌었다.**
 
-**새 PUDS 컴포넌트 도입 판정** — 레지스트리 아이템의 `dependencies` 에 `@radix-ui/*` 가 있으면 도입 불가:
+옛 근거는 "엔진이 다르다(이 리포는 Base UI, PUDS 는 Radix)"였다. **그 근거는 죽었다.**
+PUDS v0.5.0(2026-08-28)이 `@radix-ui/*` 24개와 `cmdk` 를 전부 걷어내 **이제 양쪽 다 `@base-ui/react`** 다.
+0.4.x 까지는 맞는 말이었다. 지금은 아니다 — **엔진 혼재를 이유로 들지 마라.**
+
+살아 있는 근거 둘, 둘 다 엔진과 무관하다:
+
+1. **`files[].target` 이 겹친다 — 레인 ② 11종 전부.** PUDS 의 `avatar`·`button`·`dialog`·`dropdown-menu`·
+   `label`·`progress`·`scroll-area`·`separator`·`sheet`·`tabs`·`tooltip` 은 target 이 모두
+   `components/ui/<name>.tsx` 다. `shadcn add` 는 **덮어쓰기**라 레인 ② 에 쌓아 둔 로컬 수정이 말없이 사라진다.
+2. **API 가 다르다.** PUDS v0.5.0 `dialog` 의 export 에 `DialogBody` 가 없고 `DialogContent` 에
+   `showOverlay` prop 이 없다. 둘 중 하나 이상을 쓰는 feature 파일이 **7개**다 — 덮는 즉시 깨진다.
+
+`proc/plan/2026-07-01_planner-puds-full-reskin.md` 의 "Base UI→Radix 엔진 교체는 안 함"은
+**바꿀 Radix 자체가 없어져 문장이 무효**가 됐다. 같은 줄의 상위 원칙("엔진·API·호출부·의존성 불변")은
+그대로 유효하다. **이 결정을 다시 볼지는 사람이 정한다 — 에이전트가 뒤집지 마라.**
+
+**새 PUDS 컴포넌트 도입 판정** — 옛 기준(`dependencies` 에 `@radix-ui/*` 가 있으면 도입 불가)은 **폐기.**
+v0.5.0 은 93개 아이템 전부 해당 없음이라 그 검사는 **막던 것을 전부 통과시킨다**(fail-open).
+
+판정은 **`files[].target` 이 이 리포의 기존 파일과 겹치는지**로 한다:
+
 ```bash
-curl -s https://pullim-design-system.vercel.app/v/0.3.0/<name>.json | jq '.dependencies, .registryDependencies'
+curl -s https://pullim-design-system.vercel.app/v/0.5.0/<name>.json \
+  | jq -r '.files[].target, (.registryDependencies // [])[]'
 ```
-`components.json` 의 `@puds` URL 은 **경로로 버전 고정**돼 있다 — `…vercel.app/v/0.3.0/{name}.json`.
+
+- 겹치는 target 이 **레인 ①**(`app/tokens/*.css` · `lib/cn.ts` · `card`·`badge`·`input`·`skeleton`)뿐이면 도입 가능
+- **레인 ② · ③ 파일을 하나라도 덮으면 도입 불가**
+- **`registryDependencies` 로 딸려 오는 것까지 본다.** 자기 target 은 안 겹치는데 의존 아이템이 레인 ② 를
+  덮는 경우가 v0.5.0 기준 6종 있다 — `auth-card`·`date-picker`·`hero`(→`button`), `avatar-group`(→`avatar`),
+  `combobox`·`command`(→`dialog`). 전이 의존까지 훑는 스크립트는 `CLAUDE.md § UI 컴포넌트`.
+
+`components.json` 의 `@puds` URL 은 **경로로 버전 고정**돼 있다 — `…vercel.app/v/0.5.0/{name}.json`.
 `/v/<버전>/` 은 PUDS 저장소 `registry-releases/<버전>/` 에 커밋된 스냅샷이라 main 에 무엇이 푸시돼도 변하지 않는다.
 
 ❌ **`/r/{name}.json` 으로 바꾸는 변경은 반려.** 같은 호스트지만 `/r/` 은 **항상 main 최신**을 가리켜

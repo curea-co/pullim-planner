@@ -54,9 +54,18 @@ pullim-planner/
 
 ## UI 컴포넌트 — 3레인 (PUDS 원격 · 로컬 base-ui · 서비스 고유)
 
-**토큰은 PUDS, 엔진은 로컬.** `proc/plan/2026-07-01_planner-puds-full-reskin.md` 의 결정
-("엔진·API·호출부·의존성 불변 … Base UI→Radix 엔진 교체는 안 함")을 **뒤집는 게 아니라 잇는 규칙**이다.
-색·라운드·간격·명암은 PUDS 레지스트리에서 받고, 프리미티브 엔진은 `@base-ui/react` 로 유지한다.
+**토큰은 PUDS, 프리미티브 파일은 로컬.** 색·라운드·간격·명암은 PUDS 레지스트리에서 받고,
+`components/ui/*` 의 프리미티브 11종은 이 리포가 소유한다.
+
+> ⚠️ **2026-08-28 부로 이 규칙의 근거가 갈렸다.** 예전 이유는 "엔진은 로컬" — 이 리포는 `@base-ui/react`,
+> PUDS 프리미티브는 Radix 였다. **그 근거는 죽었다.** PUDS v0.5.0 이 `@radix-ui/*` 24개와 `cmdk` 를
+> 전부 걷어내 **이제 양쪽 다 `@base-ui/react`** 다(v0.5.0 레지스트리 93개 아이템 중 Radix·cmdk 의존 0개, 실측).
+> 규칙 자체는 그대로 서 있지만 **이유가 다르다** — target 충돌과 API 차이다. 아래 「② 로컬 base-ui 프리미티브」.
+>
+> `proc/plan/2026-07-01_planner-puds-full-reskin.md` 의 "Base UI→Radix 엔진 교체는 안 함"은
+> **바꿀 Radix 가 없어져 문장 자체가 무효**가 됐다. 다만 같은 줄의 상위 원칙("엔진·API·호출부·의존성 불변 —
+> 클래스/조합만 변경")은 재스킨 작업의 범위 제한으로 여전히 유효하다.
+> **결정을 유지할지 다시 볼지는 사람 몫이다 — 에이전트가 뒤집지 마라.**
 
 DS npm 패키지(`@pullim/design-system`·`@pullim/ui`)는 **미설치 — import 금지.** PUDS 는 npm 의존성이 아니라
 `components.json` 의 `@puds` 레지스트리에서 **소스를 복사(벤더링)** 해 온다.
@@ -74,7 +83,7 @@ DS npm 패키지(`@pullim/design-system`·`@pullim/ui`)는 **미설치 — impor
 레지스트리 URL 은 **경로로 버전이 고정**돼 있다 (`components.json` → `registries["@puds"]`):
 
 ```
-https://pullim-design-system.vercel.app/v/0.3.0/{name}.json
+https://pullim-design-system.vercel.app/v/0.5.0/{name}.json
                                         ^^^^^^^ 여기가 고정 지점
 ```
 
@@ -85,6 +94,11 @@ https://pullim-design-system.vercel.app/v/0.3.0/{name}.json
 > 크로스카테고리 import 파손 8건인데, 그 8건에 플래너가 설치한 7개(`theme-puds`·`card`·`badge`·`input`·
 > `skeleton`·`cn`·`donut`)가 **하나도 포함되지 않는다** — 7개 모두 두 버전 간 페이로드가 바이트 동일하다.
 > 재설치해도 diff 가 안 나는 게 정상이니 "설치가 안 먹었다"고 오해하지 말 것. 바뀐 건 버전 핀뿐이다.
+
+> **v0.4.2 → v0.5.0 도 거의 같은 모양이다** (2026-08-31 · #214 실측). 레인 ① 9개 파일 중 8개가 두 버전
+> 사이 바이트 동일이고, 바뀐 것은 **import 하지 않는** `_animations.css` 하나뿐이라 컴파일된 CSS 가
+> 양쪽 동일 해시였다. v0.5.0 은 PUDS 가 Radix → Base UI 로 엔진을 갈아엎은 릴리스인데도 그렇다 —
+> 이 리포가 받아 가는 9개가 전부 엔진 비의존(토큰·`cn`·무의존 프리미티브·SVG 차트)이기 때문이다.
 
 > ⚠️ **`/r/{name}.json` 을 서비스에서 직접 참조하지 마라.** 같은 호스트지만 `/r/` 은 **항상 main 최신**을
 > 가리킨다 — 설치 시점마다 소스가 갈리고, 재설치 한 번으로 다른 버전이 조용히 들어온다.
@@ -99,9 +113,34 @@ bunx shadcn@latest add @puds/<name>              # 컴포넌트
 - **토큰 재싱크 후 반드시 `--radius-*` → `--puds-radius-*` 리네임을 재적용한다.**
   `app/tokens/{_base,pullim-os,pullim-jr}.css` 3곳. `app/globals.css` 의 `@theme inline` 이
   `--radius-*: var(--puds-radius-*)` 로 별칭하므로 원본 이름 그대로면 자기참조가 된다.
+
+  ⚠️ **로컬 델타는 치환만이 아니다 — 치환 + 그 위에 붙은 3줄 경고 주석이다.** 그 주석 내용이 하필
+  「재싱크 후 반드시 다시 적용할 것」이라, sed 만 돌리면 **다음 사람에게 이 단계를 알려 주는 안내가
+  조용히 사라진다.** (#214 v0.5.0 업그레이드에서 실제로 만나 손으로 복원했다.)
+
   ```bash
+  # 0) 설치 전 백업 — 델타(치환 + 경고 주석)를 되살릴 원본
+  cp app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css /tmp/
+
+  # … bunx shadcn@latest add @puds/theme-puds …
+
+  # 1) 치환
   sed -i '' -E 's/--radius-(xs|sm|md|lg|xl|2xl|full):/--puds-radius-\1:/g' \
     app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css
+
+  # 2) 3줄 경고 주석 복원 — 설치가 지우고 sed 는 되살리지 않는다.
+  #    /tmp 백업에서 `--puds-radius-*` 선언 바로 위 3줄(「⚠ 플래너 로컬 델타 …」)을 되붙인다.
+  for f in _base pullim-os pullim-jr; do
+    grep -q "플래너 로컬 델타" app/tokens/$f.css || echo "주석 유실: app/tokens/$f.css ← /tmp/$f.css 에서 복원할 것"
+  done
+
+  # 3) 재적용 확인 — 세 파일 모두 9 / 1 이어야 한다
+  for f in _base pullim-os pullim-jr; do
+    echo "$f $(grep -o -- '--puds-radius-' app/tokens/$f.css | wc -l) $(grep -c '플래너 로컬 델타' app/tokens/$f.css)"
+  done
+
+  # 4) 상류가 두 버전 사이 바이트 동일이면 백업과 완전히 같아야 한다 (다르면 그게 진짜 상류 변경)
+  for f in _base pullim-os pullim-jr; do diff -u /tmp/$f.css app/tokens/$f.css; done
   ```
 - **`app/tokens/_animations.css` 는 벤더링만 하고 import 하지 않는다.** `tw-animate-css`(globals.css 에서 import)가
   이미 `animate-in/out` · `fade-*` · `zoom-*` · `slide-in-from-*-N` 을 제공하는 상위집합이다. 둘 다 import 하면
@@ -112,20 +151,70 @@ bunx shadcn@latest add @puds/<name>              # 컴포넌트
 
 ### ② 로컬 base-ui 프리미티브 — 교체 금지
 
-- **엔진이 다르다.** 이 리포는 `@base-ui/react`, PUDS 프리미티브는 Radix. 공통 코드 0.
-- `shadcn add @puds/dialog` 는 **덮어쓰기**라 `DialogBody`·`showOverlay` 를 쓰는 호출부 10개가 즉시 깨진다.
+- ❌ **"엔진이 다르다"는 죽은 근거다 — 쓰지 마라.** 0.4.x 까지는 PUDS 프리미티브가 Radix 였지만
+  v0.5.0(2026-08-28)부터 **양쪽 다 `@base-ui/react`** 다. 이 근거로 판단하면 옛 결론에 우연히 닿거나
+  (교체 금지) 반대로 뒤집힌다(엔진이 같으니 교체해도 된다) — **둘 다 근거가 틀렸다.**
+- ✅ **`files[].target` 이 겹친다 — 11/11.** 레인 ② 11종은 PUDS 쪽 target 이 모두 `components/ui/<name>.tsx` 다.
+  `shadcn add` 는 덮어쓰기라, 이 파일들에 쌓아 둔 로컬 수정이 **에러 없이 사라진다.** 살아 있는 위험은 이것이다.
+- ✅ **API 가 다르다.** PUDS v0.5.0 `dialog` 는 `Dialog`·`DialogClose`·`DialogContent`·`DialogDescription`·
+  `DialogFooter`·`DialogHeader`·`DialogOverlay`·`DialogPortal`·`DialogTitle`·`DialogTrigger` 만 내보낸다 —
+  `DialogBody` 가 없고 `DialogContent` 에 `showOverlay` prop 도 없다. 둘 중 하나 이상을 쓰는
+  feature 파일이 **7개**(`block-complete-dialog`·`pedagogy-tag`·`welcome-modal`·`activate-confirm-dialog`·
+  `delete-confirm-dialog`·`consent-dialog`·`routine-delete-confirm-dialog`)라 덮는 즉시 깨진다.
 - `sonner.tsx` 는 PUDS `toast` 와 API 자체가 다르다(Provider+훅 vs `<Toaster/>`+`toast()`). 교체 금지.
 
-**새 PUDS 컴포넌트를 들일지 판단하는 법** — 레지스트리 아이템의 `dependencies` 를 먼저 본다:
+**새 PUDS 컴포넌트를 들일지 판단하는 법 — 판별 기준이 바뀌었다.**
+
+> ⛔ **옛 기준(`dependencies` 에 `@radix-ui/*` 가 있으면 도입 불가)은 폐기.** v0.5.0 은 93개 아이템 전부
+> Radix·cmdk 의존이 0이라 그 검사는 **아무것도 막지 못한다**(fail-open). 특히 `scroll-area` 는
+> `dependencies: ["@base-ui/react"]` 라 옛 기준으로는 "도입 가능"이 나오는데, target 이
+> `components/ui/scroll-area.tsx` 라 **레인 ② 파일을 그대로 덮는다.** 정확히 뒤집힌 판정이다.
+> (옛 기준이 유효했던 것은 PUDS 0.4.x 까지다.)
+
+**새 기준: `files[].target` 이 레인 ② · ③ 파일과 겹치는가.** `registryDependencies` 로 딸려 오는
+아이템의 target 까지 본다 — 자기 target 은 안 겹치는데 의존이 레인 ② 를 덮는 경우가 v0.5.0 에 6종 있다.
+
+저장소 루트에서 실행한다 (버전은 `components.json` 에서 읽으므로 핀과 어긋나지 않는다):
 
 ```bash
-curl -s https://pullim-design-system.vercel.app/v/0.3.0/<name>.json \
-  | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('dependencies'),d.get('registryDependencies'))"
+V=$(python3 -c "import json;print(json.load(open('components.json'))['registries']['@puds'].split('/v/')[1].split('/')[0])")
+curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | python3 -c '
+import json,sys,os
+LANE1={"cn","theme-puds","card","badge","input","skeleton"}   # 판별표 레인① — 덮어써도 되는 것
+d=json.load(sys.stdin); items={i["name"]:i for i in d["items"]}
+def closure(n,seen=None):
+    seen=set() if seen is None else seen
+    if n in seen or n not in items: return seen
+    seen.add(n)
+    for rd in items[n].get("registryDependencies") or []:
+        if rd.startswith("@puds/"): closure(rd.split("/",1)[1],seen)
+    return seen
+for name in sys.argv[1:]:
+    if name not in items: print(f"@puds/{name}: 레지스트리에 없는 이름"); continue
+    print(f"@puds/{name}:")
+    for n in sorted(closure(name)):
+        for f in items[n].get("files") or []:
+            t=f["target"]; via="" if n==name else f"  ← @puds/{n}"
+            mark = "신규      " if not os.path.exists(t) else ("레인① 재설치" if n in LANE1 else "⛔ 덮어씀   ")
+            print(f"  {mark} {t}{via}")
+' <name> [<name>...]
 ```
 
-`@radix-ui/*` 가 나오면 **들이지 않는다**(엔진 혼재). 무의존이고 현재 호출부가 0건이면 도입 가능.
-2026-08-26 기준 무의존: `card` · `badge` · `input` · `skeleton`. Radix 를 무는 것: `avatar` · `label` ·
-`separator` · `tabs` · `scroll-area` · `sheet`.
+**`⛔ 덮어씀` 이 한 줄이라도 나오면 도입 불가.** `신규` 와 `레인① 재설치` 만 나오면 도입 가능
+(그다음 판단은 API 중복 여부다 — 같은 역할의 레인 ②/③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다).
+
+v0.5.0 실측 (2026-08-31):
+
+| | 결과 |
+|---|---|
+| 전체 아이템 | 93 |
+| 레인 ①/②/③ 파일과 target 이 겹치는 것 | **17** — 레인 ① 6종(`cn`·`theme-puds`·`card`·`badge`·`input`·`skeleton`, 재설치가 정상) + **레인 ② 11종**(`avatar`·`button`·`dialog`·`dropdown-menu`·`label`·`progress`·`scroll-area`·`separator`·`sheet`·`tabs`·`tooltip`) |
+| 자기 target 은 안 겹치는데 `registryDependencies` 로 레인 ② 를 덮는 것 | **6** — `auth-card`·`date-picker`·`hero`(→`button`), `avatar-group`(→`avatar`), `combobox`·`command`(→`dialog`) |
+| `dependencies` 에 `@radix-ui/*` 또는 `cmdk` 가 있는 것 | **0** (← 옛 기준이 죽은 이유) |
+
+`donut` 이 이 표에 없는 이유는 target 이 `components/ui/charts/donut.tsx` 로 이 리포의
+`components/charts/donut.tsx` 와 **경로가 달라서**다 — 덮지 않는 대신 사본이 하나 더 생긴다
+(`components/charts/README.md`).
 
 ### 버전 업그레이드 절차
 
@@ -133,9 +222,12 @@ curl -s https://pullim-design-system.vercel.app/v/0.3.0/<name>.json \
    (호스트는 그대로. 가용 버전은 PUDS 저장소 `docs/releases.md` 표 참조)
 2. 레인 ① 아이템을 재설치 (`theme-puds` + 도입한 컴포넌트) · `donut` 은 `curl`+`cp`
    — `components/charts/README.md` 의 URL 도 같은 버전으로 맞춘다
-3. `--puds-radius-*` 리네임 재적용
+3. `--puds-radius-*` 리네임 **+ 3줄 경고 주석** 재적용 — 위 § ① 의 0~4 단계.
+   **sed 만 돌리면 주석이 사라진다**(#214 에서 실제로 겪었다). `grep -c '플래너 로컬 델타'` 가 세 파일 모두 1 이어야 한다
 4. **`git diff` 리뷰** — 벤더링이라 재설치는 로컬 수정을 덮어쓴다. 의도치 않은 값 변화가 없는지 본다
 5. `bun run typecheck` · `bun run test` · `bun run build` · 라이트/다크 양쪽 실 렌더 확인
+   - 렌더 변화 0 을 주장하려면 눈보다 **산출 CSS 해시**가 강하다 — base 와 브랜치에서 각각
+     `rm -rf .next && bun run build` 후 `.next` 의 CSS 를 이어붙여 `shasum -a 256` 비교 (#214 에서 쓴 방법)
 
 ### 그 외
 
