@@ -367,13 +367,25 @@ for name in sys.argv[1:]:
 아래 수치는 **작성 시점에 고정돼 있던 릴리스(v0.5.0)를 실제로 훑은 값**이다. 핀이 올라가면 낡는다 —
 숫자를 믿지 말고 위 스크립트를 다시 돌려라. 표는 "두 검사가 각각 무엇을 잡는가"를 보여 주려고 남긴다.
 
-| | 개수 |
-|---|---|
-| 전체 아이템 | **93** |
-| ① 레인 ② 파일을 덮는 것 | **17** = 직접 11(`avatar`·`button`·`dialog`·`dropdown-menu`·`label`·`progress`·`scroll-area`·`separator`·`sheet`·`tabs`·`tooltip` — 전부 `components/ui/<name>.tsx`) + **전이 6**(`auth-card`·`date-picker`·`hero`→`button`, `avatar-group`→`avatar`, `combobox`·`command`→`dialog`) |
-| ② 미설치 의존성이 있는 것 | **1** — `data-table` (`@tanstack/react-table`) |
-| 둘 다 통과 | **75** (레인 ① 6종 포함 — 그 6종은 재설치가 정상이다) |
-| 참고: `dependencies` 에 `@radix-ui/*` 또는 `cmdk` | **0** ← 옛 기준이 죽은 이유 |
+**①은 두 갈래다 — 같은 「경로 문제」지만 사후 증상이 다르다.** 덮어씀은 **기존 파일이 사라지고**,
+사본 생성은 **기존 파일은 남고 중복본이 는다.** 나중에 무엇을 찾아야 하는지가 달라서 나눠 적는다.
+
+| 버킷 | 개수 | |
+|---|---|---|
+| **전체 아이템** | **93** | |
+| ① 덮어씀 | **17** | 직접 11(`avatar`·`button`·`dialog`·`dropdown-menu`·`label`·`progress`·`scroll-area`·`separator`·`sheet`·`tabs`·`tooltip` — 전부 `components/ui/<name>.tsx`) + **전이 6**(`auth-card`·`date-picker`·`hero`→`button`, `avatar-group`→`avatar`, `combobox`·`command`→`dialog`) |
+| ① 사본 생성 | **1** | `donut` — target 이 `components/ui/charts/` 인데 이 리포는 `components/charts/` |
+| ② 미설치 의존성 | **1** | `data-table` (`@tanstack/react-table`) |
+| 둘 다 통과 | **74** | 레인 ① 6종 포함 — 그 6종은 재설치가 정상이다 |
+| | **= 93** | 판정으로는 `도입 불가` 19 · `도입 가능` 74 |
+| 참고: `dependencies` 에 `@radix-ui/*` 또는 `cmdk` | **0** | ← 옛 기준이 죽은 이유 |
+
+네 버킷은 서로 겹치지 않는다(한 아이템이 두 사유로 걸리는 경우가 없다). 재현:
+
+```bash
+ITEMS=$(jq -r '.items[].name' <(curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json") | tr '\n' ' ')
+# 위 판별 스크립트를 이 ITEMS 로 돌리고 '->' 줄을 세면 도입 가능 74 · 도입 불가 19 가 나온다
+```
 
 v0.5.0 이 요구하는 npm 패키지는 `@base-ui/react` · `@tanstack/react-table` ·
 `class-variance-authority` · `clsx` · `recharts` · `tailwind-merge` 6종이고,
