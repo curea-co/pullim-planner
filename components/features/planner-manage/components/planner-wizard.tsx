@@ -77,8 +77,8 @@ export function PlannerWizard({
         onJump={onJump}
       />
 
-      <section className="bg-card rounded-2xl border p-5 lg:p-6">
-        <header className="mb-4 flex items-start gap-3 border-b pb-4">
+      <section className="bg-card rounded-2xl border p-4 lg:p-5">
+        <header className="mb-3.5 flex items-start gap-3 border-b pb-3.5">
           <div className="bg-pullim-blue-50 text-pullim-blue-700 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
             <StepIcon className="h-5 w-5" />
           </div>
@@ -97,7 +97,9 @@ export function PlannerWizard({
           </div>
         </header>
 
-        <div className="min-h-[280px]">
+        {/* 짧은 단계(과목 미선택 3단계 등)에서 카드가 무너지지 않을 최소 높이만 잡는다 —
+            280px 를 잡아 두면 그 단계에서 본문 아래로 빈 칸이 200px 넘게 남는다. */}
+        <div className="min-h-[120px]">
           {/* 단계 번호가 아니라 key로 렌더 — 구성이 바뀌어도 안전 */}
           {stepInfo.key === 'goal'     && <PStep1Goal form={form} setForm={setForm} expert={expert} onExpertChange={setExpert} />}
           {stepInfo.key === 'hours'    && <PStep2Hours form={form} setForm={setForm} />}
@@ -116,7 +118,7 @@ export function PlannerWizard({
           )}
         </div>
 
-        <footer className="mt-5 flex items-center justify-between gap-2 border-t pt-4">
+        <footer className="mt-4 flex items-center justify-between gap-2 border-t pt-3.5">
           <button
             type="button"
             onClick={onPrev}

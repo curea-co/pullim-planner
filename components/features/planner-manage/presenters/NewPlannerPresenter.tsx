@@ -36,7 +36,10 @@ export default function NewPlannerPresenter({
   routines, onServerPreview, onUpdateRoutine,
 }: NewPlannerPresenterProps) {
   return (
-    <div className="space-y-5">
+    // 위저드는 대시보드가 아니라 한 줄 폼이다 — 셸의 1180px 를 그대로 쓰면 한 단어짜리
+    // 선택지가 500px 로 늘어나 칸 안이 텅 빈다. 읽기 좋은 폼 단(768px)으로 묶는다.
+    // 가운데 정렬이 아니라 왼쪽 고정 — 브레드크럼·수정 화면 탭바와 같은 왼쪽 끝에 선다.
+    <div className="w-full max-w-3xl space-y-4">
       {/* 임시저장 버튼 숨김(soft-open) — 서버 draft BE·영속 API 미구현이라 데모 토스트만 떠서
           "저장됐다" 오해를 유발. 리포트·약점과 동일 원칙(미구현 기능 미노출). BE draft 준비 시 복원. */}
       <PageHeader title="내 맞춤 시간표 만들기" />
