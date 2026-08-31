@@ -129,30 +129,71 @@ bunx shadcn@latest add @puds/card                # 컴포넌트 — 이름은 �
   「재싱크 후 반드시 다시 적용할 것」이라, sed 만 돌리면 **다음 사람에게 이 단계를 알려 주는 안내가
   조용히 사라진다.** (#214 v0.5.0 업그레이드에서 실제로 만나 손으로 복원했다.)
 
-  ```bash
-  # 0) 설치 전 백업 — 델타(치환 + 경고 주석)를 되살릴 원본
-  cp app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css /tmp/
+  아래 0~4 는 **끝까지 돌리면 설치 전 상태로 되돌아가도록** 짜여 있다 — 2 번이 주석을 실제로 되붙이고,
+  4 번의 `diff` 가 비어야 복원이 끝난 것이다. 검출만 하고 넘어가면 주석은 빠진 채 남는다.
 
-  # … bunx shadcn@latest add @puds/theme-puds …
+**두 덩이로 나뉜다. 한 번에 붙여넣지 마라** — A 는 설치 **전**, B 는 설치 **후**다.
+A 를 설치 뒤에 돌리면 백업이 설치본으로 덮여서 복원할 원본이 사라진다.
 
-  # 1) 치환
-  sed -i '' -E 's/--radius-(xs|sm|md|lg|xl|2xl|full):/--puds-radius-\1:/g' \
-    app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css
+**A. 설치 전**
 
-  # 2) 3줄 경고 주석 복원 — 설치가 지우고 sed 는 되살리지 않는다.
-  #    /tmp 백업에서 `--puds-radius-*` 선언 바로 위 3줄(「⚠ 플래너 로컬 델타 …」)을 되붙인다.
-  for f in _base pullim-os pullim-jr; do
-    grep -q "플래너 로컬 델타" app/tokens/$f.css || echo "주석 유실: app/tokens/$f.css ← /tmp/$f.css 에서 복원할 것"
-  done
+```bash
+cp app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css /tmp/   # 델타를 되살릴 원본
+```
 
-  # 3) 재적용 확인 — 세 파일 모두 9 / 1 이어야 한다
-  for f in _base pullim-os pullim-jr; do
-    echo "$f $(grep -o -- '--puds-radius-' app/tokens/$f.css | wc -l) $(grep -c '플래너 로컬 델타' app/tokens/$f.css)"
-  done
+이제 `bunx shadcn@latest add @puds/theme-puds` 를 돌린다.
 
-  # 4) 상류가 두 버전 사이 바이트 동일이면 백업과 완전히 같아야 한다 (다르면 그게 진짜 상류 변경)
-  for f in _base pullim-os pullim-jr; do diff -u /tmp/$f.css app/tokens/$f.css; done
-  ```
+**B. 설치 후**
+
+```bash
+# 1) 치환
+sed -i '' -E 's/--radius-(xs|sm|md|lg|xl|2xl|full):/--puds-radius-\1:/g' \
+  app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css
+
+# 2) 3줄 경고 주석 복원 — 설치가 지우고 sed 는 되살리지 않는다.
+#    백업본에서 `--puds-radius-*` **선언 줄** 바로 위 3줄을 그대로 되붙인다.
+#    (이미 있으면 건너뛴다 — 여러 번 돌려도 중복 삽입되지 않는다)
+python3 - <<'PY'
+import re
+DECL = re.compile(r"--puds-radius-[a-z0-9]+\s*:")   # 선언만. 주석 안의 --puds-radius-* 에 걸리면 안 된다
+for f in ("_base", "pullim-os", "pullim-jr"):
+    cur_p, bak_p = f"app/tokens/{f}.css", f"/tmp/{f}.css"
+    cur = open(cur_p, encoding="utf-8").read().split("\n")
+    if any("플래너 로컬 델타" in l for l in cur):
+        print(f"  {f}: 이미 있음 — 건너뜀"); continue
+    bak = open(bak_p, encoding="utf-8").read().split("\n")
+    i = next(n for n, l in enumerate(bak) if DECL.search(l))
+    j = next(n for n, l in enumerate(cur) if DECL.search(l))
+    open(cur_p, "w", encoding="utf-8").write("\n".join(cur[:j] + bak[i-3:i] + cur[j:]))
+    print(f"  {f}: 경고 주석 3줄 복원")
+PY
+
+# 3) 검증 — 세 파일 모두 선언 7 · 주석 1 · 총 출현 9 여야 한다
+#    (총 9 = 선언 7 + 주석 본문이 스스로 언급하는 2. 총계만 세면 주석 유실을 못 잡는다)
+for f in _base pullim-os pullim-jr; do
+  printf "%-11s 선언=%s 주석=%s 총=%s\n" "$f" \
+    "$(grep -oE -- '--puds-radius-[a-z0-9]+:' app/tokens/$f.css | wc -l | tr -d ' ')" \
+    "$(grep -c '플래너 로컬 델타' app/tokens/$f.css)" \
+    "$(grep -o -- '--puds-radius-' app/tokens/$f.css | wc -l | tr -d ' ')"
+done
+
+# 4) 상류가 두 버전 사이 바이트 동일이면 백업과 완전히 같아야 한다 (다르면 그게 진짜 상류 변경)
+for f in _base pullim-os pullim-jr; do diff -u /tmp/$f.css app/tokens/$f.css; done
+```
+
+설치 전 상태를 재현해 **A → 설치 → B 를 문서 그대로** 돌려 확인한 출력이다:
+
+```
+  _base: 경고 주석 3줄 복원
+  pullim-os: 경고 주석 3줄 복원
+  pullim-jr: 경고 주석 3줄 복원
+_base       선언=7 주석=1 총=9
+pullim-os   선언=7 주석=1 총=9
+pullim-jr   선언=7 주석=1 총=9
+```
+
+4 번의 `diff` 는 **비었다** — 세 파일 모두 설치 전과 바이트 동일이다.
+**`diff` 가 비지 않으면 복원이 아직 안 끝난 것이다.** 2 번을 다시 돌려도 안전하다(이미 있으면 건너뛴다).
 - **`app/tokens/_animations.css` 는 벤더링만 하고 import 하지 않는다.** `tw-animate-css`(globals.css 에서 import)가
   이미 `animate-in/out` · `fade-*` · `zoom-*` · `slide-in-from-*-N` 을 제공하는 상위집합이다. 둘 다 import 하면
   같은 셀렉터에 규칙이 두 벌 생기고 뒤에 오는 PUDS 쪽(`animation-name: puds-enter`)이 이겨서, `--tw-enter-*` 를
