@@ -276,43 +276,43 @@ curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | python3 -
 import json,sys,os,re
 LANE1={"cn","theme-puds","card","badge","input","skeleton"}   # 판별표 레인① — 덮어써도 되는 것
 pkg=json.load(open("package.json")); have=set(pkg.get("dependencies",{}))|set(pkg.get("devDependencies",{}))
-d=json.load(sys.stdin); items={i["name"]:i for i in d["items"]}
-UNRESOLVED=set()
-def dep_name(rd):
-    # 같은 레지스트리 항목의 표기 흔들림을 흡수한다. 2026-08-31 실측으로 103건이 전부 "@puds/" 접두라
-    # 지금은 어느 쪽이든 결과가 같다. 그래도 정규화하는 이유는 이 판별기의 실패 모드가
-    # fail-open(전이를 놓치고 "도입 가능")이기 때문이다 — 표기가 한 번 바뀌면 조용히 틀린다.
-    if rd.startswith("@puds/"): return rd.split("/",1)[1]
-    if "://" in rd: return None          # URL 형태는 이름을 얻을 수 없다 → 아래에서 사람에게 넘긴다
-    return rd                            # bare item name
-def closure(n,seen=None):
-    seen=set() if seen is None else seen
-    if n in seen or n not in items: return seen
-    seen.add(n)
-    for rd in items[n].get("registryDependencies") or []:
-        d=dep_name(rd)
-        if d is None: UNRESOLVED.add(rd); continue
-        closure(d,seen)
-    return seen
-def base(dep): return re.sub(r"(?<!^)@[^@/]*$","",dep)   # "pkg@^1.2.3" -> "pkg"
+items={i["name"]:i for i in json.load(sys.stdin)["items"]}
+def pkg_name(dep): return re.sub(r"(?<!^)@[^@/]*$","",dep)   # "pkg@^1.2.3" -> "pkg"
+
+def resolve(root):
+    """root 에서 registryDependencies 를 따라간다. 전역 상태 없음 — 호출마다 새로 만든다.
+       반환: (도달한 아이템 이름, 이름을 얻지 못한 표기).
+       못 얻은 것은 조용히 건너뛰지 않는다 — 건너뛰면 fail-open 이다."""
+    reached, unresolved, todo = set(), set(), [root]
+    while todo:
+        n = todo.pop()
+        if n in reached: continue
+        if n not in items: unresolved.add(n); continue      # 인덱스에 없는 이름(rename·불일치)
+        reached.add(n)
+        for rd in items[n].get("registryDependencies") or []:
+            if   rd.startswith("@puds/"): todo.append(rd.split("/",1)[1])
+            elif "://" in rd:             unresolved.add(rd)   # URL 은 이름을 얻을 수 없다
+            else:                         todo.append(rd)      # bare item name
+    return reached, unresolved
+
 for name in sys.argv[1:]:
-    if name not in items: print(f"@puds/{name}: 레지스트리에 없는 이름"); continue
     print(f"@puds/{name}:")
-    c=sorted(closure(name)); bad=False
-    for n in c:                                       # (1) target 충돌
+    reached, unresolved = resolve(name)                      # ← 아이템마다 새 값. 앞 결과가 안 섞인다
+    blocked = False
+    for n in sorted(reached):                                # ① target 충돌
         for f in items[n].get("files") or []:
             t=f["target"]; via="" if n==name else f"  <- @puds/{n}"
             if not os.path.exists(t): mark="신규      "
             elif n in LANE1:          mark="레인① 재설치"
-            else:                     mark="⛔ 덮어씀   "; bad=True
+            else:                     mark="⛔ 덮어씀   "; blocked=True
             print(f"  {mark} {t}{via}")
-    for n in c:                                       # (2) 미설치 의존성
+    for n in sorted(reached):                                # ② 미설치 의존성
         for dep in items[n].get("dependencies") or []:
-            if base(dep) not in have:
-                print(f"  ⛔ 미설치 의존성 {dep}" + ("" if n==name else f"  <- @puds/{n}")); bad=True
-    for rd in sorted(UNRESOLVED):                     # 이름을 못 얻은 전이 의존 → 통과시키지 않는다
-        print(f"  ⛔ 해석 불가 registryDependency {rd} — 손으로 확인할 것"); bad=True
-    print("  ->", "도입 불가" if bad else "도입 가능")
+            if pkg_name(dep) not in have:
+                print(f"  ⛔ 미설치 의존성 {dep}" + ("" if n==name else f"  <- @puds/{n}")); blocked=True
+    for u in sorted(unresolved):                             # ③ 해석 불가 → 통과시키지 않는다
+        print(f"  ⛔ 해석 불가 {u}")
+    print("  ->", "도입 불가" if blocked else "판정 불가 — 손으로 확인할 것" if unresolved else "도입 가능")
 ' $ITEMS
 ```
 
@@ -321,8 +321,22 @@ for name in sys.argv[1:]:
 > (zsh·dash 도 같은 형태로 실패한다). 출력이 안 나오는 게 아니라 **아무것도 실행되지 않는다.**
 > 자리표시자가 필요하면 위처럼 **셸 변수**로 둔다.
 
-**`도입 불가` 가 찍히면 들이지 않는다.** `도입 가능` 이면 그다음 판단은 API 중복 여부다 —
-같은 역할의 레인 ②/③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다.
+판정은 **세 갈래**다. 「모르겠다」를 「괜찮다」로 접지 않기 위해서다:
+
+| 판정 | 뜻 | 할 일 |
+|---|---|---|
+| `도입 가능` | 두 검사 다 통과 | 들여도 된다. 그다음 판단은 API 중복 여부 — 같은 역할의 레인 ②/③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다 |
+| `도입 불가` | target 을 덮거나 미설치 의존성이 있다 | 들이지 않는다 |
+| `판정 불가` | `registryDependencies` 의 이름을 얻지 못했다(레지스트리에 없는 이름, URL 표기) | **통과가 아니다.** 손으로 확인한다 |
+
+> **왜 「판정 불가」를 따로 두나.** 이 판별기의 실패 모드는 fail-open 이다 — 전이를 놓치면
+> 조용히 `도입 가능` 이 나온다. 이름을 못 얻은 것을 건너뛰면 정확히 그 일이 벌어진다.
+> `resolve()` 는 못 얻은 표기를 **모아서 돌려주고**, 하나라도 있으면 통과시키지 않는다.
+
+> **스크립트가 전역 상태를 안 쓰는 이유.** `resolve()` 는 호출마다 새 값을 만들어 돌려준다.
+> 예전엔 해석 불가 목록이 함수 바깥에 있어서, `ITEMS` 에 여러 이름을 넣으면 **앞 아이템의
+> 해석 불가가 뒤 아이템 판정에 그대로 남아** 멀쩡한 아이템이 거짓으로 막혔다.
+> 전역이 없으면 그 버그가 **구조적으로 생길 수 없다.**
 
 **두 검사가 서로를 대신하지 못한다** — v0.5.0 이 양쪽 사례를 다 갖고 있다:
 
