@@ -31,8 +31,11 @@ const GRID_COLS: Record<number, string> = {
 };
 
 /**
- * 단계 진행 표시 — 데스크탑 가로, 모바일 세로 압축.
- * 완료 단계는 체크, 현재 단계는 강조, 아직 못 가는 단계는 흐림 + 비활성.
+ * 단계 진행 표시 — 한 줄(번호 + 라벨 가로 배치). 완료 단계는 체크, 현재 단계는 강조,
+ * 아직 못 가는 단계는 흐림 + 비활성.
+ *
+ * 번호와 라벨을 세로로 쌓으면 칸이 80px 가까이 높아지는데 그 안의 실제 내용은 28px 뿐이라
+ * 셀마다 빈 띠가 남는다 — 가로로 눕혀 칸 폭을 쓰고 높이를 절반으로 줄인다.
  */
 export function StepIndicator({ steps, current, maxReachable, onJump }: Props) {
   const limit = maxReachable ?? steps.length;
@@ -54,7 +57,7 @@ export function StepIndicator({ steps, current, maxReachable, onJump }: Props) {
                 onClick={() => onJump(s.num)}
                 disabled={locked}
                 className={cn(
-                  'group flex w-full flex-col items-center gap-1 px-2 py-3 text-center transition-colors',
+                  'group flex w-full items-center justify-center gap-1.5 px-2 py-2.5 text-center transition-colors',
                   isActive && 'bg-pullim-blue-50',
                   !isActive && !locked && 'hover:bg-pullim-slate-50',
                   locked && 'cursor-not-allowed opacity-50',
@@ -62,13 +65,13 @@ export function StepIndicator({ steps, current, maxReachable, onJump }: Props) {
               >
                 <span
                   className={cn(
-                    'flex h-7 w-7 items-center justify-center rounded-full font-mono text-[11px] font-bold transition-colors',
+                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[10px] font-bold transition-colors',
                     isDone && 'bg-pullim-success text-white',
                     isActive && 'bg-pullim-blue-600 text-white',
                     !isDone && !isActive && 'bg-pullim-slate-100 text-pullim-slate-500',
                   )}
                 >
-                  {isDone ? <Check className="h-3.5 w-3.5" /> : s.num}
+                  {isDone ? <Check className="h-3 w-3" /> : s.num}
                 </span>
                 <span
                   className={cn(
