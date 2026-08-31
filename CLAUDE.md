@@ -256,7 +256,14 @@ for f in _base pullim-os pullim-jr _animations; do diff -u /tmp/$f.css app/token
   `delete-confirm-dialog`·`consent-dialog`·`routine-delete-confirm-dialog`)라 덮는 즉시 깨진다.
 - `sonner.tsx` 는 PUDS `toast` 와 API 자체가 다르다(Provider+훅 vs `<Toaster/>`+`toast()`). 교체 금지.
 
-**새 PUDS 컴포넌트를 들일지 판단하는 법 — 판별 기준이 바뀌었다.**
+### 새 PUDS 컴포넌트 도입 — 무엇을 들일 수 있나
+
+**이 리포의 기준선은 PUDS 다.** 위 「교체 금지」는 **이미 로컬 수정이 쌓인 11종**에 대한 규칙이지
+레지스트리 전체에 대한 규칙이 아니다 — 충돌 없이 들어오는 아이템이 레지스트리의 대부분이다
+(정확한 목록과 개수는 아래 「전량 스윕」 한 곳에만 둔다). **새 UI 가 필요하면 서비스 고유로
+새로 짜기 전에 여기부터 본다.**
+
+**판별 기준이 바뀌었다.**
 
 > ⛔ **옛 기준(`dependencies` 에 `@radix-ui/*` 가 있으면 도입 불가)은 폐기.** v0.5.0 은 93개 아이템 전부
 > Radix·cmdk 의존이 0이라 그 검사는 **아무것도 막지 못한다**(fail-open). 특히 `scroll-area` 는
@@ -353,7 +360,7 @@ for name in sys.argv[1:]:
 
 | 판정 | 뜻 | 할 일 |
 |---|---|---|
-| `도입 가능` | 두 검사 다 통과 | 들여도 된다. 그다음 판단은 API 중복 여부 — 같은 역할의 레인 ②/③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다 |
+| `도입 가능` | 두 검사 다 통과 — **「충돌이 없다」는 뜻이지 「도입해도 된다」가 아니다** | 아래 「전량 스윕」의 사람이 볼 것 둘(서비스 정책 · API 중복)을 통과해야 들인다 |
 | `도입 불가` | target 을 덮거나, **경로가 달라 사본이 하나 더 생기거나**(`donut`), 미설치 의존성이 있다 | 들이지 않는다 |
 | `판정 불가` | `registryDependencies` 의 이름을 얻지 못했거나(레지스트리에 없는 이름, URL 표기), **target 은 비었는데 같은 이름 파일이 리포 딴 데 있다** | **통과가 아니다.** 손으로 확인한다 |
 
@@ -415,6 +422,58 @@ ITEMS=$(curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | j
 #    6 판정 불가 — 손으로 확인할 것
 ```
 
+**「도입 가능」 68 이 실제로 무엇인가.** 개수만 버킷으로 적어 두면 남는 인상이 「PUDS 는 못 쓰는 것」이
+된다 — 실제로는 반대다. 이름은 위 스윕 출력에서 그대로 뽑는다(같은 파이프에 한 줄만 더한다):
+
+```bash
+#   … | awk '/^@puds\//{n=$0;sub(/^@puds\//,"",n);sub(/:$/,"",n)} /-> 도입 가능/{print n}'
+```
+
+2026-08-31 · 핀 v0.5.0 에서 그렇게 나온 68개를, PUDS 소스 카테고리(`files[0].path`)로 접으면:
+
+| 카테고리 | | 이름 |
+|---|---|---|
+| **primitives** | 33 | `accordion` `alert` `alert-dialog` `badge`\* `banner` `card`\* `carousel` `checkbox` `collapsible` `context-menu` `file-upload` `hover-card` `input`\* `input-otp` `kbd` `number-input` `pagination` `popover` `radio-group` `rating` `resizable` `select` `skeleton`\* `skip-link` `slider` `spinner` `stepper` `switch` `tag-input` `timeline` `toast` `toggle` `toggle-group` |
+| **pullim** | 9 | `chat-bubble` `dashboard-shell` `os-rail` `os-tabbar` `rail-collapse-context` `roi-meter` `section-head` `service-hero` `service-tile` |
+| **charts** | 6 | `area-chart` `bar-chart` `bullet` `line-chart` `radar-chart` `sparkline` |
+| **blocks** | 4 | `faq` `feature-grid` `footer` `pricing-table` |
+| **nav** | 4 | `bottom-tabs` `mobile-menu` `sidebar` `topbar` |
+| **layout** | 3 | `flex` `grid` `stack` |
+| **calendar** | 2 | `month-calendar` `week-planner` |
+| **토큰·유틸·아이콘·훅** | 7 | `theme-puds`\* `theme-variants` `cn`\* `kr-text` `cuds-icons` `service-icon` `use-reduced-motion` |
+| | **= 68** | `*` 6개는 **이미 벤더링된 레인 ①** 이다 — 새 도입이 아니라 **재설치**가 정상인 자리 |
+
+> **실제로 한 번 설치해 확인했다** (2026-08-31 · 핀 v0.5.0 · 이 리포의 사본에서 `@puds/accordion`,
+> 확인 후 되돌림). 판별기가 말한 것과 `shadcn` 이 한 일이 일치한다:
+>
+> ```
+> ✔ Created 1 file:  components/ui/accordion.tsx
+> ℹ Skipped 1 file:  lib/cn.ts   ← 레인 ① · 이미 바이트 동일이라 건너뛴다
+> ```
+>
+> 새로 생긴 파일은 **그 하나뿐**이고(`package.json`·`bun.lock` 변화 0 — `@base-ui/react` 가 이미
+> 설치돼 있다), 내용은 `/v/0.5.0/accordion.json` 의 `files[0].content` 와 **바이트 동일**하다
+> (13247 B · 같은 sha256). `bun run typecheck` 종료코드 0.
+>
+> ⚠️ **페이로드를 `jq -r` 로 뽑아 대조하면 「1줄 다름」이 나온다.** `jq -r` 이 개행을 하나 더 붙이기
+> 때문이고 파일 차이가 아니다. 바이트 대조는 `python3 -c 'import json,sys;sys.stdout.write(json.load(sys.stdin)["files"][0]["content"])'` 로 한다.
+
+> ⛔ **「도입 가능」은 「도입해도 된다」가 아니다.** 판별기가 보는 것은 **충돌 둘뿐**이다 — target 을
+> 덮는가, 없는 패키지를 끄는가. 그 위에 **사람이 볼 것이 둘** 있고 판별기는 어느 쪽도 못 본다:
+>
+> **① 서비스 정책.** 같은 판별기로 `도입 가능` 이 나와도 서비스가 금지할 수 있다. 실제 사례 —
+> **`pullim-Q` 는 `theme-puds` 를 정책으로 금지한다.** PUDS `_base.css` 가 순수 토큰 파일이 아니라
+> **전역 테마**이기 때문이다: `@layer base` 리셋 · `body` 스타일 · `--text-*` · `--radius-*` ·
+> `--color-gray-*` 재정의를 함께 싣는다(v0.5.0 `_base.css` 실측 — `:root` · `[data-scheme="dark"]` ·
+> `@layer base` · `[data-contrast="high"]` 네 블록). 자체 테마를 가진 앱은 이것과 싸운다.
+>
+> **이 리포는 반대쪽이다 — `theme-puds` 를 설치해 PUDS 를 전역 테마로 받는다.** 그래서 저 금지는
+> 여기 해당하지 않고, 오히려 그 구조가 아래 § 세부 값 조정이 성립하는 전제다. **다른 서비스의
+> 정책을 이 리포로 옮겨 오지 말고, 이 리포의 구조를 다른 서비스로 옮기지도 마라.**
+>
+> **② API 중복.** 같은 역할의 레인 ②·③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다.
+> 예: `toast` 는 판별기상 `도입 가능` 이지만 이 리포엔 `sonner.tsx` 가 이미 있다(§ ② 참고).
+
 v0.5.0 이 요구하는 npm 패키지는 `@base-ui/react` · `@tanstack/react-table` ·
 `class-variance-authority` · `clsx` · `recharts` · `tailwind-merge` 6종이고,
 이 중 `@tanstack/react-table` 만 이 리포에 없다.
@@ -444,6 +503,89 @@ target 경로에는 파일이 없으니 순진하게 보면 `신규` 로 분류�
 > `service-switcher`)은 대부분 **이름만 겹치는 서비스 고유 컴포넌트**다. 그래도 통과시키지 않는 이유는,
 > 들이면 **같은 이름의 컴포넌트가 두 벌** 생기기 때문이다 — 그게 의도인지는 사람이 정할 일이다.
 > `VENDORED_AS` 는 **결과가 확정된 자리**(`donut`)에만 쓴다. 새 경로 불일치를 확인했으면 목록에 추가한다.
+
+### 세부 값은 어디서 조정하나 — 서비스 소유 층이 먼저다
+
+**PUDS 기준으로 조립하고, 세부 값은 이 리포가 소유한 자리에서 조정한다.**
+벤더링본을 여는 것은 마지막 수단이다 — 여는 순간 재싱크마다 사람이 복원해야 하는 절차가
+하나 늘고, **그 절차는 건너뛰어도 아무 에러가 나지 않는다.**
+
+조정 수단은 넷이고 **넷 다 재설치가 덮지 않는다**:
+
+| 수단 | 자리 | 무엇을 바꾸나 |
+|---|---|---|
+| **토큰 재정의·추가** | `app/globals.css` | 색·라운드·간격·명암. PUDS 컴포넌트 **전체**에 한 번에 닿는다 |
+| **cva variant prop** | 호출부 | 컴포넌트가 미리 뚫어 둔 축 — `<Badge intent="success">` |
+| **`className` 전달** | 호출부 | 그 한 자리만 |
+| **`data-theme` · `data-scheme`** | `app/layout.tsx` · `components/shell/theme-provider.tsx` | 성격 축·명암 축 통째로 (§ 테마) |
+
+**왜 `app/globals.css` 인가 — 두 가지가 동시에 성립한다.**
+
+- **재설치가 못 건드린다.** 레지스트리 아이템의 file target 중 `app/globals.css` 는 **0건**이고,
+  `app/` 아래 target 은 `app/tokens/` 뿐이다. 벤더링 대상이 아니라서 `shadcn add` 가 볼 일이 없다.
+  ```bash
+  # V 는 § 도입 판별 블록의 첫 줄에서 components.json 을 읽어 온 것과 같다
+  curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" \
+    | jq -r '.items[].files[].target' | grep '^app/' | sort -u
+  ```
+- **소스 순서로 이긴다.** `globals.css` 는 `@import "./tokens/*.css"` 를 **먼저** 하고 그 뒤에
+  자기 `@theme inline` · `:root` · `[data-scheme="dark"]` · `@layer base` 를 연다. `:root` 끼리는
+  특정도가 같으므로 **나중에 온 쪽**, 즉 이 파일이 이긴다. 재정의만이 아니라 **추가**도 여기서 한다
+  — `--radius-3xl` · `--radius-4xl` · `--radius-pill` 은 PUDS 에 없고 이 리포가 얹은 것이다.
+
+**그게 PUDS 컴포넌트에 닿는 이유** — PUDS 는 값을 유틸리티에 박지 않고 토큰을 `var()` 로 읽는다.
+벤더링된 `components/ui/badge.tsx` 실물이 세 수단을 한자리에 보여 준다:
+
+```tsx
+const badgeVariants = cva(
+  "… px-[var(--pad-sm)] rounded-[var(--radius-full)] text-[length:var(--text-xs)] …",
+  { variants: { intent: { success: "bg-[var(--container-success)] …", … } },
+    defaultVariants: { intent: "neutral" } });
+…
+<span ref={ref} className={cn(badgeVariants({ intent }), className)} {...props} />
+```
+
+`--container-success` 를 `globals.css` 에서 다시 정의하면 배지가 따라오고, `intent` 는 호출부가
+고르고, `className` 은 `cn`(= `twMerge(clsx(…))`)이 합친다. **임의값 유틸리티라도 같은 그룹이면
+소비자 것이 이긴다** — 위 문자열로 실측한 값이다:
+
+```
+cn("bg-[var(--container-success)] text-[length:var(--text-xs)]", "bg-red-500")
+  → "text-[length:var(--text-xs)] bg-red-500"
+cn("px-[var(--pad-sm)] rounded-[var(--radius-full)]", "px-4 rounded-none")
+  → "px-4 rounded-none"
+```
+
+**벤더링 파일을 열 이유가 없다.** 열기 전에 이 넷 중 무엇이 왜 안 되는지 먼저 말할 수 있어야 한다.
+
+#### 그래도 벤더링본을 고쳐야 한다면 — `--puds-radius-*` 가 유일한 본보기
+
+이 리포가 벤더링 파일을 손댄 자리는 **하나뿐**이다: `app/tokens/{_base,pullim-os,pullim-jr}.css` 의
+`--radius-*` → `--puds-radius-*` 리네임. 예외로 남긴 **이유**와 그 **대가**가 둘 다 기록돼 있어서
+본보기로 쓸 수 있다.
+
+**① 왜 서비스 소유 층에서 못 했나 — 순환이 된다.** Tailwind v4 가 `rounded-md` 유틸리티를 만들려면
+`@theme` 의 키 이름이 **`--radius-md` 로 고정**이다. PUDS 는 그 이름을 `@theme` 이 아니라 `:root` 에
+선언하므로 `globals.css` 가 다리를 놓아야 하는데, 원본 이름을 그대로 두면
+`@theme inline { --radius-md: var(--radius-md) }` — **자기참조**다. `globals.css` 안에서
+`:root { --puds-radius-md: var(--radius-md) }` 로 먼저 캡처하는 우회도
+`--radius-md → --puds-radius-md → --radius-md` **순환**이라 성립하지 않는다.
+다리의 양끝은 이름이 달라야 하는데 한쪽 이름은 Tailwind 가 고정하므로, **바꿀 수 있는 것은 원본
+이름뿐**이고 그 원본이 벤더링 파일이다 — 서비스 소유 층에서 안 되는 이유는 이 정도로 구체적이어야 한다.
+
+**② 대가 — 재싱크 절차가 하나 늘었다.** 그 리네임은 `shadcn add @puds/theme-puds` 가 매번 지운다.
+§ ① 의 A·B 블록 전체가 그것 하나를 되돌리는 절차이고, **경고 주석 3줄까지 함께** 복원해야 다음
+사람이 이 단계의 존재를 안다. #214(v0.5.0 업그레이드)에서 실제로 `sed` 만 돌려 주석이 빠진 채
+넘어갔고, 그 절차 하나를 다듬느라 리뷰가 여러 라운드 돌았다. **한 줄 리네임의 값이 그것이다.**
+
+**그래서 규칙은 이렇다:**
+
+1. 먼저 위 네 수단으로 되는지 확인한다. 대개 된다.
+2. 안 될 때만 벤더링본을 고치고, **왜 서비스 소유 층에서 안 되는지**를 근거로 적는다 —
+   「그게 편해서」·「거기가 값이 있는 자리라서」는 근거가 아니다.
+3. 고쳤으면 **그 파일 안에 경고 주석**과 **§ ① 형태의 재싱크 절차**를 함께 남긴다.
+   절차가 없으면 다음 재설치에서 **에러 없이** 사라진다. 그리고 아래 업그레이드 절차 3번에
+   그 자리를 추가한다.
 
 ### 버전 업그레이드 절차
 
