@@ -60,18 +60,68 @@ UI 소스는 세 갈래이고 **레인마다 규칙이 다르다.** 전체 판�
 
 - ✅ 허용 import: `@/components/ui/*` · `@/components/charts/*` · `@base-ui/react` · `@/lib/cn` · `@/lib/utils` · `lucide-react` · `sonner`
 - ❌ 금지 import: `@pullim/design-system/*`, `@pullim/ui`, `@radix-ui/*`, MUI / FontAwesome 등 미설치 패키지
+  — `@radix-ui/*` 는 **이 리포에 설치돼 있지 않다**는 뜻이다(`package.json` 의 프리미티브 의존성은 `@base-ui/react` 하나, 소스 import 0건).
+  PUDS 가 Radix 를 문다는 뜻이 **아니다** — v0.5.0 부터 PUDS 도 Radix 를 쓰지 않는다.
 - ❌ DS npm 패키지 미설치 — PUDS 는 의존성이 아니라 `components.json` 의 `@puds` 레지스트리에서 **소스를 복사**해 온다
 
-**레인 ② 를 PUDS 로 갈아끼우지 않는 이유** — 엔진이 다르다. 이 리포는 `@base-ui/react`, PUDS 프리미티브는 Radix.
-`shadcn add @puds/dialog` 는 덮어쓰기라 `DialogBody`·`showOverlay` 를 쓰는 호출부 10개가 즉시 깨진다.
-`proc/plan/2026-07-01_planner-puds-full-reskin.md` 의 명시 결정("Base UI→Radix 엔진 교체는 안 함")을
-뒤집는 게 아니라 **잇는** 규칙이다 — **토큰은 PUDS, 엔진은 로컬.**
+**레인 ② 를 PUDS 로 갈아끼우지 않는 이유** — 규칙은 그대로지만 **근거가 바뀌었다.**
 
-**새 PUDS 컴포넌트 도입 판정** — 레지스트리 아이템의 `dependencies` 에 `@radix-ui/*` 가 있으면 도입 불가:
-```bash
-curl -s https://pullim-design-system.vercel.app/v/0.3.0/<name>.json | jq '.dependencies, .registryDependencies'
-```
-`components.json` 의 `@puds` URL 은 **경로로 버전 고정**돼 있다 — `…vercel.app/v/0.3.0/{name}.json`.
+옛 근거는 "엔진이 다르다(이 리포는 Base UI, PUDS 는 Radix)"였다. **그 근거는 죽었다.**
+PUDS v0.5.0(2026-08-28)이 `@radix-ui/*` 24개와 `cmdk` 를 전부 걷어내 **이제 양쪽 다 `@base-ui/react`** 다.
+0.4.x 까지는 맞는 말이었다. 지금은 아니다 — **엔진 혼재를 이유로 들지 마라.**
+
+살아 있는 근거 둘, 둘 다 엔진과 무관하다:
+
+1. **`files[].target` 이 겹친다 — 레인 ② 11종 전부.** PUDS 의 `avatar`·`button`·`dialog`·`dropdown-menu`·
+   `label`·`progress`·`scroll-area`·`separator`·`sheet`·`tabs`·`tooltip` 은 target 이 모두
+   `components/ui/<name>.tsx` 다. `shadcn add` 는 **덮어쓰기**라 레인 ② 에 쌓아 둔 로컬 수정이 말없이 사라진다.
+2. **API 가 다르다.** PUDS v0.5.0 `dialog` 의 export 에 `DialogBody` 가 없고 `DialogContent` 에
+   `showOverlay` prop 이 없다. 둘 중 하나 이상을 쓰는 feature 파일이 **7개**다 — 덮는 즉시 깨진다.
+
+`proc/plan/2026-07-01_planner-puds-full-reskin.md` 의 "Base UI→Radix 엔진 교체는 안 함"은
+**바꿀 Radix 자체가 없어져 문장이 무효**가 됐다. 같은 줄의 상위 원칙("엔진·API·호출부·의존성 불변")은
+그대로 유효하다. **이 결정을 다시 볼지는 사람이 정한다 — 에이전트가 뒤집지 마라.**
+
+**새 PUDS 컴포넌트 도입 판정 — 검사 둘을 병행한다. 하나만 보면 어느 쪽으로든 fail-open 된다.**
+
+| | 무엇을 보나 | 통과 못 하면 왜 위험한가 |
+|---|---|---|
+| ① **`files[].target` 충돌** | 이 리포의 기존 파일을 덮는가 | 레인 ②·③ 에 쌓아 둔 로컬 수정이 **에러 없이 사라진다** |
+| ② **미설치 의존성** | `dependencies` 에 이 리포에 **없는 패키지**가 있는가 | `package.json` 은 § 4 수정 금지 영역이다 — 설치가 필요하면 그 자체가 별건 승인 사항 |
+
+**둘 다 `registryDependencies` 전이까지 본다.**
+
+> ⛔ 옛 기준(`dependencies` 에 **`@radix-ui/*` 가** 있으면 도입 불가)은 **폐기.** v0.5.0 은 93개 아이템 전부
+> 해당 없음이라 아무것도 막지 못한다(fail-open). **다만 폐기된 것은 "Radix 만 보던 좁은 범위"이지
+> 의존성 검사 자체가 아니다** — 대상을 **「이 리포에 아직 설치되지 않은 패키지 전부」로 넓혀** ② 로 남겼다.
+> **좁히지 말고 넓혀라.**
+
+두 검사가 서로를 대신하지 못한다는 것을, 작성 시점에 고정돼 있던 릴리스(v0.5.0)가 실제로 보여 준다
+(2026-08-31 실측 — 핀이 올라가면 다시 돌려 볼 것):
+
+| 아이템 | ① target | ② 의존성 | 판정 |
+|---|---|---|---|
+| `scroll-area` | ⛔ `components/ui/scroll-area.tsx` 를 덮는다 | ✅ 통과(`@base-ui/react` 는 설치돼 있다) | **불가** — ② 만 보면 놓친다 |
+| `data-table` | ✅ 전부 신규 | ⛔ `@tanstack/react-table` 미설치 | **불가** — ① 만 보면 놓친다 |
+
+명령은 `CLAUDE.md § UI 컴포넌트` 의 스크립트를 쓴다. 판정은 **세 갈래**이고, 통과는 하나뿐이다:
+
+| 판정 | 뜻 |
+|---|---|
+| `도입 가능` | 두 검사 다 통과 — 유일한 통과 |
+| `도입 불가` | 기존 파일을 덮거나(또는 경로가 달라 **사본이 하나 더 생기거나**) 미설치 의존성이 있다 |
+| `판정 불가` | `registryDependencies` 의 이름을 얻지 못했거나, **target 은 비었는데 같은 이름 파일이 리포 딴 데 있다**(들이면 같은 이름 두 벌) — **통과가 아니다.** 손으로 확인한다 |
+
+> **`판정 불가` 를 `도입 가능` 으로 접지 마라.** 이 판별기의 실패 모드는 fail-open 이라
+> 「모르겠다」를 「괜찮다」로 읽는 순간 전이 의존과 target 충돌을 놓친다.
+
+> **`donut` 은 target 이 `components/ui/charts/` 인데 이 리포는 `components/charts/` 로 관리한다.**
+> `shadcn add` 는 기존 파일을 갱신하는 대신 **사본을 하나 더 만든다** — 스크립트가 이 자리를
+> `⛔ 사본 생성` 으로 잡는다. 갱신은 `components/charts/README.md` 의 `curl` + `cp` 절차로 한다.
+
+`components.json` 의 `@puds` URL 은 **경로로 버전 고정**돼 있다 — `…vercel.app/v/<버전>/{name}.json`.
+**현재 어느 버전인지는 `components.json` 이 유일한 정본이다** — 이 문서에 옮겨 적지 않는다(박아 두면
+핀이 올라가는 순간 낡는다). 확인은 `jq -r '.registries["@puds"]' components.json`.
 `/v/<버전>/` 은 PUDS 저장소 `registry-releases/<버전>/` 에 커밋된 스냅샷이라 main 에 무엇이 푸시돼도 변하지 않는다.
 
 ❌ **`/r/{name}.json` 으로 바꾸는 변경은 반려.** 같은 호스트지만 `/r/` 은 **항상 main 최신**을 가리켜
