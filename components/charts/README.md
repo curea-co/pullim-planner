@@ -46,7 +46,8 @@ cp /tmp/donut-upstream.tsx components/charts/donut.tsx
 shasum -a 256 components/charts/donut.tsx /tmp/donut-upstream.tsx   # 두 해시가 같아야 한다
 ```
 
-버전을 올릴 때는 `components.json` 과 위 URL 의 `/v/<버전>/` 을 **함께** 바꾼다.
+버전을 올릴 때는 **`components.json` 의 핀만** 바꾼다. 위 블록은 그 값을 읽으므로
+여기서 고칠 것은 없다 — 두 곳을 함께 관리하던 옛 절차의 잔재라 지웠다.
 
 ### ❌ `shadcn add @puds/donut` 을 쓰지 말 것
 
