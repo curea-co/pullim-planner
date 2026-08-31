@@ -164,33 +164,39 @@ cp app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css /tmp/ 
 > 그래서 **치환과 복원을 파이썬 한 블록으로 합쳤다** — 언어가 하나로 줄고 이식성 문제가 사라진다.
 
 ```bash
-# 1) 치환 + 2) 경고 주석 복원 — 한 블록. 재실행해도 안전하다(치환·삽입 둘 다 멱등)
+set -e   # 검증이 실패하면 아래 4) 로 넘어가지 않고 여기서 멈춘다
+
+# 1) 치환 + 2) 경고 주석 복원 + 3) 검증 — 한 블록. 재실행해도 안전하다(치환·삽입 둘 다 멱등)
 python3 - <<'PY'
-import re
-DECL   = re.compile(r"--puds-radius-[a-z0-9]+\s*:")            # 선언만. 주석 안의 언급에 걸리면 안 된다
-RENAME = re.compile(r"--radius-(xs|sm|md|lg|xl|2xl|full):")     # 이미 --puds-radius-* 면 안 걸린다
-for f in ("_base", "pullim-os", "pullim-jr"):
+import re, sys
+DECL   = re.compile(r"--puds-radius-[a-z0-9]+\s*:")   # 선언만. 주석 안의 언급에 걸리면 안 된다
+RENAME = re.compile(r"--radius-([a-z0-9]+):")          # 토큰 이름을 열거하지 않는다 — 상류가 늘려도 따라간다
+FILES  = ("_base", "pullim-os", "pullim-jr")
+
+for f in FILES:                                        # 1) 치환 + 2) 복원
     cur_p, bak_p = f"app/tokens/{f}.css", f"/tmp/{f}.css"
     cur = RENAME.sub(r"--puds-radius-\1:", open(cur_p, encoding="utf-8").read()).split("\n")
     if any("플래너 로컬 델타" in l for l in cur):
-        print(f"  {f}: 치환 완료 · 주석 이미 있음")
+        note = "주석 이미 있음"
     else:
         bak = open(bak_p, encoding="utf-8").read().split("\n")
         i = next(n for n, l in enumerate(bak) if DECL.search(l))   # 백업본의 선언 줄
         j = next(n for n, l in enumerate(cur) if DECL.search(l))   # 설치본의 선언 줄
         cur = cur[:j] + bak[i-3:i] + cur[j:]                       # 그 위 3줄 = 경고 주석
-        print(f"  {f}: 치환 완료 · 경고 주석 3줄 복원")
+        note = "경고 주석 3줄 복원"
     open(cur_p, "w", encoding="utf-8").write("\n".join(cur))
-PY
+    print(f"  {f}: 치환 완료 · {note}")
 
-# 3) 검증 — 세 파일 모두 선언 7 · 주석 1 · 총 출현 9 여야 한다
-#    (총 9 = 선언 7 + 주석 본문이 스스로 언급하는 2. 총계만 세면 주석 유실을 못 잡는다)
-for f in _base pullim-os pullim-jr; do
-  printf "%-11s 선언=%s 주석=%s 총=%s\n" "$f" \
-    "$(grep -oE -- '--puds-radius-[a-z0-9]+:' app/tokens/$f.css | wc -l | tr -d ' ')" \
-    "$(grep -c '플래너 로컬 델타' app/tokens/$f.css)" \
-    "$(grep -o -- '--puds-radius-' app/tokens/$f.css | wc -l | tr -d ' ')"
-done
+bad = []                                               # 3) 검증 — 디스크에서 다시 읽는다
+for f in FILES:                                        #    개수를 세지 않는다. 불변식만 본다
+    text  = open(f"app/tokens/{f}.css", encoding="utf-8").read()
+    left  = RENAME.findall(text)                       # 치환 안 된 --radius-<이름>: 가 남았는가
+    kept  = "플래너 로컬 델타" in text                  # 경고 주석이 있는가
+    print(f"  {f}: 미치환 {len(left)}건{' ' + str(left) if left else ''} · 주석 {'있음' if kept else '없음'}")
+    if left or not kept: bad.append(f)
+print("검증:", "통과" if not bad else f"실패 — {bad}")
+sys.exit(1 if bad else 0)
+PY
 
 # 4) 상류가 두 버전 사이 바이트 동일이면 백업과 완전히 같아야 한다 (다르면 그게 진짜 상류 변경)
 for f in _base pullim-os pullim-jr; do diff -u /tmp/$f.css app/tokens/$f.css; done
@@ -204,10 +210,18 @@ for f in _base pullim-os pullim-jr; do diff -u /tmp/$f.css app/tokens/$f.css; do
   _base: 치환 완료 · 경고 주석 3줄 복원
   pullim-os: 치환 완료 · 경고 주석 3줄 복원
   pullim-jr: 치환 완료 · 경고 주석 3줄 복원
-_base       선언=7 주석=1 총=9
-pullim-os   선언=7 주석=1 총=9
-pullim-jr   선언=7 주석=1 총=9
+  _base: 미치환 0건 · 주석 있음
+  pullim-os: 미치환 0건 · 주석 있음
+  pullim-jr: 미치환 0건 · 주석 있음
+검증: 통과
 ```
+
+> **검증이 개수를 세지 않는 이유.** 예전엔 「선언 7 · 주석 1 · 총 9」를 통과 조건으로 박아 뒀다.
+> 그러면 다음 릴리스에서 radius 토큰이 하나 늘거나 줄기만 해도 **정상 재싱크가 실패로 보인다** —
+> 바로 위에서 버전 핀을 문서에 복사하지 말라고 한 것과 같은 실수다. 지금은 개수 대신 **불변식**을 본다:
+> **치환 안 된 `--radius-<이름>:` 이 0건인가**, **경고 주석이 있는가**. 토큰이 몇 개든 맞는 조건이다.
+> 치환 정규식도 이름을 열거하지 않으므로(`--radius-([a-z0-9]+):`) 상류가 `--radius-3xl` 을 추가해도 따라간다.
+> (참고 관측값 — 2026-08-31 시점 세 파일 모두 선언 7 · 주석 1. **판정에는 쓰지 마라.**)
 
 4 번의 `diff` 는 **비었다** — 세 파일 모두 설치 전과 바이트 동일이다.
 **`diff` 가 비지 않으면 복원이 아직 안 끝난 것이다.** 2 번을 다시 돌려도 안전하다(이미 있으면 건너뛴다).
@@ -263,12 +277,22 @@ import json,sys,os,re
 LANE1={"cn","theme-puds","card","badge","input","skeleton"}   # 판별표 레인① — 덮어써도 되는 것
 pkg=json.load(open("package.json")); have=set(pkg.get("dependencies",{}))|set(pkg.get("devDependencies",{}))
 d=json.load(sys.stdin); items={i["name"]:i for i in d["items"]}
+UNRESOLVED=set()
+def dep_name(rd):
+    # 같은 레지스트리 항목의 표기 흔들림을 흡수한다. 2026-08-31 실측으로 103건이 전부 "@puds/" 접두라
+    # 지금은 어느 쪽이든 결과가 같다. 그래도 정규화하는 이유는 이 판별기의 실패 모드가
+    # fail-open(전이를 놓치고 "도입 가능")이기 때문이다 — 표기가 한 번 바뀌면 조용히 틀린다.
+    if rd.startswith("@puds/"): return rd.split("/",1)[1]
+    if "://" in rd: return None          # URL 형태는 이름을 얻을 수 없다 → 아래에서 사람에게 넘긴다
+    return rd                            # bare item name
 def closure(n,seen=None):
     seen=set() if seen is None else seen
     if n in seen or n not in items: return seen
     seen.add(n)
     for rd in items[n].get("registryDependencies") or []:
-        if rd.startswith("@puds/"): closure(rd.split("/",1)[1],seen)
+        d=dep_name(rd)
+        if d is None: UNRESOLVED.add(rd); continue
+        closure(d,seen)
     return seen
 def base(dep): return re.sub(r"(?<!^)@[^@/]*$","",dep)   # "pkg@^1.2.3" -> "pkg"
 for name in sys.argv[1:]:
@@ -286,6 +310,8 @@ for name in sys.argv[1:]:
         for dep in items[n].get("dependencies") or []:
             if base(dep) not in have:
                 print(f"  ⛔ 미설치 의존성 {dep}" + ("" if n==name else f"  <- @puds/{n}")); bad=True
+    for rd in sorted(UNRESOLVED):                     # 이름을 못 얻은 전이 의존 → 통과시키지 않는다
+        print(f"  ⛔ 해석 불가 registryDependency {rd} — 손으로 확인할 것"); bad=True
     print("  ->", "도입 불가" if bad else "도입 가능")
 ' $ITEMS
 ```
