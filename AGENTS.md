@@ -82,21 +82,28 @@ PUDS v0.5.0(2026-08-28)이 `@radix-ui/*` 24개와 `cmdk` 를 전부 걷어내 **
 **바꿀 Radix 자체가 없어져 문장이 무효**가 됐다. 같은 줄의 상위 원칙("엔진·API·호출부·의존성 불변")은
 그대로 유효하다. **이 결정을 다시 볼지는 사람이 정한다 — 에이전트가 뒤집지 마라.**
 
-**새 PUDS 컴포넌트 도입 판정** — 옛 기준(`dependencies` 에 `@radix-ui/*` 가 있으면 도입 불가)은 **폐기.**
-v0.5.0 은 93개 아이템 전부 해당 없음이라 그 검사는 **막던 것을 전부 통과시킨다**(fail-open).
+**새 PUDS 컴포넌트 도입 판정 — 검사 둘을 병행한다. 하나만 보면 어느 쪽으로든 fail-open 된다.**
 
-판정은 **`files[].target` 이 이 리포의 기존 파일과 겹치는지**로 한다:
+| | 무엇을 보나 | 통과 못 하면 왜 위험한가 |
+|---|---|---|
+| ① **`files[].target` 충돌** | 이 리포의 기존 파일을 덮는가 | 레인 ②·③ 에 쌓아 둔 로컬 수정이 **에러 없이 사라진다** |
+| ② **미설치 의존성** | `dependencies` 에 이 리포에 **없는 패키지**가 있는가 | `package.json` 은 § 4 수정 금지 영역이다 — 설치가 필요하면 그 자체가 별건 승인 사항 |
 
-```bash
-curl -s https://pullim-design-system.vercel.app/v/0.5.0/<name>.json \
-  | jq -r '.files[].target, (.registryDependencies // [])[]'
-```
+**둘 다 `registryDependencies` 전이까지 본다.**
 
-- 겹치는 target 이 **레인 ①**(`app/tokens/*.css` · `lib/cn.ts` · `card`·`badge`·`input`·`skeleton`)뿐이면 도입 가능
-- **레인 ② · ③ 파일을 하나라도 덮으면 도입 불가**
-- **`registryDependencies` 로 딸려 오는 것까지 본다.** 자기 target 은 안 겹치는데 의존 아이템이 레인 ② 를
-  덮는 경우가 v0.5.0 기준 6종 있다 — `auth-card`·`date-picker`·`hero`(→`button`), `avatar-group`(→`avatar`),
-  `combobox`·`command`(→`dialog`). 전이 의존까지 훑는 스크립트는 `CLAUDE.md § UI 컴포넌트`.
+> ⛔ 옛 기준(`dependencies` 에 **`@radix-ui/*` 가** 있으면 도입 불가)은 **폐기.** v0.5.0 은 93개 아이템 전부
+> 해당 없음이라 아무것도 막지 못한다(fail-open). **다만 폐기된 것은 "Radix 만 보던 좁은 범위"이지
+> 의존성 검사 자체가 아니다** — 대상을 **「이 리포에 아직 설치되지 않은 패키지 전부」로 넓혀** ② 로 남겼다.
+> **좁히지 말고 넓혀라.**
+
+두 검사가 서로를 대신하지 못한다는 것을 v0.5.0 이 실제로 보여 준다 (2026-08-31 실측):
+
+| 아이템 | ① target | ② 의존성 | 판정 |
+|---|---|---|---|
+| `scroll-area` | ⛔ `components/ui/scroll-area.tsx` 를 덮는다 | ✅ 통과(`@base-ui/react` 는 설치돼 있다) | **불가** — ② 만 보면 놓친다 |
+| `data-table` | ✅ 전부 신규 | ⛔ `@tanstack/react-table` 미설치 | **불가** — ① 만 보면 놓친다 |
+
+명령은 `CLAUDE.md § UI 컴포넌트` 의 스크립트를 쓴다 — 두 검사를 함께 돌리고 `도입 가능`/`도입 불가` 를 찍는다.
 
 `components.json` 의 `@puds` URL 은 **경로로 버전 고정**돼 있다 — `…vercel.app/v/0.5.0/{name}.json`.
 `/v/<버전>/` 은 PUDS 저장소 `registry-releases/<버전>/` 에 커밋된 스냅샷이라 main 에 무엇이 푸시돼도 변하지 않는다.

@@ -171,16 +171,26 @@ bunx shadcn@latest add @puds/<name>              # 컴포넌트
 > `components/ui/scroll-area.tsx` 라 **레인 ② 파일을 그대로 덮는다.** 정확히 뒤집힌 판정이다.
 > (옛 기준이 유효했던 것은 PUDS 0.4.x 까지다.)
 
-**새 기준: `files[].target` 이 레인 ② · ③ 파일과 겹치는가.** `registryDependencies` 로 딸려 오는
-아이템의 target 까지 본다 — 자기 target 은 안 겹치는데 의존이 레인 ② 를 덮는 경우가 v0.5.0 에 6종 있다.
+**새 기준 — 검사 둘을 병행한다.** `files[].target` 충돌만 보면 판정이 **반대 방향으로 다시 fail-open** 된다.
+target 이 안 겹쳐도 이 리포에 없는 패키지를 끌고 오는 아이템이 나올 수 있다.
+
+| | 무엇을 보나 | 통과 못 하면 |
+|---|---|---|
+| ① **`files[].target` 충돌** | 이 리포의 기존 파일을 덮는가 | 레인 ②·③ 의 로컬 수정이 **에러 없이 사라진다** |
+| ② **미설치 의존성** | `dependencies` 에 이 리포에 **없는 패키지**가 있는가 | `package.json` 은 수정 금지 영역 — 설치가 필요하면 별건 승인 사항 |
+
+**둘 다 `registryDependencies` 전이까지 재귀한다.** ② 의 대상은 `@radix-ui/*` 가 아니라
+**「`package.json` 의 `dependencies` + `devDependencies` 에 없는 패키지 전부」**다 — 옛 기준을
+좁힌 게 아니라 **넓힌** 것이다.
 
 저장소 루트에서 실행한다 (버전은 `components.json` 에서 읽으므로 핀과 어긋나지 않는다):
 
 ```bash
 V=$(python3 -c "import json;print(json.load(open('components.json'))['registries']['@puds'].split('/v/')[1].split('/')[0])")
 curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | python3 -c '
-import json,sys,os
+import json,sys,os,re
 LANE1={"cn","theme-puds","card","badge","input","skeleton"}   # 판별표 레인① — 덮어써도 되는 것
+pkg=json.load(open("package.json")); have=set(pkg.get("dependencies",{}))|set(pkg.get("devDependencies",{}))
 d=json.load(sys.stdin); items={i["name"]:i for i in d["items"]}
 def closure(n,seen=None):
     seen=set() if seen is None else seen
@@ -189,30 +199,60 @@ def closure(n,seen=None):
     for rd in items[n].get("registryDependencies") or []:
         if rd.startswith("@puds/"): closure(rd.split("/",1)[1],seen)
     return seen
+def base(dep): return re.sub(r"(?<!^)@[^@/]*$","",dep)   # "pkg@^1.2.3" -> "pkg"
 for name in sys.argv[1:]:
     if name not in items: print(f"@puds/{name}: 레지스트리에 없는 이름"); continue
     print(f"@puds/{name}:")
-    for n in sorted(closure(name)):
+    c=sorted(closure(name)); bad=False
+    for n in c:                                       # (1) target 충돌
         for f in items[n].get("files") or []:
-            t=f["target"]; via="" if n==name else f"  ← @puds/{n}"
-            mark = "신규      " if not os.path.exists(t) else ("레인① 재설치" if n in LANE1 else "⛔ 덮어씀   ")
+            t=f["target"]; via="" if n==name else f"  <- @puds/{n}"
+            if not os.path.exists(t): mark="신규      "
+            elif n in LANE1:          mark="레인① 재설치"
+            else:                     mark="⛔ 덮어씀   "; bad=True
             print(f"  {mark} {t}{via}")
+    for n in c:                                       # (2) 미설치 의존성
+        for dep in items[n].get("dependencies") or []:
+            if base(dep) not in have:
+                print(f"  ⛔ 미설치 의존성 {dep}" + ("" if n==name else f"  <- @puds/{n}")); bad=True
+    print("  ->", "도입 불가" if bad else "도입 가능")
 ' <name> [<name>...]
 ```
 
-**`⛔ 덮어씀` 이 한 줄이라도 나오면 도입 불가.** `신규` 와 `레인① 재설치` 만 나오면 도입 가능
-(그다음 판단은 API 중복 여부다 — 같은 역할의 레인 ②/③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다).
+**`도입 불가` 가 찍히면 들이지 않는다.** `도입 가능` 이면 그다음 판단은 API 중복 여부다 —
+같은 역할의 레인 ②/③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다.
 
-v0.5.0 실측 (2026-08-31):
+**두 검사가 서로를 대신하지 못한다** — v0.5.0 이 양쪽 사례를 다 갖고 있다:
 
-| | 결과 |
+```
+@puds/scroll-area:
+  레인① 재설치 lib/cn.ts  <- @puds/cn
+  ⛔ 덮어씀    components/ui/scroll-area.tsx
+  -> 도입 불가                                  ← ① 만 잡는다. dependencies 는 깨끗하다
+
+@puds/data-table:
+  신규       components/ui/checkbox.tsx  <- @puds/checkbox
+  레인① 재설치 lib/cn.ts  <- @puds/cn
+  신규       components/ui/data-table.tsx
+  ⛔ 미설치 의존성 @tanstack/react-table
+  -> 도입 불가                                  ← ② 만 잡는다. target 은 전부 신규다
+```
+
+**v0.5.0 전량 스윕 (2026-08-31 실측)**
+
+| | 개수 |
 |---|---|
-| 전체 아이템 | 93 |
-| 레인 ①/②/③ 파일과 target 이 겹치는 것 | **17** — 레인 ① 6종(`cn`·`theme-puds`·`card`·`badge`·`input`·`skeleton`, 재설치가 정상) + **레인 ② 11종**(`avatar`·`button`·`dialog`·`dropdown-menu`·`label`·`progress`·`scroll-area`·`separator`·`sheet`·`tabs`·`tooltip`) |
-| 자기 target 은 안 겹치는데 `registryDependencies` 로 레인 ② 를 덮는 것 | **6** — `auth-card`·`date-picker`·`hero`(→`button`), `avatar-group`(→`avatar`), `combobox`·`command`(→`dialog`) |
-| `dependencies` 에 `@radix-ui/*` 또는 `cmdk` 가 있는 것 | **0** (← 옛 기준이 죽은 이유) |
+| 전체 아이템 | **93** |
+| ① 레인 ② 파일을 덮는 것 | **17** = 직접 11(`avatar`·`button`·`dialog`·`dropdown-menu`·`label`·`progress`·`scroll-area`·`separator`·`sheet`·`tabs`·`tooltip` — 전부 `components/ui/<name>.tsx`) + **전이 6**(`auth-card`·`date-picker`·`hero`→`button`, `avatar-group`→`avatar`, `combobox`·`command`→`dialog`) |
+| ② 미설치 의존성이 있는 것 | **1** — `data-table` (`@tanstack/react-table`) |
+| 둘 다 통과 | **75** (레인 ① 6종 포함 — 그 6종은 재설치가 정상이다) |
+| 참고: `dependencies` 에 `@radix-ui/*` 또는 `cmdk` | **0** ← 옛 기준이 죽은 이유 |
 
-`donut` 이 이 표에 없는 이유는 target 이 `components/ui/charts/donut.tsx` 로 이 리포의
+v0.5.0 이 요구하는 npm 패키지는 `@base-ui/react` · `@tanstack/react-table` ·
+`class-variance-authority` · `clsx` · `recharts` · `tailwind-merge` 6종이고,
+이 중 `@tanstack/react-table` 만 이 리포에 없다.
+
+`donut` 이 ① 에 없는 이유는 target 이 `components/ui/charts/donut.tsx` 로 이 리포의
 `components/charts/donut.tsx` 와 **경로가 달라서**다 — 덮지 않는 대신 사본이 하나 더 생긴다
 (`components/charts/README.md`).
 
@@ -225,9 +265,14 @@ v0.5.0 실측 (2026-08-31):
 3. `--puds-radius-*` 리네임 **+ 3줄 경고 주석** 재적용 — 위 § ① 의 0~4 단계.
    **sed 만 돌리면 주석이 사라진다**(#214 에서 실제로 겪었다). `grep -c '플래너 로컬 델타'` 가 세 파일 모두 1 이어야 한다
 4. **`git diff` 리뷰** — 벤더링이라 재설치는 로컬 수정을 덮어쓴다. 의도치 않은 값 변화가 없는지 본다
-5. `bun run typecheck` · `bun run test` · `bun run build` · 라이트/다크 양쪽 실 렌더 확인
-   - 렌더 변화 0 을 주장하려면 눈보다 **산출 CSS 해시**가 강하다 — base 와 브랜치에서 각각
-     `rm -rf .next && bun run build` 후 `.next` 의 CSS 를 이어붙여 `shasum -a 256` 비교 (#214 에서 쓴 방법)
+5. `bun run typecheck` · `bun run test` · `bun run build` · **라이트/다크 양쪽 실 렌더 확인** — 1차 근거는 이것이다
+   - **보조 지표**로 산출 CSS 해시를 맞대 볼 수 있다: base 와 브랜치에서 각각 `rm -rf .next && bun run build`
+     후 `.next` 의 CSS 를 이어붙여 `shasum -a 256` (#214 에서 쓴 방법)
+   - ⚠️ **해시 동일은 "스타일 산출물이 같다"까지만 말한다.** 마크업 구조·`aria-*`·포커스 이동·오버레이
+     동작의 회귀는 **CSS 가 완전히 같아도 난다.** 실 렌더·상호작용 확인을 **대체하지 못한다** —
+     하필 이 문서가 다루는 변화(프리미티브·DOM 계층 교체)가 정확히 그 사각지대다
+   - 해시가 강한 근거가 되는 경우는 **레인 ① 소스 변화가 0 인 핀 업그레이드**뿐이다(#214 가 그랬다).
+     레인 ②·③ 이나 DOM 이 바뀌는 변경에 이 논리를 일반화하지 마라
 
 ### 그 외
 
