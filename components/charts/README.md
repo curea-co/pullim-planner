@@ -11,16 +11,18 @@ PUDS 디자인 시스템 차트를 **vendoring**(복사)해 쓰는 자리. 로�
 - **트리거**: 차트를 더 vendoring/추가하는 순간 → **recharts vs PUDS-SVG 중 표준 하나**를 정하고 이 파일에 1줄 기록.
 - **이유**: 표준 없이 하나씩 추가하면 chart-token 중복·업스트림 드리프트·일관성 붕괴(= 기술 부채)가 누적된다.
 
-## vendoring 절차 (donut 기준) · 개정 2026-08-27
+## vendoring 절차 (donut 기준) · 개정 2026-08-31
 
-**`donut.tsx` 는 PUDS v0.5.0 레지스트리와 바이트 단위로 동일하다. 로컬 델타 0.**
-믿지 말고 아래로 확인할 것 — 드리프트 점검이 곧 `diff` 다:
+**`donut.tsx` 는 `components.json` 이 고정한 판본의 레지스트리와 바이트 단위로 동일하다.
+로컬 델타 0.** 믿지 말고 아래로 확인할 것 — 드리프트 점검이 곧 `diff` 다:
 
 ```bash
 # 1) 버전 고정 URL 에서 원본을 받는다.
-#    ⚠ 경로의 버전(/v/0.5.0/)이 components.json 의 @puds 와 반드시 같아야 한다.
+#    버전을 여기 적지 않는다 — 단일 출처는 components.json 이다.
+#    (적어 두면 핀이 올라갈 때 이 파일만 낡아 다른 판본을 받아온다)
 #    ⚠ /r/donut.json 은 항상 main 최신이라 여기서 쓰면 안 된다 — 시점이 갈린다.
-curl -s https://pullim-design-system.vercel.app/v/0.5.0/donut.json \
+V=$(python3 -c "import json;print(json.load(open('components.json'))['registries']['@puds'].split('/v/')[1].split('/')[0])")
+curl -s "https://pullim-design-system.vercel.app/v/$V/donut.json" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['files'][0]['content'],end='')" \
   > /tmp/donut-upstream.tsx
 
@@ -44,7 +46,8 @@ cp /tmp/donut-upstream.tsx components/charts/donut.tsx
 shasum -a 256 components/charts/donut.tsx /tmp/donut-upstream.tsx   # 두 해시가 같아야 한다
 ```
 
-버전을 올릴 때는 `components.json` 과 위 URL 의 `/v/<버전>/` 을 **함께** 바꾼다.
+버전을 올릴 때는 **`components.json` 의 핀만** 바꾼다. 위 블록은 그 값을 읽으므로
+여기서 고칠 것은 없다 — 두 곳을 함께 관리하던 옛 절차의 잔재라 지웠다.
 
 ### ❌ `shadcn add @puds/donut` 을 쓰지 말 것
 
