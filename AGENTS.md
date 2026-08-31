@@ -104,7 +104,20 @@ PUDS v0.5.0(2026-08-28)이 `@radix-ui/*` 24개와 `cmdk` 를 전부 걷어내 **
 | `scroll-area` | ⛔ `components/ui/scroll-area.tsx` 를 덮는다 | ✅ 통과(`@base-ui/react` 는 설치돼 있다) | **불가** — ② 만 보면 놓친다 |
 | `data-table` | ✅ 전부 신규 | ⛔ `@tanstack/react-table` 미설치 | **불가** — ① 만 보면 놓친다 |
 
-명령은 `CLAUDE.md § UI 컴포넌트` 의 스크립트를 쓴다 — 두 검사를 함께 돌리고 `도입 가능`/`도입 불가` 를 찍는다.
+명령은 `CLAUDE.md § UI 컴포넌트` 의 스크립트를 쓴다. 판정은 **세 갈래**이고, 통과는 하나뿐이다:
+
+| 판정 | 뜻 |
+|---|---|
+| `도입 가능` | 두 검사 다 통과 — 유일한 통과 |
+| `도입 불가` | 기존 파일을 덮거나(또는 경로가 달라 **사본이 하나 더 생기거나**) 미설치 의존성이 있다 |
+| `판정 불가` | `registryDependencies` 의 이름을 얻지 못했다(레지스트리에 없는 이름, URL 표기) — **통과가 아니다.** 손으로 확인한다 |
+
+> **`판정 불가` 를 `도입 가능` 으로 접지 마라.** 이 판별기의 실패 모드는 fail-open 이라
+> 「모르겠다」를 「괜찮다」로 읽는 순간 전이 의존과 target 충돌을 놓친다.
+
+> **`donut` 은 target 이 `components/ui/charts/` 인데 이 리포는 `components/charts/` 로 관리한다.**
+> `shadcn add` 는 기존 파일을 갱신하는 대신 **사본을 하나 더 만든다** — 스크립트가 이 자리를
+> `⛔ 사본 생성` 으로 잡는다. 갱신은 `components/charts/README.md` 의 `curl` + `cp` 절차로 한다.
 
 `components.json` 의 `@puds` URL 은 **경로로 버전 고정**돼 있다 — `…vercel.app/v/<버전>/{name}.json`.
 **현재 어느 버전인지는 `components.json` 이 유일한 정본이다** — 이 문서에 옮겨 적지 않는다(박아 두면

@@ -275,6 +275,11 @@ V=$(python3 -c "import json;print(json.load(open('components.json'))['registries
 curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | python3 -c '
 import json,sys,os,re
 LANE1={"cn","theme-puds","card","badge","input","skeleton"}   # 판별표 레인① — 덮어써도 되는 것
+# 레지스트리 target 과 이 리포의 실제 경로가 다른 자리. shadcn add 는 target 에 새로 쓰므로
+# 실제 파일을 갱신하는 대신 **사본이 하나 더 생긴다**(components/charts/README.md).
+# components.json 의 aliases 로는 계산되지 않는다 — ui 별칭이 @/components/ui 인데 실제 경로는
+# components/charts/ 라, components/ui/charts/ 에서 charts 를 벗겨내는 규칙이 없다. 그래서 손으로 적는다.
+VENDORED_AS={"components/ui/charts/donut.tsx": "components/charts/donut.tsx"}
 pkg=json.load(open("package.json")); have=set(pkg.get("dependencies",{}))|set(pkg.get("devDependencies",{}))
 items={i["name"]:i for i in json.load(sys.stdin)["items"]}
 def pkg_name(dep): return re.sub(r"(?<!^)@[^@/]*$","",dep)   # "pkg@^1.2.3" -> "pkg"
@@ -302,6 +307,9 @@ for name in sys.argv[1:]:
     for n in sorted(reached):                                # ① target 충돌
         for f in items[n].get("files") or []:
             t=f["target"]; via="" if n==name else f"  <- @puds/{n}"
+            here=VENDORED_AS.get(t)
+            if here and os.path.exists(here):                # 경로가 달라 덮지 않는다 → 사본이 는다
+                print(f"  ⛔ 사본 생성  {t}  (이 리포는 {here} 로 관리){via}"); blocked=True; continue
             if not os.path.exists(t): mark="신규      "
             elif n in LANE1:          mark="레인① 재설치"
             else:                     mark="⛔ 덮어씀   "; blocked=True
@@ -326,7 +334,7 @@ for name in sys.argv[1:]:
 | 판정 | 뜻 | 할 일 |
 |---|---|---|
 | `도입 가능` | 두 검사 다 통과 | 들여도 된다. 그다음 판단은 API 중복 여부 — 같은 역할의 레인 ②/③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다 |
-| `도입 불가` | target 을 덮거나 미설치 의존성이 있다 | 들이지 않는다 |
+| `도입 불가` | target 을 덮거나, **경로가 달라 사본이 하나 더 생기거나**(`donut`), 미설치 의존성이 있다 | 들이지 않는다 |
 | `판정 불가` | `registryDependencies` 의 이름을 얻지 못했다(레지스트리에 없는 이름, URL 표기) | **통과가 아니다.** 손으로 확인한다 |
 
 > **왜 「판정 불가」를 따로 두나.** 이 판별기의 실패 모드는 fail-open 이다 — 전이를 놓치면
@@ -371,9 +379,21 @@ v0.5.0 이 요구하는 npm 패키지는 `@base-ui/react` · `@tanstack/react-ta
 `class-variance-authority` · `clsx` · `recharts` · `tailwind-merge` 6종이고,
 이 중 `@tanstack/react-table` 만 이 리포에 없다.
 
-`donut` 이 ① 에 없는 이유는 target 이 `components/ui/charts/donut.tsx` 로 이 리포의
-`components/charts/donut.tsx` 와 **경로가 달라서**다 — 덮지 않는 대신 사본이 하나 더 생긴다
-(`components/charts/README.md`).
+**`donut` 은 덮지 않는 대신 사본이 는다 — 그래서 통과시키지 않는다.** target 이
+`components/ui/charts/donut.tsx` 인데 이 리포는 `components/charts/donut.tsx` 로 관리한다.
+target 경로에는 파일이 없으니 순진하게 보면 `신규` 로 분류되어 **`도입 가능` 이 나온다** —
+실제로는 새 도입이 아니라 **중복 사본 생성**인데도. 스크립트의 `VENDORED_AS` 가 이 자리를 막는다:
+
+```
+@puds/donut:
+  레인① 재설치 lib/cn.ts  <- @puds/cn
+  ⛔ 사본 생성  components/ui/charts/donut.tsx  (이 리포는 components/charts/donut.tsx 로 관리)
+  -> 도입 불가
+```
+
+갱신은 `shadcn add` 가 아니라 `components/charts/README.md` 의 `curl` + `cp` 절차로 한다.
+`components.json` 의 `aliases` 로는 이 매핑이 계산되지 않아(`ui` 별칭이 `@/components/ui` 인데
+실제 경로는 `components/charts/`) 손으로 적었고, 그 이유를 스크립트 주석에 남겼다.
 
 ### 버전 업그레이드 절차
 
