@@ -404,8 +404,15 @@ for name in sys.argv[1:]:
 네 버킷은 서로 겹치지 않는다(한 아이템이 두 사유로 걸리는 경우가 없다). 재현:
 
 ```bash
-ITEMS=$(jq -r '.items[].name' <(curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json") | tr '\n' ' ')
-# 위 판별 스크립트를 이 ITEMS 로 돌리고 '->' 줄을 세면 도입 가능 74 · 도입 불가 19 가 나온다
+# 위 판별 블록의 ITEMS 줄을 이것으로 바꿔 돌린 뒤, 마지막 파이프로 판정을 센다.
+# 표의 숫자를 믿지 말고 이 출력을 보라 — 핀이 올라가면 숫자는 낡는다.
+ITEMS=$(curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | jq -r '.items[].name' | tr '\n' ' ')
+#   … | grep '  ->' | sed 's/.*-> //' | sort | uniq -c
+#
+# 2026-08-31 · 핀 v0.5.0 에서 관측한 값 (합 93):
+#   68 도입 가능
+#   19 도입 불가
+#    6 판정 불가 — 손으로 확인할 것
 ```
 
 v0.5.0 이 요구하는 npm 패키지는 `@base-ui/react` · `@tanstack/react-table` ·
