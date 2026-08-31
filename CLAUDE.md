@@ -102,14 +102,26 @@ https://pullim-design-system.vercel.app/v/<버전>/{name}.json
 변하지 않는다. 호스트는 프로덕션 최신을 추종하지만 경로가 고정이라 상관없다.
 
 > **v0.2.0 → v0.3.0 은 이 저장소 기준 파일 변화 0건이다** (2026-08-26 실측). v0.3.0 이 고친 것은
-> 크로스카테고리 import 파손 8건인데, 그 8건에 플래너가 설치한 7개(`theme-puds`·`card`·`badge`·`input`·
-> `skeleton`·`cn`·`donut`)가 **하나도 포함되지 않는다** — 7개 모두 두 버전 간 페이로드가 바이트 동일하다.
+> 크로스카테고리 import 파손 8건인데, 그 8건에 플래너가 설치한 **아이템 7개**(`theme-puds`·`card`·`badge`·
+> `input`·`skeleton`·`cn`·`donut`)가 **하나도 포함되지 않는다** — 7개 모두 두 버전 간 페이로드가 바이트 동일하다.
 > 재설치해도 diff 가 안 나는 게 정상이니 "설치가 안 먹었다"고 오해하지 말 것. 바뀐 건 버전 핀뿐이다.
 
-> **v0.4.2 → v0.5.0 도 거의 같은 모양이다** (2026-08-31 · #214 실측). 레인 ① 9개 파일 중 8개가 두 버전
-> 사이 바이트 동일이고, 바뀐 것은 **import 하지 않는** `_animations.css` 하나뿐이라 컴파일된 CSS 가
-> 양쪽 동일 해시였다. v0.5.0 은 PUDS 가 Radix → Base UI 로 엔진을 갈아엎은 릴리스인데도 그렇다 —
-> 이 리포가 받아 가는 9개가 전부 엔진 비의존(토큰·`cn`·무의존 프리미티브·SVG 차트)이기 때문이다.
+> **v0.4.2 → v0.5.0 도 거의 같은 모양이다** (2026-08-31 실측).
+>
+> **단위에 주의 — 레인 ① 은 아이템 7개이자 파일 10개다.** 바로 위 문단이 세는 「7개」는 **아이템**,
+> 아래에서 세는 「10개」는 **파일**이다. `theme-puds` 하나가 파일 4개인 것이 차이의 전부다.
+>
+> 두 버전 페이로드를 target 별로 대조하면 **파일 10개 중 9개가 바이트 동일**하고, 다른 것은
+> `app/tokens/_animations.css` **하나뿐**이다. 열 개를 다 적으면:
+>
+> | | target |
+> |---|---|
+> | **동일 9** | `app/tokens/_base.css` · `app/tokens/pullim-os.css` · `app/tokens/pullim-jr.css` · `lib/cn.ts` · `components/ui/card.tsx` · `components/ui/badge.tsx` · `components/ui/input.tsx` · `components/ui/skeleton.tsx` · `components/ui/charts/donut.tsx` |
+> | **다름 1** | `app/tokens/_animations.css` |
+>
+> 그 하나가 **import 되지 않는** 파일이라 컴파일된 CSS 가 양쪽 동일 해시였다. v0.5.0 은 PUDS 가
+> Radix → Base UI 로 엔진을 갈아엎은 릴리스인데도 그렇다 — 이 리포가 받아 가는 **파일 10개**가 전부
+> 엔진 비의존(토큰·`cn`·무의존 프리미티브·SVG 차트)이기 때문이다.
 
 > ⚠️ **`/r/{name}.json` 을 서비스에서 직접 참조하지 마라.** 같은 호스트지만 `/r/` 은 **항상 main 최신**을
 > 가리킨다 — 설치 시점마다 소스가 갈리고, 재설치 한 번으로 다른 버전이 조용히 들어온다.
