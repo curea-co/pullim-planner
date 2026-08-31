@@ -145,27 +145,30 @@ cp app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css /tmp/ 
 
 **B. 설치 후**
 
-```bash
-# 1) 치환
-sed -i '' -E 's/--radius-(xs|sm|md|lg|xl|2xl|full):/--puds-radius-\1:/g' \
-  app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css
+> **`sed -i '' …` 를 쓰지 마라.** 빈 인자를 붙이는 형태는 **BSD/macOS 전용**이고, GNU sed 는 `-i` 에
+> 접미사를 붙여 쓴다(`-i.bak`). 리눅스에서 `-i ''` 를 주면 빈 문자열이 스크립트로 먹히고 치환식이
+> 파일명 자리로 밀려 **즉시 죽는다** — `sed: can't read s/--radius-…: No such file or directory`
+> (GNU sed 4.9 실측). 리뷰·CI 가 리눅스라 그 자리에서 절차가 끊긴다.
+> 그래서 **치환과 복원을 파이썬 한 블록으로 합쳤다** — 언어가 하나로 줄고 이식성 문제가 사라진다.
 
-# 2) 3줄 경고 주석 복원 — 설치가 지우고 sed 는 되살리지 않는다.
-#    백업본에서 `--puds-radius-*` **선언 줄** 바로 위 3줄을 그대로 되붙인다.
-#    (이미 있으면 건너뛴다 — 여러 번 돌려도 중복 삽입되지 않는다)
+```bash
+# 1) 치환 + 2) 경고 주석 복원 — 한 블록. 재실행해도 안전하다(치환·삽입 둘 다 멱등)
 python3 - <<'PY'
 import re
-DECL = re.compile(r"--puds-radius-[a-z0-9]+\s*:")   # 선언만. 주석 안의 --puds-radius-* 에 걸리면 안 된다
+DECL   = re.compile(r"--puds-radius-[a-z0-9]+\s*:")            # 선언만. 주석 안의 언급에 걸리면 안 된다
+RENAME = re.compile(r"--radius-(xs|sm|md|lg|xl|2xl|full):")     # 이미 --puds-radius-* 면 안 걸린다
 for f in ("_base", "pullim-os", "pullim-jr"):
     cur_p, bak_p = f"app/tokens/{f}.css", f"/tmp/{f}.css"
-    cur = open(cur_p, encoding="utf-8").read().split("\n")
+    cur = RENAME.sub(r"--puds-radius-\1:", open(cur_p, encoding="utf-8").read()).split("\n")
     if any("플래너 로컬 델타" in l for l in cur):
-        print(f"  {f}: 이미 있음 — 건너뜀"); continue
-    bak = open(bak_p, encoding="utf-8").read().split("\n")
-    i = next(n for n, l in enumerate(bak) if DECL.search(l))
-    j = next(n for n, l in enumerate(cur) if DECL.search(l))
-    open(cur_p, "w", encoding="utf-8").write("\n".join(cur[:j] + bak[i-3:i] + cur[j:]))
-    print(f"  {f}: 경고 주석 3줄 복원")
+        print(f"  {f}: 치환 완료 · 주석 이미 있음")
+    else:
+        bak = open(bak_p, encoding="utf-8").read().split("\n")
+        i = next(n for n, l in enumerate(bak) if DECL.search(l))   # 백업본의 선언 줄
+        j = next(n for n, l in enumerate(cur) if DECL.search(l))   # 설치본의 선언 줄
+        cur = cur[:j] + bak[i-3:i] + cur[j:]                       # 그 위 3줄 = 경고 주석
+        print(f"  {f}: 치환 완료 · 경고 주석 3줄 복원")
+    open(cur_p, "w", encoding="utf-8").write("\n".join(cur))
 PY
 
 # 3) 검증 — 세 파일 모두 선언 7 · 주석 1 · 총 출현 9 여야 한다
@@ -181,12 +184,14 @@ done
 for f in _base pullim-os pullim-jr; do diff -u /tmp/$f.css app/tokens/$f.css; done
 ```
 
-설치 전 상태를 재현해 **A → 설치 → B 를 문서 그대로** 돌려 확인한 출력이다:
+설치 전 상태를 재현해 **A → 설치 → B 를 문서 그대로** 돌려 확인한 출력이다.
+**macOS(BSD)와 리눅스(GNU sed 4.9 · Python 3.13) 양쪽에서 같은 출력**을 얻었다 — 리뷰·CI 가 리눅스라
+한쪽만 확인하면 의미가 없다:
 
 ```
-  _base: 경고 주석 3줄 복원
-  pullim-os: 경고 주석 3줄 복원
-  pullim-jr: 경고 주석 3줄 복원
+  _base: 치환 완료 · 경고 주석 3줄 복원
+  pullim-os: 치환 완료 · 경고 주석 3줄 복원
+  pullim-jr: 치환 완료 · 경고 주석 3줄 복원
 _base       선언=7 주석=1 총=9
 pullim-os   선언=7 주석=1 총=9
 pullim-jr   선언=7 주석=1 총=9
