@@ -118,7 +118,7 @@ https://pullim-design-system.vercel.app/v/<버전>/{name}.json
 
 ```bash
 bunx shadcn@latest add @puds/theme-puds          # 토큰 4종 → app/tokens/
-bunx shadcn@latest add @puds/<name>              # 컴포넌트
+bunx shadcn@latest add @puds/card                # 컴포넌트 — 이름은 아래 판별을 통과한 것만
 ```
 
 - **토큰 재싱크 후 반드시 `--radius-*` → `--puds-radius-*` 리네임을 재적용한다.**
@@ -194,9 +194,11 @@ target 이 안 겹쳐도 이 리포에 없는 패키지를 끌고 오는 아이�
 **「`package.json` 의 `dependencies` + `devDependencies` 에 없는 패키지 전부」**다 — 옛 기준을
 좁힌 게 아니라 **넓힌** 것이다.
 
-저장소 루트에서 실행한다 (버전은 `components.json` 에서 읽으므로 핀과 어긋나지 않는다):
+저장소 루트에서 실행한다. **`ITEMS` 에 판정할 이름을 넣는 것 말고는 그대로 복사해 쓴다** —
+버전은 `components.json` 에서 읽으므로 핀과 어긋나지 않는다:
 
 ```bash
+ITEMS="scroll-area data-table"   # ← 판정할 아이템 이름. 공백으로 여러 개
 V=$(python3 -c "import json;print(json.load(open('components.json'))['registries']['@puds'].split('/v/')[1].split('/')[0])")
 curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | python3 -c '
 import json,sys,os,re
@@ -227,8 +229,13 @@ for name in sys.argv[1:]:
             if base(dep) not in have:
                 print(f"  ⛔ 미설치 의존성 {dep}" + ("" if n==name else f"  <- @puds/{n}")); bad=True
     print("  ->", "도입 불가" if bad else "도입 가능")
-' <name> [<name>...]
+' $ITEMS
 ```
+
+> ⚠️ **`<name>` 같은 꺾쇠 자리표시자를 명령 끝에 쓰지 마라.** 셸이 `<` 를 **입력 리다이렉션**으로
+> 삼켜서 인자가 전달되지 않고 명령 자체가 죽는다 — `bash: name: No such file or directory`
+> (zsh·dash 도 같은 형태로 실패한다). 출력이 안 나오는 게 아니라 **아무것도 실행되지 않는다.**
+> 자리표시자가 필요하면 위처럼 **셸 변수**로 둔다.
 
 **`도입 불가` 가 찍히면 들이지 않는다.** `도입 가능` 이면 그다음 판단은 API 중복 여부다 —
 같은 역할의 레인 ②/③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다.
