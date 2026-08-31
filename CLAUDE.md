@@ -141,8 +141,15 @@ bunx shadcn@latest add @puds/card                # 컴포넌트 — 이름은 �
   「재싱크 후 반드시 다시 적용할 것」이라, sed 만 돌리면 **다음 사람에게 이 단계를 알려 주는 안내가
   조용히 사라진다.** (#214 v0.5.0 업그레이드에서 실제로 만나 손으로 복원했다.)
 
-  아래 0~4 는 **끝까지 돌리면 설치 전 상태로 되돌아가도록** 짜여 있다 — 2 번이 주석을 실제로 되붙이고,
-  4 번의 `diff` 가 비어야 복원이 끝난 것이다. 검출만 하고 넘어가면 주석은 빠진 채 남는다.
+  아래 A·B 는 **세 파일(`_base`·`pullim-os`·`pullim-jr`)의 로컬 델타를 복원한다** — 2 번이 주석을
+  실제로 되붙이고, 4 번의 `diff` 로 확인한다. 검출만 하고 넘어가면 주석은 빠진 채 남는다.
+
+  ⚠️ **`theme-puds` 는 파일 4개를 덮는다. 네 번째인 `_animations.css` 는 복원 대상이 아니다** —
+  이 리포에 **로컬 델타가 없어서**(상류 v0.5.0 페이로드와 바이트 동일) 상류 변경을 그대로 받는 것이
+  의도이기 때문이다. 그래서 「설치 전 상태로 되돌아간다」가 아니라 **「세 파일의 델타를 되돌린다」**가
+  정확한 표현이다. 백업·`diff` 범위는 네 파일 전부로 두었으니, `_animations.css` 가 `diff` 에 뜨면
+  그것은 결함이 아니라 **진짜 상류 변경**이다 — 내용을 보고 `globals.css` 가 import 하지 않는다는
+  전제(아래 항목)가 여전히 맞는지 확인한다.
 
 **두 덩이로 나뉜다. 한 번에 붙여넣지 마라** — A 는 설치 **전**, B 는 설치 **후**다.
 A 를 설치 뒤에 돌리면 백업이 설치본으로 덮여서 복원할 원본이 사라진다.
@@ -150,7 +157,8 @@ A 를 설치 뒤에 돌리면 백업이 설치본으로 덮여서 복원할 원�
 **A. 설치 전**
 
 ```bash
-cp app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css /tmp/   # 델타를 되살릴 원본
+# theme-puds 가 덮는 4개 전부를 뜬다. 복원은 3개만, diff 는 4개 — _animations.css 의 상류 변경도 보이게
+cp app/tokens/_base.css app/tokens/pullim-os.css app/tokens/pullim-jr.css app/tokens/_animations.css /tmp/
 ```
 
 이제 `bunx shadcn@latest add @puds/theme-puds` 를 돌린다.
@@ -198,8 +206,10 @@ print("검증:", "통과" if not bad else f"실패 — {bad}")
 sys.exit(1 if bad else 0)
 PY
 
-# 4) 상류가 두 버전 사이 바이트 동일이면 백업과 완전히 같아야 한다 (다르면 그게 진짜 상류 변경)
-for f in _base pullim-os pullim-jr; do diff -u /tmp/$f.css app/tokens/$f.css; done
+# 4) 4개 전부 비교. _base·pullim-os·pullim-jr 은 델타 복원이 끝났으면 비어야 한다.
+#    _animations.css 는 로컬 델타가 없으므로, 여기 뜨면 그게 진짜 상류 변경이다(결함이 아니다)
+#    || true — set -e 아래에서 diff 가 차이를 만나면 거기서 루프가 끊겨 나머지 파일을 못 본다
+for f in _base pullim-os pullim-jr _animations; do diff -u /tmp/$f.css app/tokens/$f.css || true; done
 ```
 
 설치 전 상태를 재현해 **A → 설치 → B 를 문서 그대로** 돌려 확인한 출력이다.
@@ -273,13 +283,18 @@ target 이 안 겹쳐도 이 리포에 없는 패키지를 끌고 오는 아이�
 ITEMS="scroll-area data-table"   # ← 판정할 아이템 이름. 공백으로 여러 개
 V=$(python3 -c "import json;print(json.load(open('components.json'))['registries']['@puds'].split('/v/')[1].split('/')[0])")
 curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | python3 -c '
-import json,sys,os,re
+import json,sys,os,re,subprocess
 LANE1={"cn","theme-puds","card","badge","input","skeleton"}   # 판별표 레인① — 덮어써도 되는 것
-# 레지스트리 target 과 이 리포의 실제 경로가 다른 자리. shadcn add 는 target 에 새로 쓰므로
-# 실제 파일을 갱신하는 대신 **사본이 하나 더 생긴다**(components/charts/README.md).
+# 레지스트리 target 과 이 리포의 실제 경로가 다른, **이미 아는** 자리. shadcn add 는 target 에
+# 새로 쓰므로 실제 파일을 갱신하는 대신 **사본이 하나 더 생긴다**(components/charts/README.md).
 # components.json 의 aliases 로는 계산되지 않는다 — ui 별칭이 @/components/ui 인데 실제 경로는
 # components/charts/ 라, components/ui/charts/ 에서 charts 를 벗겨내는 규칙이 없다. 그래서 손으로 적는다.
+# 이 목록이 낡아도 조용히 통과하지 않게, 아래에서 **같은 이름 파일을 자동으로 찾아** 판정 불가로 떨어뜨린다.
 VENDORED_AS={"components/ui/charts/donut.tsx": "components/charts/donut.tsx"}
+# 추적 파일의 basename 색인 — target 은 없는데 같은 이름 파일이 딴 데 있으면 사람이 봐야 한다
+BY_BASE={}
+for _p in subprocess.run(["git","ls-files"],capture_output=True,text=True).stdout.split("\n"):
+    if _p: BY_BASE.setdefault(os.path.basename(_p),[]).append(_p)
 pkg=json.load(open("package.json")); have=set(pkg.get("dependencies",{}))|set(pkg.get("devDependencies",{}))
 items={i["name"]:i for i in json.load(sys.stdin)["items"]}
 def pkg_name(dep): return re.sub(r"(?<!^)@[^@/]*$","",dep)   # "pkg@^1.2.3" -> "pkg"
@@ -303,14 +318,19 @@ def resolve(root):
 for name in sys.argv[1:]:
     print(f"@puds/{name}:")
     reached, unresolved = resolve(name)                      # ← 아이템마다 새 값. 앞 결과가 안 섞인다
-    blocked = False
+    blocked = False; review = False
     for n in sorted(reached):                                # ① target 충돌
         for f in items[n].get("files") or []:
             t=f["target"]; via="" if n==name else f"  <- @puds/{n}"
             here=VENDORED_AS.get(t)
-            if here and os.path.exists(here):                # 경로가 달라 덮지 않는다 → 사본이 는다
+            if here and os.path.exists(here):                # 아는 자리 — 덮지 않고 사본이 는다
                 print(f"  ⛔ 사본 생성  {t}  (이 리포는 {here} 로 관리){via}"); blocked=True; continue
-            if not os.path.exists(t): mark="신규      "
+            if not os.path.exists(t):
+                same=[q for q in BY_BASE.get(os.path.basename(t),[]) if q!=t]
+                if same:                                     # VENDORED_AS 가 낡았거나 이름이 겹친다
+                    print(f"  ⛔ 같은 이름 파일 {t}  (리포에 " + ", ".join(same) + f"){via}")
+                    review=True; continue                    # → 판정 불가. 사람이 본다
+                mark="신규      "
             elif n in LANE1:          mark="레인① 재설치"
             else:                     mark="⛔ 덮어씀   "; blocked=True
             print(f"  {mark} {t}{via}")
@@ -320,7 +340,7 @@ for name in sys.argv[1:]:
                 print(f"  ⛔ 미설치 의존성 {dep}" + ("" if n==name else f"  <- @puds/{n}")); blocked=True
     for u in sorted(unresolved):                             # ③ 해석 불가 → 통과시키지 않는다
         print(f"  ⛔ 해석 불가 {u}")
-    print("  ->", "도입 불가" if blocked else "판정 불가 — 손으로 확인할 것" if unresolved else "도입 가능")
+    print("  ->", "도입 불가" if blocked else "판정 불가 — 손으로 확인할 것" if unresolved or review else "도입 가능")
 ' $ITEMS
 ```
 
@@ -335,7 +355,7 @@ for name in sys.argv[1:]:
 |---|---|---|
 | `도입 가능` | 두 검사 다 통과 | 들여도 된다. 그다음 판단은 API 중복 여부 — 같은 역할의 레인 ②/③ 컴포넌트가 이미 있으면 이름만 다른 두 벌이 생긴다 |
 | `도입 불가` | target 을 덮거나, **경로가 달라 사본이 하나 더 생기거나**(`donut`), 미설치 의존성이 있다 | 들이지 않는다 |
-| `판정 불가` | `registryDependencies` 의 이름을 얻지 못했다(레지스트리에 없는 이름, URL 표기) | **통과가 아니다.** 손으로 확인한다 |
+| `판정 불가` | `registryDependencies` 의 이름을 얻지 못했거나(레지스트리에 없는 이름, URL 표기), **target 은 비었는데 같은 이름 파일이 리포 딴 데 있다** | **통과가 아니다.** 손으로 확인한다 |
 
 > **왜 「판정 불가」를 따로 두나.** 이 판별기의 실패 모드는 fail-open 이다 — 전이를 놓치면
 > 조용히 `도입 가능` 이 나온다. 이름을 못 얻은 것을 건너뛰면 정확히 그 일이 벌어진다.
@@ -374,10 +394,11 @@ for name in sys.argv[1:]:
 |---|---|---|
 | **전체 아이템** | **93** | |
 | ① 덮어씀 | **17** | 직접 11(`avatar`·`button`·`dialog`·`dropdown-menu`·`label`·`progress`·`scroll-area`·`separator`·`sheet`·`tabs`·`tooltip` — 전부 `components/ui/<name>.tsx`) + **전이 6**(`auth-card`·`date-picker`·`hero`→`button`, `avatar-group`→`avatar`, `combobox`·`command`→`dialog`) |
-| ① 사본 생성 | **1** | `donut` — target 이 `components/ui/charts/` 인데 이 리포는 `components/charts/` |
+| ① 사본 생성 | **1** | `donut` — target 이 `components/ui/charts/` 인데 이 리포는 `components/charts/` (`VENDORED_AS` 가 아는 자리) |
+| ① 같은 이름 파일 | **6** | `app-shell`·`breadcrumb`·`empty-state`·`heatmap`·`page-header`·`service-switcher` — target 은 비었는데 같은 이름 파일이 딴 데 있다 → **판정 불가** |
 | ② 미설치 의존성 | **1** | `data-table` (`@tanstack/react-table`) |
-| 둘 다 통과 | **74** | 레인 ① 6종 포함 — 그 6종은 재설치가 정상이다 |
-| | **= 93** | 판정으로는 `도입 불가` 19 · `도입 가능` 74 |
+| 둘 다 통과 | **68** | 레인 ① 6종 포함 — 그 6종은 재설치가 정상이다 |
+| | **= 93** | 판정으로는 `도입 불가` 19 · `판정 불가` 6 · `도입 가능` 68 |
 | 참고: `dependencies` 에 `@radix-ui/*` 또는 `cmdk` | **0** | ← 옛 기준이 죽은 이유 |
 
 네 버킷은 서로 겹치지 않는다(한 아이템이 두 사유로 걸리는 경우가 없다). 재현:
@@ -406,6 +427,16 @@ target 경로에는 파일이 없으니 순진하게 보면 `신규` 로 분류�
 갱신은 `shadcn add` 가 아니라 `components/charts/README.md` 의 `curl` + `cp` 절차로 한다.
 `components.json` 의 `aliases` 로는 이 매핑이 계산되지 않아(`ui` 별칭이 `@/components/ui` 인데
 실제 경로는 `components/charts/`) 손으로 적었고, 그 이유를 스크립트 주석에 남겼다.
+
+> **`VENDORED_AS` 는 수동 목록이라 그것만으로는 fail-open 이 남는다.** 앞으로 레지스트리에 다른
+> 경로 불일치가 생기면 목록에 없으니 `신규` 로 보고 `도입 가능` 까지 내려간다. 그래서 **자동 가드**를
+> 함께 뒀다 — target 이 비어 있는데 **같은 이름 파일이 리포 어딘가에 있으면 `판정 불가`** 로 떨어뜨린다.
+> 목록이 낡아도 조용히 통과하지 않는다.
+>
+> v0.5.0 에서 이 가드에 걸리는 6종(`app-shell`·`breadcrumb`·`empty-state`·`heatmap`·`page-header`·
+> `service-switcher`)은 대부분 **이름만 겹치는 서비스 고유 컴포넌트**다. 그래도 통과시키지 않는 이유는,
+> 들이면 **같은 이름의 컴포넌트가 두 벌** 생기기 때문이다 — 그게 의도인지는 사람이 정할 일이다.
+> `VENDORED_AS` 는 **결과가 확정된 자리**(`donut`)에만 쓴다. 새 경로 불일치를 확인했으면 목록에 추가한다.
 
 ### 버전 업그레이드 절차
 
