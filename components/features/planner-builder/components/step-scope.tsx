@@ -286,7 +286,7 @@ function ElectivePicker({
           type="button"
           onClick={onRemove}
           aria-label={`${subjectLabels[subject]} 제거`}
-          className="text-pullim-slate-400 hover:bg-pullim-danger-bg hover:text-pullim-danger inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors"
+          className="text-pullim-slate-400 hover:bg-pullim-danger-bg hover:text-pullim-danger-ink inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
@@ -389,7 +389,7 @@ function SubjectCard({
             type="button"
             onClick={onRemove}
             aria-label={`${subjectLabels[subject]} 제거`}
-            className="text-pullim-slate-400 hover:bg-pullim-danger-bg hover:text-pullim-danger inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors"
+            className="text-pullim-slate-400 hover:bg-pullim-danger-bg hover:text-pullim-danger-ink inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors"
           >
             <X className="h-4 w-4" />
           </button>

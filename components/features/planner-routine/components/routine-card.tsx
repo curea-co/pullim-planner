@@ -60,7 +60,7 @@ export function RoutineCard({ routine, onEdit, onDelete }: RoutineCardProps) {
           type="button"
           onClick={() => onDelete(routine.id)}
           aria-label={`${routine.title} 삭제`}
-          className="text-pullim-slate-500 hover:bg-pullim-danger-bg hover:text-pullim-danger inline-flex h-9 w-9 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-danger"
+          className="text-pullim-slate-500 hover:bg-pullim-danger-bg hover:text-pullim-danger-ink inline-flex h-9 w-9 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-danger"
         >
           <Trash2 className="h-4 w-4" aria-hidden />
         </button>

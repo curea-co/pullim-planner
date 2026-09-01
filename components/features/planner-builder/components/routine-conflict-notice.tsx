@@ -117,7 +117,7 @@ export function RoutineConflictNotice({ form, setForm, routines, onUpdateRoutine
       className="border-pullim-danger/40 bg-pullim-danger/5 space-y-3 rounded-xl border p-3"
     >
       <header className="flex items-start gap-2">
-        <AlertTriangle className="text-pullim-danger mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <AlertTriangle className="text-pullim-danger-ink mt-0.5 h-4 w-4 shrink-0" aria-hidden />
         <div className="min-w-0">
           <h3 className="text-pullim-slate-900 text-xs font-bold">
             루틴 {groups.length}개가 학습 시간과 어긋나요

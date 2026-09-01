@@ -230,7 +230,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
             (`routine-conflict-notice` 의 색 배너 패턴을 따른다). */}
         {presets.length > 0 && (
           <aside className="border-pullim-warn/40 bg-pullim-warn-bg text-pullim-slate-700 mt-2 flex items-start gap-1.5 rounded-lg border p-2 text-xs leading-relaxed">
-            <AlertCircle className="text-pullim-warn mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <AlertCircle className="text-pullim-warn-ink mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             <span>
               이 날짜는 <strong className="text-pullim-slate-900">관례로 계산한 추정치</strong>라 해마다
               어긋날 수 있어요. 학교에서 받은 일정과 다르면 위에서 바로 고치세요.
@@ -1431,7 +1431,7 @@ export function PStep4Confirm({
             {serverDays ? (
               <Check className="text-pullim-blue-600 mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             ) : (
-              <AlertCircle className="text-pullim-warn mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+              <AlertCircle className="text-pullim-warn-ink mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             )}
             <span>
               {serverDays ? (

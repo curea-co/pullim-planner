@@ -94,7 +94,7 @@ function isLockedSlug(slug: string | undefined): boolean {
  */
 function getTypeContainerClass(type: BlockType): string {
   switch (type) {
-    case 'mock':         return 'bg-pullim-warn-bg text-pullim-warn';
+    case 'mock':         return 'bg-pullim-warn-bg text-pullim-warn-ink';
     case 'memorize':     return 'bg-pullim-violet-50 text-pullim-violet-600';
     case 'concept':      return 'bg-pullim-teal-50 text-pullim-teal-600';
     case 'practice':     return 'bg-pullim-blue-50 text-pullim-blue-700';
@@ -204,7 +204,7 @@ function BlockCardFull({ block, onComplete }: Props) {
             onClick={onCompleteAction}
             aria-label={`${block.title} 완료 처리`}
             title="완료 처리"
-            className="text-pullim-slate-400 hover:bg-pullim-success-bg hover:text-pullim-success inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+            className="text-pullim-slate-400 hover:bg-pullim-success-bg hover:text-pullim-success-ink inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
           >
             <CheckCircle2 className="h-4 w-4" aria-hidden />
           </button>
@@ -473,7 +473,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
             onClick={onCompleteAction}
             aria-label={`${block.title} 완료 처리`}
             title="완료 처리"
-            className="text-pullim-slate-400 hover:bg-pullim-success-bg hover:text-pullim-success inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+            className="text-pullim-slate-400 hover:bg-pullim-success-bg hover:text-pullim-success-ink inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
           >
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
           </button>

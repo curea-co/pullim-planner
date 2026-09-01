@@ -48,7 +48,7 @@ export default function RoutineListPresenter({
         </div>
       ) : loadError ? (
         <div className="border-pullim-danger/30 bg-pullim-danger-bg/40 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-16 text-center">
-          <AlertCircle className="text-pullim-danger h-8 w-8" aria-hidden />
+          <AlertCircle className="text-pullim-danger-ink h-8 w-8" aria-hidden />
           <p className="text-pullim-slate-700 text-sm font-bold">루틴을 불러오지 못했어요</p>
           <p className="text-pullim-slate-500 text-xs">잠시 후 다시 시도해 주세요.</p>
         </div>
