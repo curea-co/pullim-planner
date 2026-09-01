@@ -48,8 +48,8 @@ export function ParentReportCard() {
             <div
               className={cn(
                 'mt-0.5 font-mono text-[length:var(--text-xs)] font-bold',
-                m.tone === 'good' ? 'text-pullim-success'
-                : m.tone === 'warn' ? 'text-pullim-warn'
+                m.tone === 'good' ? 'text-pullim-success-ink'
+                : m.tone === 'warn' ? 'text-pullim-warn-ink'
                 : 'text-pullim-slate-900',
               )}
             >

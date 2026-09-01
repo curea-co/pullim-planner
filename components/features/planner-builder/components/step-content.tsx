@@ -815,7 +815,7 @@ export function PStep5Weakness({ form, setForm }: Props) {
       {form.weaknessAutoReflect && (
         <>
           <section className="bg-pullim-warn-bg rounded-xl p-3">
-            <div className="text-pullim-warn flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
+            <div className="text-pullim-warn-ink flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
               <AlertCircle className="h-3 w-3" />
               현재 감지된 약점 단원 — 풀림 분석
             </div>
@@ -1373,7 +1373,7 @@ export function PStep4Confirm({
               </div>
 
               {current.isExamDay && (
-                <aside className="bg-pullim-danger/10 text-pullim-danger mb-2 inline-flex w-full items-start gap-1.5 rounded-md p-2 text-[length:var(--text-xs)] font-semibold">
+                <aside className="bg-pullim-danger/10 text-pullim-danger-ink mb-2 inline-flex w-full items-start gap-1.5 rounded-md p-2 text-[length:var(--text-xs)] font-semibold">
                   <Sparkles aria-hidden className="mt-0.5 h-3 w-3 shrink-0" />
                   <span>{form.examName || '시험'} {form.examEndDate && form.examEndDate !== form.examStartDate ? '기간' : '당일'} — AI 학습 블록은 시험 전날까지만 생성되고, 시험 중엔 선택한 루틴만 반영돼요</span>
                 </aside>

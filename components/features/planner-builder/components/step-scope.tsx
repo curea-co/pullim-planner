@@ -278,7 +278,7 @@ function ElectivePicker({
       <header className="mb-2 flex items-center justify-between gap-2">
         <div className="flex items-baseline gap-2">
           <h4 className="text-pullim-slate-900 text-sm font-bold">{subjectLabels[subject]}</h4>
-          <span className="bg-pullim-danger/10 text-pullim-danger rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold">
+          <span className="bg-pullim-danger/10 text-pullim-danger-ink rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold">
             선택과목을 골라줘
           </span>
         </div>

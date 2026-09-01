@@ -117,7 +117,7 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           screenshot: (
             <MockBrowser label="시간표 만들기 · 6단계">
               <div className="bg-pullim-warn-bg rounded-xl p-3">
-                <div className="text-pullim-warn flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
+                <div className="text-pullim-warn-ink flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
                   <AlertCircle className="h-3 w-3" />
                   현재 감지된 약점 단원 — 풀림 분석
                 </div>
