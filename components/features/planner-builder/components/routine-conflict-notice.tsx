@@ -117,7 +117,7 @@ export function RoutineConflictNotice({ form, setForm, routines, onUpdateRoutine
       className="border-pullim-danger/40 bg-pullim-danger/5 space-y-3 rounded-xl border p-3"
     >
       <header className="flex items-start gap-2">
-        <AlertTriangle className="text-pullim-danger mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <AlertTriangle className="text-pullim-danger-ink mt-0.5 h-4 w-4 shrink-0" aria-hidden />
         <div className="min-w-0">
           <h3 className="text-pullim-slate-900 text-xs font-bold">
             루틴 {groups.length}개가 학습 시간과 어긋나요
@@ -144,7 +144,7 @@ export function RoutineConflictNotice({ form, setForm, routines, onUpdateRoutine
           return (
             <li key={group.routineId} className="bg-card border-pullim-slate-200 rounded-lg border p-2.5">
               <p className="text-pullim-slate-900 text-xs font-bold">{group.title}</p>
-              <p className="text-pullim-slate-600 mt-0.5 text-[11px] leading-relaxed">{describe(group)}</p>
+              <p className="text-pullim-slate-600 mt-0.5 text-[length:var(--text-xs)] leading-relaxed">{describe(group)}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {movable && (
                   <ActionButton primary onClick={() => askMove(group)}>시간 안쪽으로 옮기기</ActionButton>
@@ -155,7 +155,7 @@ export function RoutineConflictNotice({ form, setForm, routines, onUpdateRoutine
                 <ActionButton onClick={() => drop(group.routineId)}>이 시간표에서 빼기</ActionButton>
               </div>
               {windowIssues.length > 0 && hasOverlap && (
-                <p className="text-pullim-slate-500 mt-1.5 text-[10px]">
+                <p className="text-pullim-slate-500 mt-1.5 text-[length:var(--text-xs)]">
                   학습 시간을 넓혀도 루틴끼리의 겹침은 남아요.
                 </p>
               )}
@@ -211,7 +211,7 @@ function ActionButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors',
+        'rounded-full border px-2.5 py-1 text-[length:var(--text-xs)] font-bold transition-colors',
         'focus-visible:ring-pullim-blue-500 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50',
         primary

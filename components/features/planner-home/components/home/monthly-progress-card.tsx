@@ -35,7 +35,7 @@ export function MonthlyProgressCard() {
   return (
     <section className="bg-card flex flex-col rounded-2xl border p-5">
       <header className="mb-3">
-        <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+        <p className="text-pullim-blue-600 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           이번 달 달성률
         </p>
         <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
@@ -59,7 +59,7 @@ export function MonthlyProgressCard() {
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <div className="text-pullim-slate-500 mt-1 text-[11px]">
+        <div className="text-pullim-slate-500 mt-1 text-[length:var(--text-xs)]">
           준비 진척 <span className="text-pullim-blue-700 font-mono font-bold">{progressPct}%</span>
           <span className="mx-1">·</span>
           90일 기준
@@ -112,7 +112,7 @@ export function MonthlyProgressCard() {
           <div className="min-w-0 flex-1">
             <div
               className={cn(
-                'text-[10px] font-bold tracking-wider uppercase',
+                'text-[length:var(--text-xs)] font-bold tracking-wider uppercase',
                 milestone.day.examMilestone?.importance === 'high'
                   ? 'text-pullim-danger'
                   : 'text-pullim-warn',
@@ -123,7 +123,7 @@ export function MonthlyProgressCard() {
             <div className="text-pullim-slate-900 truncate text-sm font-bold">
               4월 {milestone.day.date}일 · {milestone.day.examMilestone?.label}
             </div>
-            <div className="text-pullim-slate-500 text-[11px]">
+            <div className="text-pullim-slate-500 text-[length:var(--text-xs)]">
               {milestone.daysAway === 0 ? '오늘' : `남은 ${milestone.daysAway}일`}
             </div>
           </div>
@@ -132,7 +132,7 @@ export function MonthlyProgressCard() {
 
       {/* 약점 Top 3 */}
       <section className="mt-3">
-        <h3 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
+        <h3 className="text-pullim-slate-700 mb-2 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           약점 단원 — 이번 달 진도
         </h3>
         {weakNodes.length === 0 ? (
@@ -152,7 +152,7 @@ export function MonthlyProgressCard() {
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="text-pullim-slate-700 w-9 shrink-0 text-right font-mono text-[11px] font-bold">
+                  <span className="text-pullim-slate-700 w-9 shrink-0 text-right font-mono text-[length:var(--text-2xs)] font-bold">
                     {pct}%
                   </span>
                 </li>
@@ -189,7 +189,7 @@ function KPI({
 }) {
   return (
     <div className="bg-pullim-slate-50 rounded-lg p-2.5">
-      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         <Icon className="h-3 w-3" />
         {label}
       </div>
@@ -201,7 +201,7 @@ function KPI({
       >
         {value}
       </div>
-      <div className="text-pullim-slate-500 text-[10px]">{sub}</div>
+      <div className="text-pullim-slate-500 text-[length:var(--text-xs)]">{sub}</div>
     </div>
   );
 }

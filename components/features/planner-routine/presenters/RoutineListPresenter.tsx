@@ -48,7 +48,7 @@ export default function RoutineListPresenter({
         </div>
       ) : loadError ? (
         <div className="border-pullim-danger/30 bg-pullim-danger-bg/40 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-16 text-center">
-          <AlertCircle className="text-pullim-danger h-8 w-8" aria-hidden />
+          <AlertCircle className="text-pullim-danger-ink h-8 w-8" aria-hidden />
           <p className="text-pullim-slate-700 text-sm font-bold">루틴을 불러오지 못했어요</p>
           <p className="text-pullim-slate-500 text-xs">잠시 후 다시 시도해 주세요.</p>
         </div>
@@ -67,12 +67,12 @@ export default function RoutineListPresenter({
           <div className="bg-card flex items-center gap-1 rounded-xl border p-2">
             {WEEKDAY_ORDER.map((d) => (
               <div key={d} className="flex flex-1 flex-col items-center gap-1 py-1">
-                <span className="text-pullim-slate-500 text-[11px] font-bold">{WEEKDAY_LABELS[d]}</span>
+                <span className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold">{WEEKDAY_LABELS[d]}</span>
                 <span
                   className={
                     counts[d] > 0
-                      ? 'bg-pullim-blue-600 text-white inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold'
-                      : 'bg-pullim-slate-100 text-pullim-slate-400 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold'
+                      ? 'bg-pullim-blue-600 text-white inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[length:var(--text-2xs)] font-bold'
+                      : 'bg-pullim-slate-100 text-pullim-slate-400 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[length:var(--text-2xs)] font-bold'
                   }
                   aria-label={`${WEEKDAY_LABELS[d]}요일 루틴 ${counts[d]}개`}
                 >

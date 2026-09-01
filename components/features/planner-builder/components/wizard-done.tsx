@@ -59,7 +59,7 @@ export function WizardDone({ summary, onHome, onManage }: Props) {
 
   return (
     <section className="py-10 text-center">
-      <div className="bg-pullim-success-bg text-pullim-success mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full">
+      <div className="bg-pullim-success-bg text-pullim-success-ink mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full">
         <Check className="h-7 w-7" aria-hidden />
       </div>
       <h2 className="text-pullim-slate-900 mt-4 text-xl font-extrabold tracking-tight">

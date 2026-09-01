@@ -52,7 +52,7 @@ function BlockCard({
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] font-medium tracking-wide text-white/80">{time}</span>
+        <span className="font-mono text-[length:var(--text-2xs)] font-medium tracking-wide text-white/80">{time}</span>
         {checked && <span className="bg-pullim-lemon h-2 w-2 rounded-full" />}
       </div>
       <div className="mt-2.5 h-1.5 w-16 rounded-full bg-white/30" />

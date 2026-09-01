@@ -182,9 +182,9 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
                     <span className={cn('block text-xs font-bold', selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
                       {p.name}
                     </span>
-                    <span className="text-pullim-slate-500 block font-mono text-[10px]">{p.date}</span>
+                    <span className="text-pullim-slate-500 block font-mono text-[length:var(--text-2xs)]">{p.date}</span>
                   </span>
-                  <span className="text-pullim-slate-500 shrink-0 font-mono text-[11px] font-bold">
+                  <span className="text-pullim-slate-500 shrink-0 font-mono text-[length:var(--text-xs)] font-bold">
                     D-{daysBetween(todayIso, p.date)}
                     {i === 1 && <span className="text-pullim-slate-400 ml-1 font-sans">그 다음</span>}
                   </span>
@@ -211,7 +211,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
             min={minDate}
           />
         )}
-        <p className="text-pullim-slate-500 mt-1 font-mono text-[10px]">
+        <p className="text-pullim-slate-500 mt-1 font-mono text-[length:var(--text-xs)]">
           D-day{' '}
           <span className={cn(
             'font-bold',
@@ -230,7 +230,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
             (`routine-conflict-notice` 의 색 배너 패턴을 따른다). */}
         {presets.length > 0 && (
           <aside className="border-pullim-warn/40 bg-pullim-warn-bg text-pullim-slate-700 mt-2 flex items-start gap-1.5 rounded-lg border p-2 text-xs leading-relaxed">
-            <AlertCircle className="text-pullim-warn mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <AlertCircle className="text-pullim-warn-ink mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             <span>
               이 날짜는 <strong className="text-pullim-slate-900">관례로 계산한 추정치</strong>라 해마다
               어긋날 수 있어요. 학교에서 받은 일정과 다르면 위에서 바로 고치세요.
@@ -248,7 +248,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
       {/* 자동 시험명 — 이름은 시험 종류·날짜에서 파생한다. 고치려면 아래 토글을 펼친다. */}
       <section className="bg-pullim-slate-900 flex items-center justify-between gap-3 rounded-xl p-3.5 text-white">
         <div className="min-w-0">
-          <div className="text-pullim-lemon text-[10px] font-bold tracking-wider uppercase">
+          <div className="text-pullim-lemon text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             {examType === 'other' ? '자유 목표' : '자동 생성됨'}
           </div>
           <div className="mt-0.5 truncate text-sm font-bold">{resolvedExamName(form)}</div>
@@ -415,7 +415,7 @@ function TargetField({ form, setForm }: Props) {
               type="button"
               onClick={() => setForm({ ...form, targetScore: p })}
               className={cn(
-                'rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-colors',
+                'rounded-full border px-2.5 py-0.5 text-[length:var(--text-xs)] font-semibold transition-colors',
                 score === p
                   ? 'border-pullim-blue-500 bg-pullim-blue-50 text-pullim-blue-700'
                   : 'border-pullim-slate-200 text-pullim-slate-600 hover:bg-pullim-slate-50',
@@ -504,7 +504,7 @@ export function PStep2Hours({ form, setForm }: Props) {
                 <span className={cn('text-sm font-bold', selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
                   {p.label}
                 </span>
-                <span className="text-pullim-slate-500 mt-1 font-mono text-[10px]">
+                <span className="text-pullim-slate-500 mt-1 font-mono text-[length:var(--text-xs)]">
                   평일 {fmtHour(p.weekday.start)}–{fmtHour(p.weekday.end)} · 주말 {fmtHour(p.weekend.start)}–{fmtHour(p.weekend.end)}
                 </span>
               </button>
@@ -618,7 +618,7 @@ function HoursRow({
       </div>
 
       {/* 시간 눈금 */}
-      <div className="text-pullim-slate-500 mt-1 flex justify-between font-mono text-[10px]">
+      <div className="text-pullim-slate-500 mt-1 flex justify-between font-mono text-[length:var(--text-2xs)]">
         <span>00</span>
         <span>06</span>
         <span>12</span>
@@ -662,7 +662,7 @@ export function PStep4Pattern({ form, setForm }: Props) {
               <h4 className={cn('mt-1 text-sm font-bold', selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
                 {meta.label}
               </h4>
-              <span className="bg-pullim-slate-100 text-pullim-slate-700 mt-2 rounded-full px-2 py-0.5 font-mono text-[9px] font-bold">
+              <span className="bg-pullim-slate-100 text-pullim-slate-700 mt-2 rounded-full px-2 py-0.5 font-mono text-[length:var(--text-xs)] font-bold">
                 {meta.spec}
               </span>
             </button>
@@ -729,7 +729,7 @@ export function PStep5Routine({ form, setForm, routines: routinesProp }: Props &
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="text-pullim-slate-900 truncate text-sm font-bold">{r.title}</div>
-                  <div className="text-pullim-slate-500 flex flex-wrap items-center gap-x-1.5 text-[11px]">
+                  <div className="text-pullim-slate-500 flex flex-wrap items-center gap-x-1.5 text-[length:var(--text-xs)]">
                     <span>{routineSubjectLabel(r.subject)}</span>
                     <span className="text-pullim-slate-300">·</span>
                     <span className="font-mono">{r.startTime}–{r.endTime}</span>
@@ -792,7 +792,7 @@ export function PStep5Weakness({ form, setForm }: Props) {
   if (!WEAKNESS_ENABLED) {
     return (
       <div className="bg-card border-pullim-slate-200 rounded-xl border border-dashed p-4">
-        <div className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+        <div className="text-pullim-blue-600 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           출시 예정
         </div>
         <h4 className="text-pullim-slate-900 mt-0.5 text-sm font-bold">약점 자동 반영 — 준비 중이에요</h4>
@@ -815,13 +815,13 @@ export function PStep5Weakness({ form, setForm }: Props) {
       {form.weaknessAutoReflect && (
         <>
           <section className="bg-pullim-warn-bg rounded-xl p-3">
-            <div className="text-pullim-warn flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+            <div className="text-pullim-warn-ink flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
               <AlertCircle className="h-3 w-3" />
               현재 감지된 약점 단원 — 풀림 분석
             </div>
             <ul className="mt-1.5 space-y-1">
               {weak.map(node => (
-                <li key={node.id} className="text-pullim-slate-700 flex items-center gap-2 text-[11px]">
+                <li key={node.id} className="text-pullim-slate-700 flex items-center gap-2 text-[length:var(--text-xs)]">
                   <span className="bg-pullim-warn h-1.5 w-1.5 rounded-full" />
                   <span className="font-semibold">{node.label}</span>
                   <span className="text-pullim-slate-500 ml-auto font-mono">
@@ -830,7 +830,7 @@ export function PStep5Weakness({ form, setForm }: Props) {
                 </li>
               ))}
               {weak.length === 0 && (
-                <li className="text-pullim-slate-500 text-[11px] italic">현재 약점 없음 — 일반 분배.</li>
+                <li className="text-pullim-slate-500 text-[length:var(--text-xs)] italic">현재 약점 없음 — 일반 분배.</li>
               )}
             </ul>
           </section>
@@ -1275,11 +1275,11 @@ export function PStep4Confirm({
   return (
     <div className="space-y-4">
       <section className="bg-pullim-slate-900 rounded-xl p-4 text-white">
-        <div className="text-pullim-lemon flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+        <div className="text-pullim-lemon flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           <Sparkles className="h-3 w-3" />
           내 플래너 요약
         </div>
-        <ul className="text-pullim-slate-300 mt-2 space-y-1 text-[11px]">
+        <ul className="text-pullim-slate-300 mt-2 space-y-1 text-[length:var(--text-xs)]">
           <li>· 목표: <strong className="text-white">{resolvedExamName(form)}</strong> ({examTypeMeta[form.examType ?? 'mock'].label}{form.examStartDate ? ` · ${form.examStartDate}` : ''}{(examTypeMeta[form.examType ?? 'mock'].isRange && form.examEndDate && form.examEndDate !== form.examStartDate) ? ` ~ ${form.examEndDate}` : ''}){formatTarget(form) ? ` — ${formatTarget(form)}` : ''}</li>
           <li>· 주간 학습 가능: <strong className="text-pullim-lemon font-mono">{weekly}시간</strong></li>
           <li>· 학습 범위: <strong className="text-white font-mono">{Object.keys(form.subjectUnits ?? {}).length}개 과목 · {Object.values(form.subjectUnits ?? {}).reduce((a, b) => a + (b?.length ?? 0), 0)}개 단원</strong>{form.weaknessAutoReflect ? ' (+ 약점 단원 자동 — 반영 준비 중)' : ''}</li>
@@ -1325,7 +1325,7 @@ export function PStep4Confirm({
             <h3 className="text-pullim-slate-900 text-sm font-bold">
               미리보기
             </h3>
-            <span className="text-pullim-slate-500 font-mono text-[10px]">
+            <span className="text-pullim-slate-500 font-mono text-[length:var(--text-xs)]">
               {previews.length}일
             </span>
           </header>
@@ -1342,7 +1342,7 @@ export function PStep4Confirm({
                   aria-selected={selected}
                   onClick={() => setPreviewIdx(i)}
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors',
+                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[length:var(--text-xs)] font-bold transition-colors',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1',
                     selected
                       ? 'bg-pullim-blue-600 border-pullim-blue-600 text-white'
@@ -1363,7 +1363,7 @@ export function PStep4Confirm({
           {/* 선택된 일자 본문 */}
           {current && (
             <div className="mt-3 rounded-lg border bg-pullim-slate-50 p-3">
-              <div className="mb-2 flex items-center justify-between text-[11px]">
+              <div className="mb-2 flex items-center justify-between text-[length:var(--text-xs)]">
                 <span className="text-pullim-slate-700 font-bold">
                   {current.offset === 0 ? '오늘' : current.offset === 1 ? '내일' : `${current.offset}일 후`} · {current.monthDay} ({current.weekdayLabel}) {current.isWeekend ? '· 주말' : ''}
                 </span>
@@ -1373,14 +1373,14 @@ export function PStep4Confirm({
               </div>
 
               {current.isExamDay && (
-                <aside className="bg-pullim-danger/10 text-pullim-danger mb-2 inline-flex w-full items-start gap-1.5 rounded-md p-2 text-[11px] font-semibold">
+                <aside className="bg-pullim-danger/10 text-pullim-danger-ink mb-2 inline-flex w-full items-start gap-1.5 rounded-md p-2 text-[length:var(--text-xs)] font-semibold">
                   <Sparkles aria-hidden className="mt-0.5 h-3 w-3 shrink-0" />
                   <span>{form.examName || '시험'} {form.examEndDate && form.examEndDate !== form.examStartDate ? '기간' : '당일'} — AI 학습 블록은 시험 전날까지만 생성되고, 시험 중엔 선택한 루틴만 반영돼요</span>
                 </aside>
               )}
 
               {current.items.length === 0 ? (
-                <p className="text-pullim-slate-500 py-2 text-center text-[11px] italic">
+                <p className="text-pullim-slate-500 py-2 text-center text-[length:var(--text-xs)] italic">
                   {current.isExamDay
                     ? '시험 기간에는 AI 학습 블록이 생성되지 않아요.'
                     : '가용 시간이 너무 짧아요. 2단계에서 시간을 늘려보세요.'}
@@ -1398,7 +1398,7 @@ export function PStep4Confirm({
                   type="button"
                   onClick={() => setPreviewIdx(Math.max(0, safeIdx - 1))}
                   disabled={safeIdx === 0}
-                  className="text-pullim-slate-500 hover:text-pullim-blue-700 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-0.5 text-[11px] font-semibold"
+                  className="text-pullim-slate-500 hover:text-pullim-blue-700 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-0.5 text-[length:var(--text-xs)] font-semibold"
                 >
                   <ChevronLeft className="h-3 w-3" />
                   이전 일
@@ -1407,7 +1407,7 @@ export function PStep4Confirm({
                   type="button"
                   onClick={() => setPreviewIdx(Math.min(previews.length - 1, safeIdx + 1))}
                   disabled={safeIdx === previews.length - 1}
-                  className="text-pullim-slate-500 hover:text-pullim-blue-700 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-0.5 text-[11px] font-semibold"
+                  className="text-pullim-slate-500 hover:text-pullim-blue-700 disabled:cursor-not-allowed disabled:opacity-40 inline-flex items-center gap-0.5 text-[length:var(--text-xs)] font-semibold"
                 >
                   다음 일
                   <ChevronRight className="h-3 w-3" />
@@ -1431,7 +1431,7 @@ export function PStep4Confirm({
             {serverDays ? (
               <Check className="text-pullim-blue-600 mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             ) : (
-              <AlertCircle className="text-pullim-warn mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+              <AlertCircle className="text-pullim-warn-ink mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             )}
             <span>
               {serverDays ? (
@@ -1481,7 +1481,7 @@ function TunerSection({
       <summary className="hover:bg-pullim-slate-50 flex cursor-pointer list-none items-center gap-2 rounded-xl px-3.5 py-2.5">
         <ChevronDown aria-hidden className="text-pullim-slate-400 h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" />
         <span className="text-pullim-slate-900 text-xs font-bold">{title}</span>
-        {value && <span className="text-pullim-slate-500 ml-auto font-mono text-[10px]">{value}</span>}
+        {value && <span className="text-pullim-slate-500 ml-auto font-mono text-[length:var(--text-xs)]">{value}</span>}
       </summary>
       <div className="space-y-2 px-3.5 pt-1 pb-3.5">{children}</div>
     </details>
@@ -1565,22 +1565,22 @@ function PreviewBlock({ item }: { item: PreviewItem }) {
   const Icon = blockTypeIcon[item.type];
   return (
     <li className={cn(
-      'bg-card border-pullim-slate-200 flex items-center gap-2.5 rounded-md border p-2 text-[11px]',
+      'bg-card border-pullim-slate-200 flex items-center gap-2.5 rounded-md border p-2 text-[length:var(--text-xs)]',
       item.held && 'border-dashed opacity-60',
     )}>
-      <span className="text-pullim-slate-500 w-24 shrink-0 font-mono text-[10px]">
+      <span className="text-pullim-slate-500 w-24 shrink-0 font-mono text-[length:var(--text-2xs)]">
         {item.start}–{item.end}
       </span>
       <span className="bg-pullim-blue-50 text-pullim-blue-700 rounded-full px-2 py-0.5 font-bold">
         {item.subjectLabel}
       </span>
       {item.isRoutine && (
-        <span className="bg-pullim-slate-100 text-pullim-slate-600 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
+        <span className="bg-pullim-slate-100 text-pullim-slate-600 rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)] font-bold">
           루틴
         </span>
       )}
       {item.held && (
-        <span className="bg-pullim-slate-100 text-pullim-slate-500 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
+        <span className="bg-pullim-slate-100 text-pullim-slate-500 rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)] font-bold">
           보류 · {item.held}
         </span>
       )}

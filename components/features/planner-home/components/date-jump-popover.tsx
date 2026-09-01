@@ -86,7 +86,7 @@ export function DateJumpPopover({ baseISO, currentOffset, onPick, children }: Pr
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <div className="text-pullim-slate-400 mb-1 grid grid-cols-7 text-center text-[11px] font-bold">
+            <div className="text-pullim-slate-400 mb-1 grid grid-cols-7 text-center text-[length:var(--text-2xs)] font-bold">
               {WEEKDAYS.map((w) => <span key={w}>{w}</span>)}
             </div>
             <div className="grid grid-cols-7 gap-0.5">

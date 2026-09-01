@@ -46,8 +46,9 @@ export function BlockCardsLayout({ blocks, paletteId, compact }: Props) {
             className={cn(
               'relative overflow-hidden rounded-xl border bg-card shadow-sm',
               isDoing ? 'border-pullim-blue-400 ring-1 ring-pullim-blue-200' : 'border-pullim-slate-100',
-              isDone && 'opacity-65',
-              isSkipped && 'opacity-70',
+              // 완료·이월 행의 후퇴는 알파가 아니라 면으로 한다 — 부모 opacity 는
+              // 안쪽 글자 대비까지 함께 깎는다(계약 §4.1). 상태는 취소선·배지가 이미 나른다.
+              (isDone || isSkipped) && 'bg-pullim-slate-50',
             )}
           >
             {/* 좌측 색띠 */}
@@ -68,11 +69,11 @@ export function BlockCardsLayout({ blocks, paletteId, compact }: Props) {
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-pullim-slate-700 font-mono text-[10px] font-bold">
+                  <span className="text-pullim-slate-700 font-mono text-[length:var(--text-2xs)] font-bold">
                     {b.start}–{b.end}
                   </span>
-                  <span className="text-pullim-slate-300 text-[10px]">·</span>
-                  <span className="text-pullim-slate-500 text-[10px] font-semibold">
+                  <span className="text-pullim-slate-300 text-[length:var(--text-2xs)]">·</span>
+                  <span className="text-pullim-slate-500 text-[length:var(--text-xs)] font-semibold">
                     {b.expectedMinutes}분
                   </span>
                 </div>
@@ -84,7 +85,7 @@ export function BlockCardsLayout({ blocks, paletteId, compact }: Props) {
                 >
                   {b.title}
                 </div>
-                <div className="text-pullim-slate-500 mt-0.5 truncate text-[11px]">
+                <div className="text-pullim-slate-500 mt-0.5 truncate text-[length:var(--text-xs)]">
                   {meta.label} · {subjectLabel}
                 </div>
               </div>
@@ -92,13 +93,13 @@ export function BlockCardsLayout({ blocks, paletteId, compact }: Props) {
               {/* 상태 배지 */}
               <span
                 className={cn(
-                  'shrink-0 self-start rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase',
+                  'shrink-0 self-start rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold tracking-wider uppercase',
                   isDone
-                    ? 'bg-pullim-success-bg text-pullim-success'
+                    ? 'bg-pullim-success-bg text-pullim-success-ink'
                     : isDoing
                     ? 'bg-pullim-blue-100 text-pullim-blue-700'
                     : isSkipped
-                    ? 'bg-pullim-warn-bg text-pullim-warn'
+                    ? 'bg-pullim-warn-bg text-pullim-warn-ink'
                     : 'bg-pullim-slate-100 text-pullim-slate-600',
                 )}
               >

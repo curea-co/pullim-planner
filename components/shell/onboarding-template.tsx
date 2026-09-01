@@ -50,7 +50,7 @@ export function OnboardingTemplate({
           style={{ background: 'radial-gradient(circle, var(--color-pullim-lemon), transparent 70%)' }}
         />
         <div className="relative">
-          <div className="flex items-center gap-2 text-[10px] font-bold tracking-wider uppercase">
+          <div className="flex items-center gap-2 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             <span className="bg-white/15 inline-flex items-center gap-1 rounded-full px-2 py-0.5">
               <Icon className="h-3 w-3" />
               소개하기
@@ -133,7 +133,7 @@ function StepCard({ step, index }: { step: OnboardingStep; index: number }) {
                 {step.title}
               </h2>
               {step.signature && (
-                <span className="bg-pullim-warn inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white">
+                <span className="bg-pullim-warn inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)] font-bold text-white">
                   <Star className="h-2 w-2 fill-current" aria-hidden />
                   시그니처
                 </span>
@@ -171,7 +171,7 @@ function StepCard({ step, index }: { step: OnboardingStep; index: number }) {
           <div className={cn('min-w-0', isOdd && 'lg:order-1')}>
             {step.screenshot}
             {step.screenshotCaption && (
-              <p className="text-pullim-slate-500 mt-1.5 text-center text-[10px] italic">
+              <p className="text-pullim-slate-500 mt-1.5 text-center text-[length:var(--text-xs)] italic">
                 {step.screenshotCaption}
               </p>
             )}

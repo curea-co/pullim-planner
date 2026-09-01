@@ -26,14 +26,14 @@ export function TodayTimeline() {
       <header className="mb-2.5 flex items-center justify-between gap-2">
         <div>
           <h3 className="text-pullim-slate-900 text-sm font-bold">오늘의 흐름</h3>
-          <p className="text-pullim-slate-500 text-[11px]">
+          <p className="text-pullim-slate-500 text-[length:var(--text-xs)]">
             시간순 {todayBlocks.length}블록 · 칩을 누르면 일간 캘린더로
           </p>
         </div>
         <button
           type="button"
           onClick={openDay}
-          className="text-pullim-blue-600 hover:text-pullim-blue-700 inline-flex items-center gap-0.5 text-[11px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
+          className="text-pullim-blue-600 hover:text-pullim-blue-700 inline-flex items-center gap-0.5 text-[length:var(--text-xs)] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 rounded"
         >
           캘린더에서 자세히
           <ChevronRight className="h-3 w-3" />
@@ -83,7 +83,7 @@ function BlockChip({ block, onClick }: { block: TimeBlock; onClick: () => void }
           style={{ background: getBlockColor(block.type, paletteId) }}
           aria-hidden
         />
-        <span className="text-pullim-slate-500 font-mono text-[10px] font-bold">{block.start}</span>
+        <span className="text-pullim-slate-500 font-mono text-[length:var(--text-2xs)] font-bold">{block.start}</span>
       </div>
       <div className="flex items-center gap-1">
         <Icon
@@ -98,7 +98,7 @@ function BlockChip({ block, onClick }: { block: TimeBlock; onClick: () => void }
         />
         <span
           className={cn(
-            'text-[11px] font-semibold whitespace-nowrap',
+            'text-[length:var(--text-xs)] font-semibold whitespace-nowrap',
             block.status === 'doing' ? 'text-pullim-blue-700'
             : block.status === 'done' ? 'text-pullim-slate-500 line-through decoration-pullim-slate-300'
             : 'text-pullim-slate-700',

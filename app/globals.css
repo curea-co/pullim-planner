@@ -105,6 +105,24 @@
   --color-pullim-danger:     var(--pl-danger);
   --color-pullim-danger-bg:  var(--pl-danger-bg);
 
+  /* 틴트 칩 잉크 — 「-bg 면 위에 얹는 글자」 역할. PUDS 가 이 용도로 설계해 둔
+   * --on-container-* 쌍을 그대로 쓴다(_base.css: :root 라이트 / [data-scheme="dark"] 다크).
+   *
+   * 왜 --color-pullim-{warn,success,danger} 를 그대로 쓰면 안 되나 — 그건 -600(라이트)
+   * /-500(다크) 이라 자기 -bg 틴트 위에서 AA 에 못 미친다. 실측(라이트 → 다크):
+   *   warn    2.83 / 4.54  ·  success 3.34 / 4.68  ·  danger 4.36 / 2.63
+   * 그 토큰들은 흰 표면 위 단독 accent(아이콘·실선 채움)에 계속 쓰이므로 값을 바꿀 수 없다.
+   * 역할이 둘이니 이름도 둘이어야 한다. -ink 접미사는 이 파일이 --color-pullim-lemon-ink
+   * 로 이미 쓰고 있는 어휘다(bg-pullim-lemon-soft + text-pullim-lemon-ink).
+   *
+   * --pl-* 우회가 필요 없다 — --on-container-* 자체가 이미 [data-scheme="dark"] 로 뒤집히고,
+   * @theme inline 은 선언값(= var(...) 참조)을 유틸리티에 넣으므로 참조가 살아남는다.
+   * --container-* / --on-container-* 는 [data-theme] 이 아니라 :root 스코프라
+   * data-theme 폴백(#218)에 추가할 것이 없다. */
+  --color-pullim-success-ink: var(--on-container-success);
+  --color-pullim-warn-ink:    var(--on-container-warning);
+  --color-pullim-danger-ink:  var(--on-container-danger);
+
   /* IRT 난이도 5단계 */
   --color-pullim-lvl-1: #E5EEFF;
   --color-pullim-lvl-2: #A9C4FF;

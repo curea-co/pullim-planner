@@ -53,7 +53,7 @@ export function WeeklyInsights() {
             <button
               type="button"
               onClick={() => onAction(insight)}
-              className="bg-card hover:bg-pullim-blue-50 text-pullim-blue-700 shrink-0 rounded-md border px-2 py-1 text-[11px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
+              className="bg-card hover:bg-pullim-blue-50 text-pullim-blue-700 shrink-0 rounded-md border px-2 py-1 text-[length:var(--text-xs)] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500"
             >
               {insight.action.label}
             </button>

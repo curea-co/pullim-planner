@@ -102,7 +102,7 @@ export function ConditionSlider({ value: valueProp, initial = 3, onChange }: Pro
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-2',
                 active
                   ? 'bg-white shadow-pullim-md scale-110'
-                  : 'opacity-60 hover:opacity-90',
+                  : 'grayscale hover:grayscale-0',
               )}
             >
               <span aria-hidden>{m.emoji}</span>
@@ -111,7 +111,7 @@ export function ConditionSlider({ value: valueProp, initial = 3, onChange }: Pro
         })}
       </div>
       {value === null && (
-        <p className="text-pullim-slate-500 mt-2 text-[11px]">
+        <p className="text-pullim-slate-500 mt-2 text-[length:var(--text-xs)]">
           오늘 컨디션을 골라주세요 — 선택하면 저장돼요.
         </p>
       )}
