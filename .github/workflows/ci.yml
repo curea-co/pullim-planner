@@ -59,3 +59,55 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Build
         run: bun run build
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 3. E2E (Playwright) — 실브라우저 회귀
+  #
+  # Jest(jsdom)는 Tailwind 를 컴파일하지 않아 「클래스가 붙었나」까지만 본다.
+  # 「그 클래스가 값을 갖나」는 실브라우저에서만 보인다 — #218 이 되살린 유틸리티 3종이
+  # 정확히 그 사각지대에서 나갔고, 그 PR 도 「브라우저로는 보지 못했다」고 적었다.
+  #
+  # 서버는 playwright.config.ts 의 webServer 가 스스로 띄운다(`bun run dev` +
+  # NEXT_PUBLIC_DEV_AUTH_BYPASS=1). 별도 시크릿·BE 불요 — 그 우회는 3중 가드로
+  # `next dev` + localhost 에서만 열린다(lib/auth/auth-context.tsx).
+  # ─────────────────────────────────────────────────────────────
+  e2e:
+    name: e2e (Playwright)
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+
+      # 브라우저 캐시 키는 Playwright 버전에 묶는다 — 버전이 오르면 캐시가 무효화돼야
+      # 드라이버와 브라우저 빌드가 어긋나지 않는다.
+      - name: Resolve Playwright version
+        id: pw
+        run: |
+          VERSION=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # 러너에는 브라우저가 없다. --with-deps 는 Chromium 이 필요로 하는 시스템 라이브러리까지 깐다.
+      - name: Install Playwright Chromium + system deps
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run e2e
+        run: bun run test:e2e
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
