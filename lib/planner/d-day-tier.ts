@@ -26,7 +26,7 @@ export function tierChipClass(tier: DDayTier): string {
       // 미세 pulse 모션 — 직전 (D-1 ~ D-6)
       return 'bg-pullim-danger-bg text-pullim-danger font-bold animate-pulse';
     case 'imminent':
-      return 'bg-pullim-warn-bg text-pullim-warn-cta-bg font-bold';
+      return 'bg-pullim-warn-bg text-pullim-warn font-bold';
     case 'attention':
       return 'bg-pullim-blue-100 text-pullim-blue-700 font-bold';
     case 'past':

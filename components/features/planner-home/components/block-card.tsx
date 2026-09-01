@@ -34,7 +34,7 @@ const statusMeta = {
  * - completed: success-strong stripe, success-bg 옅은 면
  * - active (doing): brand-600 stripe, brand-50 면, ring 강조
  * - upcoming (todo): stripe 없음 (border만), 무톤
- * - overflow (skipped, 이월): warn-cta-bg stripe + 사선 빗금 + warn-bg 옅은 면
+ * - overflow (skipped, 이월): warn stripe + 사선 빗금 + warn-bg 옅은 면
  * - recovery (break): stripe 없음, slate-100 면, pill radius
  */
 function getBlockVisual(status: TimeBlock['status'], isBreak: boolean) {
@@ -60,7 +60,7 @@ function getBlockVisual(status: TimeBlock['status'], isBreak: boolean) {
       };
     case 'skipped':
       return {
-        stripe: 'bg-pullim-warn-cta-bg',
+        stripe: 'bg-pullim-warn',
         surface: 'bg-pullim-warn-bg/30 border-pullim-warn/30',
         // 사선 빗금 — 미수행/이월 신호
         pattern: 'before:absolute before:inset-0 before:rounded-[inherit] before:pointer-events-none before:bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgba(217,119,6,0.06)_6px_12px)]',
@@ -94,7 +94,7 @@ function isLockedSlug(slug: string | undefined): boolean {
  */
 function getTypeContainerClass(type: BlockType): string {
   switch (type) {
-    case 'mock':         return 'bg-pullim-warn-bg text-pullim-warn-cta-bg';
+    case 'mock':         return 'bg-pullim-warn-bg text-pullim-warn';
     case 'memorize':     return 'bg-pullim-violet-50 text-pullim-violet-600';
     case 'concept':      return 'bg-pullim-teal-50 text-pullim-teal-600';
     case 'practice':     return 'bg-pullim-blue-50 text-pullim-blue-700';

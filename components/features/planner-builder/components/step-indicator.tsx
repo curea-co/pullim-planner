@@ -60,7 +60,9 @@ export function StepIndicator({ steps, current, maxReachable, onJump }: Props) {
                   'group flex w-full items-center justify-center gap-1.5 px-2 py-2.5 text-center transition-colors',
                   isActive && 'bg-pullim-blue-50',
                   !isActive && !locked && 'hover:bg-pullim-slate-50',
-                  locked && 'cursor-not-allowed opacity-50',
+                  // 흐림은 JS 조건이 아니라 disabled: 접두사로 — 이 <button>은 locked 일 때
+                  // 네이티브 disabled 속성을 받는다(위 disabled={locked}). 계약 §4.1.
+                  'disabled:cursor-not-allowed disabled:opacity-50',
                 )}
               >
                 <span
