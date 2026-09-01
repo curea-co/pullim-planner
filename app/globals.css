@@ -147,6 +147,22 @@
   --radius-4xl: calc(var(--puds-radius-2xl) + 16px);
   --radius-pill: var(--puds-radius-full);
 
+  /* 풀림 그림자 → PUDS elevation 토큰 별칭 (data-theme별 스케일 따라감 — os↔jr 전환 시 elevation도 전환).
+   * ⚠ 반드시 @theme 안에 있어야 한다. Tailwind v4 는 @theme 네임스페이스의 --shadow-* 만 읽어
+   * shadow-* 유틸리티를 만든다. 맨 :root 에 두면 커스텀 프로퍼티는 생기지만 .shadow-pullim-*
+   * 규칙이 아예 생성되지 않아 사용처 25곳이 조용히 무효가 된다(그림자가 사라진다).
+   *
+   * ⚠ 그리고 shadow-pullim-sm 을 stock shadow-sm 으로 바꾸는 것은 등가 교환이 아니다.
+   * .shadow-sm 은 Tailwind 기본값(0 1px 3px 0 rgb(0 0 0/.1) …)을 빌드 시점에 인라인할 뿐
+   * var(--shadow-sm) 을 런타임에 읽지 않는다. 벤더링 토큰이 맨 :root 에서 덮은 PUDS elevation
+   * (0 1px 2px rgba(13,26,31,.06))에 도달하지 못하고, data-theme·data-scheme 추종도 잃는다.
+   * 값을 var() 로 유지하려면 여기 별칭이 필요하다 — 컴파일 결과: --tw-shadow: var(--shadow-sm). */
+  --shadow-pullim-xs: var(--shadow-sm);
+  --shadow-pullim-sm: var(--shadow-sm);
+  --shadow-pullim-md: var(--shadow-md);
+  --shadow-pullim-lg: var(--shadow-lg);
+  --shadow-pullim-glow: 0 0 0 3px color-mix(in oklch, var(--focus-ring-color) 22%, transparent);
+
   /* 모션 — duration / easing 토큰 (08-design-system § 10) */
   --pullim-duration-fast: 120ms;
   --pullim-duration-base: 200ms;
@@ -165,6 +181,61 @@
   --pullim-content-gutter-mobile: 16px;
   --pullim-fab-offset-bottom: calc(var(--pullim-tabbar-height) + 24px);
   --pullim-viewport-safety-padding: 2rem;
+}
+
+/* ═══ data-theme 부재 시 폴백 — pullim-os 라이트 값 한 벌 ═════════════════════
+ * 아래 토큰들은 app/tokens/pullim-{os,jr}.css 의 [data-theme=…] 블록에만 있고
+ * 벤더링 _base.css 의 :root 에는 없다. 지금 화면이 멀쩡한 건 app/layout.tsx 가
+ * <html data-theme="pullim-os"> 를 정적으로 찍어 주기 때문이고, 방어선이 그 JSX 한 줄뿐이다.
+ * 그 줄이 사라지면 약 543 개 유틸리티 인스턴스가 값을 잃는다.
+ *
+ * 「빈 값」보다 나쁜 게 「대체」다 — --shadow-sm/md/lg 는 Tailwind 기본 테마에 같은 이름이
+ * 있어서 조용히 그럴듯한 다른 그림자로 바뀐다(실측: 0 1px 2px rgba(13,26,31,.06) →
+ * 0 1px 3px 0 rgb(0 0 0/.1)). 육안으로 탐지되지 않는다.
+ *
+ * ⚠ 선택자가 :where(:root) 인 이유 — 특정도 0 이라야 안전하다.
+ * 이 파일의 :root 블록들은 컴파일 결과에서 [data-theme=…] 블록보다 **뒤에** 온다
+ * (@import 는 파일 맨 위에서 인라인되므로 tokens/*.css 가 먼저다).
+ * :root 와 [data-theme="pullim-os"] 는 특정도가 (0,1,0) 으로 같아서 소스 순서가 이기고,
+ * 따라서 맨 :root 로 쓰면 폴백이 테마를 **덮어버린다** — pullim-jr 이 os 로 뭉개지고
+ * _base.css 의 [data-scheme="dark"](레이어 없는 (0,1,0), 이 블록보다 앞)도 함께 죽는다.
+ * :where() 로 감싸 특정도를 0 으로 낮추면 어떤 테마·스킴 블록이든 순서와 무관하게 이긴다.
+ * 레이어 밖이라 @layer theme 의 Tailwind 기본값은 여전히 이 폴백이 이긴다.
+ *
+ * 값 출처: app/tokens/pullim-os.css 의 [data-theme="pullim-os"] 첫(라이트) 블록.
+ * 다크 블록에서 가져오지 말 것. */
+:where(:root) {
+  /* primary ramp (hue 258) */
+  --color-primary-50:  oklch(0.972 0.024 258);
+  --color-primary-100: oklch(0.940 0.039 258);
+  --color-primary-200: oklch(0.890 0.069 258);
+  --color-primary-300: oklch(0.820 0.108 258);
+  --color-primary-400: oklch(0.730 0.154 258);
+  --color-primary-500: oklch(0.640 0.189 258);
+  --color-primary-600: oklch(0.524 0.197 258);
+  --color-primary-700: oklch(0.474 0.181 258);
+  --color-primary-800: oklch(0.414 0.154 258);
+  --color-primary-900: oklch(0.364 0.118 258);
+  --color-primary-950: oklch(0.264 0.083 258);
+
+  /* semantic actions — _base.css 의 --focus-ring-color·--text-brand 도 이 램프를
+   * var() 로 물고 있어 함께 되살아난다 */
+  --color-action-primary:       var(--color-primary-600);
+  --color-action-primary-hover: var(--color-primary-700);
+  --color-action-primary-fg:    #ffffff;
+  --color-action-secondary:     var(--color-primary-50);
+  --color-action-secondary-fg:  var(--color-primary-700);
+
+  /* elevation — 위의 「대체」 사례 */
+  --shadow-sm: 0 1px 2px rgba(13,26,31,.06);
+  --shadow-md: 0 2px 8px rgba(13,26,31,.08);
+  --shadow-lg: 0 12px 40px rgba(3,98,218,.12);
+  --shadow-xl: 0 20px 60px rgba(3,98,218,.18);
+
+  /* typography */
+  --font-weight-body: 400;
+  --font-weight-h:    700;
+  --font-display:     var(--font-sans-kr);
 }
 
 :root {
@@ -246,13 +317,8 @@
   --sidebar-border: var(--border-default);
   --sidebar-ring: var(--focus-ring-color);
 
-  /* 풀림 그림자 → PUDS elevation 토큰 별칭 (data-theme별 스케일 따라감 — os↔jr 전환 시 elevation도 전환).
-   * shadow-pullim-* 유틸(카드 다수)이 하드코딩이던 것을 theme-responsive PUDS --shadow-* 로 수렴. */
-  --shadow-pullim-xs: var(--shadow-sm);
-  --shadow-pullim-sm: var(--shadow-sm);
-  --shadow-pullim-md: var(--shadow-md);
-  --shadow-pullim-lg: var(--shadow-lg);
-  --shadow-pullim-glow: 0 0 0 3px color-mix(in oklch, var(--focus-ring-color) 22%, transparent);
+  /* --shadow-pullim-* 별칭은 위 @theme inline 으로 옮겼다. 맨 :root 에 두면 유틸리티가
+   * 생성되지 않는다(그 블록의 주석 참고). 여기서 다시 선언하지 마라. */
 }
 
 /* ═══ 다크 — PUDS 명암 축([data-scheme="dark"]) 하나만 쓴다 ═══════════════════

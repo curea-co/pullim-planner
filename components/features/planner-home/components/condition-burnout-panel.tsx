@@ -67,7 +67,7 @@ export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, d
                 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs font-bold',
                 score === null ? 'bg-pullim-slate-100 text-pullim-slate-400'
                 : burnoutTone === 'good' ? 'bg-pullim-success-bg text-pullim-success'
-                : burnoutTone === 'warn' ? 'bg-pullim-warn-bg text-pullim-warn-cta-bg'
+                : burnoutTone === 'warn' ? 'bg-pullim-warn-bg text-pullim-warn'
                 : 'bg-pullim-danger-bg text-pullim-danger',
               )}
               title={score === null ? '번아웃 안전도 — 블록을 완료하면 계산돼요' : '번아웃 안전도 — 높을수록 안전'}
