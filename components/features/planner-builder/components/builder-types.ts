@@ -1,6 +1,7 @@
 import {
   Target, Clock, BookOpen, Sparkles,
   Timer, Waves,
+  FileText, GraduationCap, ClipboardList, ClipboardCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { subjectLabels, type SubjectKey } from '@/lib/mock';
@@ -36,12 +37,12 @@ export function todayIsoKst(): string {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-export const examTypeMeta: Record<ExamType, { label: string; isRange: boolean; targetKind: TargetKind; hint: string }> = {
-  mock:    { label: '모의고사',  isRange: false, targetKind: 'grade', hint: 'D-day 14일 이내면 빈출 단원 +30% 자동 가중' },
-  suneung: { label: '수능',      isRange: false, targetKind: 'grade', hint: '수능 D-day 기반 장기 곡선 — 6/9월 모평으로 단계별 점검' },
-  midterm: { label: '중간고사',  isRange: true,  targetKind: 'score', hint: '시험 첫날 D-day 기준 + 마지막 날까지 학습 일정 압축' },
-  final:   { label: '기말고사',  isRange: true,  targetKind: 'score', hint: '시험 첫날 D-day 기준 + 마지막 날까지 학습 일정 압축' },
-  other:   { label: '기타',      isRange: false, targetKind: 'free',  hint: '특별 일정·자체 목표 — 자유 설정' },
+export const examTypeMeta: Record<ExamType, { label: string; Icon: LucideIcon; isRange: boolean; targetKind: TargetKind; hint: string }> = {
+  mock:    { label: '모의고사',  Icon: FileText,       isRange: false, targetKind: 'grade', hint: 'D-day 14일 이내면 빈출 단원 +30% 자동 가중' },
+  suneung: { label: '수능',      Icon: GraduationCap,  isRange: false, targetKind: 'grade', hint: '수능 D-day 기반 장기 곡선 — 6/9월 모평으로 단계별 점검' },
+  midterm: { label: '중간고사',  Icon: ClipboardList,  isRange: true,  targetKind: 'score', hint: '시험 첫날 D-day 기준 + 마지막 날까지 학습 일정 압축' },
+  final:   { label: '기말고사',  Icon: ClipboardCheck, isRange: true,  targetKind: 'score', hint: '시험 첫날 D-day 기준 + 마지막 날까지 학습 일정 압축' },
+  other:   { label: '기타',      Icon: Target,         isRange: false, targetKind: 'free',  hint: '특별 일정·자체 목표 — 자유 설정' },
 };
 
 export type PlannerForm = {
