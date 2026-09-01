@@ -176,12 +176,15 @@ test('§2 [data-theme] 스코프 토큰 23 개가 값을 갖고, data-theme 이 
   const emptied = THEME_SCOPED_TOKENS.filter((t) => withoutTheme[t] === '');
   expect(emptied, `data-theme 제거 후 값을 잃은 토큰`).toEqual([]);
 
-  // elevation 은 「비었나」가 아니라 「같나」로 본다 — Tailwind 기본 그림자로의 조용한
-  // 대체는 비어 보이지 않는다(위 ELEVATION_TOKENS 주석).
-  const substituted = ELEVATION_TOKENS.filter((t) => withoutTheme[t] !== withTheme[t]).map(
-    (t) => `${t}: ${withTheme[t]} → ${withoutTheme[t]}`,
+  // 「비었나」가 아니라 「같나」로 본다. elevation 4 개는 Tailwind 기본 그림자로 **조용히
+  // 대체**되므로 비어 보이지 않고(위 ELEVATION_TOKENS 주석), 나머지 19 개도 폴백 값이
+  // 원본에서 드리프트하면(오타·다크 블록에서 복사) 비어 있지 않은 채 틀린다.
+  // 그래서 **23 개 전체**를 동등성으로 본다 — 이 테스트 이름이 약속하는 것도 그것이다.
+  // (Codex 리뷰 #226 2 차)
+  const drifted = THEME_SCOPED_TOKENS.filter((t) => withoutTheme[t] !== withTheme[t]).map(
+    (t) => `${t}:\n    with    ${withTheme[t]}\n    without ${withoutTheme[t]}`,
   );
-  expect(substituted, `data-theme 제거 후 다른 그림자로 대체된 토큰`).toEqual([]);
+  expect(drifted, `data-theme 제거 후 값이 달라진 토큰 (:where(:root) 폴백 드리프트)`).toEqual([]);
 });
 
 test('§3 :where(:root) 폴백이 테마를 덮지 않는다 — pullim-jr 로 바꾸면 jr elevation 이 나온다', async ({
