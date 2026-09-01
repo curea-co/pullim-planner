@@ -64,3 +64,9 @@ proc/screendoc/
 # 세션 도구 산출물 (Claude Code / Playwright MCP)
 .omc/
 .playwright-mcp/
+
+# Playwright e2e 산출물 (playwright.config.ts — reporter·trace·스냅샷 실패본)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
