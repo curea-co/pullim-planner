@@ -118,7 +118,21 @@ export function PlannerWizard({
           )}
         </div>
 
-        <footer className="mt-4 flex items-center justify-between gap-2 border-t pt-3.5">
+        {/*
+          모바일에서는 카드 바닥에 붙여 둔다 — 375px 에서 위저드 카드가 850px 이라 [다음] 이
+          첫 화면보다 211px 아래에 있었다. 스크롤 컨테이너는 셸의 `main`(overflow-y-auto)이고
+          `BottomNav` 는 그 **바깥**의 형제라, `sticky bottom-0` 는 main 의 스크롤포트 바닥
+          (= BottomNav 윗변)에 붙는다 — 오프셋을 박지 않아도 겹치지 않는다.
+          카드 좌우/아래 패딩만큼 음수 마진으로 흘려 배경이 카드 폭을 덮게 하고, 카드의
+          아래 모서리 곡률을 잇는다. md 이상은 종전 그대로 흐름에 남는다(정적).
+        */}
+        <footer
+          className={cn(
+            'mt-4 flex items-center justify-between gap-2 border-t pt-3.5',
+            'bg-card sticky bottom-0 z-10 -mx-4 -mb-4 rounded-b-2xl px-4 pb-4',
+            'md:static md:mx-0 md:mb-0 md:rounded-none md:px-0 md:pb-0',
+          )}
+        >
           <button
             type="button"
             onClick={onPrev}
