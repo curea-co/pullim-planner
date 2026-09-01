@@ -152,7 +152,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
                     카드에서만 쓰는 표기라 examTypeMeta.label(저장·요약 표기)은 건드리지 않는다. */}
                 <span
                   className={cn(
-                    'max-w-full truncate text-[11px] font-bold leading-tight sm:text-[13px]',
+                    'max-w-full truncate text-[length:var(--text-xs)] font-bold leading-tight sm:text-[length:var(--text-sm)]',
                     selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900',
                   )}
                 >
