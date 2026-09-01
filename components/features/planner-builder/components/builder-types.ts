@@ -51,7 +51,7 @@ export type PlannerForm = {
   examName: string;
   examStartDate: string;       // YYYY-MM-DD — 단일일자 시 이 필드만 사용
   examEndDate: string;         // YYYY-MM-DD — 범위 시험에서만 의미. 단일이면 start와 동일.
-  targetGrade: string;         // 모의·수능 — 숫자 한 자리(1~8, QA #5). UI가 '등급' 서픽스 표기
+  targetGrade: string;         // 모의·수능 — 숫자 한 자리(1~8, QA #5). UI는 1~8 select
   targetScore: number;         // 중간·기말 (0–100)
   targetGoal: string;          // 기타 (자유 텍스트)
   motto: string;
@@ -344,12 +344,16 @@ export function needsElective(subject: SubjectKey, scope: ScopeState): boolean {
 }
 
 /**
- * 목표 등급 허용 범위 — 입력 UI(`TargetField` 의 grade 분기)가
- * `e.target.value.replace(/[^1-8]/g, '').slice(0, 1)` 로 한 자리 1~8 만 남긴다(QA #5).
+ * 목표 등급 허용 범위 — 입력 UI(`TargetField` 의 grade 분기)는 이 범위에서 파생한
+ * `GRADE_OPTIONS` 로 select option 을 그린다.
  * 순수 함수 쪽 검증도 같은 범위를 써야 UI 와 판정이 어긋나지 않는다.
  */
 const GRADE_MIN = 1;
 const GRADE_MAX = 8;
+
+/** UI 가 고를 수 있는 등급 — GRADE_MIN/MAX 에서 파생해 goalBlocker 판정과 항상 같은 범위를 쓴다 */
+export const GRADE_OPTIONS: readonly string[] =
+  Array.from({ length: GRADE_MAX - GRADE_MIN + 1 }, (_, i) => String(GRADE_MIN + i));
 
 /** 목표 점수 허용 범위 — 입력 UI 가 `min=0 max=100` + '100점 만점' 표기로 잘라 넣는 값 */
 const SCORE_MIN = 0;
