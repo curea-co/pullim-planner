@@ -260,6 +260,30 @@ async function collectUtilityTargets(page: Page) {
   });
 }
 
+/**
+ * `--shadow-pullim-*` 별칭 5 종을 **프로브 요소로 해석해** 둔다.
+ * 값을 하드코딩하지 않는 classbot `readBotSignatureRgb` 와 같은 방식 — 토큰이 바뀌면
+ * 기대값도 같이 따라간다.
+ *
+ * 클래스 이름 → 해석된 computed box-shadow 로 짝지어 돌려준다. `glow` 는 elevation 이
+ * 아니라 포커스링 색이라 **elevation 토큰과 한 집합으로 묶을 수 없다.**
+ */
+async function resolveShadowTokens(page: Page): Promise<Record<string, string>> {
+  return page.evaluate(() => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+    document.body.appendChild(probe);
+    const out: Record<string, string> = {};
+    for (const n of ['xs', 'sm', 'md', 'lg', 'glow']) {
+      probe.style.boxShadow = '';
+      probe.style.boxShadow = `var(--shadow-pullim-${n})`;
+      out[`shadow-pullim-${n}`] = getComputedStyle(probe).boxShadow;
+    }
+    probe.remove();
+    return out;
+  });
+}
+
 for (const route of ROUTES) {
   test(`§4 ${route} — shadow-pullim-* 가 실제 box-shadow 를 그린다`, async ({ page }) => {
     await open(page, route);
@@ -278,42 +302,30 @@ for (const route of ROUTES) {
       `그림자가 렌더되지 않는 요소:\n${dead.map((d) => `  ${d.cls} on <${d.tag}> "${d.where}"`).join('\n')}`,
     ).toEqual([]);
 
-    // 그리고 그 값이 **PUDS elevation** 이어야 한다. stock `shadow-sm` 으로 치환되면
+    // 그리고 그 값이 **자기 클래스의 PUDS 토큰**이어야 한다. stock `shadow-sm` 으로 치환되면
     // 그림자는 보이지만 var(--shadow-sm) 을 안 읽어 data-theme·data-scheme 추종을 잃는다.
-    // 기대값은 하드코딩하지 않고 런타임 토큰에서 뽑는다.
-    const tokens = await readRootTokens(page, ELEVATION_TOKENS);
-    const rgbOf = (css: string): string | null => {
-      // 브라우저는 rgba(13,26,31,.06) 을 #0d1a1f0f 로 직렬화하기도 한다 — 두 형태를 모두 받는다.
-      const hex = css.match(/#([0-9a-f]{6})(?:[0-9a-f]{2})?\b/i);
-      if (hex) {
-        const h = hex[1];
-        return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(',');
-      }
-      const m = css.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
-      return m ? `${Math.round(+m[1])},${Math.round(+m[2])},${Math.round(+m[3])}` : null;
-    };
+    //
+    // ⚠ 클래스마다 **짝지어** 본다 — 색 하나를 공유 집합으로 두면 안 된다.
+    //   `shadow-pullim-glow` 는 elevation 이 아니라 **포커스링 색**(--focus-ring-color 22%)이라
+    //   elevation 집합에 없고, 그 자리가 생기는 순간 정상 구현이 오탐으로 잡힌다.
+    //   (Codex 리뷰 #226 4 차)
+    const expected = await resolveShadowTokens(page);
 
-    const expectedRgb = new Set(
-      ELEVATION_TOKENS.map((t) => rgbOf(tokens[t])).filter((x): x is string => x !== null),
-    );
-    expect(expectedRgb.size, 'elevation 토큰에서 색을 뽑지 못했다').toBeGreaterThan(0);
+    const unresolved = Object.entries(expected).filter(([, v]) => v === 'none' || v === '');
+    expect(
+      unresolved.map(([k]) => k),
+      `--shadow-pullim-* 별칭이 해석되지 않는다`,
+    ).toEqual([]);
 
     // box-shadow 는 여러 레이어가 이어 붙는다(`rgba(0,0,0,0) 0 0 0 0, … , <실제>`).
-    // 투명 레이어를 빼고 남는 색이 토큰 색이어야 한다.
-    const offToken = shadows.filter((s) => {
-      const painted = s.value
-        .split(/,(?![^(]*\))/)
-        .map((layer) => layer.trim())
-        .filter((layer) => !/rgba?\([^)]*,\s*0\s*\)/.test(layer));
-      return !painted.some((layer) => {
-        const rgb = rgbOf(layer);
-        return rgb !== null && expectedRgb.has(rgb);
-      });
-    });
+    // 그 문자열 안에 자기 토큰의 해석값이 **그대로** 들어 있어야 한다.
+    const offToken = shadows.filter((s) => !s.value.includes(expected[s.cls]));
     expect(
       offToken,
-      `PUDS elevation 토큰 색이 아닌 그림자 (stock shadow 치환?):\n` +
-        offToken.map((d) => `  ${d.cls} on <${d.tag}> = ${d.value}`).join('\n'),
+      `자기 토큰 값이 아닌 그림자 (stock shadow 치환?):\n` +
+        offToken
+          .map((d) => `  ${d.cls} on <${d.tag}>\n    기대 ${expected[d.cls]}\n    실제 ${d.value}`)
+          .join('\n'),
     ).toEqual([]);
   });
 
