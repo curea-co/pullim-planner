@@ -42,8 +42,13 @@ type Props = {
 
 /* ─── Step 1 — 목표 시험 (종류 카드 + 프리셋 회차 + 일자) ─── */
 
-/** 시험 4종은 대등한 형제라 카드 격자로. '기타'(자유 목표)는 성격이 달라 아래 한 줄로 뺀다. */
-const examTypeCards: ExamType[] = ['mock', 'suneung', 'midterm', 'final'];
+/**
+ * 목표 시험 5종을 한 줄에 놓는다 — '기타'(자유 목표)까지 같은 격자다.
+ * 아래 한 줄로 빼 뒀던 이유는 '성격이 다르다'였는데, 그 차이는 고르고 난 **뒤**
+ * (날짜가 자유롭고 목표가 자유 텍스트가 된다) 드러나지 고르는 순간에 드러나지 않는다.
+ * 고를 때는 다섯이 대등한 선택지라 같은 줄에 둔다(오너 결정 2026-09-01).
+ */
+const examTypeCards: ExamType[] = ['mock', 'suneung', 'midterm', 'final', 'other'];
 
 export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
   /** 시험명·다짐 묶음을 펼친 상태인가 — 위저드가 단계 이동과 무관하게 들고 있는 표시 상태 */
@@ -114,7 +119,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
         <h3 className="text-pullim-slate-700 mb-1.5 text-xs font-bold">
           목표 시험<RequiredMark />
         </h3>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
           {examTypeCards.map(t => {
             const m = examTypeMeta[t];
             const selected = examType === t;
@@ -125,42 +130,44 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
                 aria-pressed={selected}
                 onClick={() => setExamType(t)}
                 className={cn(
-                  'flex flex-col items-start rounded-xl border-2 p-3 text-left transition-colors',
+                  'group flex flex-col items-center justify-center gap-1 rounded-xl border-2 bg-card px-0.5 py-2 text-center transition-colors',
+                  'sm:px-2 sm:pt-2.5 sm:pb-2',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500',
                   selected
                     ? 'border-pullim-blue-500 bg-pullim-blue-50'
-                    : 'border-pullim-slate-200 hover:border-pullim-slate-300',
+                    : 'border-pullim-slate-200 hover:border-pullim-blue-300 hover:bg-pullim-slate-50',
                 )}
               >
-                <span className={cn('text-sm font-bold', selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
-                  {m.label}
+                <span
+                  className={cn(
+                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors sm:h-8 sm:w-8',
+                    selected
+                      ? 'bg-pullim-blue-600 text-white'
+                      : 'bg-pullim-slate-100 text-pullim-slate-500 group-hover:bg-pullim-blue-100 group-hover:text-pullim-blue-600',
+                  )}
+                >
+                  <m.Icon className="h-4 w-4 sm:h-[17px] sm:w-[17px]" aria-hidden />
+                </span>
+                {/* 'other' 만 meta 의 '기타' 대신 하는 일이 드러나는 이름으로 부른다 —
+                    카드에서만 쓰는 표기라 examTypeMeta.label(저장·요약 표기)은 건드리지 않는다. */}
+                <span
+                  className={cn(
+                    'max-w-full truncate text-[11px] font-bold leading-tight sm:text-[13px]',
+                    selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900',
+                  )}
+                >
+                  {t === 'other' ? '자유 목표' : m.label}
                 </span>
               </button>
             );
           })}
         </div>
-        <button
-          type="button"
-          aria-pressed={examType === 'other'}
-          onClick={() => setExamType('other')}
-          className={cn(
-            'mt-2 flex w-full flex-col items-start rounded-xl border-2 p-3 text-left transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500',
-            examType === 'other'
-              ? 'border-pullim-blue-500 bg-pullim-blue-50'
-              : 'border-pullim-slate-200 hover:border-pullim-slate-300',
-          )}
-        >
-          <span className={cn('text-sm font-bold', examType === 'other' ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
-            자유 목표
-          </span>
-        </button>
       </section>
 
       {/* 회차 선택 — 가장 가까운 시험이 코앞이라 다음 회차도 함께 줄 때만 */}
       {presets.length > 1 && (
         <section>
-          <h3 className="text-pullim-slate-700 mb-1.5 text-xs font-bold">회차</h3>
+          <h3 className="text-pullim-slate-700 mb-1.5 text-xs font-bold">회차<RequiredMark /></h3>
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {presets.map((p, i) => {
               const selected = startDate === p.date;
