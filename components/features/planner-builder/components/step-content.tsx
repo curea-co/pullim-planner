@@ -184,7 +184,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
                     </span>
                     <span className="text-pullim-slate-500 block font-mono text-[length:var(--text-2xs)]">{p.date}</span>
                   </span>
-                  <span className="text-pullim-slate-500 shrink-0 font-mono text-[length:var(--text-2xs)] font-bold">
+                  <span className="text-pullim-slate-500 shrink-0 font-mono text-[length:var(--text-xs)] font-bold">
                     D-{daysBetween(todayIso, p.date)}
                     {i === 1 && <span className="text-pullim-slate-400 ml-1 font-sans">그 다음</span>}
                   </span>
@@ -211,7 +211,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
             min={minDate}
           />
         )}
-        <p className="text-pullim-slate-500 mt-1 font-mono text-[length:var(--text-2xs)]">
+        <p className="text-pullim-slate-500 mt-1 font-mono text-[length:var(--text-xs)]">
           D-day{' '}
           <span className={cn(
             'font-bold',
@@ -662,7 +662,7 @@ export function PStep4Pattern({ form, setForm }: Props) {
               <h4 className={cn('mt-1 text-sm font-bold', selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
                 {meta.label}
               </h4>
-              <span className="bg-pullim-slate-100 text-pullim-slate-700 mt-2 rounded-full px-2 py-0.5 font-mono text-[length:var(--text-2xs)] font-bold">
+              <span className="bg-pullim-slate-100 text-pullim-slate-700 mt-2 rounded-full px-2 py-0.5 font-mono text-[length:var(--text-xs)] font-bold">
                 {meta.spec}
               </span>
             </button>
@@ -1325,7 +1325,7 @@ export function PStep4Confirm({
             <h3 className="text-pullim-slate-900 text-sm font-bold">
               미리보기
             </h3>
-            <span className="text-pullim-slate-500 font-mono text-[length:var(--text-2xs)]">
+            <span className="text-pullim-slate-500 font-mono text-[length:var(--text-xs)]">
               {previews.length}일
             </span>
           </header>
@@ -1481,7 +1481,7 @@ function TunerSection({
       <summary className="hover:bg-pullim-slate-50 flex cursor-pointer list-none items-center gap-2 rounded-xl px-3.5 py-2.5">
         <ChevronDown aria-hidden className="text-pullim-slate-400 h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" />
         <span className="text-pullim-slate-900 text-xs font-bold">{title}</span>
-        {value && <span className="text-pullim-slate-500 ml-auto font-mono text-[length:var(--text-2xs)]">{value}</span>}
+        {value && <span className="text-pullim-slate-500 ml-auto font-mono text-[length:var(--text-xs)]">{value}</span>}
       </summary>
       <div className="space-y-2 px-3.5 pt-1 pb-3.5">{children}</div>
     </details>

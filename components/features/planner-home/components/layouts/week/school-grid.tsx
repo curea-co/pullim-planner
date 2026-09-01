@@ -121,7 +121,7 @@ export function SchoolGridLayout({ paletteId, compact, days: daysProp }: Props) 
                         key={d.day}
                         className="border-pullim-slate-100 border-l p-0.5"
                       >
-                        <div className="bg-pullim-slate-25 text-pullim-slate-300 flex h-7 items-center justify-center rounded text-[length:var(--text-xs)]">
+                        <div className="bg-pullim-slate-25 text-pullim-slate-300 flex h-7 items-center justify-center rounded text-[length:var(--text-2xs)]">
                           자습
                         </div>
                       </td>
@@ -136,7 +136,7 @@ export function SchoolGridLayout({ paletteId, compact, days: daysProp }: Props) 
                       title={label}
                     >
                       <div
-                        className="text-pullim-slate-900 flex h-7 items-center justify-center rounded px-0.5 text-[length:var(--text-xs)] font-semibold leading-tight"
+                        className="text-pullim-slate-900 flex h-7 items-center justify-center rounded px-0.5 text-[length:var(--text-2xs)] font-semibold leading-tight"
                         style={{ background: color, opacity: 0.85 }}
                       >
                         <span className="truncate">{label}</span>

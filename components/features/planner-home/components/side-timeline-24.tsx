@@ -165,7 +165,7 @@ export function SideTimeline24({ blocks, now, ddayLabel, className, paletteId, c
             <span className="text-pullim-slate-400"> / {(expectedMinutes / 60).toFixed(1)}h</span>
           </span>
           <span className="text-pullim-slate-300 text-[length:var(--text-2xs)]">·</span>
-          <span className="text-pullim-slate-700 font-mono text-[length:var(--text-2xs)] font-semibold">
+          <span className="text-pullim-slate-700 font-mono text-[length:var(--text-xs)] font-semibold">
             {summary.done}
             <span className="text-pullim-slate-400">/{summary.total} 블록</span>
           </span>

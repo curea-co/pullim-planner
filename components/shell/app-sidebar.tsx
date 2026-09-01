@@ -48,7 +48,7 @@ function AppSidebarInner({ onNavigate, className, compact, collapsed }: Props) {
       className={cn('flex flex-1 min-h-0 flex-col py-3', iconOnly ? 'items-center px-1.5' : 'px-2', className)}
     >
       {!iconOnly && (
-        <div className="text-[var(--text-tertiary)] px-2 pt-1 pb-1.5 font-mono text-[length:var(--text-2xs)] font-medium tracking-[0.16em] uppercase">
+        <div className="text-[var(--text-tertiary)] px-2 pt-1 pb-1.5 font-mono text-[length:var(--text-xs)] font-medium tracking-[0.16em] uppercase">
           풀림 플래너
         </div>
       )}

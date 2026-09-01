@@ -67,7 +67,7 @@ export function WeekPlanSummary({ days }: { days: WeekDay[] }) {
                   <span className="text-pullim-slate-700 flex-1 truncate font-semibold">
                     {meta.label}
                   </span>
-                  <span className={cn('text-pullim-slate-900 font-mono text-[length:var(--text-2xs)] font-bold')}>
+                  <span className={cn('text-pullim-slate-900 font-mono text-[length:var(--text-xs)] font-bold')}>
                     {count}개
                   </span>
                 </li>
