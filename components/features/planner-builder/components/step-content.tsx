@@ -231,14 +231,20 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
               <span className="text-pullim-slate-700 text-xs font-bold">
                 시험 기간<RequiredMark />
               </span>
-              {/* 시작/종료는 가시 라벨을 유지한다 — aria-label 만 남기면 세로를 벌지만
-                  화면에서 어느 칸이 종료일인지 알 수 없다. 크기는 한국어 12px 하한(--text-xs). */}
+              {/* 시작/종료는 가시 라벨을 유지한다 — aria-label 만 남기면 화면에서 어느 칸이
+                  종료일인지 알 수 없다. 다만 라벨을 입력 **위**가 아니라 **옆**에 둔다.
+                  범위 시험은 375px 에서 두 입력이 반드시 두 줄로 접히기 때문이다 — 네이티브
+                  input[type=date] 고유폭이 ko-KR(`2026. 10. 16.`) 기준 약 157px 이라 두 칸을
+                  나란히 두려면 314px 이 필요한데 폼 단은 309px 뿐이다(gap 을 0 으로 해도 모자란다).
+                  접힌 두 줄 위에 라벨까지 쌓으면 블록이 207.9px 로 뷰포트의 1/4을 먹는다.
+                  옆으로 옮기면 155.1px 이고, 320px 에서도 라벨+입력이 185px 이라 들어간다.
+                  크기는 한국어 12px 하한(--text-xs). */}
               <div className="flex flex-wrap gap-3.5">
-                <label className="text-pullim-slate-500 flex flex-col gap-1.5 text-[length:var(--text-xs)] font-bold">
+                <label className="text-pullim-slate-500 flex items-center gap-2 text-[length:var(--text-xs)] font-bold">
                   시작
                   <DateInput value={startDate} onChange={setStart} min={minDate} ariaLabel="시험 시작일" />
                 </label>
-                <label className="text-pullim-slate-500 flex flex-col gap-1.5 text-[length:var(--text-xs)] font-bold">
+                <label className="text-pullim-slate-500 flex items-center gap-2 text-[length:var(--text-xs)] font-bold">
                   종료
                   <DateInput value={endDate} onChange={setEnd} min={startDate || minDate} ariaLabel="시험 종료일" />
                 </label>
