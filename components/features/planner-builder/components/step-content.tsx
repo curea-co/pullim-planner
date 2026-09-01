@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Bell, Sparkles, Check, AlertCircle,
@@ -23,6 +23,7 @@ import { type PreviewDay, type PreviewItem } from '@/lib/planner/preview-map';
 import { RoutineConflictNotice } from './routine-conflict-notice';
 import { busyRanges, placeRoutinesForDay } from '@/lib/planner/routine-fit';
 import { daysBetween } from '@/lib/planner/exam-presets';
+import { formatKoDate, formatKoRange } from '@/lib/planner/exam-date-format';
 import {
   type PlannerForm, type ScopeState, blockPatternMeta,
   type ExamType, examTypeMeta, todayIsoKst,
@@ -111,6 +112,18 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
     : dDay > 0 ? `D-${dDay}`
     : dDay === 0 ? 'D-DAY'
     : `D+${Math.abs(dDay)}`;
+
+  // 색 규칙은 종전 10px 힌트 줄에서 그대로 옮겨 왔다 — 값 없음 / D-14 이하 / 그 외.
+  const dDayTone =
+    dDay === null ? 'text-pullim-slate-400'
+    : dDay <= 14 ? 'text-pullim-danger'
+    : 'text-pullim-blue-600';
+
+  /** 수치 밑 캡션 — 30px 숫자만으로는 '무슨 날'인지 알 수 없어서 요일·기간을 붙여 준다. */
+  const dateCaption =
+    !startDate ? '날짜를 고르면 남은 일수를 계산해요'
+    : meta.isRange && endDate && endDate !== startDate ? formatKoRange(startDate, endDate)
+    : formatKoDate(startDate);
 
   return (
     <div className="space-y-4">
@@ -202,41 +215,50 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
         </section>
       )}
 
-      {/* 일자 — 프리셋이 채워 줘도 입력은 열어 둔다 */}
+      {/* 일자 — 프리셋이 채워 줘도 입력은 열어 둔다.
+          학생이 이 단계에서 궁금한 건 날짜 문자열이 아니라 '남은 일수'라 D-day 를 히어로로
+          세우고 입력을 그 옆 부속으로 내린다(구 10px 회색 힌트 줄 대체). */}
       <div>
-        {meta.isRange ? (
-          <div className="grid grid-cols-2 gap-3">
-            <DateField label="시험 시작일" required value={startDate} onChange={setStart} min={minDate} />
-            <DateField label="시험 종료일" value={endDate} onChange={setEnd} min={startDate || minDate} />
-          </div>
-        ) : (
-          <DateField
-            label={examType === 'other' ? '목표 날짜' : '시험 날짜'}
-            required
-            value={startDate}
-            onChange={setStart}
-            min={minDate}
-          />
-        )}
-        <p className="text-pullim-slate-500 mt-1 font-mono text-[length:var(--text-xs)]">
-          D-day{' '}
-          <span className={cn(
-            'font-bold',
-            dDay === null ? 'text-pullim-slate-400'
-              : dDay <= 14 ? 'text-pullim-danger'
-              : 'text-pullim-blue-600',
-          )}>
-            {dDayLabel}
-          </span>
-          {meta.isRange && examLength > 1 && (
-            <span className="text-pullim-slate-400 ml-1">· {examLength}일간</span>
+        <CountdownDateBlock
+          dDayLabel={dDayLabel}
+          tone={dDayTone}
+          human={dateCaption}
+          lengthLabel={meta.isRange && examLength > 1 ? `${examLength}일간` : undefined}
+          isRange={meta.isRange}
+        >
+          {meta.isRange ? (
+            <div className="flex flex-col items-start gap-2.5">
+              <span className="text-pullim-slate-700 text-xs font-bold">
+                시험 기간<RequiredMark />
+              </span>
+              {/* 시작/종료는 가시 라벨을 유지한다 — aria-label 만 남기면 세로를 벌지만
+                  화면에서 어느 칸이 종료일인지 알 수 없다. 크기는 한국어 12px 하한(--text-xs). */}
+              <div className="flex flex-wrap gap-3.5">
+                <label className="text-pullim-slate-500 flex flex-col gap-1.5 text-[length:var(--text-xs)] font-bold">
+                  시작
+                  <DateInput value={startDate} onChange={setStart} min={minDate} ariaLabel="시험 시작일" />
+                </label>
+                <label className="text-pullim-slate-500 flex flex-col gap-1.5 text-[length:var(--text-xs)] font-bold">
+                  종료
+                  <DateInput value={endDate} onChange={setEnd} min={startDate || minDate} ariaLabel="시험 종료일" />
+                </label>
+              </div>
+            </div>
+          ) : (
+            <DateField
+              label={examType === 'other' ? '목표 날짜' : '시험 날짜'}
+              required
+              value={startDate}
+              onChange={setStart}
+              min={minDate}
+            />
           )}
-        </p>
+        </CountdownDateBlock>
         {/* 프리셋 날짜가 '추정치'임을 알리는 유일한 자리 — 보조 문구 정리(2026-08-24) 때 지웠다가
             오너 결정으로 복원했다. 10px 회색은 안 보인다는 지적이라 warn 배너 + 12px 로 되돌린다
             (`routine-conflict-notice` 의 색 배너 패턴을 따른다). */}
         {presets.length > 0 && (
-          <aside className="border-pullim-warn/40 bg-pullim-warn-bg text-pullim-slate-700 mt-2 flex items-start gap-1.5 rounded-lg border p-2 text-xs leading-relaxed">
+          <aside className="border-pullim-warn/40 bg-pullim-warn-bg text-pullim-slate-700 mt-3.5 flex items-start gap-1.5 rounded-lg border p-2 text-xs leading-relaxed">
             <AlertCircle className="text-pullim-warn-ink mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             <span>
               이 날짜는 <strong className="text-pullim-slate-900">관례로 계산한 추정치</strong>라 해마다
@@ -252,15 +274,16 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
           아래 '시험명·다짐 직접 쓰기' 를 펼치면 같은 입력을 그쪽에서 편집한다(중복 노출 방지). */}
       {!expert && <TargetField form={form} setForm={setForm} />}
 
-      {/* 자동 시험명 — 이름은 시험 종류·날짜에서 파생한다. 고치려면 아래 토글을 펼친다. */}
-      <section className="bg-pullim-slate-900 flex items-center justify-between gap-3 rounded-xl p-3.5 text-white">
+      {/* 자동 시험명 — 이름은 시험 종류·날짜에서 파생한다. 고치려면 아래 토글을 펼친다.
+          D-day 는 여기서 뺐다: 같은 단계 약 40px 위 카운트다운 블록이 30px 수치로 그 역할을
+          가져갔고, 히어로가 둘이면 서로 경쟁한다. 이 카드의 본래 역할은 '자동 생성된 시험명 확인'이다. */}
+      <section className="bg-pullim-slate-900 flex items-center gap-3 rounded-xl p-3.5 text-white">
         <div className="min-w-0">
           <div className="text-pullim-lemon text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             {examType === 'other' ? '자유 목표' : '자동 생성됨'}
           </div>
           <div className="mt-0.5 truncate text-sm font-bold">{resolvedExamName(form)}</div>
         </div>
-        <div className="text-pullim-lemon shrink-0 font-mono text-lg font-bold">{dDayLabel}</div>
       </section>
 
       {/* 시험명·다짐 — 시간표 배치를 바꾸지 않아 최소 경로에서는 묻지 않는다.
@@ -317,6 +340,101 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
   );
 }
 
+/**
+ * 카운트다운 우선 배치 — 좌: D-day 수치 + 요일/기간 캡션 · 우: 라벨 + 입력.
+ *
+ * 두 덩어리 사이는 28px 순수 여백이다. 세로 실선 구분선은 두지 않는다 — 한 화면에서 가장 큰
+ * 글자(30px)를 품는 자리라 여기만 숨 쉴 자리를 준다.
+ *
+ * 모바일(기본)은 케이스마다 배치가 갈린다:
+ * - 단일 `수치 | 입력` / `캡션` — 수치를 입력 **옆**에 둬 좌우 2단을 세우지 않는다(세로 절약).
+ * - 범위 `수치 | 캡션` / `입력 입력` — 입력 두 개가 네이티브 고유폭으로 한 줄을 다 써야 해서
+ *   수치·캡션이 위로 올라간다.
+ *
+ * flex 가 아니라 grid 인 이유: 데스크톱은 수치+캡션이 한 열로 묶여야 하고 모바일 단일은 캡션만
+ * 아래로 빠져야 하는데, flex-wrap 으로는 그 둘을 동시에 만들 수 없다.
+ */
+function CountdownDateBlock({ dDayLabel, tone, human, lengthLabel, isRange, children }: {
+  dDayLabel: string;
+  /** D-day 수치 색 — 호출부가 현행 규칙(값 없음/D-14 이하/그 외)으로 계산해 넘긴다 */
+  tone: string;
+  /** 사람이 읽는 날짜 — 단일 `2026년 9월 2일 수요일` · 범위 `10월 12일 월 → 10월 16일 금` */
+  human: string;
+  /** 범위 시험의 `N일간` — 수치 옆 접미로 붙는다 */
+  lengthLabel?: string;
+  isRange?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn(
+      'grid grid-cols-[auto_minmax(0,1fr)] gap-x-[18px] sm:gap-x-7 sm:gap-y-2',
+      isRange ? 'items-baseline gap-y-3' : 'gap-y-2.5',
+    )}>
+      <b className={cn(
+        'col-start-1 row-start-1 font-mono text-2xl/[1.06] font-bold tracking-[-0.02em]',
+        'tabular-nums whitespace-nowrap sm:self-end sm:text-[length:var(--text-3xl)]/[1.06]',
+        isRange ? 'self-baseline' : 'self-center',
+        tone,
+      )}>
+        {dDayLabel}
+        {lengthLabel && (
+          <span className="text-pullim-slate-400 ml-2 font-sans text-xs font-semibold tracking-normal">
+            · {lengthLabel}
+          </span>
+        )}
+      </b>
+      <span className={cn(
+        'text-pullim-slate-500 text-[length:var(--text-xs)] leading-normal sm:col-start-1 sm:row-start-2 sm:self-start sm:whitespace-nowrap',
+        isRange ? 'col-start-2 row-start-1' : 'col-span-2 col-start-1 row-start-2 sm:col-span-1',
+      )}>
+        {human}
+      </span>
+      <div className={cn(
+        'min-w-0 sm:col-span-1 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:self-center',
+        isRange ? 'col-span-2 col-start-1 row-start-2 self-start' : 'col-start-2 row-start-1 self-center',
+      )}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 날짜 입력 공통 클래스 — 폭은 네이티브 고유폭(`w-auto`)에 맡긴다.
+ *
+ * 고정 픽셀 폭 금지: `input[type=date]` 의 표시 문자열은 로케일을 타서 ko-KR(`2026. 09. 02.`)이
+ * en-US(`09/02/2026`, min-content 149px)보다 넓게 렌더된다. `w-[NNNpx]` 를 박으면 실기기에서 값이 잘린다.
+ */
+const dateInputClass =
+  'border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-auto min-w-0 cursor-pointer rounded-lg border px-3 py-[9px] text-sm';
+
+/** QA #4 — 커스텀 아이콘 오버레이는 네이티브 캘린더 아이콘과 겹쳐서 뺐다. 대신 입력 영역
+ *  아무 곳이나 클릭하면 네이티브 캘린더가 열리도록 showPicker 를 부른다. */
+function openDatePicker(e: MouseEvent<HTMLInputElement>) {
+  try { e.currentTarget.showPicker?.(); } catch { /* 미지원 브라우저 — 기본 동작 유지 */ }
+}
+
+/** `ariaLabel` 은 가시 라벨이 '시작'·'종료' 처럼 문맥 없이 짧을 때만 넘긴다 —
+ *  `<label>` 이 감싸 이름을 주고 있으므로 생략하면 그 텍스트가 접근성 이름이 된다. */
+function DateInput({ value, onChange, min, ariaLabel }: {
+  value: string;
+  onChange: (v: string) => void;
+  min?: string;
+  ariaLabel?: string;
+}) {
+  return (
+    <input
+      type="date"
+      value={value}
+      min={min}
+      aria-label={ariaLabel}
+      onChange={e => onChange(e.target.value)}
+      onClick={openDatePicker}
+      className={dateInputClass}
+    />
+  );
+}
+
 function DateField({ label, value, onChange, min, required }: {
   label: string;
   value: string;
@@ -325,24 +443,13 @@ function DateField({ label, value, onChange, min, required }: {
   required?: boolean;
 }) {
   return (
-    <div>
-      <label className="text-pullim-slate-700 mb-1 block text-xs font-bold">
+    <label className="flex flex-col items-start">
+      <span className="text-pullim-slate-700 mb-2.5 text-xs font-bold">
         {label}
         {required && <RequiredMark />}
-      </label>
-      {/* QA #4 — 커스텀 아이콘 오버레이 제거(네이티브 캘린더 아이콘과 겹침).
-          입력 영역 아무 곳이나 클릭해도 네이티브 캘린더가 열리게 showPicker 호출. */}
-      <input
-        type="date"
-        value={value}
-        min={min}
-        onChange={e => onChange(e.target.value)}
-        onClick={e => {
-          try { e.currentTarget.showPicker?.(); } catch { /* 미지원 브라우저 — 기본 동작 유지 */ }
-        }}
-        className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 w-full cursor-pointer rounded-lg border px-3 py-2 text-sm"
-      />
-    </div>
+      </span>
+      <DateInput value={value} onChange={onChange} min={min} />
+    </label>
   );
 }
 
