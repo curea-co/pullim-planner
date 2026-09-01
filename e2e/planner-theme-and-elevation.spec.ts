@@ -79,7 +79,26 @@ function readRootTokens(page: Page, names: readonly string[]): Promise<Record<st
 }
 
 /**
- * `data-theme` 을 잠시 바꿔 토큰을 읽고 **원래대로 되돌린다.**
+ * ⚠ **명암 축을 고정해야 §2·§3 의 전제가 성립한다.**
+ *
+ * `:where(:root)` 폴백은 **pullim-os 라이트 값 한 벌**이다(globals.css 가 「다크 블록에서
+ * 가져오지 말 것」이라고 못 박는다). 그런데 다크 정의의 선택자는
+ * `[data-theme="pullim-os"][data-scheme="dark"]` 로 **`data-theme` 을 요구한다.**
+ * 그래서 다크 상태에서 `data-theme` 을 떼면 다크 그림자 → 라이트 폴백으로 **정상적으로**
+ * 값이 바뀐다. §2 의 「값이 같다」는 라이트에서만 성립하는 불변식이다.
+ *
+ * §3 도 같다 — os 와 jr 의 **다크** elevation 은 네 단계가 **완전히 같은 값**이다
+ * (`0 1px 2px rgba(0,0,0,.45)` …). 다크에서 비교하면 「폴백이 테마를 덮는다」와
+ * 「원래 같다」를 구별할 수 없다.
+ *
+ * 지금은 `SchemeProvider` 의 `defaultTheme="light"` 덕에 사실상 항상 라이트로 뜨지만,
+ * 그건 **우연히 성립하는 전제**다. 여기서 명시로 고정해 둔다 — 앱 기본값이 바뀌어도
+ * 이 검사가 엉뚱한 이유로 빨개지지 않는다. (Codex 리뷰 #226)
+ */
+const SCHEME_PINNED = 'light';
+
+/**
+ * `data-theme` 을 잠시 바꿔(명암 축은 `SCHEME_PINNED` 로 고정) 토큰을 읽고 **원래대로 되돌린다.**
  * 되돌리기를 evaluate 안에서 같이 하는 이유: 중간에 실패해도 페이지가 남지 않도록
  * (각 테스트가 새 page 를 받지만, 한 테스트 안에서 이어 읽는 단언이 오염되지 않게).
  */
@@ -89,20 +108,25 @@ function readTokensUnderTheme(
   names: readonly string[],
 ): Promise<Record<string, string>> {
   return page.evaluate(
-    ({ theme, ns }: { theme: string | null; ns: string[] }) => {
+    ({ theme, scheme, ns }: { theme: string | null; scheme: string; ns: string[] }) => {
       const html = document.documentElement;
-      const original = html.getAttribute('data-theme');
+      const originalTheme = html.getAttribute('data-theme');
+      const originalScheme = html.getAttribute('data-scheme');
+
       if (theme === null) html.removeAttribute('data-theme');
       else html.setAttribute('data-theme', theme);
+      html.setAttribute('data-scheme', scheme);
 
       const cs = getComputedStyle(html);
       const out = Object.fromEntries(ns.map((n) => [n, cs.getPropertyValue(n).trim()]));
 
-      if (original === null) html.removeAttribute('data-theme');
-      else html.setAttribute('data-theme', original);
+      if (originalTheme === null) html.removeAttribute('data-theme');
+      else html.setAttribute('data-theme', originalTheme);
+      if (originalScheme === null) html.removeAttribute('data-scheme');
+      else html.setAttribute('data-scheme', originalScheme);
       return out;
     },
-    { theme, ns: names as string[] },
+    { theme, scheme: SCHEME_PINNED, ns: names as string[] },
   );
 }
 
@@ -138,12 +162,15 @@ test('§2 [data-theme] 스코프 토큰 23 개가 값을 갖고, data-theme 이 
 }) => {
   await open(page, '/planner');
 
-  const withTheme = await readRootTokens(page, THEME_SCOPED_TOKENS);
-  const missing = THEME_SCOPED_TOKENS.filter((t) => withTheme[t] === '');
+  // ① 「값을 갖는다」 — 페이지가 실제로 떠 있는 그 상태 그대로 본다(명암 축 무관하게 성립).
+  const asRendered = await readRootTokens(page, THEME_SCOPED_TOKENS);
+  const missing = THEME_SCOPED_TOKENS.filter((t) => asRendered[t] === '');
   expect(missing, `data-theme="pullim-os" 인데 값이 빈 토큰`).toEqual([]);
 
-  // app/layout.tsx 의 <html data-theme> 한 줄이 사라진 상황을 재현한다.
-  // :where(:root) 폴백(특정도 0, 레이어 밖)이 받아내야 한다 — #218 C.
+  // ② 「폴백이 같은 값을 유지한다」 — 라이트로 고정하고 비교한다(SCHEME_PINNED 주석 참고).
+  //    app/layout.tsx 의 <html data-theme> 한 줄이 사라진 상황을 재현한다.
+  //    :where(:root) 폴백(특정도 0, 레이어 밖)이 받아내야 한다 — #218 C.
+  const withTheme = await readTokensUnderTheme(page, 'pullim-os', THEME_SCOPED_TOKENS);
   const withoutTheme = await readTokensUnderTheme(page, null, THEME_SCOPED_TOKENS);
 
   const emptied = THEME_SCOPED_TOKENS.filter((t) => withoutTheme[t] === '');
@@ -162,7 +189,9 @@ test('§3 :where(:root) 폴백이 테마를 덮지 않는다 — pullim-jr 로 �
 }) => {
   await open(page, '/planner');
 
-  const os = await readRootTokens(page, ELEVATION_TOKENS);
+  // 둘 다 라이트 고정으로 읽는다 — os·jr 의 **다크** elevation 은 네 단계가 같은 값이라
+  // 다크에서 비교하면 이 단언이 뜻을 잃는다(SCHEME_PINNED 주석).
+  const os = await readTokensUnderTheme(page, 'pullim-os', ELEVATION_TOKENS);
   const jr = await readTokensUnderTheme(page, 'pullim-jr', ELEVATION_TOKENS);
 
   // 폴백을 맨 `:root` 로 쓰면 특정도가 [data-theme=…] 과 같아(0,1,0) 소스 순서가 이기고,
