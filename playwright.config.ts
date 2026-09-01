@@ -48,7 +48,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? 'github' : 'list',
+  // CI 에서 `github` 만 켜면 주석 애노테이션만 남고 **`playwright-report/` 가 생성되지 않는다**
+  // — ci.yml 이 실패 시 올리려는 그 디렉터리다. HTML 리포터를 함께 켜서 아티팩트가
+  // 빈손이 되지 않게 한다(`open: 'never'` — 러너에서 브라우저를 띄우면 안 된다). (Codex 리뷰 #226 3 차)
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: 'http://localhost:3006',
     trace: 'on-first-retry',

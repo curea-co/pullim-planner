@@ -130,10 +130,33 @@ function readTokensUnderTheme(
   );
 }
 
-/** 페이지를 열고 하이드레이션까지 기다린다 — `data-scheme` 은 next-themes 가 마운트 후 붙인다. */
+/**
+ * 페이지를 열고 **화면이 실제로 렌더될 때까지** 기다린다.
+ *
+ * `data-scheme`(next-themes 가 마운트 후 붙인다)만 기다리면 하이드레이션까지만 보장되고
+ * 본문은 아직일 수 있다 — 그 상태로 DOM 을 훑으면 §4·§5 가 「대상 소실」로 간헐 실패한다.
+ * `<main>` 은 `RequireAuth` 를 통과한 `AppShell` 안에만 있으므로, 이게 보이면 인증 게이트를
+ * 넘어 셸이 그려졌다는 뜻이다. (Codex 리뷰 #226 3 차)
+ */
 async function open(page: Page, route: string): Promise<void> {
   await page.goto(route, { waitUntil: 'networkidle' });
+  await expect(page.getByRole('main')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-scheme', /^(light|dark)$/);
+}
+
+/**
+ * 검사 대상이 DOM 에 붙을 때까지 기다린다 — 비동기로 그려지는 표면 대비.
+ *
+ * **타임아웃은 삼킨다.** 끝내 안 붙는 것이 정상 상태인지(회귀) 늦은 것인지는 여기서 판정하지
+ * 않고, 호출부의 「대상 소실」 단언이 말하게 둔다 — Playwright 타임아웃 메시지보다 그쪽이
+ * 무엇이 사라졌는지 분명하다.
+ */
+async function settle(page: Page, selector: string): Promise<void> {
+  await page
+    .locator(selector)
+    .first()
+    .waitFor({ state: 'attached', timeout: 10_000 })
+    .catch(() => {});
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -240,6 +263,7 @@ async function collectUtilityTargets(page: Page) {
 for (const route of ROUTES) {
   test(`§4 ${route} — shadow-pullim-* 가 실제 box-shadow 를 그린다`, async ({ page }) => {
     await open(page, route);
+    await settle(page, '[class*="shadow-pullim-"]');
     const { shadows } = await collectUtilityTargets(page);
 
     // 대상이 0 이면 검사가 조용히 아무것도 안 지킨다 — 화면이 바뀌어 대상이 사라졌다면
@@ -295,6 +319,7 @@ for (const route of ROUTES) {
 
   test(`§5 ${route} — bg-pullim-* 배경이 실제로 칠해진다`, async ({ page }) => {
     await open(page, route);
+    await settle(page, '[class*="bg-pullim-"]');
     const { backgrounds } = await collectUtilityTargets(page);
 
     expect(
