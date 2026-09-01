@@ -99,13 +99,13 @@ export function PieListLayout({ blocks, paletteId, compact }: Props) {
         </svg>
 
         <div className="min-w-0 flex-1">
-          <p className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
+          <p className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             오늘 학습 분포
           </p>
           <p className="text-pullim-slate-900 mt-0.5 text-sm font-bold">
             {blocks.length}개 블록 · {(totalMin / 60).toFixed(1)}시간
           </p>
-          <p className="text-pullim-slate-500 mt-0.5 text-[11px]">
+          <p className="text-pullim-slate-500 mt-0.5 text-[length:var(--text-xs)]">
             도넛 = 블록 타입별 시간 비중
           </p>
         </div>
@@ -122,13 +122,13 @@ export function PieListLayout({ blocks, paletteId, compact }: Props) {
                 className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm"
                 style={{ background: seg.color }}
               />
-              <span className="text-pullim-slate-700 flex-1 truncate text-[11px] font-semibold">
+              <span className="text-pullim-slate-700 flex-1 truncate text-[length:var(--text-xs)] font-semibold">
                 {seg.label}
               </span>
-              <span className="text-pullim-slate-500 font-mono text-[10px]">
+              <span className="text-pullim-slate-500 font-mono text-[length:var(--text-xs)]">
                 {seg.minutes}분
               </span>
-              <span className="text-pullim-slate-900 w-9 text-right font-mono text-[10px] font-bold">
+              <span className="text-pullim-slate-900 w-9 text-right font-mono text-[length:var(--text-2xs)] font-bold">
                 {pct}%
               </span>
             </li>

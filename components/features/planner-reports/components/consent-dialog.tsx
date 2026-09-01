@@ -81,7 +81,7 @@ export function ConsentDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <span className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+          <span className="text-pullim-blue-600 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             <ShieldCheck aria-hidden className="mr-1 inline-block h-3 w-3" />
             데이터 공유 동의
           </span>
@@ -113,7 +113,7 @@ export function ConsentDialog({ open, onOpenChange }: Props) {
 
         {/* 항목 체크 */}
         <section>
-          <h4 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
+          <h4 className="text-pullim-slate-700 mb-2 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             공유할 항목
           </h4>
           <ul className="space-y-1.5">
@@ -140,12 +140,12 @@ export function ConsentDialog({ open, onOpenChange }: Props) {
                       <div className="text-pullim-slate-900 flex items-center gap-1.5 font-bold">
                         {meta.label}
                         {meta.sensitive && (
-                          <span className="bg-pullim-warn-bg text-pullim-warn rounded-full px-1.5 py-0.5 text-[9px] font-bold">
+                          <span className="bg-pullim-warn-bg text-pullim-warn rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)] font-bold">
                             민감
                           </span>
                         )}
                       </div>
-                      <div className="text-pullim-slate-500 mt-0.5 text-[11px]">
+                      <div className="text-pullim-slate-500 mt-0.5 text-[length:var(--text-xs)]">
                         {meta.description}
                       </div>
                     </div>
@@ -158,7 +158,7 @@ export function ConsentDialog({ open, onOpenChange }: Props) {
 
         {/* 만료 */}
         <section>
-          <h4 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
+          <h4 className="text-pullim-slate-700 mb-2 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             동의 기간
           </h4>
           <div role="radiogroup" aria-label="동의 기간" className="bg-pullim-slate-100 inline-flex w-full items-center gap-0.5 rounded-lg p-0.5">

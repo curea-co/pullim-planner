@@ -28,7 +28,7 @@ export function DeleteConfirmDialog({ open, onOpenChange, target, onConfirm }: P
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <span className="text-pullim-danger text-[10px] font-bold tracking-wider uppercase">
+          <span className="text-pullim-danger text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             <Trash2 aria-hidden className="mr-1 inline-block h-3 w-3" />
             시간표 삭제
           </span>

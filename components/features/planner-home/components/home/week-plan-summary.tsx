@@ -26,7 +26,7 @@ export function WeekPlanSummary({ days }: { days: WeekDay[] }) {
   return (
     <section className="bg-card flex flex-col rounded-2xl border p-5">
       <header className="mb-3">
-        <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+        <p className="text-pullim-blue-600 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           이번 주 계획
         </p>
         <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
@@ -44,14 +44,14 @@ export function WeekPlanSummary({ days }: { days: WeekDay[] }) {
             {totalHours}h
           </span>
         </div>
-        <div className="text-pullim-slate-500 mt-1 text-[11px]">
+        <div className="text-pullim-slate-500 mt-1 text-[length:var(--text-xs)]">
           학습 예정 <span className="text-pullim-blue-700 font-mono font-bold">{studyDays}</span>
           <span className="mx-0.5">/</span>7일
         </div>
       </div>
 
       <section className="mt-3">
-        <h3 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
+        <h3 className="text-pullim-slate-700 mb-2 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           블록 타입 구성
         </h3>
         {typeRows.length === 0 ? (
@@ -67,7 +67,7 @@ export function WeekPlanSummary({ days }: { days: WeekDay[] }) {
                   <span className="text-pullim-slate-700 flex-1 truncate font-semibold">
                     {meta.label}
                   </span>
-                  <span className={cn('text-pullim-slate-900 font-mono text-[11px] font-bold')}>
+                  <span className={cn('text-pullim-slate-900 font-mono text-[length:var(--text-2xs)] font-bold')}>
                     {count}개
                   </span>
                 </li>

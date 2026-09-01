@@ -142,7 +142,7 @@ function ConditionTrendCard() {
         <h3 className="text-pullim-slate-900 inline-flex items-center gap-1.5 text-sm font-bold">
           <Heart className="text-pullim-blue-600 h-3.5 w-3.5" /> 컨디션 trend
         </h3>
-        <span className="text-pullim-slate-500 text-[10px]">7일 자기 보고</span>
+        <span className="text-pullim-slate-500 text-[length:var(--text-xs)]">7일 자기 보고</span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-1">
         {weeklyConditionTrend.map(d => {
@@ -150,14 +150,14 @@ function ConditionTrendCard() {
           const h = (d.level / max) * 100;
           return (
             <div key={d.day} className="flex flex-1 flex-col items-center gap-1">
-              <span aria-hidden className="text-[14px]">{meta.emoji}</span>
+              <span aria-hidden className="text-[length:var(--text-base)]">{meta.emoji}</span>
               <div className="bg-pullim-slate-100 relative h-12 w-full overflow-hidden rounded">
                 <div
                   className="bg-pullim-blue-400 absolute bottom-0 w-full"
                   style={{ height: `${h}%` }}
                 />
               </div>
-              <span className="text-pullim-slate-500 text-[10px] font-semibold">{d.day}</span>
+              <span className="text-pullim-slate-500 text-[length:var(--text-2xs)] font-semibold">{d.day}</span>
             </div>
           );
         })}
@@ -174,7 +174,7 @@ function BurnoutTrendCard() {
         <h3 className="text-pullim-slate-900 inline-flex items-center gap-1.5 text-sm font-bold">
           <Battery className="text-pullim-blue-600 h-3.5 w-3.5" /> 번아웃 안전도
         </h3>
-        <span className="text-pullim-slate-500 text-[10px]">높을수록 안전</span>
+        <span className="text-pullim-slate-500 text-[length:var(--text-xs)]">높을수록 안전</span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-1">
         {weeklyBurnoutTrend.map(d => {
@@ -182,7 +182,7 @@ function BurnoutTrendCard() {
           const isLow = d.day === lowDay.day;
           return (
             <div key={d.day} className="flex flex-1 flex-col items-center gap-1">
-              <span className={cn('text-[10px] font-mono font-bold', isLow ? 'text-pullim-warn' : 'text-pullim-slate-600')}>
+              <span className={cn('text-[length:var(--text-2xs)] font-mono font-bold', isLow ? 'text-pullim-warn' : 'text-pullim-slate-600')}>
                 {d.score}
               </span>
               <div className="bg-pullim-slate-100 relative h-12 w-full overflow-hidden rounded">
@@ -191,13 +191,13 @@ function BurnoutTrendCard() {
                   style={{ height: `${h}%` }}
                 />
               </div>
-              <span className="text-pullim-slate-500 text-[10px] font-semibold">{d.day}</span>
+              <span className="text-pullim-slate-500 text-[length:var(--text-2xs)] font-semibold">{d.day}</span>
             </div>
           );
         })}
       </div>
       {lowDay.score < 60 && (
-        <p className="text-pullim-warn mt-2 text-[11px] font-semibold">
+        <p className="text-pullim-warn mt-2 text-[length:var(--text-xs)] font-semibold">
           {lowDay.day}요일이 좀 빡빡했어요. 30분 쉬어볼까요?
         </p>
       )}
@@ -230,12 +230,12 @@ function Metric({
     : null;
   return (
     <div className="bg-card rounded-xl border p-3">
-      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         <Icon className="h-3 w-3" />
         {label}
       </div>
       <div className={`mt-1 font-mono text-base font-bold ${valueClass}`}>{value}</div>
-      <div className="text-pullim-slate-500 mt-0.5 text-[10px] flex items-center justify-between gap-1">
+      <div className="text-pullim-slate-500 mt-0.5 text-[length:var(--text-xs)] flex items-center justify-between gap-1">
         <span className="truncate">{sub}</span>
         {deltaText && (
           <span

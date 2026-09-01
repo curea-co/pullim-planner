@@ -48,7 +48,7 @@ function AppSidebarInner({ onNavigate, className, compact, collapsed }: Props) {
       className={cn('flex flex-1 min-h-0 flex-col py-3', iconOnly ? 'items-center px-1.5' : 'px-2', className)}
     >
       {!iconOnly && (
-        <div className="text-[var(--text-tertiary)] px-2 pt-1 pb-1.5 font-mono text-[10px] font-medium tracking-[0.16em] uppercase">
+        <div className="text-[var(--text-tertiary)] px-2 pt-1 pb-1.5 font-mono text-[length:var(--text-2xs)] font-medium tracking-[0.16em] uppercase">
           풀림 플래너
         </div>
       )}
@@ -120,7 +120,7 @@ function NavRow({
           isActive
             ? 'bg-[var(--color-primary-50)] font-semibold text-[var(--color-action-primary)] before:opacity-100'
             : item.locked
-            ? 'text-[var(--text-tertiary)] cursor-not-allowed opacity-60'
+            ? 'text-[var(--text-tertiary)] cursor-not-allowed'
             : 'text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]',
         )}
       >

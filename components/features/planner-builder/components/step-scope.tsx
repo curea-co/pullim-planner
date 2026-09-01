@@ -239,7 +239,7 @@ function ScopeNote({ form, totalUnits, pending }: { form: PlannerForm; totalUnit
   const perUnit = budget && totalUnits > 0 ? Math.round((budget / totalUnits) * 10) / 10 : null;
 
   return (
-    <aside className="bg-pullim-blue-50 text-pullim-blue-700 flex w-full items-start gap-1.5 rounded-xl p-2.5 text-[11px] leading-relaxed">
+    <aside className="bg-pullim-blue-50 text-pullim-blue-700 flex w-full items-start gap-1.5 rounded-xl p-2.5 text-[length:var(--text-xs)] leading-relaxed">
       <Lightbulb aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span>
         {pending ? (
@@ -278,7 +278,7 @@ function ElectivePicker({
       <header className="mb-2 flex items-center justify-between gap-2">
         <div className="flex items-baseline gap-2">
           <h4 className="text-pullim-slate-900 text-sm font-bold">{subjectLabels[subject]}</h4>
-          <span className="bg-pullim-danger/10 text-pullim-danger rounded-full px-2 py-0.5 text-[10px] font-bold">
+          <span className="bg-pullim-danger/10 text-pullim-danger rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold">
             선택과목을 골라줘
           </span>
         </div>
@@ -354,7 +354,7 @@ function SubjectCard({
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <h4 className="text-pullim-slate-900 text-sm font-bold">{subjectLabels[subject]}</h4>
           {chosen.map(c => (
-            <span key={c} className="bg-pullim-blue-50 text-pullim-blue-700 rounded-full px-2 py-0.5 text-[10px] font-bold">
+            <span key={c} className="bg-pullim-blue-50 text-pullim-blue-700 rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold">
               {c}
             </span>
           ))}
@@ -362,16 +362,16 @@ function SubjectCard({
             <button
               type="button"
               onClick={onResetElectives}
-              className="text-pullim-slate-500 hover:text-pullim-blue-700 text-[10px] font-bold underline-offset-2 hover:underline"
+              className="text-pullim-slate-500 hover:text-pullim-blue-700 text-[length:var(--text-xs)] font-bold underline-offset-2 hover:underline"
             >
               바꾸기
             </button>
           )}
-          <span className="text-pullim-slate-500 font-mono text-[11px]">
+          <span className="text-pullim-slate-500 font-mono text-[length:var(--text-xs)]">
             {units.length}단원
           </span>
           {manual && (
-            <span className="bg-pullim-slate-100 text-pullim-slate-600 rounded-full px-2 py-0.5 text-[10px] font-bold">
+            <span className="bg-pullim-slate-100 text-pullim-slate-600 rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold">
               직접 정한 범위
             </span>
           )}
@@ -380,7 +380,7 @@ function SubjectCard({
           <button
             type="button"
             onClick={onEdit}
-            className="text-pullim-blue-700 hover:bg-pullim-blue-50 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-bold transition-colors"
+            className="text-pullim-blue-700 hover:bg-pullim-blue-50 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[length:var(--text-xs)] font-bold transition-colors"
           >
             <Pencil className="h-3 w-3" />
             단원 직접 편집
@@ -411,7 +411,7 @@ function SubjectCard({
                     aria-pressed={isCut}
                     onClick={() => onCut(u)}
                     className={cn(
-                      'rounded-md border px-2 py-1 text-[11px] transition-colors',
+                      'rounded-md border px-2 py-1 text-[length:var(--text-xs)] transition-colors',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500',
                       isCut
                         ? 'border-pullim-blue-500 bg-pullim-blue-50 text-pullim-blue-700 font-bold'
@@ -427,7 +427,7 @@ function SubjectCard({
             })}
           </ul>
           {orderedUnits.length === 0 && (
-            <p className="text-pullim-slate-500 text-[11px] italic">
+            <p className="text-pullim-slate-500 text-[length:var(--text-xs)] italic">
               교육과정 목록이 없어요 — [단원 직접 편집]에서 직접 적어주세요.
             </p>
           )}
@@ -435,19 +435,19 @@ function SubjectCard({
       ) : units.length > 0 ? (
         <ul className="flex flex-wrap gap-1">
           {preview.map(u => (
-            <li key={u} className="bg-pullim-slate-50 text-pullim-slate-700 rounded-md px-2 py-1 text-[11px]">
+            <li key={u} className="bg-pullim-slate-50 text-pullim-slate-700 rounded-md px-2 py-1 text-[length:var(--text-xs)]">
               {u}
             </li>
           ))}
           {rest > 0 && (
-            <li className="text-pullim-slate-500 rounded-md px-2 py-1 font-mono text-[11px]">+{rest}</li>
+            <li className="text-pullim-slate-500 rounded-md px-2 py-1 font-mono text-[length:var(--text-xs)]">+{rest}</li>
           )}
         </ul>
       ) : (
         <button
           type="button"
           onClick={onEdit}
-          className="text-pullim-slate-500 hover:text-pullim-blue-700 hover:bg-pullim-blue-50 border-pullim-slate-200 hover:border-pullim-blue-300 w-full rounded-md border border-dashed py-2.5 text-[11px] font-semibold italic transition-colors"
+          className="text-pullim-slate-500 hover:text-pullim-blue-700 hover:bg-pullim-blue-50 border-pullim-slate-200 hover:border-pullim-blue-300 w-full rounded-md border border-dashed py-2.5 text-[length:var(--text-xs)] font-semibold italic transition-colors"
         >
           단원이 비어 있어요 — 클릭해서 직접 설정
         </button>

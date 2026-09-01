@@ -51,7 +51,7 @@ export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, d
         )}
       >
         <div className="min-w-0 flex-1">
-          <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
+          <div className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             오늘 상태
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -77,7 +77,7 @@ export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, d
             </span>
           </div>
         </div>
-        <span className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[11px] font-semibold">
+        <span className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[length:var(--text-xs)] font-semibold">
           {open ? '접기' : '펼치기'}
           {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </span>

@@ -29,7 +29,7 @@ export function ActivateConfirmDialog({ open, onOpenChange, current, target, onC
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <span className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+          <span className="text-pullim-blue-600 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             <CheckCircle2 aria-hidden className="mr-1 inline-block h-3 w-3" />
             활성 시간표 변경
           </span>
@@ -44,14 +44,14 @@ export function ActivateConfirmDialog({ open, onOpenChange, current, target, onC
           {current && (
             <>
               <div className="min-w-0 flex-1">
-                <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">현재 활성</div>
+                <div className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">현재 활성</div>
                 <div className="text-pullim-slate-900 truncate text-sm font-bold">{current.name}</div>
               </div>
               <ArrowRight className="text-pullim-slate-400 h-4 w-4" aria-hidden />
             </>
           )}
           <div className="min-w-0 flex-1">
-            <div className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">변경 후</div>
+            <div className="text-pullim-blue-600 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">변경 후</div>
             <div className="text-pullim-slate-900 truncate text-sm font-bold">{target.name}</div>
           </div>
         </section>

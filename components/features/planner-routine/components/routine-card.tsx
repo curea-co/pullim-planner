@@ -41,7 +41,7 @@ export function RoutineCard({ routine, onEdit, onDelete }: RoutineCardProps) {
           </span>
         </div>
         <div className="mt-1">
-          <span className="bg-pullim-slate-100 text-pullim-slate-600 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold">
+          <span className="bg-pullim-slate-100 text-pullim-slate-600 inline-flex rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-semibold">
             {formatWeekdays(routine.weekdays)}
           </span>
         </div>

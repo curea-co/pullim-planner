@@ -19,10 +19,10 @@ export function ParentReportCard() {
       className="bg-pullim-blue-50/40 rounded-xl border border-pullim-blue-200 p-3.5"
     >
       <header className="flex items-center justify-between gap-2">
-        <span className="text-pullim-blue-700 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+        <span className="text-pullim-blue-700 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           <Heart className="h-3 w-3" /> 부모님이 받는 카드
         </span>
-        <span className="text-pullim-slate-500 text-[10px]">미리보기</span>
+        <span className="text-pullim-slate-500 text-[length:var(--text-xs)]">미리보기</span>
       </header>
 
       <h4 className="text-pullim-slate-900 mt-2 text-sm font-bold leading-snug">
@@ -42,12 +42,12 @@ export function ParentReportCard() {
                 : 'border-pullim-slate-200 bg-card',
             )}
           >
-            <div className="text-pullim-slate-500 text-[9px] font-bold tracking-wider uppercase">
+            <div className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
               {m.label}
             </div>
             <div
               className={cn(
-                'mt-0.5 font-mono text-[12px] font-bold',
+                'mt-0.5 font-mono text-[length:var(--text-xs)] font-bold',
                 m.tone === 'good' ? 'text-pullim-success'
                 : m.tone === 'warn' ? 'text-pullim-warn'
                 : 'text-pullim-slate-900',
@@ -59,18 +59,18 @@ export function ParentReportCard() {
         ))}
       </ul>
 
-      <p className="text-pullim-slate-700 mt-2.5 text-[11px] leading-relaxed">
+      <p className="text-pullim-slate-700 mt-2.5 text-[length:var(--text-xs)] leading-relaxed">
         {r.comment}
       </p>
 
       {r.upcomingMilestone && (
-        <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-card border border-pullim-slate-200 px-2 py-1 text-[10px] font-semibold text-pullim-slate-700">
+        <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-card border border-pullim-slate-200 px-2 py-1 text-[length:var(--text-xs)] font-semibold text-pullim-slate-700">
           <Flag className="text-pullim-warn h-3 w-3" />
           {r.upcomingMilestone}
         </div>
       )}
 
-      <p className="text-pullim-slate-500 mt-2 text-[10px] italic">
+      <p className="text-pullim-slate-500 mt-2 text-[length:var(--text-xs)] italic">
         {r.encouragement}
       </p>
     </article>

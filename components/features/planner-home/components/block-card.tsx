@@ -180,7 +180,7 @@ function BlockCardFull({ block, onComplete }: Props) {
         <span aria-hidden className={cn('absolute left-0 top-2 bottom-2 w-1 rounded-r', visual.stripe)} />
       )}
       {/* 헤더: 시간·과목·상태·케밥 */}
-      <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold">
+      <div className="mb-2 flex items-center gap-2 text-[length:var(--text-xs)] font-semibold">
         <span className="font-mono text-pullim-slate-700">
           {block.start}–{block.end}
         </span>
@@ -192,7 +192,7 @@ function BlockCardFull({ block, onComplete }: Props) {
         <span className="ml-auto" aria-hidden />
         {/* 상태 칩 — '대기'(todo)는 기본 상태라 칩 미노출(무표시=대기, 07-10 QA) */}
         {block.status !== 'todo' && (
-          <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px]', status.className)}>
+          <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)]', status.className)}>
             <StatusIcon className="h-2.5 w-2.5" />
             {status.label}
           </span>
@@ -228,7 +228,7 @@ function BlockCardFull({ block, onComplete }: Props) {
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-pullim-slate-500 text-[10px] font-semibold tracking-wider uppercase">
+          <div className="text-pullim-slate-500 text-[length:var(--text-xs)] font-semibold tracking-wider uppercase">
             {meta.label}
           </div>
           <h3 className={cn(
@@ -251,7 +251,7 @@ function BlockCardFull({ block, onComplete }: Props) {
       {isActive && (
         <div className="mt-2.5 flex items-center gap-2">
           <Progress value={block.progress * 100} className="h-1.5 flex-1" />
-          <span className="text-pullim-blue-700 shrink-0 font-mono text-[11px] font-bold tabular-nums">
+          <span className="text-pullim-blue-700 shrink-0 font-mono text-[length:var(--text-2xs)] font-bold tabular-nums">
             {Math.round(block.progress * 100)}%
           </span>
         </div>
@@ -263,7 +263,7 @@ function BlockCardFull({ block, onComplete }: Props) {
           <div className="flex flex-wrap items-center gap-1">
             {block.reasoning && (
               <span
-                className="bg-pullim-blue-50 text-pullim-blue-700 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                className="bg-pullim-blue-50 text-pullim-blue-700 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold"
                 title="이 블록이 여기 있는 이유"
               >
                 <Sparkles className="h-2.5 w-2.5" aria-hidden />
@@ -274,7 +274,7 @@ function BlockCardFull({ block, onComplete }: Props) {
               <PedagogyTag key={e} engineId={e} />
             ))}
             {block.engines.length > 2 && (
-              <span className="text-pullim-slate-500 text-[10px]">+{block.engines.length - 2}</span>
+              <span className="text-pullim-slate-500 text-[length:var(--text-2xs)]">+{block.engines.length - 2}</span>
             )}
           </div>
           {/* 잠금(자원 출시 전) 표시는 Q 연계와 별개라 유지. 시작/이어서 CTA 만
@@ -361,7 +361,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
       )}
       <div className="flex items-center gap-2">
         {/* 시간 */}
-        <span className="text-pullim-slate-700 shrink-0 font-mono text-[10px] font-bold tabular-nums">
+        <span className="text-pullim-slate-700 shrink-0 font-mono text-[length:var(--text-2xs)] font-bold tabular-nums">
           {block.start}
         </span>
 
@@ -384,7 +384,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
         <div className="min-w-0 flex-1">
           <h3
             className={cn(
-              'truncate text-[12.5px] font-semibold leading-tight',
+              'truncate text-[length:var(--text-sm)] font-semibold leading-tight',
               isDone ? 'text-pullim-slate-500 line-through decoration-pullim-slate-300' : 'text-pullim-slate-900',
             )}
             title={block.title}
@@ -393,7 +393,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
           </h3>
           {block.reasoning && (
             <span
-              className="text-pullim-blue-700 mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-semibold"
+              className="text-pullim-blue-700 mt-0.5 inline-flex items-center gap-0.5 text-[length:var(--text-xs)] font-semibold"
               title="이 블록이 여기 있는 이유"
             >
               <Sparkles className="h-2.5 w-2.5" aria-hidden />
@@ -404,7 +404,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
 
         {/* 완료 시 정확도/감정 */}
         {isDone && block.accuracy !== undefined && (
-          <span className="text-pullim-slate-700 shrink-0 font-mono text-[11px] font-bold">
+          <span className="text-pullim-slate-700 shrink-0 font-mono text-[length:var(--text-2xs)] font-bold">
             {block.accuracy}%
             {emotionEmoji && <span aria-hidden className="ml-1 text-sm">{emotionEmoji}</span>}
           </span>
@@ -414,7 +414,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
         {block.status !== 'todo' && (
           <span
             className={cn(
-              'inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold',
+              'inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)] font-bold',
               status.className,
             )}
           >
@@ -429,7 +429,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
             <button
               type="button"
               onClick={notifyLockedAction}
-              className="bg-pullim-slate-50 text-pullim-slate-400 inline-flex cursor-not-allowed shrink-0 items-center gap-0.5 rounded-md px-2 py-1 text-[11px] font-bold"
+              className="bg-pullim-slate-50 text-pullim-slate-400 inline-flex cursor-not-allowed shrink-0 items-center gap-0.5 rounded-md px-2 py-1 text-[length:var(--text-xs)] font-bold"
               aria-label="출시 준비 중"
             >
               <Lock className="h-3 w-3" />
@@ -439,7 +439,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
             <Link
               href={target}
               className={cn(
-                'inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors',
+                'inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[length:var(--text-xs)] font-bold transition-colors',
                 isActive
                   ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
                   : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',
@@ -453,7 +453,7 @@ function BlockCardCompact({ block, onComplete }: Props) {
               type="button"
               onClick={notifyQNoAccess}
               className={cn(
-                'inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors',
+                'inline-flex shrink-0 items-center gap-0.5 rounded-md px-2.5 py-1 text-[length:var(--text-xs)] font-bold transition-colors',
                 isActive
                   ? 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700'
                   : 'bg-pullim-slate-100 text-pullim-slate-700 hover:bg-pullim-slate-200',

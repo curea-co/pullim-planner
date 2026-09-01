@@ -67,12 +67,12 @@ export default function RoutineListPresenter({
           <div className="bg-card flex items-center gap-1 rounded-xl border p-2">
             {WEEKDAY_ORDER.map((d) => (
               <div key={d} className="flex flex-1 flex-col items-center gap-1 py-1">
-                <span className="text-pullim-slate-500 text-[11px] font-bold">{WEEKDAY_LABELS[d]}</span>
+                <span className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold">{WEEKDAY_LABELS[d]}</span>
                 <span
                   className={
                     counts[d] > 0
-                      ? 'bg-pullim-blue-600 text-white inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold'
-                      : 'bg-pullim-slate-100 text-pullim-slate-400 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold'
+                      ? 'bg-pullim-blue-600 text-white inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[length:var(--text-2xs)] font-bold'
+                      : 'bg-pullim-slate-100 text-pullim-slate-400 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[length:var(--text-2xs)] font-bold'
                   }
                   aria-label={`${WEEKDAY_LABELS[d]}요일 루틴 ${counts[d]}개`}
                 >

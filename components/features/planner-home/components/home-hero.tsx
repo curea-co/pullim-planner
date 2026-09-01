@@ -33,7 +33,7 @@ export function HomeHero({ examName, dday, hasActivePlanner = true, daySummary, 
     >
       <HeroMotion3D />
       <div className="relative z-10">
-        <div className="flex items-center gap-1.5 font-mono text-[10px] font-medium tracking-[0.16em] text-white/70 uppercase">
+        <div className="flex items-center gap-1.5 font-mono text-[length:var(--text-2xs)] font-medium tracking-[0.16em] text-white/70 uppercase">
           <span aria-hidden className="bg-pullim-lemon h-1.5 w-1.5 rounded-full" />
           Pullim Planner
         </div>
@@ -48,13 +48,13 @@ export function HomeHero({ examName, dday, hasActivePlanner = true, daySummary, 
             <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">
               아직 시간표가 없어요
             </h2>
-            <p className="mt-1 text-[13px] text-white/80">
+            <p className="mt-1 text-[length:var(--text-sm)] text-white/80">
               시간표를 만들고 활성화하면 D-DAY와 학습 현황이 여기에 표시돼요.
             </p>
           </>
         )}
         {(showDay || showWeek) && (
-          <p className="mt-1 text-[13px] text-white/80">
+          <p className="mt-1 text-[length:var(--text-sm)] text-white/80">
             {showDay && (
               <>
                 오늘 <strong className="font-bold text-white">{daySummary.done}/{daySummary.total}</strong> 블록 완료
@@ -71,7 +71,7 @@ export function HomeHero({ examName, dday, hasActivePlanner = true, daySummary, 
         {urgent && (
           <p
             role="status"
-            className="text-pullim-lemon mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium"
+            className="text-pullim-lemon mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[length:var(--text-xs)] font-medium"
           >
             <span aria-hidden className="bg-pullim-lemon h-1 w-1 rounded-full" />
             {urgentCopy}

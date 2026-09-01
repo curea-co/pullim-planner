@@ -37,12 +37,12 @@ export function ChecklistLayout({ blocks, paletteId, compact }: Props) {
             className={cn(
               'border-pullim-slate-100 flex items-center gap-2.5 border-b px-3 py-2 last:border-b-0',
               isDoing && 'bg-pullim-blue-50/40',
-              isDone && 'opacity-60',
-              isSkipped && 'opacity-70',
+              // 알파 대신 면으로 후퇴 (계약 §4.1). 상태는 취소선·체크박스가 나른다.
+              (isDone || isSkipped) && 'bg-pullim-slate-50',
             )}
           >
             {/* 시간 */}
-            <span className="text-pullim-slate-500 w-16 shrink-0 font-mono text-[10px] font-bold">
+            <span className="text-pullim-slate-500 w-16 shrink-0 font-mono text-[length:var(--text-2xs)] font-bold">
               {b.start}
             </span>
 
@@ -63,7 +63,7 @@ export function ChecklistLayout({ blocks, paletteId, compact }: Props) {
               >
                 {b.title}
               </div>
-              <div className="text-pullim-slate-500 truncate text-[10px]">
+              <div className="text-pullim-slate-500 truncate text-[length:var(--text-xs)]">
                 {meta.label} · {subjectLabel} · {b.expectedMinutes}분
               </div>
             </div>

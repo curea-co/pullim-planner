@@ -83,7 +83,7 @@ export function PlannerWizard({
             <StepIcon className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
+            <div className="text-pullim-slate-500 text-[length:var(--text-2xs)] font-bold tracking-wider uppercase">
               Step {currentStep} / {plannerStepConfig.length}
             </div>
             <h2 className="text-pullim-slate-900 mt-0.5 text-lg font-bold tracking-tight">
@@ -136,11 +136,11 @@ export function PlannerWizard({
 
           {/* 막힌 이유는 숨기지 않는다 — 무엇을 더 해야 넘어가는지 그 자리에서 보여준다 */}
           {blockedReason ? (
-            <p className="text-pullim-danger min-w-0 text-center text-[11px] font-semibold">
+            <p className="text-pullim-danger min-w-0 text-center text-[length:var(--text-xs)] font-semibold">
               {blockedReason}
             </p>
           ) : (
-            <div className="text-pullim-slate-500 hidden font-mono text-[10px] sm:block">
+            <div className="text-pullim-slate-500 hidden font-mono text-[length:var(--text-xs)] sm:block">
               {currentStep}/{plannerStepConfig.length} — {stepInfo.label}
             </div>
           )}

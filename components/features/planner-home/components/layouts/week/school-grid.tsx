@@ -75,7 +75,7 @@ export function SchoolGridLayout({ paletteId, compact, days: daysProp }: Props) 
       )}
     >
       <div className="overflow-x-auto">
-        <table className="w-full text-[10px]">
+        <table className="w-full text-[length:var(--text-2xs)]">
           <thead>
             <tr>
               <th
@@ -95,7 +95,7 @@ export function SchoolGridLayout({ paletteId, compact, days: daysProp }: Props) 
                 >
                   <div>{d.day}</div>
                   <div className={cn(
-                    'font-mono text-[9px]',
+                    'font-mono text-[length:var(--text-2xs)]',
                     d.isToday ? 'text-pullim-blue-700' : 'text-pullim-slate-500',
                   )}>
                     {d.date}
@@ -109,7 +109,7 @@ export function SchoolGridLayout({ paletteId, compact, days: daysProp }: Props) 
               <tr key={periodIdx} className="border-pullim-slate-100 border-t">
                 <th
                   scope="row"
-                  className="text-pullim-slate-600 bg-pullim-slate-25 px-1 py-1 text-left font-mono text-[9px] font-semibold"
+                  className="text-pullim-slate-600 bg-pullim-slate-25 px-1 py-1 text-left font-mono text-[length:var(--text-2xs)] font-semibold"
                 >
                   {periodIdx + 1}
                 </th>
@@ -121,7 +121,7 @@ export function SchoolGridLayout({ paletteId, compact, days: daysProp }: Props) 
                         key={d.day}
                         className="border-pullim-slate-100 border-l p-0.5"
                       >
-                        <div className="bg-pullim-slate-25 text-pullim-slate-300 flex h-7 items-center justify-center rounded text-[8px]">
+                        <div className="bg-pullim-slate-25 text-pullim-slate-300 flex h-7 items-center justify-center rounded text-[length:var(--text-xs)]">
                           자습
                         </div>
                       </td>
@@ -136,7 +136,7 @@ export function SchoolGridLayout({ paletteId, compact, days: daysProp }: Props) 
                       title={label}
                     >
                       <div
-                        className="text-pullim-slate-900 flex h-7 items-center justify-center rounded px-0.5 text-[8.5px] font-semibold leading-tight"
+                        className="text-pullim-slate-900 flex h-7 items-center justify-center rounded px-0.5 text-[length:var(--text-xs)] font-semibold leading-tight"
                         style={{ background: color, opacity: 0.85 }}
                       >
                         <span className="truncate">{label}</span>
