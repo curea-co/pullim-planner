@@ -518,7 +518,7 @@ function UnitCheckRow({
           <span className={cn(
             'rounded-full px-1.5 py-0.5 font-mono text-[length:var(--text-2xs)] font-bold',
             badgeTone === 'warn'
-              ? 'bg-pullim-warn-bg text-pullim-warn'
+              ? 'bg-pullim-warn-bg text-pullim-warn-ink'
               : 'bg-pullim-blue-50 text-pullim-blue-700',
           )}>
             {badge}

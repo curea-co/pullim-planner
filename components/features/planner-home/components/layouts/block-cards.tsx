@@ -95,11 +95,11 @@ export function BlockCardsLayout({ blocks, paletteId, compact }: Props) {
                 className={cn(
                   'shrink-0 self-start rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold tracking-wider uppercase',
                   isDone
-                    ? 'bg-pullim-success-bg text-pullim-success'
+                    ? 'bg-pullim-success-bg text-pullim-success-ink'
                     : isDoing
                     ? 'bg-pullim-blue-100 text-pullim-blue-700'
                     : isSkipped
-                    ? 'bg-pullim-warn-bg text-pullim-warn'
+                    ? 'bg-pullim-warn-bg text-pullim-warn-ink'
                     : 'bg-pullim-slate-100 text-pullim-slate-600',
                 )}
               >

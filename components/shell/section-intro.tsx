@@ -125,7 +125,7 @@ function baseClass(sub: SubRoute): string {
   return cn(
     'group bg-card flex h-full flex-col rounded-xl border p-3.5 transition-all',
     sub.locked
-      ? 'opacity-60 cursor-not-allowed border-dashed'
+      ? 'cursor-not-allowed border-dashed'
       : 'hover:border-pullim-blue-300 hover:shadow-pullim-md',
     sub.signature && !sub.locked && 'ring-pullim-warn/30 ring-2',
   );

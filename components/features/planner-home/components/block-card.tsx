@@ -22,10 +22,10 @@ import { Q_LINK_ENABLED } from '@/lib/flags';
 import { cn } from '@/lib/utils';
 
 const statusMeta = {
-  done:    { label: '완료',  Icon: Check,  className: 'text-pullim-success bg-pullim-success-bg' },
+  done:    { label: '완료',  Icon: Check,  className: 'text-pullim-success-ink bg-pullim-success-bg' },
   doing:   { label: '진행',  Icon: Pause,  className: 'text-pullim-blue-700 bg-pullim-blue-100' },
   todo:    { label: '대기',  Icon: Play,   className: 'text-pullim-slate-600 bg-pullim-slate-100' },
-  skipped: { label: '이월', Icon: Clock,  className: 'text-pullim-warn bg-pullim-warn-bg' },
+  skipped: { label: '이월', Icon: Clock,  className: 'text-pullim-warn-ink bg-pullim-warn-bg' },
 } as const;
 
 /**

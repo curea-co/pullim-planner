@@ -17,8 +17,8 @@ import { cn } from '@/lib/utils';
 
 const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: string; bg: string }> = {
   sparkle: { Icon: Sparkles,        tone: 'text-pullim-blue-700',   bg: 'bg-pullim-blue-50' },
-  check:   { Icon: CheckCircle2,    tone: 'text-pullim-success',    bg: 'bg-pullim-success-bg' },
-  warn:    { Icon: AlertTriangle,   tone: 'text-pullim-warn',       bg: 'bg-pullim-warn-bg' },
+  check:   { Icon: CheckCircle2,    tone: 'text-pullim-success-ink',    bg: 'bg-pullim-success-bg' },
+  warn:    { Icon: AlertTriangle,   tone: 'text-pullim-warn-ink',       bg: 'bg-pullim-warn-bg' },
 };
 
 /**
@@ -95,7 +95,7 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
               </>
             )}
             {allFinished && (
-              <span className="bg-pullim-success-bg text-pullim-success ml-2 rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold">
+              <span className="bg-pullim-success-bg text-pullim-success-ink ml-2 rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold">
                 오늘 끝!
               </span>
             )}
@@ -226,10 +226,10 @@ function Metric({
 }
 
 const statusBadge = {
-  done:    { Icon: CheckCircle2, className: 'text-pullim-success bg-pullim-success-bg', label: '완료' },
+  done:    { Icon: CheckCircle2, className: 'text-pullim-success-ink bg-pullim-success-bg', label: '완료' },
   doing:   { Icon: Sparkles,     className: 'text-pullim-blue-700 bg-pullim-blue-100',  label: '진행' },
   todo:    { Icon: Clock,        className: 'text-pullim-slate-600 bg-pullim-slate-100', label: '대기' },
-  skipped: { Icon: AlertTriangle, className: 'text-pullim-warn bg-pullim-warn-bg',       label: '이월' },
+  skipped: { Icon: AlertTriangle, className: 'text-pullim-warn-ink bg-pullim-warn-bg',       label: '이월' },
 } as const;
 
 function BlockRow({ block }: { block: TimeBlock }) {

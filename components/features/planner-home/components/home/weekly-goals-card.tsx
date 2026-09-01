@@ -14,8 +14,8 @@ import { cn } from '@/lib/utils';
 
 const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: string; bg: string }> = {
   sparkle: { Icon: Sparkles,        tone: 'text-pullim-blue-700',   bg: 'bg-pullim-blue-50' },
-  check:   { Icon: CheckCircle2,    tone: 'text-pullim-success',    bg: 'bg-pullim-success-bg' },
-  warn:    { Icon: AlertTriangle,   tone: 'text-pullim-warn',       bg: 'bg-pullim-warn-bg' },
+  check:   { Icon: CheckCircle2,    tone: 'text-pullim-success-ink',    bg: 'bg-pullim-success-bg' },
+  warn:    { Icon: AlertTriangle,   tone: 'text-pullim-warn-ink',       bg: 'bg-pullim-warn-bg' },
 };
 
 const homeWeeklyInsights: ReflectionInsight[] = [

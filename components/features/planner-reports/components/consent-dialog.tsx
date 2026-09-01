@@ -140,7 +140,7 @@ export function ConsentDialog({ open, onOpenChange }: Props) {
                       <div className="text-pullim-slate-900 flex items-center gap-1.5 font-bold">
                         {meta.label}
                         {meta.sensitive && (
-                          <span className="bg-pullim-warn-bg text-pullim-warn rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)] font-bold">
+                          <span className="bg-pullim-warn-bg text-pullim-warn-ink rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)] font-bold">
                             민감
                           </span>
                         )}

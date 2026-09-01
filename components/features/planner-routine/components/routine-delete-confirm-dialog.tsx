@@ -39,7 +39,7 @@ export function RoutineDeleteConfirmDialog({ open, onOpenChange, target, onConfi
         </DialogHeader>
 
         <DialogBody>
-        <aside className="bg-pullim-warn-bg text-pullim-warn flex items-start gap-2 rounded-lg p-3 text-xs">
+        <aside className="bg-pullim-warn-bg text-pullim-warn-ink flex items-start gap-2 rounded-lg p-3 text-xs">
           <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <strong className="block">이 루틴이 라이브러리에서 삭제돼요</strong>
