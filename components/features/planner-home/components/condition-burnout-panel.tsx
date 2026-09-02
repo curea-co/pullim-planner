@@ -51,7 +51,7 @@ export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, d
         )}
       >
         <div className="min-w-0 flex-1">
-          <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
+          <div className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             오늘 상태
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -66,9 +66,9 @@ export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, d
               className={cn(
                 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs font-bold',
                 score === null ? 'bg-pullim-slate-100 text-pullim-slate-400'
-                : burnoutTone === 'good' ? 'bg-pullim-success-bg text-pullim-success'
-                : burnoutTone === 'warn' ? 'bg-pullim-warn-bg text-pullim-warn-cta-bg'
-                : 'bg-pullim-danger-bg text-pullim-danger',
+                : burnoutTone === 'good' ? 'bg-pullim-success-bg text-pullim-success-ink'
+                : burnoutTone === 'warn' ? 'bg-pullim-warn-bg text-pullim-warn-ink'
+                : 'bg-pullim-danger-bg text-pullim-danger-ink',
               )}
               title={score === null ? '번아웃 안전도 — 블록을 완료하면 계산돼요' : '번아웃 안전도 — 높을수록 안전'}
             >
@@ -77,7 +77,7 @@ export function ConditionBurnoutPanel({ condition, burnout, onConditionChange, d
             </span>
           </div>
         </div>
-        <span className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[11px] font-semibold">
+        <span className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[length:var(--text-xs)] font-semibold">
           {open ? '접기' : '펼치기'}
           {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </span>

@@ -28,7 +28,7 @@ export function DeleteConfirmDialog({ open, onOpenChange, target, onConfirm }: P
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <span className="text-pullim-danger text-[10px] font-bold tracking-wider uppercase">
+          <span className="text-pullim-danger text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             <Trash2 aria-hidden className="mr-1 inline-block h-3 w-3" />
             시간표 삭제
           </span>
@@ -39,7 +39,7 @@ export function DeleteConfirmDialog({ open, onOpenChange, target, onConfirm }: P
         </DialogHeader>
 
         <DialogBody>
-        <aside className="bg-pullim-warn-bg text-pullim-warn flex items-start gap-2 rounded-lg p-3 text-xs">
+        <aside className="bg-pullim-warn-bg text-pullim-warn-ink flex items-start gap-2 rounded-lg p-3 text-xs">
           <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <strong className="block">이 시간표의 메타·설정이 모두 삭제돼요</strong>

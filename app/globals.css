@@ -4,14 +4,26 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* PUDS (Pullim Design System) 토큰 — gray/semantic ramp(_base) + 서비스 테마(pullim-os / pullim-jr).
- * 소비: <html data-theme="pullim-os"> — 플래너 기본 = OS 미감(radius 8/12px). os↔jr 전환 시 radius·색·shadow 가
- * 아래 @theme 별칭을 통해 토큰으로 함께 따라감. (os/jr 두 테마 CSS 모두 import — 활성은 data-theme 로 선택) */
+/* PUDS (Pullim Design System) 토큰 — 원격 레지스트리에서 벤더링. 로컬 수정 금지.
+ *   재설치: bunx shadcn@latest add @puds/theme-puds   (URL 은 components.json 의 @puds — 버전 고정)
+ *   유일한 로컬 델타: --radius-* → --puds-radius-* 리네임(아래 @theme inline 자기참조 회피). 재싱크 후 재적용할 것.
+ *
+ * 두 축이 별개다:
+ *   data-theme  = 성격 (pullim-os · pullim-jr) — 라운드·모션·그림자.  플래너 기본 = pullim-os
+ *   data-scheme = 명암 (light · dark)          — 표면·글자·경계.      next-themes 가 <html> 에 배선
+ * (os/jr 두 테마 CSS 모두 import — 활성은 data-theme 로 선택)
+ *
+ * _animations.css 는 벤더링만 하고 import 하지 않는다. tw-animate-css(line 4)가 이미
+ * animate-in/out · fade-* · zoom-* · slide-in-from-*-N 을 제공하며 PUDS 파일의 상위집합이다.
+ * 둘 다 import 하면 PUDS 의 `@utility animate-in`(puds-enter 키프레임)이 tw-animate-css 를 덮어
+ * --tw-enter-* 를 읽지 못하게 되고, 현재 쓰이는 slide-in-from-{right,left,top,bottom}-2(16곳)의
+ * 슬라이드가 죽는다. 근거·판별표: CLAUDE.md § UI 컴포넌트. */
 @import "./tokens/_base.css";
 @import "./tokens/pullim-os.css";
 @import "./tokens/pullim-jr.css";
 
-@custom-variant dark (&:is(.dark *));
+/* dark: 유틸리티를 PUDS 명암 축에 물린다. (.dark 클래스 축은 폐기 — 다크 정의는 data-scheme 하나뿐) */
+@custom-variant dark (&:where([data-scheme="dark"], [data-scheme="dark"] *));
 
 @theme inline {
   /* 폰트 */
@@ -65,29 +77,51 @@
   --color-pullim-blue-900: var(--color-primary-900);
   --color-pullim-blue-950: var(--color-primary-950);
 
-  /* 풀림 슬레이트 → PUDS gray ramp 별칭 (0/25는 surface/최상단 톤 유지) */
-  --color-pullim-slate-0:   var(--surface-raised);
-  /* 25는 white~gray-50 사이 별도 상단 톤 — 50과 수렴 방지(미세 대비 유지) */
-  --color-pullim-slate-25:  color-mix(in oklab, var(--surface-raised), var(--color-gray-50));
-  --color-pullim-slate-50:  var(--color-gray-50);
-  --color-pullim-slate-100: var(--color-gray-100);
-  --color-pullim-slate-200: var(--color-gray-200);
-  --color-pullim-slate-300: var(--color-gray-300);
-  --color-pullim-slate-400: var(--color-gray-400);
-  --color-pullim-slate-500: var(--color-gray-500);
-  --color-pullim-slate-600: var(--color-gray-600);
-  --color-pullim-slate-700: var(--color-gray-700);
-  --color-pullim-slate-800: var(--color-gray-800);
-  --color-pullim-slate-900: var(--color-gray-900);
-  --color-pullim-slate-950: var(--color-gray-950);
+  /* 풀림 슬레이트 → PUDS gray ramp 별칭.
+   * ⚠ @theme inline 은 값을 유틸리티에 인라인해 버리므로 여기서 --color-gray-* 를 직접 쓰면
+   * data-scheme 으로 뒤집을 방법이 사라진다. 화면 표면이 이 램프 utility 536곳으로 짜여 있어
+   * (text-pullim-slate-900 107 · text-pullim-slate-500 206 · border-pullim-slate-200 76 …)
+   * 뒤집히지 않으면 다크에서 '어두운 카드 위 검은 글자'가 된다.
+   * → 한 겹 우회(--pl-slate-*)를 두고 실제 값은 아래 :root / [data-scheme="dark"] 에서 정한다. */
+  --color-pullim-slate-0:   var(--pl-slate-0);
+  --color-pullim-slate-25:  var(--pl-slate-25);
+  --color-pullim-slate-50:  var(--pl-slate-50);
+  --color-pullim-slate-100: var(--pl-slate-100);
+  --color-pullim-slate-200: var(--pl-slate-200);
+  --color-pullim-slate-300: var(--pl-slate-300);
+  --color-pullim-slate-400: var(--pl-slate-400);
+  --color-pullim-slate-500: var(--pl-slate-500);
+  --color-pullim-slate-600: var(--pl-slate-600);
+  --color-pullim-slate-700: var(--pl-slate-700);
+  --color-pullim-slate-800: var(--pl-slate-800);
+  --color-pullim-slate-900: var(--pl-slate-900);
+  --color-pullim-slate-950: var(--pl-slate-950);
 
-  /* 시맨틱 → PUDS success/warning/danger ramp 별칭 */
-  --color-pullim-success:    var(--color-success-600);
-  --color-pullim-success-bg: var(--color-success-50);
-  --color-pullim-warn:       var(--color-warning-600);
-  --color-pullim-warn-bg:    var(--color-warning-50);
-  --color-pullim-danger:     var(--color-danger-600);
-  --color-pullim-danger-bg:  var(--color-danger-50);
+  /* 시맨틱 → PUDS success/warning/danger ramp 별칭 (같은 이유로 우회) */
+  --color-pullim-success:    var(--pl-success);
+  --color-pullim-success-bg: var(--pl-success-bg);
+  --color-pullim-warn:       var(--pl-warn);
+  --color-pullim-warn-bg:    var(--pl-warn-bg);
+  --color-pullim-danger:     var(--pl-danger);
+  --color-pullim-danger-bg:  var(--pl-danger-bg);
+
+  /* 틴트 칩 잉크 — 「-bg 면 위에 얹는 글자」 역할. PUDS 가 이 용도로 설계해 둔
+   * --on-container-* 쌍을 그대로 쓴다(_base.css: :root 라이트 / [data-scheme="dark"] 다크).
+   *
+   * 왜 --color-pullim-{warn,success,danger} 를 그대로 쓰면 안 되나 — 그건 -600(라이트)
+   * /-500(다크) 이라 자기 -bg 틴트 위에서 AA 에 못 미친다. 실측(라이트 → 다크):
+   *   warn    2.83 / 4.54  ·  success 3.34 / 4.68  ·  danger 4.36 / 2.63
+   * 그 토큰들은 흰 표면 위 단독 accent(아이콘·실선 채움)에 계속 쓰이므로 값을 바꿀 수 없다.
+   * 역할이 둘이니 이름도 둘이어야 한다. -ink 접미사는 이 파일이 --color-pullim-lemon-ink
+   * 로 이미 쓰고 있는 어휘다(bg-pullim-lemon-soft + text-pullim-lemon-ink).
+   *
+   * --pl-* 우회가 필요 없다 — --on-container-* 자체가 이미 [data-scheme="dark"] 로 뒤집히고,
+   * @theme inline 은 선언값(= var(...) 참조)을 유틸리티에 넣으므로 참조가 살아남는다.
+   * --container-* / --on-container-* 는 [data-theme] 이 아니라 :root 스코프라
+   * data-theme 폴백(#218)에 추가할 것이 없다. */
+  --color-pullim-success-ink: var(--on-container-success);
+  --color-pullim-warn-ink:    var(--on-container-warning);
+  --color-pullim-danger-ink:  var(--on-container-danger);
 
   /* IRT 난이도 5단계 */
   --color-pullim-lvl-1: #E5EEFF;
@@ -102,14 +136,15 @@
   --color-pullim-lemon-soft: #F4FFB8;
   --color-pullim-lemon-ink: #5C6B0A;
 
-  /* 보조 색 — 블록 타입별 아이콘 컨테이너 (11-planner-design § 5.1) */
-  --color-pullim-violet-50: #F5F3FF;
+  /* 보조 색 — 블록 타입별 아이콘 컨테이너 (11-planner-design § 5.1).
+   * -50 틴트는 다크에서 밝은 블록이 되므로 우회 변수로 뺀다(-600 은 두 스킴 모두 통과). */
+  --color-pullim-violet-50: var(--pl-violet-50);
   --color-pullim-violet-600: #7C3AED;
-  --color-pullim-teal-50:   #ECFDF5;
+  --color-pullim-teal-50:   var(--pl-teal-50);
   --color-pullim-teal-600:  #0D9488;
 
-  /* 학습 히트맵 6단계 */
-  --color-pullim-heat-0: #F0F3F9;
+  /* 학습 히트맵 6단계 — 0(활동 없음)은 표면 톤이라 우회, 1~5는 데이터 스케일이라 고정 */
+  --color-pullim-heat-0: var(--pl-heat-0);
   --color-pullim-heat-1: #D9E5FB;
   --color-pullim-heat-2: #A9C4FF;
   --color-pullim-heat-3: #5A8BFF;
@@ -129,6 +164,22 @@
   --radius-3xl: calc(var(--puds-radius-2xl) + 8px);
   --radius-4xl: calc(var(--puds-radius-2xl) + 16px);
   --radius-pill: var(--puds-radius-full);
+
+  /* 풀림 그림자 → PUDS elevation 토큰 별칭 (data-theme별 스케일 따라감 — os↔jr 전환 시 elevation도 전환).
+   * ⚠ 반드시 @theme 안에 있어야 한다. Tailwind v4 는 @theme 네임스페이스의 --shadow-* 만 읽어
+   * shadow-* 유틸리티를 만든다. 맨 :root 에 두면 커스텀 프로퍼티는 생기지만 .shadow-pullim-*
+   * 규칙이 아예 생성되지 않아 사용처 25곳이 조용히 무효가 된다(그림자가 사라진다).
+   *
+   * ⚠ 그리고 shadow-pullim-sm 을 stock shadow-sm 으로 바꾸는 것은 등가 교환이 아니다.
+   * .shadow-sm 은 Tailwind 기본값(0 1px 3px 0 rgb(0 0 0/.1) …)을 빌드 시점에 인라인할 뿐
+   * var(--shadow-sm) 을 런타임에 읽지 않는다. 벤더링 토큰이 맨 :root 에서 덮은 PUDS elevation
+   * (0 1px 2px rgba(13,26,31,.06))에 도달하지 못하고, data-theme·data-scheme 추종도 잃는다.
+   * 값을 var() 로 유지하려면 여기 별칭이 필요하다 — 컴파일 결과: --tw-shadow: var(--shadow-sm). */
+  --shadow-pullim-xs: var(--shadow-sm);
+  --shadow-pullim-sm: var(--shadow-sm);
+  --shadow-pullim-md: var(--shadow-md);
+  --shadow-pullim-lg: var(--shadow-lg);
+  --shadow-pullim-glow: 0 0 0 3px color-mix(in oklch, var(--focus-ring-color) 22%, transparent);
 
   /* 모션 — duration / easing 토큰 (08-design-system § 10) */
   --pullim-duration-fast: 120ms;
@@ -150,8 +201,102 @@
   --pullim-viewport-safety-padding: 2rem;
 }
 
+/* ═══ data-theme 부재 시 폴백 — pullim-os 라이트 값 한 벌 ═════════════════════
+ * 아래 토큰들은 app/tokens/pullim-{os,jr}.css 의 [data-theme=…] 블록에만 있고
+ * 벤더링 _base.css 의 :root 에는 없다. 지금 화면이 멀쩡한 건 app/layout.tsx 가
+ * <html data-theme="pullim-os"> 를 정적으로 찍어 주기 때문이고, 방어선이 그 JSX 한 줄뿐이다.
+ * 그 줄이 사라지면 약 543 개 유틸리티 인스턴스가 값을 잃는다.
+ *
+ * 「빈 값」보다 나쁜 게 「대체」다 — --shadow-sm/md/lg 는 Tailwind 기본 테마에 같은 이름이
+ * 있어서 조용히 그럴듯한 다른 그림자로 바뀐다(실측: 0 1px 2px rgba(13,26,31,.06) →
+ * 0 1px 3px 0 rgb(0 0 0/.1)). 육안으로 탐지되지 않는다.
+ *
+ * ⚠ 선택자가 :where(:root) 인 이유 — 특정도 0 이라야 안전하다.
+ * 이 파일의 :root 블록들은 컴파일 결과에서 [data-theme=…] 블록보다 **뒤에** 온다
+ * (@import 는 파일 맨 위에서 인라인되므로 tokens/*.css 가 먼저다).
+ * :root 와 [data-theme="pullim-os"] 는 특정도가 (0,1,0) 으로 같아서 소스 순서가 이기고,
+ * 따라서 맨 :root 로 쓰면 폴백이 테마를 **덮어버린다** — pullim-jr 이 os 로 뭉개지고
+ * _base.css 의 [data-scheme="dark"](레이어 없는 (0,1,0), 이 블록보다 앞)도 함께 죽는다.
+ * :where() 로 감싸 특정도를 0 으로 낮추면 어떤 테마·스킴 블록이든 순서와 무관하게 이긴다.
+ * 레이어 밖이라 @layer theme 의 Tailwind 기본값은 여전히 이 폴백이 이긴다.
+ *
+ * 값 출처: app/tokens/pullim-os.css 의 [data-theme="pullim-os"] 첫(라이트) 블록.
+ * 다크 블록에서 가져오지 말 것. */
+:where(:root) {
+  /* primary ramp (hue 258) */
+  --color-primary-50:  oklch(0.972 0.024 258);
+  --color-primary-100: oklch(0.940 0.039 258);
+  --color-primary-200: oklch(0.890 0.069 258);
+  --color-primary-300: oklch(0.820 0.108 258);
+  --color-primary-400: oklch(0.730 0.154 258);
+  --color-primary-500: oklch(0.640 0.189 258);
+  --color-primary-600: oklch(0.524 0.197 258);
+  --color-primary-700: oklch(0.474 0.181 258);
+  --color-primary-800: oklch(0.414 0.154 258);
+  --color-primary-900: oklch(0.364 0.118 258);
+  --color-primary-950: oklch(0.264 0.083 258);
+
+  /* semantic actions — _base.css 의 --focus-ring-color·--text-brand 도 이 램프를
+   * var() 로 물고 있어 함께 되살아난다 */
+  --color-action-primary:       var(--color-primary-600);
+  --color-action-primary-hover: var(--color-primary-700);
+  --color-action-primary-fg:    #ffffff;
+  --color-action-secondary:     var(--color-primary-50);
+  --color-action-secondary-fg:  var(--color-primary-700);
+
+  /* elevation — 위의 「대체」 사례 */
+  --shadow-sm: 0 1px 2px rgba(13,26,31,.06);
+  --shadow-md: 0 2px 8px rgba(13,26,31,.08);
+  --shadow-lg: 0 12px 40px rgba(3,98,218,.12);
+  --shadow-xl: 0 20px 60px rgba(3,98,218,.18);
+
+  /* typography */
+  --font-weight-body: 400;
+  --font-weight-h:    700;
+  --font-display:     var(--font-sans-kr);
+}
+
 :root {
   --radius: 0.625rem;
+
+  /* --radius-* 를 실제 커스텀 프로퍼티로도 내보낸다.
+   * PUDS 프리미티브는 `rounded-lg` 유틸이 아니라 `rounded-[var(--radius-md)]` 형태로 토큰을 직접 읽는다
+   * (component-contract § 5). @theme inline 은 유틸리티에 값을 인라인할 뿐 변수 방출을 보장하지 않으므로
+   * 여기서 한 번 더 선언해 둔다. 값은 --puds-radius-* 를 타고 data-theme(os↔jr)을 그대로 따라간다. */
+  --radius-xs:  var(--puds-radius-xs);
+  --radius-sm:  var(--puds-radius-sm);
+  --radius-md:  var(--puds-radius-md);
+  --radius-lg:  var(--puds-radius-lg);
+  --radius-xl:  var(--puds-radius-xl);
+  --radius-2xl: var(--puds-radius-2xl);
+  --radius-full: var(--puds-radius-full);
+
+  /* 풀림 레거시 램프 실값 — 라이트. (@theme inline 의 --color-pullim-* 가 이 변수를 가리킨다) */
+  --pl-slate-0:   var(--surface-raised);
+  /* 25는 white~gray-50 사이 별도 상단 톤 — 50과 수렴 방지(미세 대비 유지) */
+  --pl-slate-25:  color-mix(in oklab, var(--surface-raised), var(--color-gray-50));
+  --pl-slate-50:  var(--color-gray-50);
+  --pl-slate-100: var(--color-gray-100);
+  --pl-slate-200: var(--color-gray-200);
+  --pl-slate-300: var(--color-gray-300);
+  --pl-slate-400: var(--color-gray-400);
+  --pl-slate-500: var(--color-gray-500);
+  --pl-slate-600: var(--color-gray-600);
+  --pl-slate-700: var(--color-gray-700);
+  --pl-slate-800: var(--color-gray-800);
+  --pl-slate-900: var(--color-gray-900);
+  --pl-slate-950: var(--color-gray-950);
+
+  --pl-success:    var(--color-success-600);
+  --pl-success-bg: var(--color-success-50);
+  --pl-warn:       var(--color-warning-600);
+  --pl-warn-bg:    var(--color-warning-50);
+  --pl-danger:     var(--color-danger-600);
+  --pl-danger-bg:  var(--color-danger-50);
+
+  --pl-violet-50: #F5F3FF;
+  --pl-teal-50:   #ECFDF5;
+  --pl-heat-0:    #F0F3F9;
 
   /* 라이트 테마 — shadcn 시맨틱을 PUDS surface/text/action 토큰에 별칭 */
   --background: var(--surface-raised);
@@ -190,50 +335,46 @@
   --sidebar-border: var(--border-default);
   --sidebar-ring: var(--focus-ring-color);
 
-  /* 풀림 그림자 → PUDS elevation 토큰 별칭 (data-theme별 스케일 따라감 — os↔jr 전환 시 elevation도 전환).
-   * shadow-pullim-* 유틸(카드 다수)이 하드코딩이던 것을 theme-responsive PUDS --shadow-* 로 수렴. */
-  --shadow-pullim-xs: var(--shadow-sm);
-  --shadow-pullim-sm: var(--shadow-sm);
-  --shadow-pullim-md: var(--shadow-md);
-  --shadow-pullim-lg: var(--shadow-lg);
-  --shadow-pullim-glow: 0 0 0 3px color-mix(in oklch, var(--focus-ring-color) 22%, transparent);
+  /* --shadow-pullim-* 별칭은 위 @theme inline 으로 옮겼다. 맨 :root 에 두면 유틸리티가
+   * 생성되지 않는다(그 블록의 주석 참고). 여기서 다시 선언하지 마라. */
 }
 
-.dark {
-  /* 다크 — 풀림 슬레이트 900 베이스 (학생 야간 학습 모드 대비) */
-  --background: #080B18;
-  --foreground: #FBFCFE;
-  --card: #121627;
-  --card-foreground: #FBFCFE;
-  --popover: #121627;
-  --popover-foreground: #FBFCFE;
-  --primary: #5A8BFF;
-  --primary-foreground: #070F2C;
-  --secondary: #20263A;
-  --secondary-foreground: #FBFCFE;
-  --muted: #20263A;
-  --muted-foreground: #97A0B4;
-  --accent: #1D3FA8;
-  --accent-foreground: #DCE6FF;
-  --destructive: #E5484D;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.10);
-  --ring: #5A8BFF;
+/* ═══ 다크 — PUDS 명암 축([data-scheme="dark"]) 하나만 쓴다 ═══════════════════
+ * 구 `.dark { … }` 블록(손으로 쓴 hex 30여 개)은 제거했다. .dark 를 붙이는 코드가 없어 dead 였고,
+ * 남겨두면 다크 정의가 두 벌이 되어 어느 쪽이 이기는지 알 수 없게 된다.
+ *
+ * shadcn 시맨틱(--background·--card·--primary …)은 :root 에서 이미 PUDS 의미 토큰을 가리키고,
+ * 그 의미 토큰은 app/tokens/pullim-{os,jr}.css 의 [data-theme][data-scheme="dark"] 블록이 뒤집는다.
+ * → 여기서 다시 정의할 필요가 없다.
+ *
+ * 아래는 PUDS 가 모르는 플래너 레거시 램프(pullim-slate-* / pullim-*-bg)만 뒤집는다.
+ * 매핑 근거: PUDS 다크의 text-primary=gray-50 · secondary=gray-300 · tertiary=gray-400 ·
+ * border-default=gray-700 · border-subtle=gray-800 에 역할별로 맞췄다(밝기 순서 보존). */
+[data-scheme="dark"] {
+  --pl-slate-25:  color-mix(in oklab, var(--surface-raised), var(--color-gray-800));
+  --pl-slate-50:  var(--color-gray-800);  /* 은은한 채움 — 페이지(gray-900)보다 한 단 위 */
+  --pl-slate-100: var(--color-gray-700);  /* 채움 hover / subtle 경계 */
+  --pl-slate-200: var(--color-gray-700);  /* = PUDS --border-default */
+  --pl-slate-300: var(--color-gray-600);  /* = PUDS --border-strong */
+  --pl-slate-400: var(--color-gray-500);  /* 가장 흐린 글자 */
+  --pl-slate-500: var(--color-gray-400);  /* = PUDS --text-tertiary */
+  --pl-slate-600: var(--color-gray-400);
+  --pl-slate-700: var(--color-gray-300);  /* = PUDS --text-secondary */
+  --pl-slate-800: var(--color-gray-200);
+  --pl-slate-900: var(--color-gray-50);   /* = PUDS --text-primary */
+  --pl-slate-950: var(--color-gray-50);
 
-  --chart-1: #5A8BFF;
-  --chart-2: #8BAEFF;
-  --chart-3: #3B6FF6;
-  --chart-4: #B8CDFF;
-  --chart-5: #2854D8;
+  /* 상태색 — 글자는 한 칸 밝게, 틴트 바탕은 깊게 (PUDS --container-* 와 같은 방향) */
+  --pl-success:    var(--color-success-500);
+  --pl-success-bg: var(--color-success-900);
+  --pl-warn:       var(--color-warning-500);
+  --pl-warn-bg:    var(--color-warning-900);
+  --pl-danger:     var(--color-danger-500);
+  --pl-danger-bg:  var(--color-danger-900);
 
-  --sidebar: #121627;
-  --sidebar-foreground: #FBFCFE;
-  --sidebar-primary: #5A8BFF;
-  --sidebar-primary-foreground: #070F2C;
-  --sidebar-accent: #20263A;
-  --sidebar-accent-foreground: #DCE6FF;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #5A8BFF;
+  --pl-violet-50: color-mix(in oklab, #7C3AED 22%, var(--surface-raised));
+  --pl-teal-50:   color-mix(in oklab, #0D9488 22%, var(--surface-raised));
+  --pl-heat-0:    var(--color-gray-800);
 }
 
 @layer components {

@@ -27,7 +27,7 @@ export function PedagogyTag({ engineId, size = 'sm' }: { engineId: PedagogyEngin
         className={cn(
           'bg-pullim-blue-50 text-pullim-blue-700 hover:bg-pullim-blue-100 inline-flex items-center gap-1 rounded-full font-semibold transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1',
-          size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs',
+          size === 'sm' ? 'px-2 py-0.5 text-[length:var(--text-xs)]' : 'px-2.5 py-1 text-xs',
         )}
       >
         <GraduationCap className={size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
@@ -36,7 +36,7 @@ export function PedagogyTag({ engineId, size = 'sm' }: { engineId: PedagogyEngin
 
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <span className="text-pullim-blue-600 text-[10px] font-semibold tracking-wider uppercase">
+          <span className="text-pullim-blue-600 text-[length:var(--text-xs)] font-semibold tracking-wider uppercase">
             교육학 엔진
           </span>
           <DialogTitle className="flex items-center gap-2">
@@ -53,11 +53,11 @@ export function PedagogyTag({ engineId, size = 'sm' }: { engineId: PedagogyEngin
         <DialogBody className="pb-4">
           <div className="space-y-3 text-sm">
             <div>
-              <div className="text-pullim-slate-500 mb-1 text-[11px] font-semibold tracking-wider uppercase">원리</div>
+              <div className="text-pullim-slate-500 mb-1 text-[length:var(--text-xs)] font-semibold tracking-wider uppercase">원리</div>
               <p className="text-pullim-slate-700 leading-relaxed">{meta.principle}</p>
             </div>
             <div>
-              <div className="text-pullim-slate-500 mb-1 text-[11px] font-semibold tracking-wider uppercase">예시</div>
+              <div className="text-pullim-slate-500 mb-1 text-[length:var(--text-xs)] font-semibold tracking-wider uppercase">예시</div>
               <p className="text-pullim-slate-700 bg-pullim-blue-50 rounded-lg p-2.5 text-xs leading-relaxed">
                 {meta.example}
               </p>

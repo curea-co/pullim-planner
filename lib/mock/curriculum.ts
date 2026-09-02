@@ -13,6 +13,11 @@
  *   - 서연 페르소나(고2)는 2015 개정 적용 학년
  *
  * depth 1 = 과목 / depth 2 = 단원·과목명(선택과목) / depth 3 = 성취 기준
+ *
+ * ⚠️ **배열 순서 = 학교 진도 순서** (교과서 목차 기준).
+ * 위저드 3단계의 '진도 나간 데까지'는 학생이 고른 단원까지를 `slice(0, idx + 1)` 로 잘라
+ * 시험 범위를 확정한다(`lib/planner/exam-scope.ts` → `scopeUnits`). 순서가 교과서와 어긋나면
+ * 커트 뒤의 단원이 잘못 포함·제외된다. 노드를 넣거나 옮길 때는 반드시 교과서 목차를 확인할 것.
  */
 
 import type { SubjectKey } from './persona';
@@ -64,6 +69,16 @@ const KICE_CSAT: CurriculumSource = {
 /* ─────────────────────────────────────────────────────
  * 수학 — 2015 개정 별책 8 (수학과)
  * 공통수학(고1) → 일반선택 5과목(고2-3) → 진로선택 (기하 등)
+ *
+ * 순서 근거 — 코스별 대단원은 교과서 목차(= 고시 영역 순서) 그대로:
+ *   공통수학  다항식 → 방정식과 부등식 → 도형의 방정식 → 집합과 명제 → 함수
+ *   수학Ⅰ     지수함수와 로그함수 → 삼각함수 → 수열
+ *   수학Ⅱ     함수의 극한과 연속 → 미분 → 적분
+ *   미적분     수열의 극한 → 미분법 → 적분법
+ *   확률과 통계 경우의 수 → 확률 → 통계
+ *   기하       이차곡선 → 평면벡터 → 공간도형과 공간좌표
+ * depth-3 도 교과서 중단원 순서를 따른다 — 지수·로그는 '지수와 로그' → '지수함수와
+ * 로그함수(그래프)' → '지수함수와 로그함수의 활용(방정식·부등식)'.
  * ───────────────────────────────────────────────────── */
 export const mathCurriculum: CurriculumTree = {
   subject: 'math',
@@ -81,8 +96,9 @@ export const mathCurriculum: CurriculumTree = {
     // ── 수학Ⅰ (일반선택)
     { id: 'math.exp_log',           label: '지수함수와 로그함수', depth: 2, parent: 'math', course: '수학Ⅰ', appliedGrades: '고2 일반선택' },
     { id: 'math.exp_log.def',       label: '지수·로그의 정의와 성질', depth: 3, parent: 'math.exp_log', mastery: 0.82 },
-    { id: 'math.exp_log.eq',        label: '지수·로그 방정식과 부등식', depth: 3, parent: 'math.exp_log', mastery: 0.41 },
     { id: 'math.exp_log.graph',     label: '지수·로그 함수의 그래프', depth: 3, parent: 'math.exp_log', mastery: 0.67 },
+    // 지수·로그 방정식과 부등식은 교과서에서 '지수함수와 로그함수의 활용' — 그래프를 배운 뒤에 나온다.
+    { id: 'math.exp_log.eq',        label: '지수·로그 방정식과 부등식', depth: 3, parent: 'math.exp_log', mastery: 0.41 },
     { id: 'math.trig',              label: '삼각함수', depth: 2, parent: 'math', course: '수학Ⅰ', appliedGrades: '고2 일반선택' },
     { id: 'math.seq',               label: '수열',     depth: 2, parent: 'math', course: '수학Ⅰ', appliedGrades: '고2 일반선택' },
 
@@ -115,6 +131,13 @@ export const mathCurriculum: CurriculumTree = {
 
 /* ─────────────────────────────────────────────────────
  * 영어 — 2015 개정 별책 14 (영어과) + 수능 영역(KICE)
+ *
+ * 순서 근거 — '수능 영역'은 교과서 단원이 아니라 KICE 문항 유형 분류다. 학교·EBS 진도도
+ * 문항 번호 순으로 나가므로 **수능 영어 문항 배치 순서**를 그대로 쓴다:
+ *   듣기 1~17 → 목적 18 → 심경 19 → 주장·요지 20·22 → 함축 21 → 주제·제목 23~24
+ *   → 도표·실용문 25·27~28 → 일치 26 → 어법 29 → 어휘 30 → 빈칸 31~34
+ *   → 무관한 문장 35 → 순서 36~37 → 삽입 38~39 → 요약 40 → 장문 41~45
+ * (일반선택·진로선택 9과목은 서로 독립 과목이라 진도 순서 개념이 없다 — 고시 편제 순서 유지.)
  * ───────────────────────────────────────────────────── */
 export const englishCurriculum: CurriculumTree = {
   subject: 'english',
@@ -144,17 +167,19 @@ export const englishCurriculum: CurriculumTree = {
     { id: 'eng.theme_title',       label: '주제·제목',       depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text, mastery: 0.66 },
     { id: 'eng.chart',             label: '도표·실용문',     depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
     { id: 'eng.match',             label: '일치·불일치',     depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
-    { id: 'eng.blank',             label: '빈칸 추론',       depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
-    { id: 'eng.blank.unit',        label: '빈칸 추론 — 사고 패턴', depth: 3, parent: 'eng.blank', mastery: 0.34 },
-    { id: 'eng.order',             label: '글의 순서',       depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
-    { id: 'eng.insert',            label: '문장 삽입',       depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
-    { id: 'eng.irrelevant',        label: '무관한 문장',     depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
-    { id: 'eng.summary',           label: '요약문 완성',     depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
+    // 29~30번 — 어법·어휘는 빈칸 추론(31~34)보다 앞이다
     { id: 'eng.grammar',           label: '어법',           depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
     { id: 'eng.grammar.tense',     label: '시제·태',         depth: 3, parent: 'eng.grammar', mastery: 0.81 },
     { id: 'eng.grammar.relative',  label: '관계사·접속사',   depth: 3, parent: 'eng.grammar', mastery: 0.59 },
     { id: 'eng.vocab',             label: '어휘',           depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
     { id: 'eng.vocab.high',        label: '수능 빈출 어휘',  depth: 3, parent: 'eng.vocab', mastery: 0.62 },
+    { id: 'eng.blank',             label: '빈칸 추론',       depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
+    { id: 'eng.blank.unit',        label: '빈칸 추론 — 사고 패턴', depth: 3, parent: 'eng.blank', mastery: 0.34 },
+    // 35번 — 무관한 문장은 간접쓰기의 첫 유형, 글의 순서(36~37)보다 앞이다
+    { id: 'eng.irrelevant',        label: '무관한 문장',     depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
+    { id: 'eng.order',             label: '글의 순서',       depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
+    { id: 'eng.insert',            label: '문장 삽입',       depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
+    { id: 'eng.summary',           label: '요약문 완성',     depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
     { id: 'eng.long_passage',      label: '장문 독해 (1지문 2문항)', depth: 2, parent: 'eng', course: '수능 영역', appliedGrades: 'KICE 출제 분류', source: KICE_CSAT.text },
   ],
 };
@@ -162,6 +187,14 @@ export const englishCurriculum: CurriculumTree = {
 /* ─────────────────────────────────────────────────────
  * 국어 — 2015 개정 별책 5 (국어과)
  * 국어(공통, 고1) → 일반선택 4과목(고2-3) → 진로선택 3과목
+ *
+ * 순서 근거 — 일반선택 4과목은 서로 독립 과목(택1 + 고정)이라 과목 간 순서는 의미가 없고,
+ * 진도 순서가 걸리는 건 **과목 안의 depth-3** 이다. 교과서 목차·고시 성취기준 순서를 따른다:
+ *   독서       인문·예술(03-01) → 사회·문화(03-02) → 과학·기술(03-03)
+ *   언어와 매체 음운 → 단어(형태소) → 문장 → 담화·의미 → 매체
+ *   화법과 작문 화법 → 작문
+ * 문학의 갈래 구분(현대시·고전시가 등)은 출판사마다 목차가 달라 표준 순서가 없다 — 학습
+ * 편의상 현대→고전 순으로 두되, 교과서 근거로 재정렬한 것이 아니다.
  * ───────────────────────────────────────────────────── */
 export const koreanCurriculum: CurriculumTree = {
   subject: 'korean',
@@ -176,9 +209,10 @@ export const koreanCurriculum: CurriculumTree = {
 
     { id: 'kor.read', label: '독서', depth: 2, parent: 'kor', course: '일반선택', appliedGrades: '고2-3 일반선택' },
     { id: 'kor.read.humanities', label: '독서 — 인문',     depth: 3, parent: 'kor.read' },
+    // 고시 성취기준은 '인문·예술'이 한 묶음(03-01) — 예술은 인문 바로 뒤가 제자리다.
+    { id: 'kor.read.art',        label: '독서 — 예술',     depth: 3, parent: 'kor.read' },
     { id: 'kor.read.social',     label: '독서 — 사회',     depth: 3, parent: 'kor.read' },
     { id: 'kor.read.science',    label: '독서 — 과학·기술', depth: 3, parent: 'kor.read' },
-    { id: 'kor.read.art',        label: '독서 — 예술',     depth: 3, parent: 'kor.read' },
 
     { id: 'kor.lang_media', label: '언어와 매체', depth: 2, parent: 'kor', course: '일반선택', appliedGrades: '고2-3 일반선택' },
     { id: 'kor.lang_media.phonology',  label: '음운',     depth: 3, parent: 'kor.lang_media' },
@@ -204,6 +238,14 @@ export const koreanCurriculum: CurriculumTree = {
 /* ─────────────────────────────────────────────────────
  * 과학 — 2015 개정 별책 9 (과학과)
  * 통합과학(고1 공통) → 일반선택 4과목(Ⅰ) → 진로선택 (Ⅱ + 과학사·생활과학·융합과학)
+ *
+ * 순서 근거 — 과목별 대단원은 교과서 목차(= 고시 영역 순서) 그대로:
+ *   통합과학   물질과 규칙성 → 시스템과 상호작용 → 변화와 다양성 → 환경과 에너지
+ *   물리학Ⅰ   역학과 에너지 → 물질과 전자기장 → 파동과 정보 통신
+ *   화학Ⅰ     화학의 첫걸음 → 원자의 세계 → 화학 결합과 분자의 세계 → 역동적인 화학 반응
+ *   생명과학Ⅰ 생명 과학의 이해 → 물질대사 → 항상성 → 유전 → 생태계
+ *   지구과학Ⅰ 고체 지구(지권의 변동 → 지구의 역사) → 대기와 해양 → 우주(별 → 외부 은하)
+ *   Ⅱ 시리즈  고시 영역 순서 (대표 단원만 노출 — 일부 영역은 트리에 없음)
  * ───────────────────────────────────────────────────── */
 export const scienceCurriculum: CurriculumTree = {
   subject: 'science',
@@ -270,6 +312,11 @@ export const scienceCurriculum: CurriculumTree = {
 /* ─────────────────────────────────────────────────────
  * 사회 — 2015 개정 별책 7 (사회과)
  * 통합사회(고1) → 일반선택 9과목(고2-3) → 진로선택 3과목
+ *
+ * 순서 근거 — 통합사회 9대단원은 교과서 목차(= 고시 영역 순서) 그대로:
+ *   행복 → 자연환경 → 생활공간 → 인권·헌법 → 시장경제 → 사회 정의 → 문화 → 세계화 → 미래
+ * 일반선택·진로선택은 서로 독립 과목(택2)이라 과목 간 진도 순서 개념이 없다 — 계열끼리
+ * 묶은 기존 나열을 유지한다(지리 → 역사 → 일반사회 → 도덕).
  * ───────────────────────────────────────────────────── */
 export const socialCurriculum: CurriculumTree = {
   subject: 'social',
@@ -309,6 +356,9 @@ export const socialCurriculum: CurriculumTree = {
 /* ─────────────────────────────────────────────────────
  * 한국사 — 2015 개정 별책 7 (사회과)
  * 한국사(1학년 공통, 4영역)
+ *
+ * 순서 근거 — 교과서 목차(= 고시 영역 순서)이자 시대 순:
+ *   전근대 → 근대 국민 국가 수립 운동 → 일제 식민지 지배와 민족 운동 → 대한민국의 발전
  * ───────────────────────────────────────────────────── */
 export const historyCurriculum: CurriculumTree = {
   subject: 'history',

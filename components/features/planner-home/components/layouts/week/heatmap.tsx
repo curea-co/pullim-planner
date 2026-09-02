@@ -66,7 +66,7 @@ export function HeatmapLayout({ paletteId, compact, days: daysProp }: Props) {
             <tr>
               <th
                 scope="col"
-                className="bg-pullim-slate-50 text-pullim-slate-700 w-14 px-1 py-1 text-left font-mono text-[9px] font-semibold"
+                className="bg-pullim-slate-50 text-pullim-slate-700 w-14 px-1 py-1 text-left font-mono text-[length:var(--text-2xs)] font-semibold"
               >
                 시간
               </th>
@@ -75,7 +75,7 @@ export function HeatmapLayout({ paletteId, compact, days: daysProp }: Props) {
                   key={d.day}
                   scope="col"
                   className={cn(
-                    'min-w-[34px] py-1 text-center text-[10px] font-semibold',
+                    'min-w-[34px] py-1 text-center text-[length:var(--text-2xs)] font-semibold',
                     d.isToday ? 'bg-pullim-blue-50 text-pullim-blue-700' : 'bg-pullim-slate-50 text-pullim-slate-700',
                   )}
                 >
@@ -89,7 +89,7 @@ export function HeatmapLayout({ paletteId, compact, days: daysProp }: Props) {
               <tr key={slot.label} className="border-pullim-slate-100 border-t">
                 <th
                   scope="row"
-                  className="bg-pullim-slate-25 text-pullim-slate-500 px-1 py-0.5 text-left font-mono text-[9px]"
+                  className="bg-pullim-slate-25 text-pullim-slate-500 px-1 py-0.5 text-left font-mono text-[length:var(--text-2xs)]"
                 >
                   {slot.label}
                 </th>
@@ -118,7 +118,7 @@ export function HeatmapLayout({ paletteId, compact, days: daysProp }: Props) {
         </table>
       </div>
       {!compact && (
-        <p className="text-pullim-slate-500 mt-2 text-[10px]">
+        <p className="text-pullim-slate-500 mt-2 text-[length:var(--text-xs)]">
           진한 셀 = 학습 강도 높음. 데모용 가중치 (평일은 저녁, 주말은 오후 강화).
         </p>
       )}

@@ -152,14 +152,14 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
         {!hideHeader && (
         <header className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-pullim-blue-600 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+            <p className="text-pullim-blue-600 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
               <Sparkles className="h-3 w-3" />
               꾸미기
             </p>
             <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
               레이아웃과 색상 고르기
             </h2>
-            <p className="text-pullim-slate-500 mt-0.5 text-[11px]">
+            <p className="text-pullim-slate-500 mt-0.5 text-[length:var(--text-xs)]">
               템플릿과 팔레트를 골라 시간표를 내 스타일로 — 저장 시 일간/주간 뷰에 즉시 반영
             </p>
           </div>
@@ -181,7 +181,7 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
           {/* 미리보기 */}
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <p className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
+              <p className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
                 미리보기
               </p>
               {/* 일간/주간 탭 */}
@@ -196,7 +196,7 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
                       aria-selected={selected}
                       onClick={() => setPreviewTab(tab)}
                       className={cn(
-                        'rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                        'rounded-md px-2.5 py-1 text-[length:var(--text-xs)] font-semibold transition-colors',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500',
                         selected
                           ? 'bg-card text-pullim-blue-700 shadow-sm'
@@ -225,7 +225,7 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
                   compact
                 />
               )}
-              <p className="text-pullim-slate-500 mt-2 text-[10px]">
+              <p className="text-pullim-slate-500 mt-2 text-[length:var(--text-xs)]">
                 * 미리보기에는 오늘·이번 주 데모 데이터가 사용됩니다.
               </p>
             </div>
@@ -299,7 +299,7 @@ function PlannerPicker({
 
   return (
     <div>
-      <p className="text-pullim-slate-500 mb-1.5 text-[10px] font-bold tracking-wider uppercase">
+      <p className="text-pullim-slate-500 mb-1.5 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         어떤 시간표를 꾸밀까요?
       </p>
       <div role="tablist" aria-label="플래너 선택" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
@@ -341,7 +341,7 @@ function LayoutControl({
 }) {
   return (
     <fieldset>
-      <legend className="text-pullim-slate-500 mb-1.5 text-[10px] font-bold tracking-wider uppercase">
+      <legend className="text-pullim-slate-500 mb-1.5 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         일간 레이아웃
       </legend>
       <div className="grid grid-cols-2 gap-1.5">
@@ -383,7 +383,7 @@ function LayoutControl({
                 )}>
                   {meta.label}
                 </span>
-                <span className="text-pullim-slate-500 mt-0.5 block text-[10px] leading-tight">
+                <span className="text-pullim-slate-500 mt-0.5 block text-[length:var(--text-xs)] leading-tight">
                   {meta.description}
                 </span>
               </span>
@@ -404,7 +404,7 @@ function WeekLayoutControl({
 }) {
   return (
     <fieldset>
-      <legend className="text-pullim-slate-500 mb-1.5 text-[10px] font-bold tracking-wider uppercase">
+      <legend className="text-pullim-slate-500 mb-1.5 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         주간 레이아웃
       </legend>
       <div className="grid grid-cols-2 gap-1.5">
@@ -446,7 +446,7 @@ function WeekLayoutControl({
                 )}>
                   {meta.label}
                 </span>
-                <span className="text-pullim-slate-500 mt-0.5 block text-[10px] leading-tight">
+                <span className="text-pullim-slate-500 mt-0.5 block text-[length:var(--text-xs)] leading-tight">
                   {meta.description}
                 </span>
               </span>
@@ -467,7 +467,7 @@ function PaletteControl({
 }) {
   return (
     <fieldset>
-      <legend className="text-pullim-slate-500 mb-1.5 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+      <legend className="text-pullim-slate-500 mb-1.5 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         <PaletteIcon className="h-3 w-3" />
         색상 팔레트
       </legend>
@@ -507,7 +507,7 @@ function PaletteControl({
               </span>
               <span className="min-w-0 flex-1">
                 <span className={cn(
-                  'block truncate text-[11px] font-bold',
+                  'block truncate text-[length:var(--text-xs)] font-bold',
                   selected ? 'text-pullim-blue-700' : 'text-pullim-slate-900',
                 )}>
                   {palette.emoji} {palette.label}

@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import {
-  initialPlannerForm, formToPlannerPatch,
+  seededPlannerForm, formToPlannerPatch,
   type PlannerForm,
 } from '@/components/features/planner-builder/components/builder-types';
 import { createPlanner, activatePlanner } from '@/lib/mock/planner';
@@ -14,14 +14,30 @@ import { plannerClient, toWriteInput } from '@/lib/planner/client';
 import { mapServerPreview, type PreviewDay } from '@/lib/planner/preview-map';
 import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
+import type { ActivateSummary } from '@/components/features/planner-builder/components/step-content';
+import { WizardDone, type WizardDoneSummary } from '@/components/features/planner-builder/components/wizard-done';
+import { blockPatternMeta, examTypeMeta, resolvedExamName } from '@/components/features/planner-builder/components/builder-types';
+import { daysBetween } from '@/lib/planner/exam-presets';
+import { ROUTINE_ENABLED } from '@/lib/flags';
 import { usePlannerForm } from '../hooks/use-planner-form';
+import { useRoutineTimeUpdate } from '../hooks/use-routine-time-update';
 import NewPlannerPresenter from '../presenters/NewPlannerPresenter';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
+/**
+ * 생성 완료 표식 쿼리. 활성화에 성공하면 이 쿼리를 붙여 위저드 URL 을 **완료 화면 URL 로
+ * 덮는다**(history replace). 새로고침·뒤로가기로 같은 엔트리에 돌아와도 빈 위저드가 다시
+ * 열리지 않으므로, 같은 입력으로 한 번 더 활성화해 중복 플래너를 만드는 경로가 막힌다 (codex).
+ */
+const CREATED_PARAM = 'created';
+
 export default function NewPlannerContainer() {
   const router = useRouter();
-  const formState = usePlannerForm(initialPlannerForm);
+  const searchParams = useSearchParams();
+  /** 생성 표식이 붙은 URL 로 들어왔는가 — 붙어 있으면 이 히스토리 엔트리는 위저드가 아니다. */
+  const createdId = searchParams.get(CREATED_PARAM);
+  const formState = usePlannerForm(seededPlannerForm());
 
   // STEP5·미리보기용 루틴 — bypass는 mock(초기값), 배포는 실 API로 교체(dev QA #4: 실 루틴 노출).
   const [routines, setRoutines] = useState<Routine[]>(() => (DEV_AUTH_BYPASS ? getRoutines() : []));
@@ -34,6 +50,37 @@ export default function NewPlannerContainer() {
       .catch(() => { if (alive) setRoutines([]); });
     return () => { alive = false; };
   }, []);
+
+  // 활성화 성공 후 완료 화면 — 관리 목록으로 곧장 튕기면 방금 만든 게 뭔지 볼 자리가 없다.
+  const [done, setDone] = useState<WizardDoneSummary | null>(null);
+
+  /**
+   * 이 마운트에서 방금 만들었는가 — 아래 재진입 redirect 를 억제하는 플래그.
+   *
+   * 성공 경로는 `setDone()` 과 `stampCreated()` 를 같은 틱에 부르는데, 표식(URL)이 리캡
+   * (state)보다 먼저 반영되는 렌더가 한 번이라도 끼면 `createdId` 는 있고 `done` 은 없는
+   * 상태가 되어 redirect 가 발화하고, 이 화면의 존재 이유인 완료 화면이 통째로 사라진다.
+   * ref 는 렌더/커밋 타이밍과 무관하게 즉시 참이 되므로 두 갱신의 순서에 기대지 않는다 (codex).
+   *
+   * 새로고침·히스토리 재진입은 **새 마운트**라 이 ref 가 다시 false 로 시작한다 — 중복 생성
+   * 차단 장치는 그대로다.
+   */
+  const justCreatedRef = useRef(false);
+
+  /**
+   * 생성 표식만 있고 리캡이 없다 = 완료 URL 을 **새 문서로** 다시 연 경우(새로고침·히스토리
+   * 재방문·링크 공유). 리캡은 메모리에만 있으니 복원할 수 없다. 이때 위저드를 다시 열면
+   * 이미 만들어진 플래너와 무관한 빈 위저드가 뜨고 중복 생성이 가능해지므로, 방금 만든
+   * 플래너가 보이는 관리 화면으로 보낸다.
+   */
+  useEffect(() => {
+    // 방금 이 마운트에서 표식을 붙인 경우는 재진입이 아니다 — 리캡이 곧 뒤따른다.
+    if (justCreatedRef.current) return;
+    if (createdId && !done) router.replace('/planner/manage');
+  }, [createdId, done, router]);
+
+  // 4단계 충돌 배너의 '옮기기' — 루틴 원본 시각을 PATCH 한다(확인 다이얼로그 뒤).
+  const handleUpdateRoutine = useRoutineTimeUpdate(routines, setRoutines);
 
   // STEP8 서버 dry-run 미리보기(pullim-api #476) — 실제 bake 규칙으로 계산만(저장 없음).
   // bypass·실패면 null → 휴리스틱 폴백. 루틴 적용은 create 와 동일 매핑.
@@ -59,7 +106,75 @@ export default function NewPlannerContainer() {
     }
   }, [form]);
 
-  async function handleActivate(submitted: PlannerForm) {
+  /** 활성화 직후 보여줄 리캡 — 폼과 미리보기 집계에서만 만든다(추가 fetch 없음). */
+  function buildDoneSummary(submitted: PlannerForm, summary?: ActivateSummary): WizardDoneSummary {
+    const units = submitted.subjectUnits ?? {};
+    const dday = submitted.examStartDate
+      ? daysBetween(todayIsoKst(), submitted.examStartDate)
+      : null;
+    return {
+      plannerName: resolvedExamName(submitted),
+      ddayLabel: dday === null ? null : dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY' : `D+${-dday}`,
+      examLabel: examTypeMeta[submitted.examType ?? 'mock'].label,
+      subjectCount: Object.keys(units).length,
+      unitCount: Object.values(units).reduce((a, b) => a + (b?.length ?? 0), 0),
+      // 4단계 집계를 그대로 옮기되 출처를 함께 넘긴다 — 휴리스틱 근사(`local`)는 실제 bake 와
+      // 규칙이 달라 실제보다 적을 수 있어 '예상' 으로 표기된다. 집계가 없으면 null(0 으로 지어내지 않음).
+      //
+      // 0 으로 온 집계도 **없는 것과 같이 다룬다** — 시험일이 오늘이어도 1단계 검증은 통과하는데
+      // (지난 날짜만 막는다), 로컬 미리보기 `generatePreview()` 는 내일부터 세므로 그 경우 빈
+      // 배열이 되어 `0일 약 0개` 가 완료 화면에 뜬다. 일수든 블록 수든 0 이면 방금 만든 것을
+      // 확인시켜 주는 숫자가 아니라 실패처럼 읽히므로, 숫자 대신 패턴 줄로 대체한다 (codex).
+      blocks:
+        summary && summary.previewDays > 0 && summary.previewBlocks > 0
+          ? {
+              days: summary.previewDays,
+              count: summary.previewBlocks,
+              estimated: summary.source !== 'server',
+            }
+          : null,
+      patternLabel: blockPatternMeta[submitted.blockPattern].label,
+      patternSpec: blockPatternMeta[submitted.blockPattern].spec,
+      routineCount: ROUTINE_ENABLED ? submitted.routineIds.length : null,
+    };
+  }
+
+  /**
+   * 완료 화면으로 넘어가면서 위저드 URL 을 생성 표식이 붙은 URL 로 덮는다.
+   *
+   * `router.replace` 대신 네이티브 `history.replaceState` 를 쓰는 이유 — 쿼리만 바꾸는
+   * 라우팅이라도 세그먼트 재렌더가 끼면 방금 세팅한 `done` 이 날아갈 위험이 있는데, 완료
+   * 화면은 이 한 번뿐인 자리라 그 실패가 치명적이다. Next App Router 는 네이티브 history
+   * 메서드를 지원하고 `useSearchParams` 와도 동기화되므로 표식은 그대로 읽힌다
+   * (Next 16 문서 "Linking and Navigating — Native History API").
+   *
+   * state 는 `null` 로 덮지 않고 **현재 엔트리의 payload 를 이어받는다** — 통째로 지우면
+   * 이 엔트리에 실려 있던 값이 같이 사라져 뒤로/앞으로 복원이 어긋난다 (codex).
+   *
+   * 단 Next 내부 표식(`__NA`/`_N`)만은 빼고 넘긴다. App Router 가 패치한 replaceState 는
+   * 그 키가 실려 오면 "Next 내부가 부른 호출"로 보고 라우터 URL 동기화를 건너뛰는데
+   * (무한루프 방지 분기), 그러면 `useSearchParams` 가 표식을 못 읽고 다음 라우터 커밋이
+   * 표식 없는 원래 URL 로 되돌려 버려 중복 생성 차단 자체가 무너진다. 빼고 넘기면 Next 가
+   * 현재 엔트리의 `__NA`·내부 트리를 다시 붙여 주므로 복원 정보도 그대로 산다.
+   */
+  function stampCreated(plannerId: string) {
+    // 표식을 붙이기 **전에** 세운다 — replaceState 동기화가 리캡보다 먼저 렌더에 반영돼도
+    // 재진입 redirect 가 발화하지 않도록.
+    justCreatedRef.current = true;
+    if (typeof window === 'undefined') return;
+    const prev: unknown = window.history.state;
+    const carried: Record<string, unknown> =
+      prev && typeof prev === 'object' ? { ...(prev as Record<string, unknown>) } : {};
+    delete carried.__NA;
+    delete carried._N;
+    window.history.replaceState(
+      carried,
+      '',
+      `${window.location.pathname}?${CREATED_PARAM}=${encodeURIComponent(plannerId)}`,
+    );
+  }
+
+  async function handleActivate(submitted: PlannerForm, summary?: ActivateSummary) {
     // 로컬 dev 우회 — pullim-api CORS/쿠키 미지원 환경에서 실 API 대신 공유 mock store에
     // 생성·활성화한다. ManagePlannersContainer 의 confirmActivate 와 동일 store(lib/mock/planner)라
     // 관리/홈 화면과 일관되며, 위저드를 끝까지 검증할 수 있다.
@@ -70,11 +185,8 @@ export default function NewPlannerContainer() {
         appliedRoutineIds: submitted.routineIds,
       });
       activatePlanner(planner.id);
-      toast.success('🎯 새 시간표 활성화 완료', {
-        description: `${planner.name} — 홈 시간표가 생성됐어요`,
-        duration: 3000,
-      });
-      router.push('/planner/manage');
+      setDone(buildDoneSummary(submitted, summary));
+      stampCreated(planner.id);
       return;
     }
     // create 와 activate 를 분리해 부분 성공을 구분한다 — 한 catch 로 뭉치면 create 성공 후
@@ -95,12 +207,13 @@ export default function NewPlannerContainer() {
     }
     try {
       await plannerClient.activate(planner.id);
-      toast.success('🎯 새 시간표 활성화 완료', {
-        description: `${planner.name} — 홈 시간표가 생성됐어요`,
-        duration: 3000,
-      });
+      setDone(buildDoneSummary(submitted, summary));
+      stampCreated(planner.id);
+      return;
     } catch {
       // 생성은 성공 — 재시도로 중복 생성되지 않게 안내만 하고 관리 화면으로 보낸다.
+      // 완료 화면은 띄우지 않는다(만들어지지 않은 상태를 만들어졌다고 하지 않는다). 이 경로는
+      // 곧바로 화면을 떠나므로 생성 표식도 남기지 않는다 — 표식은 완료 화면에 머무는 경우의 장치다.
       toast.warning('시간표는 생성됐지만 활성화에 실패했어요', {
         description: `${planner.name} — 관리 화면에서 활성화해 주세요`,
         duration: 4000,
@@ -109,19 +222,42 @@ export default function NewPlannerContainer() {
     router.push('/planner/manage');
   }
 
+  if (done) {
+    return (
+      <WizardDone
+        summary={done}
+        onHome={() => router.push('/planner')}
+        onManage={() => router.push('/planner/manage')}
+      />
+    );
+  }
+
+  // 생성 표식이 붙은 URL 인데 리캡이 없다 — 위저드를 열지 않는다. 재진입이면 위 effect 가
+  // 관리 화면으로 보내고, 방금 만든 경우라면 곧 도착할 리캡이 이 자리를 완료 화면으로 바꾼다.
+  if (createdId) {
+    return (
+      <p className="text-pullim-slate-400 py-10 text-center text-sm">시간표 관리로 이동 중…</p>
+    );
+  }
+
   return (
     <NewPlannerPresenter
       form={formState.form}
       setForm={formState.setForm}
+      scope={formState.scope}
+      setScope={formState.setScope}
       currentStep={formState.currentStep}
       canPrev={formState.canPrev}
       canNext={formState.canNext}
+      blockedReason={formState.blockedReason}
+      maxReachable={formState.maxReachable}
       onPrev={formState.goPrev}
       onNext={formState.goNext}
       onJump={formState.jumpTo}
       onActivate={handleActivate}
       routines={routines}
       onServerPreview={handleServerPreview}
+      onUpdateRoutine={handleUpdateRoutine}
     />
   );
 }

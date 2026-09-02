@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { Palette, ListChecks } from 'lucide-react';
 import { PageHeader } from '@/components/shell/page-header';
 import { FlywheelNote } from '@/components/shell/flywheel-note';
-import type { PlannerForm } from '@/components/features/planner-builder/components/builder-types';
-import { plannerStepConfig } from '@/components/features/planner-builder/components/builder-types';
+import type { PlannerForm, ScopeState } from '@/components/features/planner-builder/components/builder-types';
+import { hasCustomBasics, plannerStepConfig } from '@/components/features/planner-builder/components/builder-types';
 import type { Planner, Routine } from '@/lib/mock';
 import type { PreviewDay } from '@/lib/planner/preview-map';
 import { PlannerWizard } from '../components/planner-wizard';
@@ -19,24 +19,30 @@ interface EditPlannerPresenterProps {
   onTabChange: (tab: EditTab) => void;
   form: PlannerForm;
   setForm: (f: PlannerForm | ((prev: PlannerForm) => PlannerForm)) => void;
+  scope: ScopeState;
+  setScope: (s: ScopeState | ((prev: ScopeState) => ScopeState)) => void;
   currentStep: number;
   canPrev: boolean;
   canNext: boolean;
+  blockedReason: string | null;
+  maxReachable: number;
   onPrev: () => void;
   onNext: () => void;
   onJump: (n: number) => void;
   onSave: (submitted: PlannerForm) => void;
   routines?: Routine[];
   onServerPreview?: () => Promise<PreviewDay[] | null>;
+  onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;
 }
 
 export default function EditPlannerPresenter({
   planner, tab, onTabChange,
   form, setForm,
-  currentStep, canPrev, canNext,
+  scope, setScope,
+  currentStep, canPrev, canNext, blockedReason, maxReachable,
   onPrev, onNext, onJump,
   onSave,
-  routines, onServerPreview,
+  routines, onServerPreview, onUpdateRoutine,
 }: EditPlannerPresenterProps) {
   if (!planner) {
     return (
@@ -54,7 +60,13 @@ export default function EditPlannerPresenter({
   }
 
   return (
-    <div className="space-y-5">
+    // 설정 탭은 new 화면과 같은 위저드라 같은 폼 단(768px)으로 묶는다 — 셸의 대시보드 폭을
+    // 그대로 쓰면 한 단어짜리 선택지가 500px 로 늘어난다. 헤더·탭까지 함께 묶어야 위저드와
+    // 왼쪽 끝이 맞는다. 꾸미기 탭은 레이아웃·팔레트 미리보기를 넓게 봐야 하므로 제약 없음.
+    //
+    // 왼쪽 고정(가운데 정렬 아님) — 폭이 다른 두 탭을 가운데 정렬하면 탭을 오갈 때마다
+    // 제목과 탭바가 175px 씩 옆으로 튄다. 왼쪽 끝을 붙박아 두면 폭만 바뀌고 기준선은 그대로다.
+    <div className={cn('w-full space-y-4', tab === 'config' && 'max-w-3xl')}>
       {/* 임시저장 버튼 숨김(soft-open) — 서버 draft BE·영속 API 미구현이라 데모 토스트만 떠서
           "저장됐다" 오해를 유발. 리포트·약점과 동일 원칙. BE draft 준비 시 복원. */}
       <PageHeader
@@ -97,16 +109,24 @@ export default function EditPlannerPresenter({
           <PlannerWizard
             form={form}
             setForm={setForm}
+            scope={scope}
+            setScope={setScope}
             currentStep={currentStep}
             canPrev={canPrev}
             canNext={canNext}
+            blockedReason={blockedReason}
+            maxReachable={maxReachable}
             onPrev={onPrev}
             onNext={onNext}
             onJump={onJump}
             mode="edit"
             onActivate={onSave}
+            // 만들 때 넣은 값(시험명·다짐)이 있으면 1단계에서 접어 두지 않는다 —
+            // 고칠 때 안 보이면 유실된 것과 다름없다.
+            initialExpert={hasCustomBasics(form)}
             routines={routines}
             onServerPreview={onServerPreview}
+            onUpdateRoutine={onUpdateRoutine}
           />
 
           <FlywheelNote>

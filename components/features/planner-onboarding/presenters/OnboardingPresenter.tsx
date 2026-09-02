@@ -49,12 +49,12 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           screenshot: (
             <MockBrowser label="다음 블록">
               <div className="from-pullim-blue-600 to-pullim-blue-500 rounded-xl bg-gradient-to-br p-3 text-white">
-                <div className="text-pullim-blue-100 inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase">
+                <div className="text-pullim-blue-100 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
                   <PencilLine aria-hidden className="h-3 w-3" />
                   문제 풀이 · 수학
                 </div>
                 <h3 className="mt-1 text-sm font-bold">미분 — 적응형 문제 풀이</h3>
-                <p className="text-pullim-blue-100 mt-0.5 text-[11px]">
+                <p className="text-pullim-blue-100 mt-0.5 text-[length:var(--text-xs)]">
                   <span className="font-mono font-semibold">18:25–19:25</span> · 60분 예상
                 </p>
                 <button className="bg-white text-pullim-blue-700 mt-2.5 inline-flex items-center gap-1 rounded-xl px-4 py-2.5 text-sm font-bold">
@@ -117,7 +117,7 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
           screenshot: (
             <MockBrowser label="시간표 만들기 · 6단계">
               <div className="bg-pullim-warn-bg rounded-xl p-3">
-                <div className="text-pullim-warn flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+                <div className="text-pullim-warn-ink flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
                   <AlertCircle className="h-3 w-3" />
                   현재 감지된 약점 단원 — 풀림 분석
                 </div>
@@ -127,7 +127,7 @@ export default function OnboardingPresenter({ ddayLabel }: OnboardingPresenterPr
                     { label: '영어 · 빈칸추론', mastery: 48 },
                     { label: '수학 · 수열', mastery: 55 },
                   ].map(node => (
-                    <li key={node.label} className="text-pullim-slate-700 flex items-center gap-2 text-[11px]">
+                    <li key={node.label} className="text-pullim-slate-700 flex items-center gap-2 text-[length:var(--text-xs)]">
                       <span className="bg-pullim-warn h-1.5 w-1.5 rounded-full" />
                       <span className="font-semibold">{node.label}</span>
                       <span className="text-pullim-slate-500 ml-auto font-mono">정복도 {node.mastery}%</span>

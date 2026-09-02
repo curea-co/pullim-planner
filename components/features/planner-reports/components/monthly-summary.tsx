@@ -98,7 +98,7 @@ export function MonthlySummary() {
             <div className="flex-1">
               <div
                 className={cn(
-                  'text-[10px] font-bold tracking-wider uppercase',
+                  'text-[length:var(--text-xs)] font-bold tracking-wider uppercase',
                   milestone.day.examMilestone?.importance === 'high'
                     ? 'text-pullim-danger'
                     : 'text-pullim-warn',
@@ -166,12 +166,12 @@ function KPI({
     : 'text-pullim-slate-900';
   return (
     <div className="bg-card rounded-xl border p-3">
-      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         <Icon className="h-3 w-3" />
         {label}
       </div>
       <div className={`mt-1 font-mono text-lg font-bold ${valueClass}`}>{value}</div>
-      <div className="text-pullim-slate-500 text-[10px]">{sub}</div>
+      <div className="text-pullim-slate-500 text-[length:var(--text-xs)]">{sub}</div>
     </div>
   );
 }

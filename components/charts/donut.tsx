@@ -1,15 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 /**
- * Donut — center-labeled ring chart. (순수 SVG, no Recharts · --text-* 토큰만 · SSR-safe)
+ * Donut — center-labeled ring chart.
  *
- * PUDS(@puds/donut) **vendoring** — Phase 2 차트 도입 파일럿.
- * 원본: pullim-design-system/packages/ui/charts/donut.tsx
- * 재싱크 절차: 원본을 cp → ① `@/lib/cn`→`@/lib/utils` ② `defaultColors`를 플래너 PUDS 토큰으로 교체
- *   (원본의 `--chart-cat-*`는 플래너 미정의) 재적용. 업스트림 변경 시 위 2개만 다시 맞추면 됨.
+ *  - Pure SVG, no Recharts
+ *  - Segments colored via --chart-cat-1..8
+ *  - Center slot for headline number + label
+ *  - Hover/focus reveals segment via opacity
+ *  - Tokens-only, SSR-safe
  */
 
 export interface DonutSegment {
@@ -53,17 +54,15 @@ function arcPath(cx: number, cy: number, r: number, rInner: number, start: numbe
   ].join(" ");
 }
 
-// 플래너 정합: 원본 PUDS는 `--chart-cat-1..8`을 쓰는데 플래너엔 그 토큰이 없어
-// color 누락 시 segment가 투명해진다 → 플래너에 존재하는 PUDS 토큰으로 폴백 교체(footgun 제거).
 const defaultColors = [
-  "var(--color-primary-600)",
-  "var(--color-secondary-500)",
-  "var(--color-success-600)",
-  "var(--color-warning-600)",
-  "var(--color-danger-600)",
-  "var(--color-primary-300)",
-  "var(--color-gray-500)",
-  "var(--color-gray-300)",
+  "var(--chart-cat-1)",
+  "var(--chart-cat-2)",
+  "var(--chart-cat-3)",
+  "var(--chart-cat-4)",
+  "var(--chart-cat-5)",
+  "var(--chart-cat-6)",
+  "var(--chart-cat-7)",
+  "var(--chart-cat-8)",
 ];
 
 export const Donut = React.forwardRef<HTMLDivElement, DonutProps>(
@@ -89,6 +88,7 @@ export const Donut = React.forwardRef<HTMLDivElement, DonutProps>(
     let acc = 0;
     return (
       <div ref={ref} className={cn("inline-flex flex-col items-center gap-3", className)} lang="ko">
+        {/* size 는 prop — SVG 치수와 같은 값이어야 해서 런타임 인라인 유지 */}
         <div className="relative" style={{ width: size, height: size }}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={ariaLabel}>
             {segments.map((seg, i) => {
@@ -117,17 +117,15 @@ export const Donut = React.forwardRef<HTMLDivElement, DonutProps>(
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               {centerLabel && (
                 <div
-                  className="text-[var(--text-primary)] font-bold tabular-nums"
-                  style={{ fontSize: size * 0.16, letterSpacing: "-0.03em", lineHeight: 1 }}
+                  className="text-[var(--text-primary)] font-bold tabular-nums tracking-[-0.03em] leading-none"
+                  // fontSize 만 size 비례 계산값이라 인라인에 남는다
+                  style={{ fontSize: size * 0.16 }}
                 >
                   {centerLabel}
                 </div>
               )}
               {centerSubLabel && (
-                <div
-                  className="text-[var(--text-secondary)] text-[length:var(--text-xs)] mt-1"
-                  style={{ letterSpacing: "-0.005em" }}
-                >
+                <div className="text-[var(--text-secondary)] text-[length:var(--text-xs)] mt-1 tracking-[var(--tracking-kr-micro)]">
                   {centerSubLabel}
                 </div>
               )}
@@ -139,11 +137,12 @@ export const Donut = React.forwardRef<HTMLDivElement, DonutProps>(
             {segments.map((seg, i) => (
               <li key={seg.label} className="flex items-center gap-2 tabular-nums">
                 <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  className="w-2.5 h-2.5 rounded-[var(--radius-full)] flex-shrink-0"
+                  // 세그먼트 색은 데이터(seg.color) 또는 인덱스로 고른 토큰 — 런타임
                   style={{ background: seg.color ?? defaultColors[i % defaultColors.length] }}
                   aria-hidden="true"
                 />
-                <span className="text-[var(--text-secondary)] truncate" style={{ letterSpacing: "-0.005em" }}>
+                <span className="text-[var(--text-secondary)] truncate tracking-[var(--tracking-kr-micro)]">
                   {seg.label}
                 </span>
                 <span className="ml-auto font-semibold text-[var(--text-primary)]">

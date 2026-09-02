@@ -40,7 +40,7 @@ export function BurnoutCard({ burnout }: { burnout: BurnoutSnapshot | null }) {
   if (!burnout) {
     return (
       <section className="bg-card rounded-xl border p-4 text-center">
-        <div className="text-pullim-slate-500 flex items-center justify-center gap-1 text-[11px] font-semibold tracking-wider uppercase">
+        <div className="text-pullim-slate-500 flex items-center justify-center gap-1 text-[length:var(--text-xs)] font-semibold tracking-wider uppercase">
           <Heart className="h-3 w-3" />
           번아웃 안전도
         </div>
@@ -74,13 +74,13 @@ export function BurnoutCard({ burnout }: { burnout: BurnoutSnapshot | null }) {
         >
           <div className="bg-card flex flex-col items-center justify-center rounded-full" style={{ width: 70, height: 70 }}>
             <span className="text-pullim-slate-900 font-mono text-xl font-bold leading-none">{score}</span>
-            <span className="text-pullim-slate-500 text-[10px] tracking-wider">/ 100</span>
+            <span className="text-pullim-slate-500 text-[length:var(--text-2xs)] tracking-wider">/ 100</span>
           </div>
         </div>
 
         {/* 라벨 */}
         <div className="flex-1">
-          <div className="text-pullim-slate-500 flex items-center gap-1 text-[11px] font-semibold tracking-wider uppercase">
+          <div className="text-pullim-slate-500 flex items-center gap-1 text-[length:var(--text-xs)] font-semibold tracking-wider uppercase">
             <Heart className="h-3 w-3" />
             번아웃 안전도
           </div>

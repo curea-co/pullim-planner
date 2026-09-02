@@ -269,7 +269,7 @@ export function UnitEditorModal({
             {/* 직접 입력으로 추가된 항목 */}
             {customPending.length > 0 && (
               <section>
-                <h4 className="text-pullim-slate-700 mb-2 inline-flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase">
+                <h4 className="text-pullim-slate-700 mb-2 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
                   <Sparkles aria-hidden className="h-3 w-3" />
                   직접 입력 ({customPending.length})
                 </h4>
@@ -297,7 +297,7 @@ export function UnitEditorModal({
             {/* 약점 자동 추천 */}
             {weakNodes.length > 0 && (
               <section>
-                <h4 className="text-pullim-warn mb-2 inline-flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase">
+                <h4 className="text-pullim-warn mb-2 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
                   <Flame className="h-3 w-3" />
                   내 약점에서 자동 추천 (분석 연동)
                 </h4>
@@ -319,7 +319,7 @@ export function UnitEditorModal({
             {/* 코스별 단원 — 트리 정의 순서 (공통 → Ⅰ → Ⅱ → 미적분 → 진로 → 수능 영역) */}
             {courseList.length > 0 && (
               <section className="space-y-2">
-                <h4 className="text-pullim-slate-700 inline-flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase">
+                <h4 className="text-pullim-slate-700 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
                   <BookOpenCheck aria-hidden className="h-3 w-3" />
                   코스별 단원
                 </h4>
@@ -336,7 +336,7 @@ export function UnitEditorModal({
                       <summary className="hover:bg-pullim-slate-50 flex cursor-pointer items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold list-none">
                         <ChevronRight className="text-pullim-slate-400 h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90" />
                         <span className="text-pullim-slate-900">{course}</span>
-                        <span className="text-pullim-slate-500 ml-1 font-mono text-[10px]">
+                        <span className="text-pullim-slate-500 ml-1 font-mono text-[length:var(--text-2xs)]">
                           ({pending.filter(p => nodes.some(n => n.label === p)).length}/{nodes.length})
                         </span>
                       </summary>
@@ -358,7 +358,7 @@ export function UnitEditorModal({
 
             {/* 직접 입력 */}
             <section>
-              <h4 className="text-pullim-slate-700 mb-2 inline-flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase">
+              <h4 className="text-pullim-slate-700 mb-2 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
                 <Plus className="h-3 w-3" />
                 직접 입력 (수능특강·학원 자체 교재 등)
               </h4>
@@ -396,7 +396,7 @@ export function UnitEditorModal({
 
             {/* 출처 footer */}
             {defaultSource && (
-              <div className="border-pullim-slate-100 mt-4 border-t pt-3 text-[10px] leading-relaxed text-pullim-slate-500">
+              <div className="border-pullim-slate-100 mt-4 border-t pt-3 text-[length:var(--text-xs)] leading-relaxed text-pullim-slate-500">
                 <span className="inline-flex items-center gap-1 font-bold tracking-wider uppercase">
                   <ListChecks aria-hidden className="h-3 w-3" />
                   출처
@@ -414,7 +414,7 @@ export function UnitEditorModal({
         <DialogFooter className="border-pullim-slate-200 bg-pullim-slate-50 m-0 flex-row items-center justify-between gap-2 rounded-none border-t px-5 py-3">
           {inPickerMode ? (
             <>
-              <span className="text-pullim-slate-500 text-[11px]">
+              <span className="text-pullim-slate-500 text-[length:var(--text-xs)]">
                 과목 선택 후 단원을 설정해요
               </span>
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
@@ -426,7 +426,7 @@ export function UnitEditorModal({
               <button
                 type="button"
                 onClick={reset}
-                className="text-pullim-slate-500 hover:text-pullim-danger text-[11px] font-semibold underline-offset-2 hover:underline"
+                className="text-pullim-slate-500 hover:text-pullim-danger text-[length:var(--text-xs)] font-semibold underline-offset-2 hover:underline"
               >
                 전체 초기화
               </button>
@@ -516,9 +516,9 @@ function UnitCheckRow({
         </span>
         {badge && (
           <span className={cn(
-            'rounded-full px-1.5 py-0.5 font-mono text-[9px] font-bold',
+            'rounded-full px-1.5 py-0.5 font-mono text-[length:var(--text-xs)] font-bold',
             badgeTone === 'warn'
-              ? 'bg-pullim-warn-bg text-pullim-warn'
+              ? 'bg-pullim-warn-bg text-pullim-warn-ink'
               : 'bg-pullim-blue-50 text-pullim-blue-700',
           )}>
             {badge}

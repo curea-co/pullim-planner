@@ -156,16 +156,16 @@ export function SideTimeline24({ blocks, now, ddayLabel, className, paletteId, c
       {!compact && (
         <div className="mb-2 flex items-center gap-2">
           {ddayLabel && (
-            <span className="text-pullim-blue-700 bg-pullim-blue-50 inline-flex rounded-full px-2 py-0.5 font-mono text-[10px] font-bold">
+            <span className="text-pullim-blue-700 bg-pullim-blue-50 inline-flex rounded-full px-2 py-0.5 font-mono text-[length:var(--text-2xs)] font-bold">
               {ddayLabel}
             </span>
           )}
-          <span className="text-pullim-slate-700 font-mono text-[11px] font-semibold">
+          <span className="text-pullim-slate-700 font-mono text-[length:var(--text-2xs)] font-semibold">
             {(doneMinutes / 60).toFixed(1)}h
             <span className="text-pullim-slate-400"> / {(expectedMinutes / 60).toFixed(1)}h</span>
           </span>
-          <span className="text-pullim-slate-300 text-[11px]">·</span>
-          <span className="text-pullim-slate-700 font-mono text-[11px] font-semibold">
+          <span className="text-pullim-slate-300 text-[length:var(--text-2xs)]">·</span>
+          <span className="text-pullim-slate-700 font-mono text-[length:var(--text-xs)] font-semibold">
             {summary.done}
             <span className="text-pullim-slate-400">/{summary.total} 블록</span>
           </span>
@@ -190,7 +190,7 @@ export function SideTimeline24({ blocks, now, ddayLabel, className, paletteId, c
             {Array.from({ length: range.hourCount }, (_, h) => (
               <div
                 key={h}
-                className="text-pullim-slate-500 flex items-start justify-center pt-0.5 font-mono text-[9px] font-semibold"
+                className="text-pullim-slate-500 flex items-start justify-center pt-0.5 font-mono text-[length:var(--text-2xs)] font-semibold"
                 style={{ height: 2 * CELL_HEIGHT }}
               >
                 {pad2(range.startHour + h)}
@@ -228,7 +228,7 @@ export function SideTimeline24({ blocks, now, ddayLabel, className, paletteId, c
               {/* 채도 한 단계 ↓ 가로선 */}
               <div className="border-pullim-danger/70 border-t-[1.5px]" />
               {/* 좌측 알약 — 시간 라벨 컬럼에 살짝 돌출 */}
-              <span className="bg-pullim-danger absolute -left-1 -translate-y-1/2 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-bold text-white shadow-pullim-sm">
+              <span className="bg-pullim-danger absolute -left-1 -translate-y-1/2 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-mono text-[length:var(--text-xs)] font-bold text-white shadow-pullim-sm">
                 <span className="bg-white/90 inline-block h-1.5 w-1.5 rounded-full" aria-hidden />
                 {effectiveNow} 지금
               </span>

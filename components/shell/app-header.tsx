@@ -96,12 +96,12 @@ function ProfileMenu() {
             <div className="flex items-center justify-between gap-2">
               <div className="text-pullim-slate-900 truncate text-sm font-bold">{name}</div>
               {planLabel && (
-                <span className="bg-pullim-slate-100 text-pullim-slate-600 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold">
+                <span className="bg-pullim-slate-100 text-pullim-slate-600 shrink-0 rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-semibold">
                   {planLabel}
                 </span>
               )}
             </div>
-            <div className="text-pullim-slate-500 text-[11px] font-normal">{sub}</div>
+            <div className="text-pullim-slate-500 text-[length:var(--text-xs)] font-normal">{sub}</div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

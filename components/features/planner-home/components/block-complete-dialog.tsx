@@ -109,7 +109,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
     <Dialog open={!!block} onOpenChange={(o) => { if (!o && !saving) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <span className="text-pullim-success text-[10px] font-bold tracking-wider uppercase">
+          <span className="text-pullim-success text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             <CheckCircle2 aria-hidden className="mr-1 inline-block h-3 w-3" />
             블록 완료
           </span>
@@ -139,7 +139,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
 
         {/* 감정 체크인 — 선택적 */}
         <section>
-          <label className="text-pullim-slate-700 mb-2 block text-[11px] font-bold tracking-wider uppercase">
+          <label className="text-pullim-slate-700 mb-2 block text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             오늘 이 블록은 어땠어요? <span className="text-pullim-slate-400 normal-case font-normal">(선택)</span>
           </label>
           <div role="radiogroup" aria-label="감정 체크인" className="flex items-center justify-between gap-1">
@@ -158,12 +158,12 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1',
                     selected
                       ? 'border-pullim-blue-500 bg-pullim-blue-50 scale-[1.04]'
-                      : 'border-pullim-slate-200 hover:border-pullim-slate-300 opacity-70 hover:opacity-100',
+                      : 'border-pullim-slate-200 hover:border-pullim-slate-300',
                   )}
                 >
                   <span aria-hidden className="text-xl leading-none">{emotionEmojis[level]}</span>
                   <span className={cn(
-                    'text-[9px] font-semibold',
+                    'text-[length:var(--text-2xs)] font-semibold',
                     selected ? 'text-pullim-blue-700' : 'text-pullim-slate-500',
                   )}>
                     {level}
@@ -173,13 +173,13 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
             })}
           </div>
           {emotion && (
-            <p className="text-pullim-slate-500 mt-1.5 text-[10px]">{emotionLabel[emotion]}</p>
+            <p className="text-pullim-slate-500 mt-1.5 text-[length:var(--text-xs)]">{emotionLabel[emotion]}</p>
           )}
         </section>
 
         {/* 한 줄 코멘트 — 선택적 */}
         <section>
-          <label className="text-pullim-slate-700 mb-1 block text-[11px] font-bold tracking-wider uppercase">
+          <label className="text-pullim-slate-700 mb-1 block text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             한 줄 메모 <span className="text-pullim-slate-400 normal-case font-normal">(선택)</span>
           </label>
           <input
@@ -218,7 +218,7 @@ function Stat({
 }: { label: string; value: string; tone?: 'accent' }) {
   return (
     <div>
-      <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
+      <div className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         {label}
       </div>
       <div

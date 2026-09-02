@@ -88,11 +88,11 @@ export function BarWeekLayout({ paletteId, compact, days }: Props) {
                 />
               </div>
               <div className={cn(
-                'text-pullim-slate-700 font-mono text-[10px] font-semibold',
+                'text-pullim-slate-700 font-mono text-[length:var(--text-2xs)] font-semibold',
               )}>
                 {d.day}
               </div>
-              <div className="text-pullim-slate-500 font-mono text-[9px]">
+              <div className="text-pullim-slate-500 font-mono text-[length:var(--text-2xs)]">
                 {d.hours.toFixed(1)}
               </div>
             </div>
@@ -101,7 +101,7 @@ export function BarWeekLayout({ paletteId, compact, days }: Props) {
       </div>
 
       {!compact && goal !== null && (
-        <p className="text-pullim-slate-500 mt-2 text-[10px]">
+        <p className="text-pullim-slate-500 mt-2 text-[length:var(--text-xs)]">
           점선 = 목표({goal}h). 채워진 막대 = 목표 달성한 날.
         </p>
       )}

@@ -45,11 +45,11 @@ export function RailFooter({ iconOnly }: { iconOnly?: boolean }) {
           'group',
         )}
       >
-        <span className="text-pullim-slate-500 flex items-center gap-1.5 text-[11px] font-semibold">
+        <span className="text-pullim-slate-500 flex items-center gap-1.5 text-[length:var(--text-xs)] font-semibold">
           <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
           문의하기
         </span>
-        <span className="text-pullim-slate-900 group-hover:text-pullim-blue-600 mt-1 block text-[13px] font-semibold tracking-tight break-all transition-colors">
+        <span className="text-pullim-slate-900 group-hover:text-pullim-blue-600 mt-1 block text-[length:var(--text-sm)] font-semibold tracking-tight break-all transition-colors">
           {CONTACT_EMAIL}
         </span>
       </a>

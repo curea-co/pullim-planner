@@ -55,7 +55,7 @@ export function MonthHeatmap({
   return (
     <section className="bg-card overflow-hidden rounded-2xl border">
       <header className="border-b p-4">
-        <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+        <p className="text-pullim-blue-600 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           월간 학습 캘린더
         </p>
         {/* QA #17 — 헤더의 해석 안내 문구 삭제 (범례는 기존대로 하단) */}
@@ -66,7 +66,7 @@ export function MonthHeatmap({
 
       <div className="p-4">
         {/* 요일 헤더 */}
-        <div className="text-pullim-slate-600 mb-1.5 grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold">
+        <div className="text-pullim-slate-600 mb-1.5 grid grid-cols-7 gap-1.5 text-center text-[length:var(--text-2xs)] font-bold">
           {weekHeader.map(w => (
             <div key={w} className={w === '토' || w === '일' ? 'text-pullim-slate-700' : ''}>{w}</div>
           ))}
@@ -81,7 +81,7 @@ export function MonthHeatmap({
         </div>
 
         {/* 범례 */}
-        <div className="text-pullim-slate-500 mt-4 flex flex-wrap items-center gap-3 text-[10px]">
+        <div className="text-pullim-slate-500 mt-4 flex flex-wrap items-center gap-3 text-[length:var(--text-xs)]">
           <span className="font-bold tracking-wider uppercase">강도</span>
           <span className="inline-flex items-center gap-1">
             <span className="h-3 w-3 rounded-sm bg-pullim-heat-0 border border-pullim-slate-200" /> 0개
@@ -159,7 +159,7 @@ function DayCell({ day, onSelect }: { day: MonthDay; onSelect: () => void }) {
         {day.blockCount > 0 && (
           <span
             className={cn(
-              'text-[8px] font-mono mt-0.5 font-semibold',
+              'text-[length:var(--text-2xs)] font-mono mt-0.5 font-semibold',
               isDarkBg ? 'text-white/95' : 'text-pullim-slate-700',
             )}
           >

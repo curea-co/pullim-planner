@@ -17,8 +17,8 @@ import { cn } from '@/lib/utils';
 
 const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: string; bg: string }> = {
   sparkle: { Icon: Sparkles,        tone: 'text-pullim-blue-700',   bg: 'bg-pullim-blue-50' },
-  check:   { Icon: CheckCircle2,    tone: 'text-pullim-success',    bg: 'bg-pullim-success-bg' },
-  warn:    { Icon: AlertTriangle,   tone: 'text-pullim-warn',       bg: 'bg-pullim-warn-bg' },
+  check:   { Icon: CheckCircle2,    tone: 'text-pullim-success-ink',    bg: 'bg-pullim-success-bg' },
+  warn:    { Icon: AlertTriangle,   tone: 'text-pullim-warn-ink',       bg: 'bg-pullim-warn-bg' },
 };
 
 /**
@@ -77,7 +77,7 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
           <BarChart3 className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-pullim-slate-500 text-[10px] font-bold tracking-wider uppercase">
+          <div className="text-pullim-slate-500 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             오늘 회고
           </div>
           <div className="text-pullim-slate-900 mt-0.5 text-sm font-bold">
@@ -95,13 +95,13 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
               </>
             )}
             {allFinished && (
-              <span className="bg-pullim-success-bg text-pullim-success ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold">
+              <span className="bg-pullim-success-bg text-pullim-success-ink ml-2 rounded-full px-2 py-0.5 text-[length:var(--text-xs)] font-bold">
                 오늘 끝!
               </span>
             )}
           </div>
         </div>
-        <span className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[11px] font-semibold">
+        <span className="text-pullim-slate-500 inline-flex items-center gap-0.5 text-[length:var(--text-xs)] font-semibold">
           {open ? '접기' : '펼치기'}
           {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </span>
@@ -140,7 +140,7 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
 
           {/* 블록 회고 리스트 */}
           <section>
-            <h4 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
+            <h4 className="text-pullim-slate-700 mb-2 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
               블록별 결과
             </h4>
             <ul className="space-y-1.5">
@@ -152,7 +152,7 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
 
           {/* 인사이트 */}
           <section>
-            <h4 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
+            <h4 className="text-pullim-slate-700 mb-2 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
               내일 뭐가 다른가
             </h4>
             <ul className="space-y-1.5">
@@ -208,7 +208,7 @@ function Metric({
 }) {
   return (
     <div className="bg-pullim-slate-50 rounded-lg p-3">
-      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         <Icon className="h-3 w-3" />
         {label}
       </div>
@@ -220,16 +220,16 @@ function Metric({
       >
         {value}
       </div>
-      <div className="text-pullim-slate-500 text-[10px]">{sub}</div>
+      <div className="text-pullim-slate-500 text-[length:var(--text-xs)]">{sub}</div>
     </div>
   );
 }
 
 const statusBadge = {
-  done:    { Icon: CheckCircle2, className: 'text-pullim-success bg-pullim-success-bg', label: '완료' },
+  done:    { Icon: CheckCircle2, className: 'text-pullim-success-ink bg-pullim-success-bg', label: '완료' },
   doing:   { Icon: Sparkles,     className: 'text-pullim-blue-700 bg-pullim-blue-100',  label: '진행' },
   todo:    { Icon: Clock,        className: 'text-pullim-slate-600 bg-pullim-slate-100', label: '대기' },
-  skipped: { Icon: AlertTriangle, className: 'text-pullim-warn bg-pullim-warn-bg',       label: '이월' },
+  skipped: { Icon: AlertTriangle, className: 'text-pullim-warn-ink bg-pullim-warn-bg',       label: '이월' },
 } as const;
 
 function BlockRow({ block }: { block: TimeBlock }) {
@@ -244,11 +244,11 @@ function BlockRow({ block }: { block: TimeBlock }) {
   return (
     <li
       className={cn(
-        'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px]',
+        'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[length:var(--text-xs)]',
         isDone ? 'bg-pullim-slate-50/60 border-pullim-slate-200' : 'bg-card border-pullim-slate-200',
       )}
     >
-      <span className={cn('inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold', status.className)}>
+      <span className={cn('inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)] font-bold', status.className)}>
         <StatusIcon className="h-2.5 w-2.5" />
         {status.label}
       </span>
@@ -264,16 +264,16 @@ function BlockRow({ block }: { block: TimeBlock }) {
       >
         {block.title}
       </span>
-      <span className="text-pullim-slate-500 ml-auto shrink-0 text-[10px]">{subjectLabel}</span>
+      <span className="text-pullim-slate-500 ml-auto shrink-0 text-[length:var(--text-xs)]">{subjectLabel}</span>
       {block.accuracy !== undefined && (
-        <span className="text-pullim-slate-700 font-mono shrink-0 text-[11px] font-bold">
+        <span className="text-pullim-slate-700 font-mono shrink-0 text-[length:var(--text-2xs)] font-bold">
           {block.accuracy}%
         </span>
       )}
       {emotionEmoji && <span aria-hidden className="shrink-0 text-sm">{emotionEmoji}</span>}
       {block.reasoning && (
         <span
-          className="bg-pullim-blue-50 text-pullim-blue-700 inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+          className="bg-pullim-blue-50 text-pullim-blue-700 inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[length:var(--text-xs)] font-bold"
           title={block.reasoning}
         >
           <Sparkles className="h-2 w-2" aria-hidden />

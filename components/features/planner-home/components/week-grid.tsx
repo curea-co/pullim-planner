@@ -52,7 +52,7 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
       {/* QA #16 — 헤더의 해석 안내 문구 삭제, 색상 범례는 시간표 하단으로 이동 */}
       {!compact && (
         <header className="border-b p-4">
-          <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+          <p className="text-pullim-blue-600 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
             주간 학습표
           </p>
           <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
@@ -64,7 +64,7 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="text-pullim-slate-700 text-[10px]">
+            <tr className="text-pullim-slate-700 text-[length:var(--text-2xs)]">
               <th className="bg-pullim-slate-50 px-2 py-2 text-left font-semibold">타입</th>
               {week.map(d => (
                 <th
@@ -84,8 +84,8 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
                       d.isToday ? 'hover:bg-pullim-blue-100' : 'hover:bg-pullim-slate-100',
                     )}
                   >
-                    <div className="font-mono text-[11px]">{d.day}</div>
-                    <div className={cn('text-[9px] font-mono mt-0.5', d.isToday ? 'text-pullim-blue-700' : 'text-pullim-slate-600')}>
+                    <div className="font-mono text-[length:var(--text-2xs)]">{d.day}</div>
+                    <div className={cn('text-[length:var(--text-2xs)] font-mono mt-0.5', d.isToday ? 'text-pullim-blue-700' : 'text-pullim-slate-600')}>
                       {d.date}
                     </div>
                   </button>
@@ -101,7 +101,7 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
                 <tr key={type} className="border-pullim-slate-100 border-t">
                   <th
                     scope="row"
-                    className="text-pullim-slate-700 flex items-center gap-1 px-2 py-1.5 text-left text-[11px] font-semibold"
+                    className="text-pullim-slate-700 flex items-center gap-1 px-2 py-1.5 text-left text-[length:var(--text-2xs)] font-semibold"
                   >
                     <MetaIcon aria-hidden className="h-3.5 w-3.5 shrink-0 text-pullim-slate-500" />
                     <span className="truncate">{meta.label}</span>
@@ -120,7 +120,7 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
             })}
             {/* 합계 행 */}
             <tr className="border-pullim-slate-200 bg-pullim-slate-50 border-t-2">
-              <th scope="row" className="text-pullim-slate-700 px-2 py-1.5 text-left text-[11px] font-bold">
+              <th scope="row" className="text-pullim-slate-700 px-2 py-1.5 text-left text-[length:var(--text-2xs)] font-bold">
                 합계
               </th>
               {week.map(d => (
@@ -129,11 +129,11 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
                   className="border-pullim-slate-100 border-l py-1.5 text-center"
                   title={`${Math.round(d.totalMinutes / 60 * 10) / 10}h · 완료 ${d.completionPct}%`}
                 >
-                  <div className={cn('font-mono text-[11px] font-bold', d.isToday ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
+                  <div className={cn('font-mono text-[length:var(--text-2xs)] font-bold', d.isToday ? 'text-pullim-blue-700' : 'text-pullim-slate-900')}>
                     {Math.round(d.totalMinutes / 60 * 10) / 10}h
                   </div>
                   <div className={cn(
-                    'mt-0.5 font-mono text-[9px] font-semibold',
+                    'mt-0.5 font-mono text-[length:var(--text-2xs)] font-semibold',
                     d.completionPct === 100 ? 'text-pullim-success' : d.completionPct > 0 ? 'text-pullim-blue-700' : 'text-pullim-slate-500',
                   )}>
                     {d.completionPct}%
@@ -151,7 +151,7 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
           {visibleTypes.map(t => {
             const m = blockTypeMeta[t];
             return (
-              <li key={t} className="text-pullim-slate-600 inline-flex items-center gap-1 text-[10px]">
+              <li key={t} className="text-pullim-slate-600 inline-flex items-center gap-1 text-[length:var(--text-xs)]">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-sm"
                   style={{ background: getBlockColor(t, activePalette) }}
@@ -161,7 +161,7 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
               </li>
             );
           })}
-          <li className="text-pullim-slate-500 ml-auto text-[10px]">막대 높이 = 학습 시간</li>
+          <li className="text-pullim-slate-500 ml-auto text-[length:var(--text-xs)]">막대 높이 = 학습 시간</li>
         </ul>
       )}
     </section>

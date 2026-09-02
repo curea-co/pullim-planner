@@ -14,8 +14,8 @@ import { cn } from '@/lib/utils';
 
 const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: string; bg: string }> = {
   sparkle: { Icon: Sparkles,        tone: 'text-pullim-blue-700',   bg: 'bg-pullim-blue-50' },
-  check:   { Icon: CheckCircle2,    tone: 'text-pullim-success',    bg: 'bg-pullim-success-bg' },
-  warn:    { Icon: AlertTriangle,   tone: 'text-pullim-warn',       bg: 'bg-pullim-warn-bg' },
+  check:   { Icon: CheckCircle2,    tone: 'text-pullim-success-ink',    bg: 'bg-pullim-success-bg' },
+  warn:    { Icon: AlertTriangle,   tone: 'text-pullim-warn-ink',       bg: 'bg-pullim-warn-bg' },
 };
 
 const homeWeeklyInsights: ReflectionInsight[] = [
@@ -42,7 +42,7 @@ export function WeeklyGoalsCard() {
   return (
     <section className="bg-card flex flex-col rounded-2xl border p-5">
       <header className="mb-3">
-        <p className="text-pullim-blue-600 text-[10px] font-bold tracking-wider uppercase">
+        <p className="text-pullim-blue-600 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           이번 주 달성 목표
         </p>
         <h2 className="text-pullim-slate-900 mt-0.5 text-base font-bold tracking-tight">
@@ -65,7 +65,7 @@ export function WeeklyGoalsCard() {
             style={{ width: `${goalAchievementPct}%` }}
           />
         </div>
-        <div className="text-pullim-slate-500 mt-1 text-[11px]">
+        <div className="text-pullim-slate-500 mt-1 text-[length:var(--text-xs)]">
           목표 대비 <span className="text-pullim-blue-700 font-mono font-bold">{goalAchievementPct}%</span>
           <span className="mx-1">·</span>
           완료율 평균 {weeklyCompletionAvg}%
@@ -96,7 +96,7 @@ export function WeeklyGoalsCard() {
 
       {/* 인사이트 */}
       <section className="mt-3">
-        <h3 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
+        <h3 className="text-pullim-slate-700 mb-2 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           이번 주 인사이트
         </h3>
         <ul className="space-y-1.5">
@@ -121,7 +121,7 @@ export function WeeklyGoalsCard() {
 
       {/* 약점 단원 진도 — 간결 4개 */}
       <section className="mt-3">
-        <h3 className="text-pullim-slate-700 mb-2 text-[11px] font-bold tracking-wider uppercase">
+        <h3 className="text-pullim-slate-700 mb-2 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           약점 단원 진도
         </h3>
         <ul className="space-y-1.5">
@@ -138,7 +138,7 @@ export function WeeklyGoalsCard() {
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className="text-pullim-slate-700 w-9 shrink-0 text-right font-mono text-[11px] font-bold">
+                <span className="text-pullim-slate-700 w-9 shrink-0 text-right font-mono text-[length:var(--text-2xs)] font-bold">
                   {pct}%
                 </span>
               </li>
@@ -174,7 +174,7 @@ function Metric({
 }) {
   return (
     <div className="bg-pullim-slate-50 rounded-lg p-2.5">
-      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase">
+      <div className="text-pullim-slate-500 inline-flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
         <Icon className="h-3 w-3" />
         {label}
       </div>
@@ -186,7 +186,7 @@ function Metric({
       >
         {value}
       </div>
-      {sub && <div className="text-pullim-slate-500 text-[10px]">{sub}</div>}
+      {sub && <div className="text-pullim-slate-500 text-[length:var(--text-xs)]">{sub}</div>}
     </div>
   );
 }

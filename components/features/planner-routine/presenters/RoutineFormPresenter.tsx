@@ -165,7 +165,7 @@ export default function RoutineFormPresenter({
           <button
             type="button"
             onClick={onDelete}
-            className="text-pullim-danger hover:bg-pullim-danger-bg inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-danger"
+            className="text-pullim-danger hover:bg-pullim-danger-bg hover:text-pullim-danger-ink inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-danger"
           >
             <Trash2 className="h-4 w-4" aria-hidden />
             삭제
