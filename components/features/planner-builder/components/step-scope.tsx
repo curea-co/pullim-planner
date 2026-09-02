@@ -146,7 +146,7 @@ export function PStep3Subjects({ form, setForm, scope, setScope }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* 과목 선택 */}
       <section>
         <h3 className="text-pullim-slate-700 mb-1.5 text-xs font-bold">
