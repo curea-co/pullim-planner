@@ -77,8 +77,8 @@ export function PlannerWizard({
         onJump={onJump}
       />
 
-      <section className="bg-card rounded-2xl border p-4 lg:p-5">
-        <header className="mb-3.5 flex items-start gap-3 border-b pb-3.5">
+      <section className="bg-card rounded-2xl border p-4 lg:p-6">
+        <header className="mb-5 flex items-start gap-3 border-b pb-4">
           <div className="bg-pullim-blue-50 text-pullim-blue-700 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
             <StepIcon className="h-5 w-5" />
           </div>
@@ -128,7 +128,7 @@ export function PlannerWizard({
         */}
         <footer
           className={cn(
-            'mt-4 flex items-center justify-between gap-2 border-t pt-3.5',
+            'mt-6 flex items-center justify-between gap-2 border-t pt-4',
             'bg-card sticky bottom-0 z-10 -mx-4 -mb-4 rounded-b-2xl px-4 pb-4',
             'md:static md:mx-0 md:mb-0 md:rounded-none md:px-0 md:pb-0',
           )}

@@ -126,7 +126,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
     : formatKoDate(startDate);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* 시험 종류 */}
       <section>
         <h3 className="text-pullim-slate-700 mb-1.5 text-xs font-bold">
@@ -216,9 +216,15 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
       )}
 
       {/* 일자 — 프리셋이 채워 줘도 입력은 열어 둔다.
-          학생이 이 단계에서 궁금한 건 날짜 문자열이 아니라 '남은 일수'라 D-day 를 히어로로
-          세우고 입력을 그 옆 부속으로 내린다(구 10px 회색 힌트 줄 대체). */}
-      <div>
+          D-day 는 이 단계에서 학생이 가장 궁금해하는 값이라 크게 두지만, **그룹 제목은
+          아니다.** 제목 자리는 다른 그룹(목표 시험·회차·목표 등급)과 같은 h3 가 갖고,
+          D-day 는 그 아래 본문에서 히어로 노릇을 한다 — 제목이 수치에 밀리면 이 묶음이
+          무엇을 묻는 칸인지가 흐려진다(오너 지적 2026-09-02). */}
+      <section>
+        <h3 className="text-pullim-slate-700 mb-1.5 text-xs font-bold">
+          {meta.isRange ? '시험 기간' : examType === 'other' ? '목표 날짜' : '시험 날짜'}
+          <RequiredMark />
+        </h3>
         <CountdownDateBlock
           dDayLabel={dDayLabel}
           tone={dDayTone}
@@ -227,10 +233,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
           isRange={meta.isRange}
         >
           {meta.isRange ? (
-            <div className="flex flex-col items-start gap-2.5">
-              <span className="text-pullim-slate-700 text-xs font-bold">
-                시험 기간<RequiredMark />
-              </span>
+            <div className="flex flex-col items-start">
               {/* 시작/종료는 가시 라벨을 유지한다 — aria-label 만 남기면 화면에서 어느 칸이
                   종료일인지 알 수 없다. 다만 라벨을 입력 **위**가 아니라 **옆**에 둔다.
                   범위 시험은 375px 에서 두 입력이 반드시 두 줄로 접히기 때문이다 — 네이티브
@@ -251,12 +254,11 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
               </div>
             </div>
           ) : (
-            <DateField
-              label={examType === 'other' ? '목표 날짜' : '시험 날짜'}
-              required
+            <DateInput
               value={startDate}
               onChange={setStart}
               min={minDate}
+              ariaLabel={examType === 'other' ? '목표 날짜' : '시험 날짜'}
             />
           )}
         </CountdownDateBlock>
@@ -272,7 +274,7 @@ export function PStep1Goal({ form, setForm, expert, onExpertChange }: Props & {
             </span>
           </aside>
         )}
-      </div>
+      </section>
 
       {/* 목표는 최소 경로에서도 받는다. 시간표 배치를 바꾸지 않는 값이지만 BE `target` 이
           필수라(`kind` 는 examType 파생, grade/score 는 숫자, free 는 비빈 문자열) 묻지
@@ -441,24 +443,6 @@ function DateInput({ value, onChange, min, ariaLabel }: {
   );
 }
 
-function DateField({ label, value, onChange, min, required }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  min?: string;
-  required?: boolean;
-}) {
-  return (
-    <label className="flex flex-col items-start">
-      <span className="text-pullim-slate-700 mb-2.5 text-xs font-bold">
-        {label}
-        {required && <RequiredMark />}
-      </span>
-      <DateInput value={value} onChange={onChange} min={min} />
-    </label>
-  );
-}
-
 function TargetField({ form, setForm }: Props) {
   const examType = form.examType ?? 'mock';
   const kind = examTypeMeta[examType].targetKind;
@@ -466,7 +450,7 @@ function TargetField({ form, setForm }: Props) {
   if (kind === 'grade') {
     return (
       <div>
-        <label htmlFor="target-grade" className="text-pullim-slate-700 mb-1 block text-xs font-bold">
+        <label htmlFor="target-grade" className="text-pullim-slate-700 mb-1.5 block text-xs font-bold">
           목표 등급<RequiredMark />
         </label>
         <div className="relative w-40">
@@ -603,7 +587,7 @@ export function PStep2Hours({ form, setForm }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <section>
         <h3 className="text-pullim-slate-700 mb-1.5 text-xs font-bold">비슷한 상황 고르기</h3>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -1398,7 +1382,7 @@ export function PStep4Confirm({
   const buttonLabel = mode === 'edit' ? '변경 사항 저장' : '플래너 활성화';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <section className="bg-pullim-slate-900 rounded-xl p-4 text-white">
         <div className="text-pullim-lemon flex items-center gap-1 text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
           <Sparkles className="h-3 w-3" />
