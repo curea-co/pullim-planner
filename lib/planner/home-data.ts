@@ -7,7 +7,7 @@
 import type { PullimBlock } from '@/lib/api-client';
 import { blockTypeMeta, pedagogyEngineMeta, subjectLabels } from '@/lib/mock';
 import type {
-  BlockType, MonthDay, PedagogyEngineId, SubjectKey, TimeBlock, WeekDay,
+  BlockType, MonthDay, PedagogyEngineId, TimeBlock, WeekDay,
 } from '@/lib/mock';
 
 const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'] as const;
