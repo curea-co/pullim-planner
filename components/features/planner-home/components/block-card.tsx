@@ -1,10 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  Play, Check, Pause, ArrowRight, Clock, Lock,
-  CheckCircle2, Sparkles,
-} from 'lucide-react';
+import { ArrowRight, CheckCircle2, Lock, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   blockTypeMeta,
@@ -14,66 +11,14 @@ import {
   getFeatureRoute,
   hasQAccess,
   type TimeBlock,
-  type BlockType,
 } from '@/lib/mock';
+import {
+  BLOCK_STATUS_META, getBlockVisual, getTypeContainerClass,
+} from '@/lib/planner/block-type-style';
 import { Progress } from '@/components/ui/progress';
 import { PedagogyTag } from './pedagogy-tag';
 import { Q_LINK_ENABLED } from '@/lib/flags';
 import { cn } from '@/lib/utils';
-
-const statusMeta = {
-  done:    { label: '완료',  Icon: Check,  className: 'text-pullim-success-ink bg-pullim-success-bg' },
-  doing:   { label: '진행',  Icon: Pause,  className: 'text-pullim-blue-700 bg-pullim-blue-100' },
-  todo:    { label: '대기',  Icon: Play,   className: 'text-pullim-slate-600 bg-pullim-slate-100' },
-  skipped: { label: '이월', Icon: Clock,  className: 'text-pullim-warn-ink bg-pullim-warn-bg' },
-} as const;
-
-/**
- * 5단 상태 색문법 (11-planner-design.md § 1)
- * 좌측 4px stripe + 카드 배경 톤을 한 곳에서 결정.
- * - completed: success-strong stripe, success-bg 옅은 면
- * - active (doing): brand-600 stripe, brand-50 면, ring 강조
- * - upcoming (todo): stripe 없음 (border만), 무톤
- * - overflow (skipped, 이월): warn stripe + 사선 빗금 + warn-bg 옅은 면
- * - recovery (break): stripe 없음, slate-100 면, pill radius
- */
-function getBlockVisual(status: TimeBlock['status'], isBreak: boolean) {
-  if (isBreak) {
-    return {
-      stripe: null,
-      surface: 'bg-pullim-slate-100/60 border-pullim-slate-200',
-      pattern: null,
-    };
-  }
-  switch (status) {
-    case 'done':
-      return {
-        stripe: 'bg-pullim-success',
-        surface: 'bg-pullim-success-bg/30 border-pullim-success/20',
-        pattern: null,
-      };
-    case 'doing':
-      return {
-        stripe: 'bg-pullim-blue-600',
-        surface: 'bg-pullim-blue-50/40 border-pullim-blue-300 ring-1 ring-pullim-blue-200 shadow-pullim-md',
-        pattern: null,
-      };
-    case 'skipped':
-      return {
-        stripe: 'bg-pullim-warn',
-        surface: 'bg-pullim-warn-bg/30 border-pullim-warn/30',
-        // 사선 빗금 — 미수행/이월 신호
-        pattern: 'before:absolute before:inset-0 before:rounded-[inherit] before:pointer-events-none before:bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgba(217,119,6,0.06)_6px_12px)]',
-      };
-    case 'todo':
-    default:
-      return {
-        stripe: null,
-        surface: 'bg-card hover:border-pullim-blue-200 border-pullim-slate-200',
-        pattern: null,
-      };
-  }
-}
 
 /**
  * 연결된 기능이 출시 전(future stage)이면 진입을 막는다.
@@ -85,25 +30,6 @@ function isLockedSlug(slug: string | undefined): boolean {
   if (!slug) return false;
   const f = findFeature(slug);
   return f?.stage === 'future';
-}
-
-/**
- * 블록 타입별 아이콘 컨테이너 색 (11-planner-design § 5.1).
- * mock-시간 학습 도메인 4개 + 회복/식사로 시각 차별화.
- * 모의평가만 warn 톤 — D-day 임박 신호와 톤 정합.
- */
-function getTypeContainerClass(type: BlockType): string {
-  switch (type) {
-    case 'mock':         return 'bg-pullim-warn-bg text-pullim-warn-ink';
-    case 'memorize':     return 'bg-pullim-violet-50 text-pullim-violet-600';
-    case 'concept':      return 'bg-pullim-teal-50 text-pullim-teal-600';
-    case 'practice':     return 'bg-pullim-blue-50 text-pullim-blue-700';
-    case 'review':       return 'bg-pullim-blue-100 text-pullim-blue-700';
-    case 'tutor':        return 'bg-pullim-blue-50 text-pullim-blue-600';
-    case 'self_explain': return 'bg-pullim-lemon-soft text-pullim-lemon-ink';
-    case 'break':
-    default:             return 'bg-pullim-slate-100 text-pullim-slate-700';
-  }
 }
 
 /** "HH:MM"에 분 단위 더하기 — 모달/토스트 카피용 데모 헬퍼 */
@@ -152,7 +78,7 @@ function BlockCardFull({ block, onComplete }: Props) {
   const subjectLabel = block.subject === 'rest' ? '휴식' : subjectLabels[block.subject];
   const meta = blockTypeMeta[block.type];
   const TypeIcon = meta.Icon;
-  const status = statusMeta[block.status];
+  const status = BLOCK_STATUS_META[block.status];
   const StatusIcon = status.Icon;
   const emotionEmoji = block.emotion ? emotionEmojis[block.emotion] : null;
   const isActive = block.status === 'doing';
@@ -331,7 +257,7 @@ function BlockCardFull({ block, onComplete }: Props) {
 function BlockCardCompact({ block, onComplete }: Props) {
   const meta = blockTypeMeta[block.type];
   const TypeIcon = meta.Icon;
-  const status = statusMeta[block.status];
+  const status = BLOCK_STATUS_META[block.status];
   const StatusIcon = status.Icon;
   const emotionEmoji = block.emotion ? emotionEmojis[block.emotion] : null;
   const isActive = block.status === 'doing';
