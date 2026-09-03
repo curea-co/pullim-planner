@@ -5,7 +5,7 @@ import { CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   blockTypeMeta, subjectLabels, emotionEmojis,
-  type TimeBlock,
+  type BlockType, type TimeBlock,
 } from '@/lib/mock';
 import {
   BLOCK_STATUS_META, getBlockVisual, getTypeContainerClass,
@@ -80,8 +80,10 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
     );
   }
 
-  const meta = blockTypeMeta[block.type];
-  const TypeIcon = meta.Icon;
+  // 모르는 type 이면 조회가 undefined 다 — 경계(home-data)가 이미 접어 주지만,
+  // mock·테스트·향후 호출부가 우회할 수 있어 여기서도 죽지 않게 둔다.
+  const meta = blockTypeMeta[block.type] as typeof blockTypeMeta[BlockType] | undefined;
+  const TypeIcon = meta?.Icon;
   const subjectLabel = block.subject === 'rest' ? '휴식' : subjectLabels[block.subject];
   const emotionEmoji = emotion ? emotionEmojis[emotion] : null;
   const isBreak = block.type === 'break';
@@ -182,14 +184,14 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
               )}
               aria-hidden
             >
-              <TypeIcon className="h-4 w-4" />
+              {TypeIcon && <TypeIcon className="h-4 w-4" />}
               {block.type === 'mock' && (
                 <span aria-hidden className="bg-pullim-danger ring-card absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2" />
               )}
             </span>
             <span className="min-w-0 flex-1 text-left">
               <span className="text-pullim-slate-500 block text-[length:var(--text-xs)] font-semibold tracking-wider uppercase">
-                {meta.label}
+                {meta?.label}
               </span>
               <span className="text-pullim-slate-900 block text-sm font-bold">{block.title}</span>
             </span>
