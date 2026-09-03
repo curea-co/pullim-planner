@@ -115,6 +115,13 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
     setSaving(true);
     try {
       return await onSubmit(block.id, {
+        // accuracy 는 **화면에 없지만 그대로 되돌려 보낸다.** 모순처럼 보여서 남긴다:
+        // - 이 값은 BE 가 준 것이고 FE 가 수집하지 않는다. 사용자가 확인하거나 고칠 것이 없다.
+        // - 화면에서 뺀 이유는 따로다 — 정확도는 FE 가 모르는 값이고, 소요 시간도 블록의 실제
+        //   시작 시각을 받지 않아 추정치다. 없는 정보를 아는 척하지 않기로 했다(사용자 결정).
+        // - 그런데 페이로드에서까지 빼면 위험하다. 완료 기록은 upsert 이고(재제출=수정),
+        //   생략된 필드를 BE 가 지우는지 유지하는지 FE 계약(PullimCompletionWrite)만으로는
+        //   알 수 없다. 지우는 쪽이면 저장돼 있던 점수가 날아간다. 그래서 왕복시킨다.
         ...(block.accuracy !== undefined ? { accuracy: block.accuracy } : {}),
         ...(emotion !== null ? { emotion } : {}),
         ...(note.trim() ? { notes: note.trim() } : {}),
