@@ -1042,17 +1042,6 @@ const blockTypeIcon: Record<BlockType, LucideIcon> = {
   break:        Coffee,
 };
 
-const blockTypeFeatureHint: Record<BlockType, string> = {
-  concept:      '풀림 비주얼',
-  practice:     '풀림 무한풀기',
-  review:       '풀림 복습 (정복)',
-  memorize:     '풀림 복습 (단어)',
-  mock:         '풀림 무한풀기 (시험 모드)',
-  tutor:        '풀림 AI 대화',
-  self_explain: '셀프 설명 — 마이크',
-  break:        '휴식',
-};
-
 const blockTypeShortLabel: Record<BlockType, string> = {
   concept:      '개념',
   practice:     '문제 풀이',
@@ -1697,11 +1686,11 @@ function PreviewBlock({ item }: { item: PreviewItem }) {
         <Icon aria-hidden className="h-3 w-3" />
         {blockTypeShortLabel[item.type]}
       </span>
-      <span className="text-pullim-slate-500 ml-auto truncate">
-        {item.unitLabel}
-        {/* mock 등 단원 없는 블록은 선행 구분자(·)를 숨긴다 */}
-        <span className="text-pullim-slate-400">{item.unitLabel ? ' · ' : ''}{blockTypeFeatureHint[item.type]}</span>
-      </span>
+      {/* 우측은 단원명만. 풀림 제품명(풀림 비주얼·풀림 복습 등)은 걷어냈다 —
+          ① Q 연계가 Q_LINK_ENABLED 로 꺼져 있어(홈 카드는 off 면 CTA 를 아예 숨긴다)
+             위저드만 제품을 약속하면 지킬 수 없는 말이 되고,
+          ② 같은 행 왼쪽의 타입 라벨에서 1:1 로 파생돼 새 정보가 없었다. */}
+      <span className="text-pullim-slate-500 ml-auto truncate">{item.unitLabel}</span>
     </li>
   );
 }
