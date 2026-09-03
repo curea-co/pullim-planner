@@ -103,8 +103,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
 
   function summary(): string {
     const emotionPart = emotion ? ` · ${emotionEmoji}` : '';
-    const accPart = block!.accuracy ? ` · ${block!.accuracy}점` : '';
-    return `✓ ${block!.title}${accPart}${emotionPart}`;
+    return `✓ ${block!.title}${emotionPart}`;
   }
 
   /**
@@ -236,20 +235,6 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
         </DialogHeader>
 
         <DialogBody className="gap-5 py-3">
-          {/* 자동 기록 — 회색 2열 박스를 버리고 카드 meta 행과 같은 한 줄로 폈다 */}
-          {block.accuracy !== undefined && (
-            <section className="border-pullim-slate-100 flex items-center gap-2 border-b pb-4 text-[length:var(--text-xs)]">
-              <span className="text-pullim-slate-500 font-semibold tracking-wider uppercase">자동 기록</span>
-              <span className="ml-auto flex items-center gap-2 font-mono tabular-nums">
-                <span className="text-pullim-slate-500">정확도</span>
-                <span className="text-pullim-blue-600 text-sm font-bold">{block.accuracy}점</span>
-                <span className="text-pullim-slate-300" aria-hidden>·</span>
-                <span className="text-pullim-slate-500">소요</span>
-                <span className="text-pullim-slate-900 text-sm font-bold">{block.expectedMinutes}분</span>
-              </span>
-            </section>
-          )}
-
           {/* 감정 체크인 — 선택적. ConditionBurnoutPanel 과 같은 관용구(트랙 위 선택 칩) */}
           <section>
             <label className="text-pullim-slate-700 mb-2 block text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
@@ -326,8 +311,9 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
             type="button"
             onClick={handleComplete}
             disabled={saving}
-            // 5단 색문법의 done 톤 — "누르면 이 색이 된다"
-            className="bg-pullim-success hover:bg-pullim-success/90 font-bold text-white max-sm:flex-1"
+            // 색은 PUDS 가 정한다 — Button 기본 variant 가 --color-action-primary 를 쓴다
+            // (pullim-os: primary-600/흰글자, 다크: primary-400/gray-950 로 자동 반전).
+            className="max-sm:flex-1"
           >
             {saving ? (
               <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden />
