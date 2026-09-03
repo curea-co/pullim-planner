@@ -37,6 +37,14 @@ describe('pullimToTimeBlock — BE 값 정규화', () => {
     expect(pullimToTimeBlock(raw({ subject: 'philosophy' })).subject).toBe('etc');
   });
 
+  // 휴식 블록은 subject:'rest' 를 쓴다 — subjectLabels 에는 없지만 정당한 값이다.
+  // etc 로 접으면 호출부의 `=== 'rest'` 분기가 죽어 휴식이 과목 블록으로 보인다.
+  it("휴식 블록의 subject 'rest' 를 접지 않는다", () => {
+    const b = pullimToTimeBlock(raw({ subject: 'rest', type: 'break' }));
+    expect(b.subject).toBe('rest');
+    expect(b.type).toBe('break');
+  });
+
   it('모르는 status 는 todo 로 접는다', () => {
     expect(pullimToTimeBlock(raw({ status: 'in_progress' })).status).toBe('todo');
   });

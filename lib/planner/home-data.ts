@@ -74,7 +74,10 @@ export function monthLabelOf(iso: string): string {
  */
 const KNOWN_TYPES = new Set(Object.keys(blockTypeMeta));
 const KNOWN_ENGINES = new Set(Object.keys(pedagogyEngineMeta));
-const KNOWN_SUBJECTS = new Set(Object.keys(subjectLabels));
+// 'rest' 는 subjectLabels 에 없지만 TimeBlock.subject 의 정당한 값이다
+// (`SubjectKey | 'rest'`). 휴식 블록이 이 값을 쓰고 호출부는 `=== 'rest'` 로 분기한다 —
+// etc 로 접으면 휴식이 과목 블록으로 둔갑한다(Codex #233).
+const KNOWN_SUBJECTS = new Set<string>([...Object.keys(subjectLabels), 'rest']);
 const KNOWN_STATUSES = new Set<TimeBlock['status']>(['todo', 'doing', 'done', 'skipped']);
 
 const warned = new Set<string>();
@@ -91,8 +94,8 @@ function normType(v: string): BlockType {
   warnOnce('block.type', v);
   return 'concept';
 }
-function normSubject(v: string): SubjectKey {
-  if (KNOWN_SUBJECTS.has(v)) return v as SubjectKey;
+function normSubject(v: string): TimeBlock['subject'] {
+  if (KNOWN_SUBJECTS.has(v)) return v as TimeBlock['subject'];
   warnOnce('block.subject', v);
   return 'etc';
 }
