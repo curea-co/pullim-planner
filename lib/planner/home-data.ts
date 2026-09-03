@@ -5,6 +5,7 @@
  */
 
 import type { PullimBlock } from '@/lib/api-client';
+import { blockTypeMeta, pedagogyEngineMeta, subjectLabels } from '@/lib/mock';
 import type {
   BlockType, MonthDay, PedagogyEngineId, SubjectKey, TimeBlock, WeekDay,
 } from '@/lib/mock';
@@ -60,9 +61,60 @@ export function monthLabelOf(iso: string): string {
   return `${Number(iso.split('-')[1])}월`;
 }
 
+
+/* ─── BE 값 → FE enum 정규화 ────────────────────────────────────────
+ * `PullimBlock` 의 subject·type·status·engines 는 계약상 전부 `string`/`string[]` 이다
+ * (lib/api-client/pullim-planner.ts). FE 는 이 값들을 닫힌 enum 으로 보고 곳곳에서
+ * `Record<BlockType, …>` 로 조회한다. 예전에는 `as` 로 단언만 해서, BE 가 FE 가 모르는
+ * 값을 하나만 보내도 조회 결과가 undefined 가 되고 `meta.Icon` 에서 페이지가 통째로
+ * 죽었다(#231 후속). 이 앱에는 error.tsx 가 없어 그 에러가 곧장 흰 화면이 된다.
+ *
+ * 그래서 경계에서 **아는 값만 통과**시킨다. 모르는 값은 버리거나 안전한 기본값으로 접고,
+ * 조용히 사라지지 않게 값마다 한 번씩 경고한다(같은 값 반복 로그 방지).
+ */
+const KNOWN_TYPES = new Set(Object.keys(blockTypeMeta));
+const KNOWN_ENGINES = new Set(Object.keys(pedagogyEngineMeta));
+const KNOWN_SUBJECTS = new Set(Object.keys(subjectLabels));
+const KNOWN_STATUSES = new Set<TimeBlock['status']>(['todo', 'doing', 'done', 'skipped']);
+
+const warned = new Set<string>();
+function warnOnce(field: string, value: string): void {
+  const key = `${field}:${value}`;
+  if (warned.has(key)) return;
+  warned.add(key);
+  // 계약 위반이지만 사용자 흐름은 계속돼야 한다 — 화면은 접고 개발자에게만 알린다.
+  console.warn(`[planner] pullim-api 가 모르는 ${field} 값을 보냈다: ${value}`);
+}
+
+function normType(v: string): BlockType {
+  if (KNOWN_TYPES.has(v)) return v as BlockType;
+  warnOnce('block.type', v);
+  return 'concept';
+}
+function normSubject(v: string): SubjectKey {
+  if (KNOWN_SUBJECTS.has(v)) return v as SubjectKey;
+  warnOnce('block.subject', v);
+  return 'etc';
+}
+function normStatus(v: string): TimeBlock['status'] {
+  if (KNOWN_STATUSES.has(v as TimeBlock['status'])) return v as TimeBlock['status'];
+  warnOnce('block.status', v);
+  return 'todo';
+}
+/** 모르는 엔진은 버린다 — 태그 하나가 빠질 뿐, 접어도 잃는 정보가 없다. */
+function normEngines(v: string[] | undefined): PedagogyEngineId[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((e) => {
+    if (KNOWN_ENGINES.has(e)) return true;
+    warnOnce('block.engines[]', e);
+    return false;
+  }) as PedagogyEngineId[];
+}
+
 /**
  * pullim-api 블록(`PullimBlock`) → 홈 뷰 `TimeBlock`.
- * subject/type/engines 는 BE 가 FE enum 집합으로 발급(생성 엔진·루틴 검증)하므로 단언.
+ * subject/type/status/engines 는 계약이 `string` 이라 위 norm* 로 **검증해서** 넣는다.
+ * (예전 주석은 "BE 가 FE enum 으로 발급하므로 단언"이었는데, 그 보장은 타입에 없다.)
  * 완료 메타(completed) → status 보정: BE status 가 'todo' 여도 완료 기록이 있으면 done 취급.
  */
 export function pullimToTimeBlock(b: PullimBlock): TimeBlock {
@@ -70,14 +122,14 @@ export function pullimToTimeBlock(b: PullimBlock): TimeBlock {
     id: b.id,
     start: b.start,
     end: b.end,
-    subject: b.subject as SubjectKey,
-    type: b.type as BlockType,
+    subject: normSubject(b.subject),
+    type: normType(b.type),
     title: b.title,
     linkedFeatureSlug: b.linkedFeatureSlug ?? undefined,
     curriculumNodeId: b.curriculumNodeId ?? undefined,
-    engines: b.engines as PedagogyEngineId[],
+    engines: normEngines(b.engines),
     progress: b.completed ? 1 : b.progress,
-    status: b.completed ? 'done' : (b.status as TimeBlock['status']),
+    status: b.completed ? 'done' : normStatus(b.status),
     expectedMinutes: b.expectedMinutes,
     accuracy: b.accuracy,
     emotion: b.emotion as TimeBlock['emotion'],

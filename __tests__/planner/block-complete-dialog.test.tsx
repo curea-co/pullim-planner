@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { BlockCompleteDialog } from '@/components/features/planner-home/components/block-complete-dialog';
-import { getBlocksForDayOffset, blockTypeMeta, type TimeBlock } from '@/lib/mock';
+import {
+  getBlocksForDayOffset, blockTypeMeta,
+  type PedagogyEngineId, type TimeBlock,
+} from '@/lib/mock';
 
 /**
  * 「카드의 연장」 계약 (2026-09-02 시안 A) —
@@ -59,10 +62,11 @@ describe('BlockCompleteDialog', () => {
   });
 
   /**
-   * 실데이터 방어 — `lib/planner/home-data.ts` 는 pullim-api JSON 을 검증 없이 단언한다
-   * (`b.engines as PedagogyEngineId[]`, `b.status as …`). BE 가 값을 빠뜨리면 런타임에는
-   * undefined 다. 홈 리스트가 쓰는 compact 카드는 engines 를 안 만져서 멀쩡한데 모달만
-   * 죽으면 "리스트는 되는데 팝업만 안 열린다"가 된다 — 실제로 그렇게 깨졌다.
+   * 실데이터 방어 — 정상 경로에서는 `home-data.ts` 가 경계에서 이미 접어 준다
+   * (home-data-normalize.test.ts). 여기서 보는 건 그 경계를 우회하는 호출부다 —
+   * mock·테스트·향후 코드가 TimeBlock 을 직접 만들 수 있다. 홈 리스트가 쓰는 compact
+   * 카드는 engines 를 안 만져서 멀쩡한데 모달만 죽으면 "리스트는 되는데 팝업만 안
+   * 열린다"가 된다 — 실제로 그렇게 깨졌다(#231, 그리고 그 후속).
    */
   describe('실데이터에 필드가 빠져도 죽지 않는다', () => {
     it('engines 가 없어도 렌더된다', () => {
@@ -84,6 +88,19 @@ describe('BlockCompleteDialog', () => {
       delete block.progress;
       render(<BlockCompleteDialog block={block as TimeBlock} onClose={() => {}} />);
       expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
+    });
+
+    // #231 은 "배열이 없는" 경우만 막았고 "배열 안의 값이 낯선" 경우는 못 막았다.
+    // BE 계약이 engines: string[] · type: string 이라 값 자체가 FE enum 밖일 수 있다.
+    it('모르는 엔진 id 가 섞여도 렌더된다', () => {
+      const block = { ...blockWith({}), engines: ['leitner_box' as PedagogyEngineId] };
+      expect(() => render(<BlockCompleteDialog block={block} onClose={() => {}} />)).not.toThrow();
+    });
+
+    it('모르는 블록 타입이어도 렌더된다', () => {
+      const block = { ...blockWith({}), type: 'flashcard' as TimeBlock['type'] };
+      expect(() => render(<BlockCompleteDialog block={block} onClose={() => {}} />)).not.toThrow();
+      expect(screen.getByRole('button', { name: '완료' })).toBeInTheDocument();
     });
   });
 });
