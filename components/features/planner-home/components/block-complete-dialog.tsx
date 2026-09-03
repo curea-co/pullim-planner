@@ -88,8 +88,12 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
   const isActive = block.status === 'doing';
   const status = BLOCK_STATUS_META[block.status];
   const StatusIcon = status.Icon;
-  // 리스트 행과 같은 함수 — 여기가 갈리면 "같은 블록인데 화면마다 다른 색"이 된다
-  const visual = getBlockVisual(block.status, isBreak);
+  // 리스트 행과 같은 함수 — 여기가 갈리면 "같은 블록인데 화면마다 다른 색"이 된다.
+  // surface·pattern 은 카드 전용이라 받지 않는다: surface 의 40% 알파 배경이 bg-popover 를 지워
+  // 모달이 반투명해지고(뒤 화면이 비친다) shadow-pullim-md 가 --shadow-lg 를 눌러 부유감이
+  // 죽는다. pattern 의 사선 빗금도 입력 폼 전면에 깔 것이 못 된다.
+  // 상태 톤은 stripe(공통) + wash(다이얼로그용 헤더 그라디언트)로 전달한다.
+  const { stripe, wash } = getBlockVisual(block.status, isBreak);
 
   function summary(): string {
     const emotionPart = emotion ? ` · ${emotionEmoji}` : '';
@@ -139,13 +143,13 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
         )}
       >
         {/* 좌측 4px 상태 stripe — 리스트 행과 같은 색문법. 모달 전 높이를 타고 내려간다 */}
-        {visual.stripe && (
-          <span aria-hidden className={cn('absolute left-0 top-0 bottom-0 z-10 w-1', visual.stripe)} />
+        {stripe && (
+          <span aria-hidden className={cn('absolute left-0 top-0 bottom-0 z-10 w-1', stripe)} />
         )}
 
         {/* 헤더 — 블록 카드의 meta 행 순서 그대로. blue wash는 띠가 아니라 아래로 사라지는
             그라디언트라 본문과 사이에 경계선이 생기지 않는다(bg-muted 단차 제거) */}
-        <DialogHeader className="from-pullim-blue-50/70 gap-1.5 bg-gradient-to-b to-transparent">
+        <DialogHeader className={cn('gap-1.5', wash && `bg-gradient-to-b ${wash} to-transparent`)}>
           <div className="flex items-center gap-2 text-[length:var(--text-xs)] font-semibold">
             <span className="text-pullim-slate-700 font-mono tabular-nums">
               {block.start}–{block.end}
