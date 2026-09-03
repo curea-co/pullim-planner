@@ -155,7 +155,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
 
         {/* 헤더 — 블록 카드의 meta 행 순서 그대로. blue wash는 띠가 아니라 아래로 사라지는
             그라디언트라 본문과 사이에 경계선이 생기지 않는다(bg-muted 단차 제거) */}
-        <DialogHeader className={cn('gap-1.5', wash && `bg-gradient-to-b ${wash} to-transparent`)}>
+        <DialogHeader className={cn('gap-2.5 pb-4', wash && `bg-gradient-to-b ${wash} to-transparent`)}>
           <div className="flex items-center gap-2 text-[length:var(--text-xs)] font-semibold">
             <span className="text-pullim-slate-700 font-mono tabular-nums">
               {block.start}–{block.end}
@@ -235,10 +235,10 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="gap-3.5">
+        <DialogBody className="gap-5 py-3">
           {/* 자동 기록 — 회색 2열 박스를 버리고 카드 meta 행과 같은 한 줄로 폈다 */}
           {block.accuracy !== undefined && (
-            <section className="border-pullim-slate-100 flex items-center gap-2 border-b pb-3 text-[length:var(--text-xs)]">
+            <section className="border-pullim-slate-100 flex items-center gap-2 border-b pb-4 text-[length:var(--text-xs)]">
               <span className="text-pullim-slate-500 font-semibold tracking-wider uppercase">자동 기록</span>
               <span className="ml-auto flex items-center gap-2 font-mono tabular-nums">
                 <span className="text-pullim-slate-500">정확도</span>
@@ -252,13 +252,13 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
 
           {/* 감정 체크인 — 선택적. ConditionBurnoutPanel 과 같은 관용구(트랙 위 선택 칩) */}
           <section>
-            <label className="text-pullim-slate-700 mb-1.5 block text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
+            <label className="text-pullim-slate-700 mb-2 block text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
               오늘 이 블록은 어땠어요? <span className="text-pullim-slate-400 font-normal normal-case">(선택)</span>
             </label>
             <div
               role="radiogroup"
               aria-label="감정 체크인"
-              className="bg-pullim-slate-50 flex items-center gap-1 rounded-xl p-1"
+              className="bg-pullim-slate-50 flex items-center gap-1.5 rounded-xl p-1.5"
             >
               {([1, 2, 3, 4, 5] as Emotion[]).map(level => {
                 const selected = emotion === level;
@@ -271,7 +271,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
                     aria-label={emotionLabel[level]}
                     onClick={() => setEmotion(level)}
                     className={cn(
-                      'flex flex-1 items-center justify-center rounded-lg py-2 transition-all',
+                      'flex flex-1 items-center justify-center rounded-lg py-2.5 transition-all',
                       'focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 focus-visible:ring-2 focus-visible:outline-none',
                       selected
                         ? 'bg-card ring-pullim-blue-500 shadow-pullim-sm ring-2'
@@ -284,7 +284,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
               })}
             </div>
             {/* 높이 고정 — 선택 전후로 레이아웃이 튀지 않게 */}
-            <p className="text-pullim-blue-700 mt-1.5 h-4 text-[length:var(--text-xs)] font-semibold">
+            <p className="text-pullim-blue-700 mt-2 h-4 text-[length:var(--text-xs)] font-semibold">
               {emotion ? emotionLabel[emotion] : ''}
             </p>
           </section>
@@ -293,7 +293,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
           <section>
             <label
               htmlFor="block-complete-note"
-              className="text-pullim-slate-700 mb-1 block text-[length:var(--text-xs)] font-bold tracking-wider uppercase"
+              className="text-pullim-slate-700 mb-2 block text-[length:var(--text-xs)] font-bold tracking-wider uppercase"
             >
               한 줄 메모 <span className="text-pullim-slate-400 font-normal normal-case">(선택)</span>
             </label>
@@ -304,7 +304,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
               onChange={e => setNote(e.target.value)}
               placeholder="예: 첫 문제는 헷갈렸지만 마지막은 빠르게"
               maxLength={60}
-              className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 bg-card w-full rounded-lg border px-3 py-2 text-sm outline-none"
+              className="border-pullim-slate-200 focus-visible:border-pullim-blue-400 bg-card w-full rounded-lg border px-3 py-2.5 text-sm outline-none"
             />
           </section>
         </DialogBody>
@@ -313,7 +313,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
             푸터는 bg-muted 띠를 벗고 본문과 같은 면에 hairline 한 줄로만 나뉜다 */}
         <DialogFooter
           className={cn(
-            'bg-popover gap-1.5 rounded-b-[var(--puds-radius-xl)] max-sm:rounded-b-none',
+            'bg-popover gap-2 py-3.5 rounded-b-[var(--puds-radius-xl)] max-sm:rounded-b-none',
             // 기본 flex-col-reverse 는 모바일에서 완료를 닫기 *위*로 올린다.
             // 바텀 시트에선 한 줄로 두고 완료가 남는 폭을 채우는 게 A안 배치다.
             'flex-row justify-end',
