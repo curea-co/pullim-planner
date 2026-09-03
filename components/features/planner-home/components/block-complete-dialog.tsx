@@ -103,8 +103,7 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
 
   function summary(): string {
     const emotionPart = emotion ? ` · ${emotionEmoji}` : '';
-    const accPart = block!.accuracy ? ` · ${block!.accuracy}점` : '';
-    return `✓ ${block!.title}${accPart}${emotionPart}`;
+    return `✓ ${block!.title}${emotionPart}`;
   }
 
   /**
@@ -116,6 +115,13 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
     setSaving(true);
     try {
       return await onSubmit(block.id, {
+        // accuracy 는 **화면에 없지만 그대로 되돌려 보낸다.** 모순처럼 보여서 남긴다:
+        // - 이 값은 BE 가 준 것이고 FE 가 수집하지 않는다. 사용자가 확인하거나 고칠 것이 없다.
+        // - 화면에서 뺀 이유는 따로다 — 정확도는 FE 가 모르는 값이고, 소요 시간도 블록의 실제
+        //   시작 시각을 받지 않아 추정치다. 없는 정보를 아는 척하지 않기로 했다(사용자 결정).
+        // - 그런데 페이로드에서까지 빼면 위험하다. 완료 기록은 upsert 이고(재제출=수정),
+        //   생략된 필드를 BE 가 지우는지 유지하는지 FE 계약(PullimCompletionWrite)만으로는
+        //   알 수 없다. 지우는 쪽이면 저장돼 있던 점수가 날아간다. 그래서 왕복시킨다.
         ...(block.accuracy !== undefined ? { accuracy: block.accuracy } : {}),
         ...(emotion !== null ? { emotion } : {}),
         ...(note.trim() ? { notes: note.trim() } : {}),
@@ -236,20 +242,6 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
         </DialogHeader>
 
         <DialogBody className="gap-5 py-3">
-          {/* 자동 기록 — 회색 2열 박스를 버리고 카드 meta 행과 같은 한 줄로 폈다 */}
-          {block.accuracy !== undefined && (
-            <section className="border-pullim-slate-100 flex items-center gap-2 border-b pb-4 text-[length:var(--text-xs)]">
-              <span className="text-pullim-slate-500 font-semibold tracking-wider uppercase">자동 기록</span>
-              <span className="ml-auto flex items-center gap-2 font-mono tabular-nums">
-                <span className="text-pullim-slate-500">정확도</span>
-                <span className="text-pullim-blue-600 text-sm font-bold">{block.accuracy}점</span>
-                <span className="text-pullim-slate-300" aria-hidden>·</span>
-                <span className="text-pullim-slate-500">소요</span>
-                <span className="text-pullim-slate-900 text-sm font-bold">{block.expectedMinutes}분</span>
-              </span>
-            </section>
-          )}
-
           {/* 감정 체크인 — 선택적. ConditionBurnoutPanel 과 같은 관용구(트랙 위 선택 칩) */}
           <section>
             <label className="text-pullim-slate-700 mb-2 block text-[length:var(--text-xs)] font-bold tracking-wider uppercase">
@@ -326,8 +318,11 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
             type="button"
             onClick={handleComplete}
             disabled={saving}
-            // 5단 색문법의 done 톤 — "누르면 이 색이 된다"
-            className="bg-pullim-success hover:bg-pullim-success/90 font-bold text-white max-sm:flex-1"
+            // 색은 PUDS 시맨틱 램프에서 온다 — success variant 가 --color-success-* 를 쓴다.
+            // 기본 primary(파랑)를 쓰면 블록 카드의 '시작/이어서'(bg-pullim-blue-600)와
+            // 같은 문법으로 읽혀 완료가 이동/진행 액션처럼 보인다(Codex #235).
+            variant="success"
+            className="max-sm:flex-1"
           >
             {saving ? (
               <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden />

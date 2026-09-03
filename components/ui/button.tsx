@@ -20,6 +20,11 @@ const buttonVariants = cva(
           "bg-transparent text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] aria-expanded:bg-[var(--surface-sunken)]",
         destructive:
           "bg-[var(--color-danger-500)] text-white shadow-sm hover:bg-[var(--color-danger-600)]",
+        // 완료·확정 액션. destructive 와 같은 모양으로 PUDS 시맨틱 램프에서 색을 받는다.
+        // primary(파랑)를 쓰면 '시작/이어서' 와 같은 문법으로 읽히므로 분리한다
+        // (11-planner-design.md § 1 완료 상태 = success).
+        success:
+          "bg-[var(--color-success-700)] text-white shadow-sm hover:bg-[var(--color-success-600)]",
         link: "text-[var(--color-action-primary)] underline-offset-4 hover:underline",
       },
       // default/lg/icon/icon-lg = OS 스케일(button-h 토큰). xs/sm/icon-xs/icon-sm = 기존 컴팩트 계약 유지
