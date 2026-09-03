@@ -318,8 +318,10 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
             type="button"
             onClick={handleComplete}
             disabled={saving}
-            // 색은 PUDS 가 정한다 — Button 기본 variant 가 --color-action-primary 를 쓴다
-            // (pullim-os: primary-600/흰글자, 다크: primary-400/gray-950 로 자동 반전).
+            // 색은 PUDS 시맨틱 램프에서 온다 — success variant 가 --color-success-* 를 쓴다.
+            // 기본 primary(파랑)를 쓰면 블록 카드의 '시작/이어서'(bg-pullim-blue-600)와
+            // 같은 문법으로 읽혀 완료가 이동/진행 액션처럼 보인다(Codex #235).
+            variant="success"
             className="max-sm:flex-1"
           >
             {saving ? (
