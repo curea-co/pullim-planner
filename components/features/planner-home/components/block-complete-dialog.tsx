@@ -86,8 +86,12 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
   const emotionEmoji = emotion ? emotionEmojis[emotion] : null;
   const isBreak = block.type === 'break';
   const isActive = block.status === 'doing';
-  const status = BLOCK_STATUS_META[block.status];
-  const StatusIcon = status.Icon;
+  // 실데이터 방어 — home-data.ts 는 pullim-api JSON 을 검증 없이 단언한다
+  // (`b.status as …`, `b.engines as …`). BE 가 값을 빠뜨리거나 모르는 상태를 보내면
+  // 여기서 undefined 가 되므로, 없으면 그 조각만 접는다. 모달 전체가 죽으면 안 된다.
+  const status = BLOCK_STATUS_META[block.status] as typeof BLOCK_STATUS_META[keyof typeof BLOCK_STATUS_META] | undefined;
+  const engines = block.engines ?? [];
+  const progressPct = Number.isFinite(block.progress) ? Math.round(block.progress * 100) : 0;
   // 리스트 행과 같은 함수 — 여기가 갈리면 "같은 블록인데 화면마다 다른 색"이 된다.
   // surface·pattern 은 카드 전용이라 받지 않는다: surface 의 40% 알파 배경이 bg-popover 를 지워
   // 모달이 반투명해지고(뒤 화면이 비친다) shadow-pullim-md 가 --shadow-lg 를 눌러 부유감이
@@ -161,9 +165,9 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
             <span className="ml-auto" aria-hidden />
             {/* 상태 칩 — '대기'(todo)는 기본 상태라 미노출(무표시=대기, 07-10 QA).
                 닫기(X) 버튼과 겹치지 않게 오른쪽 여백을 둔다 */}
-            {block.status !== 'todo' && (
+            {block.status !== 'todo' && status && (
               <span className={cn('mr-7 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5', status.className)}>
-                <StatusIcon className="h-2.5 w-2.5" />
+                <status.Icon className="h-2.5 w-2.5" />
                 {status.label}
               </span>
             )}
@@ -194,15 +198,15 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
           {/* 진행 바 — 카드와 같이 doing일 때만 */}
           {isActive && (
             <div className="flex items-center gap-2">
-              <Progress value={block.progress * 100} className="h-1.5 flex-1" />
+              <Progress value={progressPct} className="h-1.5 flex-1" />
               <span className="text-pullim-blue-700 shrink-0 font-mono text-[length:var(--text-2xs)] font-bold tabular-nums">
-                {Math.round(block.progress * 100)}%
+                {progressPct}%
               </span>
             </div>
           )}
 
           {/* reasoning 칩 + 엔진 태그 — 카드와 같은 자리, 같은 순서 */}
-          {!isBreak && (block.reasoning || block.engines.length > 0) && (
+          {!isBreak && (block.reasoning || engines.length > 0) && (
             <div className="flex flex-wrap items-center gap-1">
               {block.reasoning && (
                 <span
@@ -213,12 +217,12 @@ export function BlockCompleteDialog({ block, onClose, onSubmit }: Props) {
                   {block.reasoning}
                 </span>
               )}
-              {block.engines.slice(0, 2).map(e => (
+              {engines.slice(0, 2).map(e => (
                 <PedagogyTag key={e} engineId={e} />
               ))}
-              {block.engines.length > 2 && (
+              {engines.length > 2 && (
                 <span className="text-pullim-slate-500 text-[length:var(--text-2xs)]">
-                  +{block.engines.length - 2}
+                  +{engines.length - 2}
                 </span>
               )}
             </div>

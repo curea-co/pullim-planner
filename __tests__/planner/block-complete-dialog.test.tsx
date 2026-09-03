@@ -57,4 +57,33 @@ describe('BlockCompleteDialog', () => {
     render(<BlockCompleteDialog block={null} onClose={() => {}} />);
     expect(screen.queryByRole('button', { name: '완료' })).not.toBeInTheDocument();
   });
+
+  /**
+   * 실데이터 방어 — `lib/planner/home-data.ts` 는 pullim-api JSON 을 검증 없이 단언한다
+   * (`b.engines as PedagogyEngineId[]`, `b.status as …`). BE 가 값을 빠뜨리면 런타임에는
+   * undefined 다. 홈 리스트가 쓰는 compact 카드는 engines 를 안 만져서 멀쩡한데 모달만
+   * 죽으면 "리스트는 되는데 팝업만 안 열린다"가 된다 — 실제로 그렇게 깨졌다.
+   */
+  describe('실데이터에 필드가 빠져도 죽지 않는다', () => {
+    it('engines 가 없어도 렌더된다', () => {
+      const block: Partial<TimeBlock> = blockWith({});
+      delete block.engines;
+      expect(() =>
+        render(<BlockCompleteDialog block={block as TimeBlock} onClose={() => {}} />),
+      ).not.toThrow();
+    });
+
+    it('모르는 status 여도 렌더되고 상태 칩만 접힌다', () => {
+      const block = { ...blockWith({}), status: 'in_progress' as TimeBlock['status'] };
+      expect(() => render(<BlockCompleteDialog block={block} onClose={() => {}} />)).not.toThrow();
+      expect(screen.getByRole('button', { name: '완료' })).toBeInTheDocument();
+    });
+
+    it('progress 가 없어도 진행 바가 NaN% 를 보이지 않는다', () => {
+      const block: Partial<TimeBlock> = blockWith({ status: 'doing' });
+      delete block.progress;
+      render(<BlockCompleteDialog block={block as TimeBlock} onClose={() => {}} />);
+      expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
+    });
+  });
 });
