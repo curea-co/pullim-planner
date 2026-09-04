@@ -28,12 +28,18 @@ export function AppHeader({ railCollapsed, onToggleRail }: AppHeaderProps = {}) 
   return (
     <header className="os-root topbar">
       {/* 레일 접기 — 정본은 topbar 의 첫 자식이다(os `OsShell.tsx`: RailCollapseToggle → mast).
-          아이콘도 정본과 같은 패널 글리프. 920px 이하는 CSS 가 감춘다. */}
+          아이콘도 정본과 같은 패널 글리프. 920px 이하는 CSS 가 감춘다.
+
+          ⚠️ 정본은 `aria-pressed={collapsed}` 를 쓰지만 여기서는 **따르지 않는다.**
+          이 버튼은 on/off 토글이 아니라 영역을 여닫는 disclosure 다 — 보조기기에는
+          `aria-expanded` 로 알려야 맞고, 이 리포의 셸 spec 도 그렇게 요구한다.
+          `aria-controls` 로 대상 레일을 가리켜 관계까지 준다(Codex #236). */}
       {onToggleRail && (
         <button
           type="button"
           className="rail-collapse-btn"
-          aria-pressed={railCollapsed}
+          aria-expanded={!railCollapsed}
+          aria-controls="app-rail"
           aria-label={railCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
           title={railCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
           onClick={onToggleRail}

@@ -7,6 +7,7 @@ import { BottomNav } from './bottom-nav';
 import { Breadcrumb } from './breadcrumb';
 import { useRailCollapse } from './use-rail-collapse';
 import type { Role } from './nav-config';
+import { cn } from '@/lib/utils';
 
 type Props = {
   role: Role;
@@ -35,13 +36,19 @@ export function AppShell({ role, children }: Props) {
       <AppHeader railCollapsed={collapsed} onToggleRail={toggle} />
 
       <div className="relative flex flex-1 overflow-hidden">
-        {/* 접으면 렌더 자체를 걷는다 — 정본이 display:none 으로 처리하는 것과 같은 결과이고,
-            숨은 레일이 탭 순서에 남지 않는다. */}
-        {!collapsed && (
-          <aside className="border-pullim-slate-200 bg-card os:flex os:w-[248px] hidden shrink-0 flex-col border-r">
-            <AppSidebar />
-          </aside>
-        )}
+        {/* 접힘은 **언마운트가 아니라 숨김**이다. 정본이 `display:none` 을 쓰는 것과
+            같은 방식 — 언마운트하면 레일 내부 상태·포커스·스크롤 위치가 매번 초기화된다.
+            탭 순서에서 빠지는 것은 `display:none` 도 똑같이 해 주므로 언마운트할 이점이
+            없다(Codex #236 — 이전 주석의 근거가 틀렸다). */}
+        <aside
+          id="app-rail"
+          className={cn(
+            'border-pullim-slate-200 bg-card os:flex os:w-[248px] hidden shrink-0 flex-col border-r',
+            collapsed && 'os:hidden',
+          )}
+        >
+          <AppSidebar />
+        </aside>
 
         <main className="flex-1 overflow-y-auto">
           <div className="bg-pullim-slate-50/80 border-b border-pullim-slate-200/70 sticky top-0 z-10 backdrop-blur-md">
