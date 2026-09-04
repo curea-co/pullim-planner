@@ -1,5 +1,12 @@
 # 플래너 셸·홈 PUDS 리프레시 구현 계획
 
+> ⚠️ **2026-09-04 — 셸 레일·탭바 축 폐기 (PR #236).** 사용자 지시로 셸 정본이 형제 앱
+> PUDS 셸 킷 → pullim-web `/os` 로 바뀌었다. `md` 64px 축약 · `lg` 접힘 68px · 레일 경계
+> 28px 원형 셰브론 · bottom-nav 모바일 전용은 더 이상 완료 기준이 아니다.
+> 무엇이 무엇으로 대체됐는지는 대응 spec 문서 머리의 표를 볼 것 —
+> `proc/spec/2026-07-06_shell-home-puds-refresh.md`.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) 구문으로 추적.
 
 **Goal:** 플래너 사이드바를 형제 앱(문제Q·입시코치·라이팅코치) 공통 PUDS 레일(플랫 리스트 + mono 눈썹 + 접기 토글)로 재편하고, 홈 상단에 순수 CSS 3D 그라디언트 히어로를 추가한다.
