@@ -268,6 +268,20 @@
 .os-root .badge.soft { background: var(--accent-soft, var(--pb-1)); color: var(--accent, var(--pullim-blue)); }
 .os-root .badge.muted { background: var(--paper-2); color: var(--ink-4); }
 
+/* 레일 접기 토글 — 정본 os-tokens.css `.rail-collapse-btn` 이식.
+   위치도 정본과 같이 `.topbar` 의 첫 자식(mast 앞). 920px 이하에선 레일이 이미
+   숨겨지므로 토글도 감춘다(정본 주석: "레일이 이미 숨겨지는 구간 — 토글 불필요"). */
+.os-root .rail-collapse-btn {
+  display: grid; place-items: center; width: 34px; height: 34px; flex: none;
+  margin-right: 4px; border-radius: 9px; border: 1px solid var(--line);
+  background: #fff; color: var(--ink-3); cursor: pointer; transition: .16s var(--ease);
+}
+.os-root .rail-collapse-btn:hover { background: var(--paper-2); color: var(--ink); }
+
+@media (max-width: 920px) {
+  .os-root .rail-collapse-btn { display: none; }
+}
+
 @media (max-width: 760px) {
   .os-root.topbar { gap: 10px; padding: 0 14px; }
   .os-root .switcher-trigger .sn { display: none; }
