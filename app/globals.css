@@ -26,6 +26,11 @@
 @custom-variant dark (&:where([data-scheme="dark"], [data-scheme="dark"] *));
 
 @theme inline {
+  /* 반응형 — OS 정본(pullim-web `src/styles/os-tokens.css`)이 레일을 숨기고 탭바를 켜는
+     지점이 920px 다. Tailwind 기본 스케일(sm 640·md 768·lg 1024)에 없어 여기서 더한다.
+     셸이 이 한 지점으로 갈리므로 md/lg 를 섞어 쓰지 않는다. */
+  --breakpoint-os: 920px;
+
   /* 폰트 */
   --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
