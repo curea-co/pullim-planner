@@ -27,9 +27,15 @@
 
 @theme inline {
   /* 반응형 — OS 정본(pullim-web `src/styles/os-tokens.css`)이 레일을 숨기고 탭바를 켜는
-     지점이 920px 다. Tailwind 기본 스케일(sm 640·md 768·lg 1024)에 없어 여기서 더한다.
-     셸이 이 한 지점으로 갈리므로 md/lg 를 섞어 쓰지 않는다. */
-  --breakpoint-os: 920px;
+     구간이 `@media (max-width: 920px)` 다. Tailwind 기본 스케일(sm 640·md 768·lg 1024)에
+     없어 여기서 더한다. 셸이 이 한 지점으로 갈리므로 md/lg 를 섞어 쓰지 않는다.
+
+     ⚠️ 값이 921 인 이유 — Tailwind 의 `os:` 는 **min-width** 라, 920 으로 두면 정확히
+     920px 에서 `os:`(>=920)와 정본 CSS(<=920)가 **둘 다 참**이 된다. 그러면 레일은
+     뜨는데 토글은 숨어 접을 수가 없다(Codex #236 실측). 921 은 `max-width:920` 의
+     정확한 여집합이라 경계가 겹치지 않고, 덕분에 os-topbar.css 의 미디어쿼리를 정본과
+     바이트 동일하게 유지할 수 있다(재벤더링 시 diff 가 깨끗하다). */
+  --breakpoint-os: 921px;
 
   /* 폰트 */
   --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
