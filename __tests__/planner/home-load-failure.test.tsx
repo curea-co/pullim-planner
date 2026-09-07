@@ -83,6 +83,14 @@ describe('홈 조회 실패 표시', () => {
     expect(screen.getByText('학습 현황을 불러오지 못했어요')).toBeInTheDocument();
   });
 
+  it('재조회 중에는 실패 카드를 유지한 채 진행 중임만 알린다', () => {
+    render(<HomePresenter {...base} blocksError retrying onRetry={() => {}} />);
+
+    expect(screen.getByText('이 기간의 계획을 불러오지 못했어요')).toBeInTheDocument();
+    const btn = screen.getByRole('button', { name: '다시 불러오는 중…' });
+    expect(btn).toBeDisabled();
+  });
+
   it('실패가 없으면 실패 카드도 없다', () => {
     render(<HomePresenter {...base} examName="9월 모평" dday={12} />);
 

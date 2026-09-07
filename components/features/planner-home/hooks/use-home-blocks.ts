@@ -33,6 +33,11 @@ export interface HomeBlocksData {
   todayIso: string;
   /** 블록 재조회 트리거 — 완료 기록 저장 등 쓰기 후 기간·히어로 블록을 다시 읽는다. */
   refetch: () => void;
+  /**
+   * 재조회가 진행 중인가 — 실패 화면이 "누르긴 눌렸다"를 보여주기 위한 것이다. 실패 플래그를
+   * 미리 내려서 화면을 치우는 대신, 실패 화면을 **유지한 채** 진행 중임을 알린다.
+   */
+  retrying: boolean;
   /** 사용자 재시도 — 목록까지 포함해 전부 다시 읽는다(실패 화면의 [다시 시도]). */
   retry: () => void;
 }
@@ -108,10 +113,11 @@ export function useHomeBlocks(
   // 목록을 다시 읽을 이유가 없기 때문이다(쓰기 1회당 불필요한 요청 1개가 는다).
   const [retryTick, setRetryTick] = useState(0);
   const refetch = useCallback(() => setRefreshTick((t) => t + 1), []);
+  // ⚠️ **여기서 실패 플래그를 미리 내리지 않는다.** 내리면 클릭한 순간 실패 카드가 사라지고,
+  // 응답이 올 때까지 (아직 빈) `blocksByDate` 가 "계획 없음"으로 렌더된다 — 이 훅이 막으려는
+  // 위장이 재시도 구간에서 그대로 재현된다. 플래그는 **성공 콜백에서만** 내린다.
   const retry = useCallback(() => {
     setStatus('loading');
-    setBlocksError(false);
-    setHeroBlocksError(false);
     setRetryTick((t) => t + 1);
   }, []);
 
@@ -205,6 +211,10 @@ export function useHomeBlocks(
     heroBlocksByDate: hasActive ? heroBlocksByDate : NO_BLOCKS,
     heroBlocksError: hasActive && heroBlocksError,
     todayIso,
+    // 목록 재조회가 도는 동안 true — `retry()` 가 status 를 'loading' 으로 되돌리고,
+    // 목록 effect 가 'ready'/'error' 로 끝낸다. 첫 로드에도 true 지만 그때는 실패 화면 자체가
+    // 없어서 보이지 않는다.
+    retrying: enabled && status === 'loading',
     refetch,
     retry,
   };

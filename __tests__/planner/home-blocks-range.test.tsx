@@ -153,6 +153,24 @@ describe('조회 실패가 "계획 없음"으로 위장되지 않는다', () => 
     expect(mockList).toHaveBeenCalledTimes(2);
   });
 
+  it('재시도 중에는 실패 상태를 유지한다 — 응답 전에 화면을 치우면 위장이 재현된다', async () => {
+    mockBlocksRange.mockRejectedValue(new Error('network'));
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+    await waitFor(() => expect(result.current.blocksError).toBe(true));
+
+    // 응답을 붙잡아 둔 채로 재시도 — 클릭 직후 상태를 본다.
+    let release: (v: unknown[]) => void = () => {};
+    mockBlocksRange.mockReturnValue(new Promise((res) => { release = res; }));
+    act(() => result.current.retry());
+
+    expect(result.current.blocksError).toBe(true);   // 실패 화면이 남아 있다
+    await waitFor(() => expect(result.current.retrying).toBe(false)); // 목록은 먼저 끝난다
+    expect(result.current.blocksError).toBe(true);   // 블록 응답 전이므로 여전히 실패
+
+    await act(async () => { release([]); });
+    await waitFor(() => expect(result.current.blocksError).toBe(false)); // 성공 콜백에서만 내린다
+  });
+
   it('활성 시간표가 없어지면 실패 플래그도 함께 내려간다 — 진짜 빈 상태를 실패로 그리지 않게', async () => {
     // 실패 상태를 만든 뒤, 재시도 사이에 시간표가 비활성화·삭제된 상황.
     mockBlocksRange.mockRejectedValue(new Error('network'));

@@ -395,6 +395,7 @@ export default function HomeContainer() {
         loadError={!DEV_AUTH_BYPASS && real.status === 'error'}
         blocksError={!DEV_AUTH_BYPASS && real.blocksError}
         heroSummaryError={!DEV_AUTH_BYPASS && heroSummaryError}
+        retrying={!DEV_AUTH_BYPASS && real.retrying}
         onRetry={real.retry}
         burnout={burnout}
         condition={condition}

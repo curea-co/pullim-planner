@@ -31,6 +31,8 @@ interface HomePresenterProps {
   blocksError?: boolean;
   /** 히어로의 오늘·이번 주 요약을 만들 데이터가 없다 — 숨기는 대신 못 불러왔다고 말한다. */
   heroSummaryError?: boolean;
+  /** 재조회 진행 중 — 실패 화면을 유지한 채 진행 중임만 알린다. */
+  retrying?: boolean;
   /** 실패 화면의 [다시 시도]. */
   onRetry?: () => void;
   /** 번아웃 스냅샷 — Container가 해석(실모드: 이번 주 완료 기록 계산 / bypass: mock). null=데이터 없음 */
@@ -74,6 +76,7 @@ export default function HomePresenter({
   loadError = false,
   blocksError = false,
   heroSummaryError = false,
+  retrying = false,
   onRetry,
   burnout,
   condition,
@@ -198,7 +201,7 @@ export default function HomePresenter({
         {loadError || blocksError ? (
           // 실패를 빈 달력으로 그리지 않는다 — 둘은 화면상 구분되지 않고, 사용자는 계획이
           // 지워졌다고 읽는다. 목록 실패면 기간 실패도 따라오므로 원인이 앞선 쪽을 말한다.
-          <HomeLoadFailure scope={loadError ? 'planner' : 'blocks'} onRetry={onRetry} />
+          <HomeLoadFailure scope={loadError ? 'planner' : 'blocks'} retrying={retrying} onRetry={onRetry} />
         ) : (
           <>
             {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} onNavigate={onNavigate} />}

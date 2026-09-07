@@ -3,6 +3,8 @@ import { AlertCircle } from 'lucide-react';
 type Props = {
   /** 'planner' 시간표 목록 실패(화면 전체가 빈다) · 'blocks' 이 기간의 블록만 실패. */
   scope: 'planner' | 'blocks';
+  /** 재조회 진행 중 — 실패 화면을 **치우지 않고** 진행 중임만 알린다. */
+  retrying?: boolean;
   onRetry?: () => void;
 };
 
@@ -12,7 +14,7 @@ type Props = {
  * 기간 조회는 전부 아니면 전무라 실패하면 그 창이 통째로 빈다. 빈 달력은 "이 기간엔 계획이
  * 없다"와 픽셀 단위로 같아서, 사용자는 자기 시간표가 사라졌다고 읽는다. 실패는 실패라고 말한다.
  */
-export function HomeLoadFailure({ scope, onRetry }: Props) {
+export function HomeLoadFailure({ scope, retrying = false, onRetry }: Props) {
   return (
     <div
       role="alert"
@@ -29,9 +31,10 @@ export function HomeLoadFailure({ scope, onRetry }: Props) {
         <button
           type="button"
           onClick={onRetry}
-          className="bg-pullim-blue-600 hover:bg-pullim-blue-700 mt-2 rounded-lg px-3.5 py-2 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1"
+          disabled={retrying}
+          className="bg-pullim-blue-600 hover:bg-pullim-blue-700 mt-2 rounded-lg px-3.5 py-2 text-xs font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pullim-blue-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          다시 시도
+          {retrying ? '다시 불러오는 중…' : '다시 시도'}
         </button>
       )}
     </div>
