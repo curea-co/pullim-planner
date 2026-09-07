@@ -12,12 +12,17 @@
  * 그래서 위젯을 어느 한쪽으로 통일하면 반드시 다른 쪽이 깨진다. 위젯은 `onNavigate` 로
  * 목적지만 넘기고, 라우트를 아는 컨테이너가 수단을 고른다(feature `components/` 의 라우팅 훅
  * 금지 규칙과도 맞는다). 이 파일은 그 계약과 양쪽 배선을 함께 고정한다.
+ *
+ * ⚠️ **"리포트는 router" 는 위젯이 주는 목적지(`/planner`)에 대한 말이다.** 리포트가 자기
+ * 화면 안에서 `?view=` 만 토글하는 것은 정반대로 **History API** 여야 한다 — 홈과 같은 모양의
+ * 자리이고 같은 F-01 을 문다. 두 축을 아래 describe 두 개로 나눠 고정한다.
  */
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, replace: jest.fn(), prefetch: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace, prefetch: jest.fn(), back: jest.fn() }),
   usePathname: () => '/planner',
   useSearchParams: () => new URLSearchParams(''),
 }));
@@ -30,25 +35,55 @@ jest.mock('sonner', () => ({
 jest.mock('@vercel/analytics', () => ({ track: jest.fn() }));
 
 const mockPushQuery = jest.fn();
+const mockReplaceQuery = jest.fn();
 jest.mock('@/lib/planner/query-nav', () => ({
   pushQuery: (...a: unknown[]) => mockPushQuery(...a),
-  replaceQuery: jest.fn(),
+  replaceQuery: (...a: unknown[]) => mockReplaceQuery(...a),
 }));
 
-// 컨테이너 배선만 보면 되므로 프리젠터는 주입받은 onNavigate 를 노출하는 버튼으로 대체한다.
+// HomeContainer 가 무는 실 API 클라이언트 — 배선만 보므로 전부 빈 응답으로 세운다.
+jest.mock('@/lib/planner/pullim-client', () => ({
+  pullimPlannerClient: {
+    list: () => Promise.resolve([]),
+    blocksRange: () => Promise.resolve([]),
+    burnout: () => Promise.resolve(null),
+    condition: () => Promise.resolve(null),
+    saveCondition: () => Promise.resolve(null),
+    completeBlock: () => Promise.resolve(null),
+  },
+  pullimToPlanner: (p: unknown) => p,
+}));
+
+// 컨테이너 배선만 보면 되므로 프리젠터는 주입받은 핸들러를 노출하는 버튼으로 대체한다.
 let capturedNavigate: ((url: string) => void) | null = null;
 jest.mock('@/components/features/planner-reports/presenters/ReportsPresenter', () => ({
   __esModule: true,
-  default: (props: { onNavigate: (url: string) => void }) => {
+  default: (props: { onNavigate: (url: string) => void; onChangeView: (v: string) => void }) => {
     capturedNavigate = props.onNavigate;
-    return <button type="button" onClick={() => props.onNavigate('/planner?view=day')}>이동(테스트)</button>;
+    return (
+      <>
+        <button type="button" onClick={() => props.onNavigate('/planner?view=day')}>이동(테스트)</button>
+        <button type="button" onClick={() => props.onChangeView('month')}>뷰전환(테스트)</button>
+      </>
+    );
   },
+}));
+
+jest.mock('@/components/features/planner-home/presenters/HomePresenter', () => ({
+  __esModule: true,
+  default: (props: { onNavigate: (url: string) => void; onChangeView: (v: string) => void }) => (
+    <>
+      <button type="button" onClick={() => props.onNavigate('/planner?view=day&d=3')}>홈이동(테스트)</button>
+      <button type="button" onClick={() => props.onChangeView('month')}>홈뷰전환(테스트)</button>
+    </>
+  ),
 }));
 
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 import { MonthHeatmap } from '@/components/features/planner-home/components/month-heatmap';
 import { WeekGrid } from '@/components/features/planner-home/components/week-grid';
 import ReportsContainer from '@/components/features/planner-reports/containers/ReportsContainer';
+import HomeContainer from '@/components/features/planner-home/containers/HomeContainer';
 
 beforeEach(() => jest.clearAllMocks());
 
@@ -86,11 +121,39 @@ describe('위젯 계약 — 목적지만 알린다', () => {
 });
 
 describe('컨테이너 배선 — 경로마다 수단이 다르다', () => {
-  it('리포트는 router 로 이동한다 — History API 면 화면이 안 바뀐다', async () => {
+  it('리포트의 위젯 이동은 router 다 — History API 면 화면이 안 바뀐다', async () => {
     await act(async () => { render(<ReportsContainer />); });
     fireEvent.click(screen.getByText('이동(테스트)'));
     expect(mockPush).toHaveBeenCalledWith('/planner?view=day');
     expect(mockPushQuery).not.toHaveBeenCalled();
     expect(capturedNavigate).not.toBeNull();
+  });
+
+  it('홈의 위젯 이동은 History API 다 — router 면 하드 로드 뒤 무반응이 된다(F-01)', async () => {
+    await act(async () => { render(<HomeContainer />); });
+    fireEvent.click(screen.getByText('홈이동(테스트)'));
+    expect(mockPushQuery).toHaveBeenCalledWith('/planner?view=day&d=3');
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * **같은 경로 안의 뷰 토글**도 같은 규칙이다. 위 describe 가 고정하는 것은 "위젯이 주는 목적지"의
+ * 이동 수단이고, 여기서 고정하는 것은 컨테이너 자신의 쿼리 전환이다. 리포트는 홈과 같은 모양의
+ * 자리를 갖고 있으면서 오래 router 로 남아 있었다 — F-01 이 홈에서만 보였기 때문이다.
+ */
+describe('뷰 토글 — 쿼리만 바뀌면 History API', () => {
+  it('리포트 뷰 토글은 replaceQuery 다 — router.replace 면 F-01 을 그대로 물려받는다', async () => {
+    await act(async () => { render(<ReportsContainer />); });
+    fireEvent.click(screen.getByText('뷰전환(테스트)'));
+    expect(mockReplaceQuery).toHaveBeenCalledWith('/planner/reports?view=month');
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('홈 뷰 토글도 replaceQuery 다', async () => {
+    await act(async () => { render(<HomeContainer />); });
+    fireEvent.click(screen.getByText('홈뷰전환(테스트)'));
+    expect(mockReplaceQuery).toHaveBeenCalledWith('/planner?view=month');
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });

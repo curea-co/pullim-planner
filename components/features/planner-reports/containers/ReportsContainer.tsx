@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { track } from '@vercel/analytics';
 import { currentPersona, getDday } from '@/lib/mock';
 import { REFLECTION_ENABLED } from '@/lib/flags';
+import { replaceQuery } from '@/lib/planner/query-nav';
 import type { ReportsView } from '../components/reports-shell';
 import ReportsPresenter from '../presenters/ReportsPresenter';
 
@@ -23,10 +24,18 @@ export default function ReportsContainer() {
   const onChangeView = useCallback(
     (next: ReportsView) => {
       track('reports_view_change', { from: view, to: next });
-      const qs = next === 'week' ? '' : `?view=${next}`;
-      router.replace(`/planner/reports${qs}`, { scroll: false });
+      // 같은 pathname · 쿼리만 바뀌는 이동이다 — 홈이 F-01 로 겪은 것과 같은 자리다.
+      // `/planner/reports` 도 서버에서 searchParams 를 읽지 않는 정적 페이지라,
+      // `?view=month` 로 하드 로드하면 그 URL 이 쿼리 없는 캐시 키에 canonicalUrl 로 박히고
+      // 이후 뷰 토글이 전부 그 URL 로 커밋돼 **무반응**이 된다(lib/planner/query-nav 주석).
+      // 다른 파라미터는 보존한다 — 뷰를 바꿨다고 나머지 쿼리가 사라질 이유가 없다.
+      const sp = new URLSearchParams(params);
+      if (next === 'week') sp.delete('view');
+      else sp.set('view', next);
+      const qs = sp.toString();
+      replaceQuery(`/planner/reports${qs ? `?${qs}` : ''}`);
     },
-    [router, view],
+    [params, view],
   );
 
   // day view 진입 시 1회 impression — TodayReflection이 default expanded 노출됐는지 시그널.
