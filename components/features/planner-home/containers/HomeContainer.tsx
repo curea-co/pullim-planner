@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import type { CalendarView } from '../components/calendar-shell';
 import {
   currentPersona, getDday, plannerProgress, getActivePlanner,
@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
 import { getCustomization, type Customization } from '@/lib/hooks/use-planner-customization';
+import { pushQuery, replaceQuery } from '@/lib/planner/query-nav';
 import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
 import { useHomeBlocks } from '../hooks/use-home-blocks';
@@ -41,7 +42,6 @@ const WELCOME_STORAGE_KEY = 'pullim:welcome-shown';
  * LNB "매뉴얼" 항목은 `?help=1`로 링크돼 클릭 시 모달을 재오픈한다.
  */
 export default function HomeContainer() {
-  const router = useRouter();
   const params = useSearchParams();
 
   const raw = params.get('view');
@@ -83,9 +83,11 @@ export default function HomeContainer() {
   const go = useCallback(
     (v: CalendarView, o: number) => {
       offsetRef.current = o;
-      router.replace(buildUrl(v, o), { scroll: false });
+      // 같은 pathname · 쿼리만 바뀌는 이동 — router 를 쓰면 하드 로드 시 라우트 캐시에 박힌
+      // canonicalUrl 때문에 전부 무반응이 된다(lib/planner/query-nav 주석 · QA F-01).
+      replaceQuery(buildUrl(v, o));
     },
-    [router, buildUrl],
+    [buildUrl],
   );
 
   const handlePrev = useCallback(() => go(view, offsetRef.current - 1), [go, view]);
@@ -112,9 +114,9 @@ export default function HomeContainer() {
       const next = new URLSearchParams(params);
       next.delete('help');
       const qs = next.toString();
-      router.replace(`/planner${qs ? `?${qs}` : ''}`, { scroll: false });
+      replaceQuery(`/planner${qs ? `?${qs}` : ''}`);
     }
-  }, [helpParam, params, router]);
+  }, [helpParam, params]);
 
   const onChangeView = useCallback(
     // 뷰 전환 시 offset 리셋 — go(_,0)이 ref·URL 모두 0으로(buildUrl이 d 생략=기준 기간).
@@ -361,6 +363,9 @@ export default function HomeContainer() {
   return (
     <>
       <HomePresenter
+      // 홈은 `/planner` — 위젯이 주는 목적지도 같은 pathname 이라 **쿼리만 바뀌는 이동**이다.
+      // 여기서 Next router 를 쓰면 쿼리를 달고 하드 로드한 뒤 전환이 무반응이 된다(F-01).
+      onNavigate={pushQuery}
         view={view}
         examName={examName}
         dday={dday}

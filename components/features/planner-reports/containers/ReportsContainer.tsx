@@ -53,6 +53,9 @@ export default function ReportsContainer() {
       consentOpen={consentOpen}
       onChangeView={onChangeView}
       onConsentOpenChange={setConsentOpen}
+      // 리포트는 `/planner` 와 **다른 경로**다 — 히트맵·회고가 주는 목적지로 가려면 진짜
+      // 라우트 이동이어야 한다. History API 를 쓰면 화면은 리포트에 남고 주소만 갈린다.
+      onNavigate={(url) => router.push(url)}
       onParentShareClick={onParentShareClick}
     />
   );

@@ -44,6 +44,8 @@ interface HomePresenterProps {
   dayBlocks?: TimeBlock[];
   /** 블록 완료 기록 실 저장(#416) — 미주입(dev bypass)이면 완료 다이얼로그가 데모(toast)로 동작. */
   onCompleteSubmit?: (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => Promise<boolean>;
+  /** 재사용 위젯(히트맵·회고)의 이동 — 홈은 같은 경로라 History API. 컨테이너가 정한다. */
+  onNavigate: (url: string) => void;
   /** 실 active 플래너 꾸미기 — 홈 뷰 layout·palette 반영(미주입 시 mock 폴백). */
   customization?: Customization;
   weekDays?: WeekDay[];
@@ -77,6 +79,7 @@ export default function HomePresenter({
   weekDays,
   monthDays,
   monthLabel,
+  onNavigate,
 }: HomePresenterProps) {
   // QA #7 — 활성 계획표가 없으면 "다른 시간표로 전환" 대신 "시간표 관리" CTA.
   // active=null은 "시간표 미생성"과 "있지만 비활성"을 구분하지 못하므로(useHomeBlocks 계약),
@@ -176,9 +179,9 @@ export default function HomePresenter({
         }
         action={switchAction}
       >
-        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} />}
-        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} />}
-        {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} />}
+        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} onNavigate={onNavigate} />}
+        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} onNavigate={onNavigate} />}
+        {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} onNavigate={onNavigate} />}
       </CalendarShell>
     </>
   );

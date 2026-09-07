@@ -13,8 +13,10 @@ type Props = {
   compact?: boolean;
   /** 실데이터(B4) — 미주입이면 mock 폴백. */
   days?: WeekDay[];
+  /** 셀 클릭 이동 — 같은 경로면 History API, 다른 경로면 router. **컨테이너가 정한다.** */
+  onNavigate: (url: string) => void;
 };
 
-export function MatrixByTypeLayout({ paletteId, compact, days }: Props) {
-  return <WeekGrid paletteId={paletteId} compact={compact} days={days} />;
+export function MatrixByTypeLayout({ paletteId, compact, days, onNavigate }: Props) {
+  return <WeekGrid paletteId={paletteId} compact={compact} days={days} onNavigate={onNavigate} />;
 }
