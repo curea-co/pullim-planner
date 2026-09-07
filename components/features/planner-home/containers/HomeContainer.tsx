@@ -291,6 +291,8 @@ export default function HomeContainer() {
   let burnout: BurnoutSnapshot | null;
   // QA #7 — 활성 계획표 유무. 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요"를 보여준다.
   let hasActivePlanner: boolean;
+  // 히어로 요약을 만들 데이터가 없다 — 수치를 0 으로 접어 숨기면 "계획 없음"으로 위장된다.
+  let heroSummaryError = false;
 
   if (DEV_AUTH_BYPASS) {
     const active = getActivePlanner();
@@ -304,7 +306,8 @@ export default function HomeContainer() {
     heroWeekMeta = getWeekMeta(0); // 이번 주
     burnout = todayBurnout;
   } else {
-    const { active, blocksByDate, heroBlocksByDate, todayIso } = real;
+    const { active, blocksByDate, blocksError, heroBlocksByDate, heroBlocksError, todayIso } =
+      real;
     customization = getCustomization(active);
     hasActivePlanner = Boolean(active);
     examName = active?.examLabel || active?.name || '';
@@ -339,25 +342,43 @@ export default function HomeContainer() {
     // 히어로 — 이번 주 7일 기준. 현재 뷰가 이미 조회한 날짜(blocksByDate)를 우선 재사용하고
     // 나머지만 heroBlocksByDate 로 채운다: 같은 날짜를 두 조회가 서로 다르게 성공/실패해도
     // 히어로와 헤더·본문이 어긋나지 않게 단일 소스(blocksByDate)를 우선한다(Codex #126 R3).
-    const heroMerged = { ...heroBlocksByDate, ...blocksByDate };
-    heroDaySummary = plannerProgress(heroMerged[todayIso] ?? []);
-    const heroWeekDays = buildWeekDays(
-      weekDatesFor(todayIso, 0),
-      heroMerged,
-      todayIso,
-    );
-    heroWeekMeta = {
-      totalHours: Math.round(heroWeekDays.reduce((s, d) => s + d.totalMinutes, 0) / 6) / 10,
-      completedHours:
-        Math.round(
-          heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
-        ) / 10,
-    };
+    //
+    // ⚠️ **실패한 쪽을 우선하면 안 된다.** 기간 조회는 실패해도 형태(빈 배열 키)를 유지하므로,
+    // 그대로 덮으면 성공한 히어로 데이터가 빈 배열로 **지워진다**. 하루씩 부르던 시절엔 실패가
+    // 하루짜리였지만 지금은 창 전체다 — 겹치는 날이 통째로 0 이 된다.
+    const heroWeekDates = weekDatesFor(todayIso, 0);
+    const heroMerged = blocksError
+      ? heroBlocksByDate
+      : { ...heroBlocksByDate, ...blocksByDate };
+    // 히어로 조회가 실패했어도 현재 뷰가 이번 주 7일을 **전부** 덮었으면 수치는 온전하다.
+    // 그 경우가 아니면(예: 일간 뷰 — 하루만 덮는다) 부분 데이터로 "이번 주 Nh"를 말하게 되고,
+    // 그건 빈 값보다 나쁘다 — 틀린 값을 자신 있게 보여준다.
+    const heroCovered =
+      !heroBlocksError || (!blocksError && heroWeekDates.every((d) => d in blocksByDate));
+    // 활성 시간표가 없으면 요약이 없는 게 정상이다 — 그때까지 실패로 말하면 안 된다.
+    heroSummaryError = Boolean(active) && !heroCovered;
+    heroDaySummary = heroCovered
+      ? plannerProgress(heroMerged[todayIso] ?? [])
+      : { done: 0, total: 0 };
+    const heroWeekDays = buildWeekDays(heroWeekDates, heroMerged, todayIso);
+    heroWeekMeta = heroCovered
+      ? {
+          totalHours: Math.round(heroWeekDays.reduce((s, d) => s + d.totalMinutes, 0) / 6) / 10,
+          completedHours:
+            Math.round(
+              heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
+            ) / 10,
+        }
+      : { totalHours: 0, completedHours: 0 };
     // BE 집계 로드 완료 시 그 결과가 권위(available:false=보류 '–') — 미로드·실패만 FE 폴백.
+    // 폴백은 이번 주 블록을 세는 계산이라 **부분 데이터면 돌리지 않는다**: 조회 실패로 비어 보이는
+    // 주를 "쉬어야 한다"로 읽어 권고를 뒤집는다.
     burnout =
       serverBurnout && serverBurnout.plannerId === active?.id
         ? serverBurnout.snapshot
-        : computeBurnoutFromWeek(heroMerged, todayIso, weekDatesFor(todayIso, 0));
+        : heroCovered
+          ? computeBurnoutFromWeek(heroMerged, todayIso, heroWeekDates)
+          : null;
   }
 
   return (
@@ -370,6 +391,12 @@ export default function HomeContainer() {
         examName={examName}
         dday={dday}
         hasActivePlanner={hasActivePlanner}
+        // 실패는 "계획 없음"이 아니다 — bypass(mock)에는 실패면이 없으므로 false 로 고정한다.
+        loadError={!DEV_AUTH_BYPASS && real.status === 'error'}
+        blocksError={!DEV_AUTH_BYPASS && real.blocksError}
+        heroSummaryError={!DEV_AUTH_BYPASS && heroSummaryError}
+        retrying={!DEV_AUTH_BYPASS && real.retrying}
+        onRetry={real.retry}
         burnout={burnout}
         condition={condition}
         onConditionChange={handleConditionChange}
