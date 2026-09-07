@@ -131,29 +131,40 @@ function DayCell({ day, onSelect }: { day: MonthDay; onSelect: () => void }) {
   // 흰 텍스트는 heat-4 이상에서만 안전 (heat-3 #5A8BFF는 흰글자 대비 3.2:1로 부족)
   const isDarkBg = day.blockCount >= 8;
   /**
-   * **잉크는 「미래냐」가 아니라 「무엇 위에 얹히냐」가 정한다.**
+   * **잉크는 바탕이 정한다 — 그리고 바탕이 고정색이면 잉크도 고정색이어야 한다.**
    *
    * 종전에는 「미래 = 옅게(`slate-500`)」였는데, 미래여도 블록이 있으면 과거와 같은 강도로
    * 칠해진다(`heatColor` 는 미래를 따로 낮추지 않는다). 그 위의 `slate-500` 은 heat-3 에서
-   * **1.60:1** — AA 4.5:1 의 3분의 1이다. 「오늘」 강조(`blue-700`)와 블록 수(`slate-700`)도
-   * 같은 자리에서 각각 **2.15:1 · 3.26:1** 로 무너져 있었다.
+   * **1.60:1** — AA 4.5:1 의 3분의 1이다. 「오늘」 파랑(2.15:1)과 블록 수(3.26:1)도 같이 무너져
+   * 있었다.
    *
-   * 라이트 실측(canvas 로 칠해 sRGB 픽셀을 읽은 값):
+   * 다크는 더 나빴다(라이트 수정 전후 모두 **60개 중 56개 미달 · 최저 1.67:1**). 원인이 하나 더
+   * 있다: `--color-pullim-heat-1..5` 는 `globals.css` 에 **고정 hex** 로 박혀 명암 축을 따라가지
+   * 않는데, 잉크로 쓰던 `slate-*`(→`--pl-*`)와 `--foreground` 는 반전된다. 고정 바탕 위에서
+   * 잉크만 뒤집히니 다크에서 흰 글자가 연한 파랑 위에 얹혔다.
    *
-   * | 잉크 \ 바탕 | heat-0 | heat-1 | heat-2 | heat-3 | heat-4 | heat-5 | 안 칠함(흰 카드) |
-   * |---|---|---|---|---|---|---|---|
-   * | `slate-900` | 15.91 | 13.94 | 10.13 | **5.54** | 2.82 | 1.13 | 17.69 |
-   * | `white`     |  1.11 |  1.27 |  1.75 | 3.20 | **6.27** | **15.64** | 1.00 |
-   * | `blue-700`  | **6.19** | **5.42** | 3.94 | 2.15 | 1.10 | 2.27 | **6.88** |
-   * | `slate-500` |  4.61 |  4.04 |  2.93 | 1.60 | 1.22 | 3.05 | **5.12** |
+   * 그래서 **바탕이 뒤집히는지에 맞춰 잉크를 고른다.** 실측(canvas 로 칠해 sRGB 픽셀을 읽음):
    *
-   * 그래서 규칙은 바탕 기준이다 — 옅은 잉크는 **칠하지 않은 셀**에만, 「오늘」 파랑은
-   * **heat-0/1 이하**에만. 미래의 「아직 안 왔다」는 칠하지 않음 + 점선 테두리가 이미
-   * 말하고 있으니 잉크로 두 번 말할 이유도 없다.
+   * | 바탕 | 뒤집히나 | 잉크 | 라이트 | 다크 |
+   * |---|---|---|---|---|
+   * | heat-1·2·3 (1~7개) | ✗ 고정 | `--color-gray-950` (고정) | 15.67 · 11.38 · **6.22** | 같음 |
+   * | heat-4·5 (8개~)    | ✗ 고정 | `white` (고정)            | **6.27** · 15.64 | 같음 |
+   * | heat-0 (과거·0개)  | ✓      | `--foreground`            | 17.88 | 14.23 |
+   * | 안 칠함(미래·0개)  | ✓ 카드 | `--muted-foreground`      | **5.12** | **6.72** |
+   *
+   * 「오늘」 파랑 잉크는 **뺐다.** `blue-700` 은 고정색이라 뒤집히는 바탕(heat-0·카드) 위에서
+   * 다크에 2.16:1 · 2.57:1 로 무너진다. 안전한 자리는 heat-1 하나뿐이라 규칙으로 삼을 수 없다.
+   * 오늘은 링(`ring-2`)이 이미 또렷하게 표시한다 — 잉크는 가독성만 책임진다.
    */
-  const unpainted = !!day.isFuture && day.blockCount === 0;
-  /** 「오늘」 파랑이 4.5:1 을 넘는 바탕 — heat-0(0개)·heat-1(1~3개)과 칠하지 않은 셀. */
-  const accentSafe = unpainted || day.blockCount <= 3;
+  const painted = day.blockCount > 0;                        // heat-1..5 — 고정색 바탕
+  const unpainted = !!day.isFuture && day.blockCount === 0;   // 카드 바탕(점선 테두리만)
+  const inkClass = isDarkBg
+    ? 'text-white'
+    : painted
+      ? 'text-[var(--color-gray-950)]'
+      : unpainted
+        ? 'text-muted-foreground'
+        : 'text-foreground';
   const completed = day.completionPct === 100;
   const milestoneLabel = day.examMilestone?.label;
   const tooltip = milestoneLabel
@@ -182,9 +193,7 @@ function DayCell({ day, onSelect }: { day: MonthDay; onSelect: () => void }) {
         <span
           className={cn(
             'font-mono text-xs font-bold',
-            isDarkBg ? 'text-white' : unpainted ? 'text-pullim-slate-500' : 'text-pullim-slate-900',
-            // 오늘은 링(`ring-2`)이 이미 표시한다 — 파랑이 안 되는 바탕에서는 잉크를 포기한다.
-            day.isToday && accentSafe && 'text-pullim-blue-700',
+            inkClass,
           )}
         >
           {day.date}
@@ -193,8 +202,8 @@ function DayCell({ day, onSelect }: { day: MonthDay; onSelect: () => void }) {
           <span
             className={cn(
               'text-[length:var(--text-2xs)] font-mono mt-0.5 font-semibold',
-              // 블록 수도 같은 바탕 위다 — slate-700 은 heat-3 에서 3.26:1 이라 못 쓴다.
-              isDarkBg ? 'text-white/95' : 'text-pullim-slate-900',
+              // 날짜와 **같은 바탕** 위다 — 잉크가 갈리면 한쪽이 반드시 무너진다.
+              inkClass,
             )}
           >
             {day.blockCount}개
