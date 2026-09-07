@@ -47,6 +47,7 @@ jest.mock('@/components/features/planner-reports/presenters/ReportsPresenter', (
 
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 import { MonthHeatmap } from '@/components/features/planner-home/components/month-heatmap';
+import { WeekGrid } from '@/components/features/planner-home/components/week-grid';
 import ReportsContainer from '@/components/features/planner-reports/containers/ReportsContainer';
 
 beforeEach(() => jest.clearAllMocks());
@@ -58,6 +59,16 @@ describe('위젯 계약 — 목적지만 알린다', () => {
     fireEvent.click(screen.getByText('내일 캘린더 보기'));
     expect(onNavigate).toHaveBeenCalledWith('/planner?view=month');
     // 위젯이 스스로 이동하지 않는다 — 어느 수단도 직접 부르지 않는다
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockPushQuery).not.toHaveBeenCalled();
+  });
+
+  it('주간 그리드도 마찬가지다 — 꾸미기 미리보기에서 홈으로 튀지 않게', () => {
+    const onNavigate = jest.fn();
+    render(<WeekGrid onNavigate={onNavigate} />);
+    // 데모 모드 — 오늘 열만 이동하고 나머지는 toast
+    const cells = screen.getAllByRole('button');
+    cells.forEach((c) => fireEvent.click(c));
     expect(mockPush).not.toHaveBeenCalled();
     expect(mockPushQuery).not.toHaveBeenCalled();
   });

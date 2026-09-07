@@ -180,7 +180,7 @@ export default function HomePresenter({
         action={switchAction}
       >
         {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} onNavigate={onNavigate} />}
-        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} />}
+        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} onNavigate={onNavigate} />}
         {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} onNavigate={onNavigate} />}
       </CalendarShell>
     </>

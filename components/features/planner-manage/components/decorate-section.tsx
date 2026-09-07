@@ -223,6 +223,10 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
                   weekLayoutId={draftWeekLayout}
                   paletteId={draftPalette}
                   compact
+                  // 여기는 **데모 데이터로 모양만 보는 미리보기**다(아래 안내 문구 참조).
+                  // 셀을 눌러 홈으로 튀면 편집 중인 꾸미기 선택이 그대로 버려진다 —
+                  // 이동시키지 않는다. (종전에는 router.push 로 홈 일간 뷰까지 나갔다)
+                  onNavigate={() => {}}
                 />
               )}
               <p className="text-pullim-slate-500 mt-2 text-[length:var(--text-xs)]">
