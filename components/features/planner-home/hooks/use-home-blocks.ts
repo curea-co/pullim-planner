@@ -183,7 +183,9 @@ export function useHomeBlocks(
           : monthDatesFor(todayIso, offset),
     [view, offset, todayIso],
   );
-  const rangeKey = `${dates[0]}~${dates[dates.length - 1]}`;
+  // **플래너 id 를 키에 넣는다.** 날짜만 보면, 재시도 뒤 활성 시간표가 바뀌어도 같은 주/월이라
+  // 「이미 읽었다」로 판정되어 **이전 시간표의 블록**이 새 시간표의 것인 양 노출된다.
+  const rangeKey = `${activeRaw?.id ?? ''}|${dates[0]}~${dates[dates.length - 1]}`;
   // 마지막으로 **응답이 끝난** 창. 지금 창과 다르면 아직 모르는 상태다(성공·실패 무관).
   const [loadedRange, setLoadedRange] = useState<string | null>(null);
 

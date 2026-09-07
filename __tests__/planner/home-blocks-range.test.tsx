@@ -349,6 +349,23 @@ describe('로딩이 빈 상태로 위장되지 않는다', () => {
     spy.mockRestore();
   });
 
+  it('활성 시간표가 바뀌면 같은 주라도 다시 loading 이다 — 이전 시간표 블록이 새 것인 양 남지 않게', async () => {
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // 재시도 결과 활성 시간표가 다른 id 로 바뀐다. 날짜 창은 그대로다.
+    mockList.mockResolvedValue([{ id: 'p2', active: true }]);
+    let release: (v: unknown[]) => void = () => {};
+    mockBlocksRange.mockReturnValue(new Promise((res) => { release = res; }));
+    act(() => result.current.retry());
+
+    await waitFor(() => expect(result.current.active).toEqual({ id: 'p2', active: true }));
+    expect(result.current.loading).toBe(true); // 날짜만 보면 여기서 false 가 된다
+
+    await act(async () => { release([]); });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+  });
+
   it('bypass(enabled=false)에는 로딩이 없다 — mock 이 즉시 그려진다', () => {
     const { result } = renderHook(() => useHomeBlocks(false, 'week', 0));
     expect(result.current.loading).toBe(false);

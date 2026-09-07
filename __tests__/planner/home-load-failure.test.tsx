@@ -100,6 +100,22 @@ describe('홈 조회 실패 표시', () => {
     expect(screen.getByText('학습 현황을 불러오는 중')).toBeInTheDocument();
   });
 
+  it('재조회 중에는 로딩이 실패 화면을 덮지 않는다 — 원인과 [다시 불러오는 중…]이 남는다', () => {
+    // retry() 는 실패 플래그를 응답까지 유지하므로 loading 과 blocksError 가 함께 선다.
+    render(<HomePresenter {...base} blocksError loading retrying onRetry={() => {}} />);
+
+    expect(screen.getByText('이 기간의 계획을 불러오지 못했어요')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 불러오는 중…' })).toBeDisabled();
+    expect(screen.queryByText('계획을 불러오는 중')).toBeNull();
+  });
+
+  it('히어로도 마찬가지다 — 목록 재시도 중에 실패 문구가 스켈레톤에 가려지지 않는다', () => {
+    render(<HomePresenter {...base} hasActivePlanner={false} loadError loading retrying />);
+
+    expect(screen.getByText('학습 현황을 불러오지 못했어요')).toBeInTheDocument();
+    expect(screen.queryByText('학습 현황을 불러오는 중')).toBeNull();
+  });
+
   it('로딩이 끝나고 정말 없으면 그때 빈 상태를 말한다', () => {
     render(<HomePresenter {...base} hasActivePlanner={false} />);
 

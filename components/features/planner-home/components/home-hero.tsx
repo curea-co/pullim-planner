@@ -59,15 +59,7 @@ export function HomeHero({ examName, dday, hasActivePlanner = true, loadError = 
           <span aria-hidden className="bg-pullim-lemon h-1.5 w-1.5 rounded-full" />
           Pullim Planner
         </div>
-        {loading ? (
-          // 「없다」도 「못 불러왔다」도 아직 아니다 — 자리만 지킨다.
-          <>
-            <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">
-              <span className="inline-block h-6 w-40 animate-pulse rounded bg-white/20 align-bottom motion-reduce:animate-none" />
-            </h2>
-            <span className="sr-only">학습 현황을 불러오는 중</span>
-          </>
-        ) : loadError ? (
+        {loadError ? (
           <>
             {/* 조회 실패 — "없다"가 아니라 "모른다". 재시도는 달력 자리의 실패 카드가 제공한다.
                 실패 전에 읽어 둔 시간표가 남아 있어도 이 분기가 먼저다 — 옛 D-day 를 현재값처럼
@@ -78,6 +70,15 @@ export function HomeHero({ examName, dday, hasActivePlanner = true, loadError = 
             <p className="mt-1 text-[length:var(--text-sm)] text-white/80">
               시간표가 없는 게 아니라 조회가 실패했어요. 아래에서 다시 시도할 수 있어요.
             </p>
+          </>
+        ) : loading ? (
+          // 「없다」도 「못 불러왔다」도 아직 아니다 — 자리만 지킨다.
+          // **실패 다음**이다: 재시도 중에는 둘 다 서 있고, 로딩이 이기면 실패 문구가 사라진다.
+          <>
+            <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">
+              <span className="inline-block h-6 w-40 animate-pulse rounded bg-white/20 align-bottom motion-reduce:animate-none" />
+            </h2>
+            <span className="sr-only">학습 현황을 불러오는 중</span>
           </>
         ) : hasActivePlanner ? (
           <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">

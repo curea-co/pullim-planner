@@ -205,13 +205,17 @@ export default function HomePresenter({
         }
         action={switchAction}
       >
-        {loading ? (
-          // 모르는 동안 「계획이 없어요」라고 말하지 않는다 — 빈 상태는 확정 진술이다.
-          <CalendarLoading />
-        ) : loadError || blocksError ? (
+        {loadError || blocksError ? (
           // 실패를 빈 달력으로 그리지 않는다 — 둘은 화면상 구분되지 않고, 사용자는 계획이
           // 지워졌다고 읽는다. 목록 실패면 기간 실패도 따라오므로 원인이 앞선 쪽을 말한다.
+          //
+          // ⚠️ **로딩보다 먼저 본다.** 재시도 중에는 `loading` 과 실패 플래그가 함께 서 있는데,
+          // 로딩을 먼저 보면 스켈레톤이 실패 카드를 덮어 원인도 [다시 불러오는 중…]도 사라진다
+          // — 「재조회 중에도 실패 화면을 유지한다」는 계약이 깨진다.
           <HomeLoadFailure scope={loadError ? 'planner' : 'blocks'} retrying={retrying} onRetry={onRetry} />
+        ) : loading ? (
+          // 모르는 동안 「계획이 없어요」라고 말하지 않는다 — 빈 상태는 확정 진술이다.
+          <CalendarLoading />
         ) : (
           <>
             {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} onNavigate={onNavigate} />}
