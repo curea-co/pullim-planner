@@ -366,6 +366,34 @@ describe('로딩이 빈 상태로 위장되지 않는다', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
   });
 
+  it('같은 기간에서 retry() 해도 새 응답 전까지 loading 이다 — 창 비교만으로는 못 잡는다', async () => {
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // 플래너·기간 그대로. loadedRange === rangeKey 라 창 비교만 보면 여기서 false 가 된다.
+    let release: (v: unknown[]) => void = () => {};
+    mockBlocksRange.mockReturnValue(new Promise((res) => { release = res; }));
+    act(() => result.current.retry());
+
+    await waitFor(() => expect(result.current.status).toBe('ready')); // 목록이 먼저 끝난다
+    expect(result.current.loading).toBe(true);
+
+    await act(async () => { release([]); });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+  });
+
+  it('refetch() 는 로딩을 세우지 않는다 — 기존 데이터가 유효한데 달력을 비울 이유가 없다', async () => {
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let release: (v: unknown[]) => void = () => {};
+    mockBlocksRange.mockReturnValue(new Promise((res) => { release = res; }));
+    act(() => result.current.refetch());
+
+    expect(result.current.loading).toBe(false);
+    await act(async () => { release([]); });
+  });
+
   it('bypass(enabled=false)에는 로딩이 없다 — mock 이 즉시 그려진다', () => {
     const { result } = renderHook(() => useHomeBlocks(false, 'week', 0));
     expect(result.current.loading).toBe(false);

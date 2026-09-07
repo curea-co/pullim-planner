@@ -116,6 +116,17 @@ describe('홈 조회 실패 표시', () => {
     expect(screen.queryByText('학습 현황을 불러오는 중')).toBeNull();
   });
 
+  it('로딩 중에는 헤더 집계를 말하지 않는다 — 직전 기간의 부분 합계가 남는다', () => {
+    // 주간 → 월간 전환 직후: blocksByDate 에 직전 주의 키만 있어 monthMeta 가 그 7일 합계다.
+    const { rerender } = render(
+      <HomePresenter {...base} view="month" monthMeta={{ totalBlocks: 7 }} examName="9월 모평" loading />,
+    );
+    expect(screen.queryByText(/이번 달 학습 블록/)).toBeNull();
+
+    rerender(<HomePresenter {...base} view="month" monthMeta={{ totalBlocks: 31 }} examName="9월 모평" />);
+    expect(screen.getByText(/이번 달 학습 블록/)).toBeInTheDocument();
+  });
+
   it('로딩이 끝나고 정말 없으면 그때 빈 상태를 말한다', () => {
     render(<HomePresenter {...base} hasActivePlanner={false} />);
 

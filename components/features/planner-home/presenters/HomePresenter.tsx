@@ -124,6 +124,9 @@ export default function HomePresenter({
     <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
   ) : null;
 
+  // 헤더 집계는 **확정된 기간의 값일 때만** 말한다. 로딩 중 `blocksByDate` 에는 직전 기간의
+  // 키가 남아 있어(주간 → 월간 전환 등) 그 7일만 합산한 「이번 달 학습 블록 N개」가 뜬다 —
+  // 아직 확정되지 않은 부분 합계를 현재 기간의 값처럼 말하는 것이다.
   const headerProps = (() => {
     if (view === 'day') {
       // QA #2 — 제목은 "X월 Y일 Z요일"만('오늘의 학습' 제거), D-day 뱃지는 상단 배너와 중복이라 미노출.
@@ -132,7 +135,7 @@ export default function HomePresenter({
         description: (
           <>
             {examNameEl}
-            {daySummary.total > 0 && (
+            {!loading && daySummary.total > 0 && (
               <>
                 <span className="mx-1">·</span>
                 {daySummary.done}/{daySummary.total} 블록 완료
@@ -151,7 +154,7 @@ export default function HomePresenter({
         description: (
           <>
             {examNameEl}
-            {weekMeta.totalHours > 0 && (
+            {!loading && weekMeta.totalHours > 0 && (
               <>
                 <span className="mx-1">·</span>
                 이번 주 계획 <span className="font-mono text-pullim-slate-700 font-bold">{weekMeta.totalHours}h</span>
@@ -171,7 +174,7 @@ export default function HomePresenter({
       description: (
         <>
           {examNameEl}
-          {monthMeta.totalBlocks > 0 && (
+          {!loading && monthMeta.totalBlocks > 0 && (
             <>
               <span className="mx-1">·</span>
               이번 달 학습 블록 <span className="font-mono font-bold">{monthMeta.totalBlocks}개</span>

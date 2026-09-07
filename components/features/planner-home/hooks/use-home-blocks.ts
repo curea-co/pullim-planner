@@ -259,8 +259,20 @@ export function useHomeBlocks(
     blocksByDate: hasActive ? blocksByDate : NO_BLOCKS,
     blocksError: hasActive && blocksError,
     // 목록이 오는 중이거나(활성 시간표 유무 자체를 모른다), 이 창의 응답이 아직 안 왔다.
+    //
+    // **창 비교만으로는 부족하다** — 같은 플래너·같은 기간에서 `retry()` 를 누르면
+    // `loadedRange === rangeKey` 가 이미 성립해, 새 `blocksRange` 가 도는 중인데도 로딩이
+    // 내려간다. 그때 실패 플래그가 없으면(성공했다가 사용자가 그냥 다시 누른 경우) 이전
+    // 블록이 최신 값인 양 남는다. 그래서 **재조회 세대**(`retryTick`)도 함께 본다.
+    //
+    // `refetch()`(완료 기록 저장 후)는 세대를 올리지 않는다 — 기존 데이터가 여전히 유효한데
+    // 달력을 스켈레톤으로 비울 이유가 없다.
+    //
     // bypass(enabled=false)에는 로딩이 없다 — mock 이 즉시 그려진다.
-    loading: enabled && (status === 'loading' || (hasActive && loadedRange !== rangeKey)),
+    loading:
+      enabled &&
+      (status === 'loading' ||
+        (hasActive && (loadedRange !== rangeKey || blocksSettledAt !== retryTick))),
     heroBlocksByDate: hasActive ? heroBlocksByDate : NO_BLOCKS,
     heroBlocksError: hasActive && heroBlocksError,
     todayIso,
