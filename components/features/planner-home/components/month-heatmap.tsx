@@ -4,7 +4,6 @@ import { Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import { monthView, type MonthDay } from '@/lib/mock';
 import { cn } from '@/lib/utils';
-import { pushQuery } from '@/lib/planner/query-nav';
 
 const weekHeader = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -20,12 +19,22 @@ const weekHeader = ['월', '화', '수', '목', '금', '토', '일'];
 export function MonthHeatmap({
   days: daysProp,
   monthLabel,
+  onNavigate,
 }: {
   /** 실데이터(B4) — 미주입이면 mock 데모(monthView) 폴백. */
   days?: MonthDay[];
   /** 실데이터 월 라벨("7월"). 미주입=데모 라벨. */
   monthLabel?: string;
-} = {}) {
+  /**
+   * 이 위젯이 계산한 목적지로 이동시킨다 — **방법은 컨테이너가 정한다.**
+   *
+   * 이 위젯은 `/planner` 와 `/planner/reports` 양쪽에 실린다. 같은 pathname 안(쿼리만 변경)
+   * 에서는 History API 여야 하고(F-01 — `lib/planner/query-nav` 주석), 다른 경로에서는 진짜
+   * 라우트 이동이어야 한다. 그 판단은 라우트를 아는 컨테이너의 몫이고, 재사용 위젯이
+   * 라우팅 훅으로 직접 하면 feature `components/` 의 계층 규칙도 깨진다(Codex).
+   */
+  onNavigate: (url: string) => void;
+}) {
   const isReal = daysProp !== undefined;
   const month = daysProp ?? monthView;
   // 그리드 시작 — 첫 날의 weekday로 빈 셀 padding
@@ -38,7 +47,7 @@ export function MonthHeatmap({
     if (isReal) {
       const o = d.dayOffset ?? 0;
       const q = o !== 0 ? `?view=day&d=${o}` : '?view=day';
-      pushQuery(`/planner${q}`);
+      onNavigate(`/planner${q}`);
       return;
     }
     // mock 데모 — 데이터 단위가 오늘 1일치만 있어, 미래는 예정 toast·나머지는 오늘 day view.
@@ -48,7 +57,7 @@ export function MonthHeatmap({
       });
       return;
     }
-    pushQuery('/planner?view=day');
+    onNavigate('/planner?view=day');
   }
 
   return (

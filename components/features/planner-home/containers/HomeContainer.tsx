@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
 import { getCustomization, type Customization } from '@/lib/hooks/use-planner-customization';
-import { replaceQuery } from '@/lib/planner/query-nav';
+import { pushQuery, replaceQuery } from '@/lib/planner/query-nav';
 import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
 import { useHomeBlocks } from '../hooks/use-home-blocks';
@@ -363,6 +363,9 @@ export default function HomeContainer() {
   return (
     <>
       <HomePresenter
+      // 홈은 `/planner` — 위젯이 주는 목적지도 같은 pathname 이라 **쿼리만 바뀌는 이동**이다.
+      // 여기서 Next router 를 쓰면 쿼리를 달고 하드 로드한 뒤 전환이 무반응이 된다(F-01).
+      onNavigate={pushQuery}
         view={view}
         examName={examName}
         dday={dday}

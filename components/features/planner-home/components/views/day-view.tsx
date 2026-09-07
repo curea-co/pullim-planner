@@ -23,6 +23,8 @@ import { REFLECTION_ENABLED } from '@/lib/flags';
 const legendTypes: BlockType[] = ['concept', 'practice', 'review', 'memorize', 'mock', 'tutor', 'self_explain'];
 
 interface DayViewProps {
+  /** 재사용 위젯(히트맵·회고)의 이동 — 같은 경로면 History API, 다른 경로면 router. 컨테이너가 정한다. */
+  onNavigate: (url: string) => void;
   /** 날짜 이동 offset (0=기준일). 0 외에는 데모 플랜이 없어 빈 상태. */
   dayOffset?: number;
   /** 빈 상태에서 "오늘 계획 보기" — offset 0으로 리셋 */
@@ -43,7 +45,7 @@ interface DayViewProps {
 }
 
 /** 일간 캘린더 본문 — 24h 시계 + 자기보고 패널 + 블록 리스트. */
-export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp, onCompleteSubmit, customization, burnout, condition: conditionProp, onConditionChange }: DayViewProps) {
+export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday: ddayProp, onCompleteSubmit, customization, burnout, condition: conditionProp, onConditionChange, onNavigate }: DayViewProps) {
   // 실 저장 주입(컨테이너) 우선 — 미주입(bypass·데모)이면 기존 로컬 상태.
   const [localCondition, setLocalCondition] = useState<ConditionLevel>(3);
   const condition = conditionProp !== undefined ? conditionProp : localCondition;
@@ -178,7 +180,7 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
               위저드 STEP 6(약점)과 동일 맥락(07-10 QA). */}
           {REFLECTION_ENABLED && (
             <div className="mt-4">
-              <TodayReflection />
+              <TodayReflection onNavigate={onNavigate} />
             </div>
           )}
         </section>
