@@ -45,7 +45,9 @@ export function pickNextBlock(
 
   if (now === null) return earliest(open);
 
-  const ongoing = open.find((b) => b.start <= now && now < b.end);
+  // 겹치는 블록은 명세가 허용한다(13:00~14:00 과 13:30~14:30 이 13:40 에 둘 다 열려 있을 수 있다).
+  // 여기서도 `find` 를 쓰면 응답 순서가 선택을 가른다 — **먼저 시작한 쪽**으로 고정한다.
+  const ongoing = earliest(open.filter((b) => b.start <= now && now < b.end));
   if (ongoing) return ongoing;
 
   return earliest(open.filter((b) => b.start > now));

@@ -47,6 +47,21 @@ describe('pickNextBlock — 시각 기준', () => {
     expect(pickNextBlock(shuffled, '08:00')?.id).toBe('아침');
   });
 
+  it('겹치는 블록이 둘 다 열려 있으면 먼저 시작한 쪽 — 응답 순서로 갈리지 않게', () => {
+    // 명세가 겹침을 허용한다. `find` 면 API 가 주는 순서에 따라 답이 달라진다.
+    const a = b('앞', '13:00', '14:00');
+    const c = b('뒤', '13:30', '14:30');
+    expect(pickNextBlock([a, c], '13:40')?.id).toBe('앞');
+    expect(pickNextBlock([c, a], '13:40')?.id).toBe('앞'); // 순서를 뒤집어도 같다
+  });
+
+  it('겹침 중 먼저 시작한 쪽이 완료면 나머지가 진행 중이다', () => {
+    const a = b('앞', '13:00', '14:00', 'done');
+    const c = b('뒤', '13:30', '14:30');
+    expect(pickNextBlock([a, c], '13:40')?.id).toBe('뒤');
+    expect(pickNextBlock([c, a], '13:40')?.id).toBe('뒤');
+  });
+
   it('now=null 이면 시각을 보지 않는다 — 오늘이 아닌 날짜의 가장 이른 미완료 블록', () => {
     expect(pickNextBlock(DAY, null)?.id).toBe('아침');
     expect(pickNextBlock([b('아침', '09:00', '09:50', 'done'), ...DAY.slice(1)], null)?.id).toBe('점심');
