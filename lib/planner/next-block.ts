@@ -29,23 +29,26 @@ import type { TimeBlock } from '@/lib/mock';
  * 완료·건너뜀은 후보에서 빼되, **지나간 미완료 블록도 빼지 않는다** — 「다음」이라고 부르면서
  * 지나간 것을 보여주는 게 원래 결함이다. 못 한 블록은 아래 리스트에 그대로 남아 있다.
  *
- * `now` 가 `null` 이면 **시각을 보지 않는다**(오늘이 아닌 날짜 — 그날의 첫 미완료 블록).
+ * `now` 가 `null` 이면 **시각을 보지 않는다**(오늘이 아닌 날짜 — 그날의 가장 이른 미완료 블록).
  * 「지금」이 그 날짜 위에 있지 않은데 시계를 들이대면 뜻이 없다.
+ *
+ * **어느 경로에서도 배열 순서를 믿지 않는다.** `blocksRange` 응답이 시간순이라는 보장은
+ * 계약에 없다 — `open[0]` 을 쓰면 정렬이 바뀌는 순간 「첫 응답 블록」이 히어로에 뜬다.
  */
 export function pickNextBlock(
   blocks: readonly TimeBlock[],
   now: string | null,
 ): TimeBlock | undefined {
   const open = blocks.filter((b) => b.status !== 'done' && b.status !== 'skipped');
-  if (now === null) return open[0];
+  const earliest = (cands: readonly TimeBlock[]) =>
+    cands.reduce<TimeBlock | undefined>((best, b) => (!best || b.start < best.start ? b : best), undefined);
+
+  if (now === null) return earliest(open);
 
   const ongoing = open.find((b) => b.start <= now && now < b.end);
   if (ongoing) return ongoing;
 
-  // 배열 순서를 믿지 않는다 — 응답 정렬이 바뀌어도 「가장 이른 것」이 유지되게 직접 고른다.
-  return open
-    .filter((b) => b.start > now)
-    .reduce<TimeBlock | undefined>((best, b) => (!best || b.start < best.start ? b : best), undefined);
+  return earliest(open.filter((b) => b.start > now));
 }
 
 /**

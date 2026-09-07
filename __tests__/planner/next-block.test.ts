@@ -47,9 +47,18 @@ describe('pickNextBlock — 시각 기준', () => {
     expect(pickNextBlock(shuffled, '08:00')?.id).toBe('아침');
   });
 
-  it('now=null 이면 시각을 보지 않는다 — 오늘이 아닌 날짜의 첫 미완료 블록', () => {
+  it('now=null 이면 시각을 보지 않는다 — 오늘이 아닌 날짜의 가장 이른 미완료 블록', () => {
     expect(pickNextBlock(DAY, null)?.id).toBe('아침');
     expect(pickNextBlock([b('아침', '09:00', '09:50', 'done'), ...DAY.slice(1)], null)?.id).toBe('점심');
+  });
+
+  it('now=null 경로도 배열 순서를 믿지 않는다 — 앞날 응답 정렬이 바뀌어도 가장 이른 것', () => {
+    // `blocksRange` 응답이 시간순이라는 보장은 계약에 없다. `open[0]` 이면 여기서 「저녁」이 뜬다.
+    const shuffled = [DAY[2], DAY[0], DAY[1]];
+    expect(pickNextBlock(shuffled, null)?.id).toBe('아침');
+    // 완료를 건너뛰는 것도 순서와 무관하다
+    const mixed = [DAY[2], b('아침', '09:00', '09:50', 'done'), DAY[1]];
+    expect(pickNextBlock(mixed, null)?.id).toBe('점심');
   });
 
   it('빈 배열이면 undefined', () => {
