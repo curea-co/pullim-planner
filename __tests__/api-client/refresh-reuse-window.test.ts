@@ -49,6 +49,9 @@ function makeClient() {
 let nowMs = 1_000_000;
 
 beforeEach(() => {
+  // 재발급 성공 시각은 **오리진 공유**(localStorage)라 케이스 사이에 남는다 — 각 케이스는
+  // 「아무도 아직 재발급하지 않은 오리진」에서 시작해야 한다.
+  localStorage.clear();
   dataStatuses = [];
   refreshCalls = 0;
   refreshOk = true;
