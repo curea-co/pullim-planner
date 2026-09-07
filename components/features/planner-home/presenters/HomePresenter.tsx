@@ -14,6 +14,7 @@ import {
   formatMonthNavLabel, formatMonthTitle, formatMonthShort,
 } from '@/lib/planner/day-nav';
 import { HomeHero } from '../components/home-hero';
+import { HomeLoadFailure } from '../components/load-failure';
 
 interface HomePresenterProps {
   view: CalendarView;
@@ -21,6 +22,15 @@ interface HomePresenterProps {
   dday: number;
   /** 활성 계획표 유무 — 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요" 표시 (QA #7) */
   hasActivePlanner?: boolean;
+  /**
+   * 시간표 목록 조회 실패 — `hasActivePlanner=false` 와 **다른 상태**다. 전자는 "만든 적이 없다",
+   * 이쪽은 "있는지조차 모른다". 같이 그리면 사용자가 자기 시간표가 사라졌다고 읽는다.
+   */
+  loadError?: boolean;
+  /** 현재 기간의 블록 조회 실패 — 달력 본문만 못 그린다(히어로·헤더는 유효). */
+  blocksError?: boolean;
+  /** 실패 화면의 [다시 시도]. */
+  onRetry?: () => void;
   /** 번아웃 스냅샷 — Container가 해석(실모드: 이번 주 완료 기록 계산 / bypass: mock). null=데이터 없음 */
   burnout: BurnoutSnapshot | null;
   /** 오늘 컨디션(실 저장) — null=미기록('선택 전'). */
@@ -59,6 +69,9 @@ export default function HomePresenter({
   examName,
   dday,
   hasActivePlanner = true,
+  loadError = false,
+  blocksError = false,
+  onRetry,
   burnout,
   condition,
   onConditionChange,
@@ -161,7 +174,7 @@ export default function HomePresenter({
 
   return (
     <>
-      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
+      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} loadError={loadError} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
       <CalendarShell
         view={view}
         onChangeView={onChangeView}
@@ -179,9 +192,17 @@ export default function HomePresenter({
         }
         action={switchAction}
       >
-        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} onNavigate={onNavigate} />}
-        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} onNavigate={onNavigate} />}
-        {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} onNavigate={onNavigate} />}
+        {loadError || blocksError ? (
+          // 실패를 빈 달력으로 그리지 않는다 — 둘은 화면상 구분되지 않고, 사용자는 계획이
+          // 지워졌다고 읽는다. 목록 실패면 기간 실패도 따라오므로 원인이 앞선 쪽을 말한다.
+          <HomeLoadFailure scope={loadError ? 'planner' : 'blocks'} onRetry={onRetry} />
+        ) : (
+          <>
+            {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} onNavigate={onNavigate} />}
+            {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} onNavigate={onNavigate} />}
+            {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} onNavigate={onNavigate} />}
+          </>
+        )}
       </CalendarShell>
     </>
   );

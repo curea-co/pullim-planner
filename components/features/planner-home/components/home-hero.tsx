@@ -6,6 +6,11 @@ type Props = {
   dday: number;
   /** 활성 계획표 유무 — 없으면 D-DAY 대신 "아직 시간표가 없어요" 빈 상태 카피 (QA #7) */
   hasActivePlanner?: boolean;
+  /**
+   * 목록 조회 실패 — "아직 시간표가 없어요"를 **쓰면 안 되는** 상태다. 시간표가 있는 사용자에게
+   * 없다고 말하는 것이라, 빈 상태 카피가 그 자리에서 거짓말이 된다.
+   */
+  loadError?: boolean;
   daySummary: { done: number; total: number };
   weekMeta: { totalHours: number; completedHours: number };
 };
@@ -16,7 +21,7 @@ type Props = {
  * 직전 구간(today/critical, ~D-6) 임박 카피(11-planner-design § 2.1 — 위협 아닌 권유형,
  * `07 § 4.5.1` 4원칙)는 별도 밴드 대신 히어로 안 status 라인으로 흡수한다.
  */
-export function HomeHero({ examName, dday, hasActivePlanner = true, daySummary, weekMeta }: Props) {
+export function HomeHero({ examName, dday, hasActivePlanner = true, loadError = false, daySummary, weekMeta }: Props) {
   const ddayLabel = dday === 0 ? 'D-DAY' : dday > 0 ? `D-${dday}` : `D+${Math.abs(dday)}`;
   const showDay = hasActivePlanner && daySummary.total > 0;
   const showWeek = hasActivePlanner && weekMeta.totalHours > 0;
@@ -42,6 +47,16 @@ export function HomeHero({ examName, dday, hasActivePlanner = true, daySummary, 
             <span className="mr-2 inline-block max-w-[14ch] truncate align-bottom">{examName}</span>
             <span className="text-pullim-lemon align-bottom">{ddayLabel}</span>
           </h2>
+        ) : loadError ? (
+          <>
+            {/* 조회 실패 — "없다"가 아니라 "모른다". 재시도는 달력 자리의 실패 카드가 제공한다. */}
+            <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">
+              학습 현황을 불러오지 못했어요
+            </h2>
+            <p className="mt-1 text-[length:var(--text-sm)] text-white/80">
+              시간표가 없는 게 아니라 조회가 실패했어요. 아래에서 다시 시도할 수 있어요.
+            </p>
+          </>
         ) : (
           <>
             {/* QA #7 — 활성 계획표 없음: D-DAY 대신 빈 상태 카피 */}
