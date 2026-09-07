@@ -193,10 +193,6 @@ export const todayBlocks: TimeBlock[] = [
   },
 ];
 
-export function nextActiveBlock(blocks: TimeBlock[] = todayBlocks): TimeBlock | undefined {
-  return blocks.find(b => b.status === 'doing') ?? blocks.find(b => b.status === 'todo');
-}
-
 /**
  * 오늘(Asia/Seoul, 고정 UTC+9·DST 없음) YYYY-MM-DD.
  * 하드코딩 데모일 대신 접속 시점의 실제 날짜를 기준으로 홈·D-day가 동작하도록.
