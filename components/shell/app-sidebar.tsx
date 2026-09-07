@@ -87,7 +87,10 @@ function findActiveHref(
     const matched = itemQuery
       ? pathname === itemPath &&
         [...new URLSearchParams(itemQuery)].every(([k, v]) => searchParams.get(k) === v)
-      : pathname === item.href || pathname.startsWith(item.href + '/');
+      : item.exact
+        // 잎 항목 — 하위 경로를 자기 것으로 삼지 않는다(F-09).
+        ? pathname === item.href
+        : pathname === item.href || pathname.startsWith(item.href + '/');
     if (matched && (!best || item.href.length > best.length)) best = item.href;
   }
   return best;

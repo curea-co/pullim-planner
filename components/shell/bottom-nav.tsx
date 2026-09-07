@@ -22,7 +22,20 @@ export function BottomNav() {
     let bestIdx = -1;
     let bestLen = -1;
     studentBottomTabs.forEach((tab, i) => {
-      tab.matchPrefix.forEach(p => {
+      // `matchExact` 는 그 경로 자체일 때만 — 홈처럼 **잎**인 탭이 하위 경로를 가져가지
+      // 않게 한다. `'/'` 를 접두사로 두면 전용 탭이 없는 경로가 전부 홈에 걸린다 (F-09).
+      const exact: readonly string[] = ('matchExact' in tab && tab.matchExact) || [];
+      const prefix: readonly string[] = ('matchPrefix' in tab && tab.matchPrefix) || [];
+      exact.forEach(p => {
+        if (pathname === p) {
+          const len = p === '/' ? 0 : p.length;
+          if (len > bestLen) {
+            bestLen = len;
+            bestIdx = i;
+          }
+        }
+      });
+      prefix.forEach(p => {
         if (pathname === p || pathname.startsWith(p + '/')) {
           const len = p === '/' ? 0 : p.length;
           if (len > bestLen) {
