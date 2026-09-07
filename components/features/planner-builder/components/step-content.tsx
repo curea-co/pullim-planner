@@ -1270,6 +1270,15 @@ export function PStep4Confirm({
   const todayIso = todayIsoKst();
   const localPreviews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
 
+  // 요약에 셀 루틴 수 — 미리보기·충돌 배너와 **같은 집합**을 센다. 삭제된 루틴의 id 가
+  // 프리필로 살아 돌아오는 경로가 있어(수정 화면의 appliedRoutineIds 는 블록에서 역산),
+  // 그냥 세면 미리보기엔 없는 루틴이 요약에만 잡혀 숫자가 어긋난다.
+  // 목록이 비었을 땐 거르지 않는다 — 조회 실패와 "루틴 0개"를 여기선 구분할 수 없어,
+  // 잘못 걸러 '없음' 이라고 잘라 말하는 쪽이 더 나쁘다.
+  const selectedRoutineCount = routines && routines.length > 0
+    ? form.routineIds.filter((id) => routines.some((r) => r.id === id)).length
+    : form.routineIds.length;
+
   // 루틴 목록의 '개정 키' — 서버 dry-run 요청 본문은 루틴 **id 만** 싣고 시각은 서버가 DB 에서
   // 읽는다. 그래서 충돌 배너의 '시간 안쪽으로 옮기기'(`PATCH /planner/routines/:id`)로 원본
   // 시각만 바뀌면 폼도 로더 identity 도 그대로여서, 이 키가 없으면 미리보기가 옮기기 전 시각에
@@ -1385,7 +1394,7 @@ export function PStep4Confirm({
           <li>· 블록 패턴: {blockPatternMeta[form.blockPattern].label} <span className="text-pullim-slate-500">({blockPatternMeta[form.blockPattern].spec})</span></li>
           {/* 루틴 게이트 off면 요약에서도 숨긴다 — 고를 수 없는 항목을 '없음'으로 보여주지 않는다 */}
           {ROUTINE_ENABLED && (
-            <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>}</li>
+            <li>· 선택한 루틴: {selectedRoutineCount > 0 ? <strong className="text-white font-mono">{selectedRoutineCount}개</strong> : <span className="text-pullim-slate-400">없음</span>}</li>
           )}
           {WEAKNESS_ENABLED && (
             <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON (시간표 반영 준비 중)' : 'OFF'}</li>

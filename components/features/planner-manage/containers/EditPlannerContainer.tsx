@@ -13,6 +13,7 @@ import { getRoutines } from '@/lib/mock';
 import { findPlanner, updatePlanner } from '@/lib/mock/planner';
 import { apiToPlanner, plannerClient, toWriteInput } from '@/lib/planner/client';
 import { mapServerPreview, type PreviewDay } from '@/lib/planner/preview-map';
+import { toRoutineApplications } from '@/lib/planner/routine-selection';
 import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
 import { usePlannerForm } from '../hooks/use-planner-form';
@@ -121,13 +122,16 @@ function EditPlannerForm({
 
   // STEP5·미리보기용 루틴 — bypass는 mock(초기값), 배포는 실 API로 교체(dev QA #4).
   const [routines, setRoutines] = useState<Routine[]>(() => (DEV_AUTH_BYPASS ? getRoutines() : []));
+  // 목록을 **받았는가** — "루틴 0개"와 "못 받음"을 가른다. 저장 경로에서 이 구분이 특히
+  // 중요하다: 못 받았는데 빈 배열로 걸러 보내면 서버의 적용 루틴이 전부 해제된다(아래 handleSave).
+  const [routinesLoaded, setRoutinesLoaded] = useState(DEV_AUTH_BYPASS);
   useEffect(() => {
     if (DEV_AUTH_BYPASS) return;
     let alive = true;
     pullimPlannerClient
       .routines()
-      .then((list) => { if (alive) setRoutines(list.map(pullimToRoutine)); })
-      .catch(() => { if (alive) setRoutines([]); });
+      .then((list) => { if (alive) { setRoutines(list.map(pullimToRoutine)); setRoutinesLoaded(true); } })
+      .catch(() => { if (alive) { setRoutines([]); setRoutinesLoaded(false); } });
     return () => { alive = false; };
   }, []);
 
@@ -150,10 +154,10 @@ function EditPlannerForm({
         ...toWriteInput(formToPlannerPatch(form)),
         ...(planner?.appliedRoutineIds !== undefined
           ? {
-              routineApplications: form.routineIds.map((routineId) => ({
-                routineId,
-                endRange: 'exam' as const,
-              })),
+              routineApplications: toRoutineApplications(
+                form.routineIds,
+                routinesLoaded ? routines : null,
+              ),
             }
           : {}),
       });
@@ -163,10 +167,18 @@ function EditPlannerForm({
         form.examStartDate ?? null,
         form.examEndDate ?? null,
       );
-    } catch {
+    } catch (e) {
+      // 폴백(휴리스틱)으로 떨어지는 건 그대로 두되 **왜** 떨어졌는지는 남긴다 — 지금까지는
+      // 네트워크 장애·서버 거부가 화면에서 똑같은 노란 배너 하나였다.
+      console.error('[planner] 서버 미리보기 실패 — 휴리스틱으로 대체', e);
+      // 400 은 사용자가 손댈 수 있는 거부(서버가 문구를 준다). 미리보기는 폼이 바뀔 때마다
+      // 재요청되므로 고정 id 로 겹쳐 띄운다 — 타이핑 중 토스트가 쌓이지 않게.
+      if (e instanceof ApiError && e.statusCode === 400) {
+        toast.error(e.message, { id: 'planner-preview-rejected' });
+      }
       return null;
     }
-  }, [form, planner]);
+  }, [form, planner, routines, routinesLoaded]);
 
   async function handleSave(submitted: PlannerForm) {
     // 로컬 dev 우회 — 실 API 대신 공유 mock store를 갱신한다.
@@ -194,10 +206,10 @@ function EditPlannerForm({
         // 빈 프리필을 desired 로 보내 기존 적용을 전부 해제하는 회귀를 막는다(Codex).
         ...(planner?.appliedRoutineIds !== undefined
           ? {
-              routineApplications: submitted.routineIds.map((routineId) => ({
-                routineId,
-                endRange: 'exam' as const,
-              })),
+              routineApplications: toRoutineApplications(
+                submitted.routineIds,
+                routinesLoaded ? routines : null,
+              ),
             }
           : {}),
       });
