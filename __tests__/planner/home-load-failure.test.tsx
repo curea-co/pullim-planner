@@ -91,6 +91,22 @@ describe('홈 조회 실패 표시', () => {
     expect(btn).toBeDisabled();
   });
 
+  it('로딩 중에는 「계획이 없어요」도 「시간표가 없어요」도 말하지 않는다 (F-03)', () => {
+    render(<HomePresenter {...base} hasActivePlanner={false} loading />);
+
+    expect(screen.queryByText('아직 시간표가 없어요')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull(); // 실패 카드도 아니다
+    expect(screen.getByText('계획을 불러오는 중')).toBeInTheDocument();
+    expect(screen.getByText('학습 현황을 불러오는 중')).toBeInTheDocument();
+  });
+
+  it('로딩이 끝나고 정말 없으면 그때 빈 상태를 말한다', () => {
+    render(<HomePresenter {...base} hasActivePlanner={false} />);
+
+    expect(screen.getByText('아직 시간표가 없어요')).toBeInTheDocument();
+    expect(screen.queryByText('계획을 불러오는 중')).toBeNull();
+  });
+
   it('실패가 없으면 실패 카드도 없다', () => {
     render(<HomePresenter {...base} examName="9월 모평" dday={12} />);
 

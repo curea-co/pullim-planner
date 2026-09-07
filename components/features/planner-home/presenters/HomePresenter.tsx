@@ -15,6 +15,7 @@ import {
 } from '@/lib/planner/day-nav';
 import { HomeHero } from '../components/home-hero';
 import { HomeLoadFailure } from '../components/load-failure';
+import { CalendarLoading } from '../components/calendar-loading';
 
 interface HomePresenterProps {
   view: CalendarView;
@@ -31,6 +32,11 @@ interface HomePresenterProps {
   blocksError?: boolean;
   /** 히어로의 오늘·이번 주 요약을 만들 데이터가 없다 — 숨기는 대신 못 불러왔다고 말한다. */
   heroSummaryError?: boolean;
+  /**
+   * 아직 모르는 상태 — 목록이나 이 기간의 블록이 오는 중.
+   * 실패와 같은 이유로 따로 받는다: 모르는 것을 「없다」고 확정해 말하지 않기 위해서다.
+   */
+  loading?: boolean;
   /** 재조회 진행 중 — 실패 화면을 유지한 채 진행 중임만 알린다. */
   retrying?: boolean;
   /** 실패 화면의 [다시 시도]. */
@@ -76,6 +82,7 @@ export default function HomePresenter({
   loadError = false,
   blocksError = false,
   heroSummaryError = false,
+  loading = false,
   retrying = false,
   onRetry,
   burnout,
@@ -180,7 +187,7 @@ export default function HomePresenter({
 
   return (
     <>
-      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} loadError={loadError} summaryError={heroSummaryError} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
+      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} loadError={loadError} loading={loading} summaryError={heroSummaryError} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
       <CalendarShell
         view={view}
         onChangeView={onChangeView}
@@ -198,7 +205,10 @@ export default function HomePresenter({
         }
         action={switchAction}
       >
-        {loadError || blocksError ? (
+        {loading ? (
+          // 모르는 동안 「계획이 없어요」라고 말하지 않는다 — 빈 상태는 확정 진술이다.
+          <CalendarLoading />
+        ) : loadError || blocksError ? (
           // 실패를 빈 달력으로 그리지 않는다 — 둘은 화면상 구분되지 않고, 사용자는 계획이
           // 지워졌다고 읽는다. 목록 실패면 기간 실패도 따라오므로 원인이 앞선 쪽을 말한다.
           <HomeLoadFailure scope={loadError ? 'planner' : 'blocks'} retrying={retrying} onRetry={onRetry} />

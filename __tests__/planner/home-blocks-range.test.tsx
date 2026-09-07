@@ -290,3 +290,67 @@ describe('응답 date 가 계약에서 어긋나도 조용히 사라지지 않�
     expect(result.current.blocksError).toBe(false);
   });
 });
+
+
+/**
+ * 「모른다」를 「없다」로 말하지 않는다 (F-03).
+ *
+ * 로딩 중에는 `blocksByDate` 가 비어 있고 `active` 도 null 이다. 그대로 그리면 화면이
+ * 「이 기간엔 계획이 없어요」와 「아직 시간표가 없어요」를 **확정적으로** 말한다. 합계도
+ * 0 으로 떠서 잠깐 스쳐도 오해를 남긴다 — 실패를 빈 상태로 그리던 것과 같은 결함이다.
+ */
+describe('로딩이 빈 상태로 위장되지 않는다', () => {
+  it('목록이 오는 동안 loading 이다', async () => {
+    let release: (v: unknown[]) => void = () => {};
+    mockList.mockReturnValue(new Promise((res) => { release = res; }));
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+
+    expect(result.current.loading).toBe(true);
+    await act(async () => { release([]); });
+    // 활성 시간표가 없으면 더 읽을 것이 없다 — 그때는 진짜 빈 상태다
+    await waitFor(() => expect(result.current.loading).toBe(false));
+  });
+
+  it('기간 응답이 오기 전까지 loading 이다 — 목록이 끝나도', async () => {
+    let release: (v: unknown[]) => void = () => {};
+    mockBlocksRange.mockReturnValue(new Promise((res) => { release = res; }));
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.loading).toBe(true);
+
+    await act(async () => { release([]); });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+  });
+
+  it('뷰를 바꾸면 새 창을 읽을 때까지 다시 loading 이다 — 옛 창 데이터로 빈 상태를 말하지 않게', async () => {
+    const { result, rerender } = renderHook(
+      ({ v }: { v: 'week' | 'month' }) => useHomeBlocks(true, v, 0),
+      { initialProps: { v: 'week' as const } },
+    );
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let release: (v: unknown[]) => void = () => {};
+    mockBlocksRange.mockReturnValue(new Promise((res) => { release = res; }));
+    rerender({ v: 'month' });
+
+    expect(result.current.loading).toBe(true);
+    await act(async () => { release([]); });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+  });
+
+  it('조회가 실패해도 loading 은 내려간다 — 실패 화면이 로딩에 가려지지 않게', async () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockBlocksRange.mockRejectedValue(new Error('network'));
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+
+    await waitFor(() => expect(result.current.blocksError).toBe(true));
+    expect(result.current.loading).toBe(false);
+    spy.mockRestore();
+  });
+
+  it('bypass(enabled=false)에는 로딩이 없다 — mock 이 즉시 그려진다', () => {
+    const { result } = renderHook(() => useHomeBlocks(false, 'week', 0));
+    expect(result.current.loading).toBe(false);
+  });
+});
