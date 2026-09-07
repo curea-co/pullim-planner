@@ -28,6 +28,8 @@ function res(status: number, body: unknown): Response {
 }
 
 const fetchImpl = (async (url: string) => {
+  // CSRF 부트스트랩은 refresh 가 POST 라 반드시 선행한다 — 데이터 큐를 소모하면 안 된다.
+  if (url.includes('/auth/csrf')) return res(200, { csrfToken: 'csrf-test' });
   if (url.includes('/auth/refresh')) {
     refreshCalls += 1;
     return refreshOk
