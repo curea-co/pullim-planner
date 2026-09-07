@@ -14,7 +14,6 @@ import {
 } from '@/lib/planner/home-data';
 import { computeBurnoutFromWeek } from '@/lib/planner/burnout';
 import type { BurnoutSnapshot, ConditionLevel } from '@/lib/mock';
-import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
@@ -170,19 +169,11 @@ export default function HomeContainer() {
   }, [realActiveId, burnoutTick, view, offset]);
 
   // 오늘 컨디션(저장+표기용, QA 결정 08-04) — 실모드는 서버 복원·저장, bypass 는 로컬 데모(3).
-  // KST 오늘을 1분 간격으로 재계산해 자정 전환을 실제로 감지한다(마운트 1회 계산이던
-  // useHomeBlocks.todayIso 로는 effect 가 재실행되지 않음 — Codex). 날짜가 바뀌면 파생이
-  // 자동으로 '선택 전'이 되고, 날짜 키 effect 가 오늘 값을 재조회한다.
-  const [kstToday, setKstToday] = useState(() => todayIsoKst());
-  useEffect(() => {
-    const id = setInterval(() => {
-      setKstToday((prev) => {
-        const now = todayIsoKst();
-        return now === prev ? prev : now;
-      });
-    }, 60_000);
-    return () => clearInterval(id);
-  }, []);
+  // KST 오늘은 `useHomeBlocks` 가 이미 1분 간격으로 재계산해 내보낸다(`useKstToday`). 여기서
+  // 다시 부르면 **타이머가 두 개** 생기고, 자정 부근에 컨디션 날짜와 블록 기준일이 서로 다른
+  // 렌더에 갱신된다 — 하나를 나눠 쓰는 게 아니라 각자 도는 것이다. 그래서 훅 반환값을 쓴다.
+  // 날짜가 바뀌면 파생이 자동으로 '선택 전'이 되고, 날짜 키 effect 가 오늘 값을 재조회한다.
+  const kstToday = real.todayIso;
   const [conditionState, setConditionState] = useState<
     { date: string; level: ConditionLevel } | null
   >(DEV_AUTH_BYPASS ? { date: 'local', level: 3 } : null);

@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { PullimBlock, PullimPlanner } from '@/lib/api-client';
 import { pullimPlannerClient, pullimToPlanner } from '@/lib/planner/pullim-client';
 import {
-  monthDatesFor, pullimToTimeBlock, shiftIsoDate, todayKstIso, weekDatesFor,
+  monthDatesFor, pullimToTimeBlock, shiftIsoDate, weekDatesFor,
 } from '@/lib/planner/home-data';
 import type { Planner, TimeBlock } from '@/lib/mock';
 import type { CalendarView } from '../components/calendar-shell';
+import { useKstToday } from './use-kst-today';
 
 export interface HomeBlocksData {
   /** 'loading' 첫 로드 중 · 'ready' 조회 완료(active 없음 포함) · 'error' 목록 조회 실패 */
@@ -114,7 +115,9 @@ export function useHomeBlocks(
   view: CalendarView,
   offset: number,
 ): HomeBlocksData {
-  const todayIso = useMemo(() => todayKstIso(), []);
+  // 자정을 넘기면 바뀐다 — 마운트 1회 계산이면 밤에 열어 둔 탭이 **어제 날짜로** 계속
+  // 조회한다. `todayIso` 는 아래 두 기간 effect 의 deps 라, 날짜가 바뀌는 순간 재조회된다.
+  const todayIso = useKstToday();
   const [status, setStatus] = useState<HomeBlocksData['status']>('loading');
   const [activeRaw, setActiveRaw] = useState<PullimPlanner | null>(null);
   const [blocksByDate, setBlocksByDate] = useState<Record<string, TimeBlock[]>>({});
