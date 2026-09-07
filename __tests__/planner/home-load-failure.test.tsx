@@ -91,6 +91,49 @@ describe('홈 조회 실패 표시', () => {
     expect(btn).toBeDisabled();
   });
 
+  it('로딩 중에는 「계획이 없어요」도 「시간표가 없어요」도 말하지 않는다 (F-03)', () => {
+    render(<HomePresenter {...base} hasActivePlanner={false} loading />);
+
+    expect(screen.queryByText('아직 시간표가 없어요')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull(); // 실패 카드도 아니다
+    expect(screen.getByText('계획을 불러오는 중')).toBeInTheDocument();
+    expect(screen.getByText('학습 현황을 불러오는 중')).toBeInTheDocument();
+  });
+
+  it('재조회 중에는 로딩이 실패 화면을 덮지 않는다 — 원인과 [다시 불러오는 중…]이 남는다', () => {
+    // retry() 는 실패 플래그를 응답까지 유지하므로 loading 과 blocksError 가 함께 선다.
+    render(<HomePresenter {...base} blocksError loading retrying onRetry={() => {}} />);
+
+    expect(screen.getByText('이 기간의 계획을 불러오지 못했어요')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '다시 불러오는 중…' })).toBeDisabled();
+    expect(screen.queryByText('계획을 불러오는 중')).toBeNull();
+  });
+
+  it('히어로도 마찬가지다 — 목록 재시도 중에 실패 문구가 스켈레톤에 가려지지 않는다', () => {
+    render(<HomePresenter {...base} hasActivePlanner={false} loadError loading retrying />);
+
+    expect(screen.getByText('학습 현황을 불러오지 못했어요')).toBeInTheDocument();
+    expect(screen.queryByText('학습 현황을 불러오는 중')).toBeNull();
+  });
+
+  it('로딩 중에는 헤더 집계를 말하지 않는다 — 직전 기간의 부분 합계가 남는다', () => {
+    // 주간 → 월간 전환 직후: blocksByDate 에 직전 주의 키만 있어 monthMeta 가 그 7일 합계다.
+    const { rerender } = render(
+      <HomePresenter {...base} view="month" monthMeta={{ totalBlocks: 7 }} examName="9월 모평" loading />,
+    );
+    expect(screen.queryByText(/이번 달 학습 블록/)).toBeNull();
+
+    rerender(<HomePresenter {...base} view="month" monthMeta={{ totalBlocks: 31 }} examName="9월 모평" />);
+    expect(screen.getByText(/이번 달 학습 블록/)).toBeInTheDocument();
+  });
+
+  it('로딩이 끝나고 정말 없으면 그때 빈 상태를 말한다', () => {
+    render(<HomePresenter {...base} hasActivePlanner={false} />);
+
+    expect(screen.getByText('아직 시간표가 없어요')).toBeInTheDocument();
+    expect(screen.queryByText('계획을 불러오는 중')).toBeNull();
+  });
+
   it('실패가 없으면 실패 카드도 없다', () => {
     render(<HomePresenter {...base} examName="9월 모평" dday={12} />);
 

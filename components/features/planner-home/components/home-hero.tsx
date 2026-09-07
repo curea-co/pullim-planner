@@ -16,6 +16,11 @@ type Props = {
    */
   loadError?: boolean;
   /**
+   * 아직 모르는 상태 — 목록이 오는 중이다. `hasActivePlanner=false` 로 내려오지만 그건
+   * 「없다」가 아니라 「아직 모른다」라, 빈 상태 카피를 쓰면 잠깐이라도 거짓을 말한다.
+   */
+  loading?: boolean;
+  /**
    * 오늘·이번 주 요약을 만들 데이터가 **없다**(히어로 기간 조회 실패 + 현재 뷰가 이번 주를
    * 다 덮지 못함). 수치를 0 으로 접어 숨기면 그것이야말로 "계획 없음"으로 위장하는 것이라,
    * 숨기는 대신 못 불러왔다고 말한다.
@@ -31,12 +36,13 @@ type Props = {
  * 직전 구간(today/critical, ~D-6) 임박 카피(11-planner-design § 2.1 — 위협 아닌 권유형,
  * `07 § 4.5.1` 4원칙)는 별도 밴드 대신 히어로 안 status 라인으로 흡수한다.
  */
-export function HomeHero({ examName, dday, hasActivePlanner = true, loadError = false, summaryError = false, daySummary, weekMeta }: Props) {
+export function HomeHero({ examName, dday, hasActivePlanner = true, loadError = false, loading = false, summaryError = false, daySummary, weekMeta }: Props) {
   const ddayLabel = dday === 0 ? 'D-DAY' : dday > 0 ? `D-${dday}` : `D+${Math.abs(dday)}`;
-  const showDay = hasActivePlanner && !loadError && daySummary.total > 0;
-  const showWeek = hasActivePlanner && !loadError && weekMeta.totalHours > 0;
-  // 조회가 실패했으면 D-day 자체가 못 믿을 값이다 — 임박 권유를 띄우지 않는다.
-  const urgent = hasActivePlanner && !loadError && shouldShowDDayHeaderBand(dday);
+  const settled = hasActivePlanner && !loadError && !loading;
+  const showDay = settled && daySummary.total > 0;
+  const showWeek = settled && weekMeta.totalHours > 0;
+  // 조회가 실패했거나 아직 오는 중이면 D-day 자체가 못 믿을 값이다 — 임박 권유를 띄우지 않는다.
+  const urgent = settled && shouldShowDDayHeaderBand(dday);
   const urgentCopy =
     dday === 0
       ? `오늘 ${examName} — 컨디션 안정 우선, 새 단원 No`
@@ -64,6 +70,15 @@ export function HomeHero({ examName, dday, hasActivePlanner = true, loadError = 
             <p className="mt-1 text-[length:var(--text-sm)] text-white/80">
               시간표가 없는 게 아니라 조회가 실패했어요. 아래에서 다시 시도할 수 있어요.
             </p>
+          </>
+        ) : loading ? (
+          // 「없다」도 「못 불러왔다」도 아직 아니다 — 자리만 지킨다.
+          // **실패 다음**이다: 재시도 중에는 둘 다 서 있고, 로딩이 이기면 실패 문구가 사라진다.
+          <>
+            <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">
+              <span className="inline-block h-6 w-40 animate-pulse rounded bg-white/20 align-bottom motion-reduce:animate-none" />
+            </h2>
+            <span className="sr-only">학습 현황을 불러오는 중</span>
           </>
         ) : hasActivePlanner ? (
           <h2 className="mt-1.5 text-xl font-extrabold tracking-tight sm:text-2xl">

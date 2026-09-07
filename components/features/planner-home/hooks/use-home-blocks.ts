@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PullimBlock, PullimPlanner } from '@/lib/api-client';
 import { pullimPlannerClient, pullimToPlanner } from '@/lib/planner/pullim-client';
 import {
@@ -22,6 +22,14 @@ export interface HomeBlocksData {
    * 이 플래그가 없으면 "계획이 없는 기간"과 구분되지 않는다 — 화면에는 똑같이 빈 달력이 뜬다.
    */
   blocksError: boolean;
+  /**
+   * **아직 모르는** 상태인가 — 목록이나 이 기간의 블록이 오는 중.
+   *
+   * 실패와 같은 이유로 따로 싣는다. 로딩 중 `blocksByDate` 는 비어 있고 `active` 는 null 이라,
+   * 이 플래그가 없으면 화면이 「계획이 없어요」와 「아직 시간표가 없어요」를 **확정적으로**
+   * 말한다 — 모르는 것을 없다고 말하는 것이다. 합계도 0 으로 떠서 잠깐 스쳐도 오해를 남긴다.
+   */
+  loading: boolean;
   /**
    * 히어로 배너 전용 — **이번 주(offset 0) 7일**의 날짜별 블록. 뷰·offset 네비게이션과 무관하게
    * 활성 플래너당 1회 조회(오늘이 이번 주에 포함되므로 오늘·이번 주 통계를 모두 커버). 히어로가
@@ -164,16 +172,27 @@ export function useHomeBlocks(
     };
   }, [enabled, retryTick]);
 
-  // 기간 블록 — active·view·offset 변경마다 **한 번**.
-  useEffect(() => {
-    if (!enabled || !activeRaw) return;
-    let alive = true;
-    const dates =
+  // 이 화면이 보여줄 날짜들 — effect 와 「어느 창까지 읽었나」 비교에 **같은 값**을 쓴다.
+  // 따로 계산하면 한쪽만 바뀌었을 때 로딩 판정이 어긋난다.
+  const dates = useMemo(
+    () =>
       view === 'day'
         ? [shiftIsoDate(todayIso, offset)]
         : view === 'week'
           ? weekDatesFor(todayIso, offset)
-          : monthDatesFor(todayIso, offset);
+          : monthDatesFor(todayIso, offset),
+    [view, offset, todayIso],
+  );
+  // **플래너 id 를 키에 넣는다.** 날짜만 보면, 재시도 뒤 활성 시간표가 바뀌어도 같은 주/월이라
+  // 「이미 읽었다」로 판정되어 **이전 시간표의 블록**이 새 시간표의 것인 양 노출된다.
+  const rangeKey = `${activeRaw?.id ?? ''}|${dates[0]}~${dates[dates.length - 1]}`;
+  // 마지막으로 **응답이 끝난** 창. 지금 창과 다르면 아직 모르는 상태다(성공·실패 무관).
+  const [loadedRange, setLoadedRange] = useState<string | null>(null);
+
+  // 기간 블록 — active·view·offset 변경마다 **한 번**.
+  useEffect(() => {
+    if (!enabled || !activeRaw) return;
+    let alive = true;
     void pullimPlannerClient
       .blocksRange(activeRaw.id, dates[0], dates[dates.length - 1])
       .then((bs) => {
@@ -183,6 +202,7 @@ export function useHomeBlocks(
         // 200 이어도 쓸 수 있는 게 하나도 없으면 실패다 — 빈 달력은 「계획 없음」과 같아 보인다.
         setBlocksError(allDropped);
         setBlocksSettledAt(retryTick);
+        setLoadedRange(rangeKey);
       })
       // 기간 조회는 전부 아니면 전무다 — 하루씩 부르던 시절의 "그 날짜만 빈 배열" 부분 실패가
       // 사라진다. 형태는 유지하되 **실패했다는 사실을 남긴다** — 안 그러면 빈 달력과 구분이 안 된다.
@@ -192,11 +212,12 @@ export function useHomeBlocks(
         setBlocksByDate(emptyByDate(dates));
         setBlocksError(true);
         setBlocksSettledAt(retryTick);
+        setLoadedRange(rangeKey);
       });
     return () => {
       alive = false;
     };
-  }, [enabled, activeRaw, view, offset, todayIso, refreshTick, retryTick]);
+  }, [enabled, activeRaw, dates, rangeKey, refreshTick, retryTick]);
 
   // 히어로 전용 이번 주 블록 — 활성 플래너당 1회(view·offset 무관). 오늘이 이번 주에 포함돼
   // 오늘·이번 주 히어로 통계를 모두 커버한다.
@@ -237,6 +258,21 @@ export function useHomeBlocks(
     active: activeRaw ? pullimToPlanner(activeRaw) : null,
     blocksByDate: hasActive ? blocksByDate : NO_BLOCKS,
     blocksError: hasActive && blocksError,
+    // 목록이 오는 중이거나(활성 시간표 유무 자체를 모른다), 이 창의 응답이 아직 안 왔다.
+    //
+    // **창 비교만으로는 부족하다** — 같은 플래너·같은 기간에서 `retry()` 를 누르면
+    // `loadedRange === rangeKey` 가 이미 성립해, 새 `blocksRange` 가 도는 중인데도 로딩이
+    // 내려간다. 그때 실패 플래그가 없으면(성공했다가 사용자가 그냥 다시 누른 경우) 이전
+    // 블록이 최신 값인 양 남는다. 그래서 **재조회 세대**(`retryTick`)도 함께 본다.
+    //
+    // `refetch()`(완료 기록 저장 후)는 세대를 올리지 않는다 — 기존 데이터가 여전히 유효한데
+    // 달력을 스켈레톤으로 비울 이유가 없다.
+    //
+    // bypass(enabled=false)에는 로딩이 없다 — mock 이 즉시 그려진다.
+    loading:
+      enabled &&
+      (status === 'loading' ||
+        (hasActive && (loadedRange !== rangeKey || blocksSettledAt !== retryTick))),
     heroBlocksByDate: hasActive ? heroBlocksByDate : NO_BLOCKS,
     heroBlocksError: hasActive && heroBlocksError,
     todayIso,

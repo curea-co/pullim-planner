@@ -15,6 +15,7 @@ import {
 } from '@/lib/planner/day-nav';
 import { HomeHero } from '../components/home-hero';
 import { HomeLoadFailure } from '../components/load-failure';
+import { CalendarLoading } from '../components/calendar-loading';
 
 interface HomePresenterProps {
   view: CalendarView;
@@ -31,6 +32,11 @@ interface HomePresenterProps {
   blocksError?: boolean;
   /** 히어로의 오늘·이번 주 요약을 만들 데이터가 없다 — 숨기는 대신 못 불러왔다고 말한다. */
   heroSummaryError?: boolean;
+  /**
+   * 아직 모르는 상태 — 목록이나 이 기간의 블록이 오는 중.
+   * 실패와 같은 이유로 따로 받는다: 모르는 것을 「없다」고 확정해 말하지 않기 위해서다.
+   */
+  loading?: boolean;
   /** 재조회 진행 중 — 실패 화면을 유지한 채 진행 중임만 알린다. */
   retrying?: boolean;
   /** 실패 화면의 [다시 시도]. */
@@ -76,6 +82,7 @@ export default function HomePresenter({
   loadError = false,
   blocksError = false,
   heroSummaryError = false,
+  loading = false,
   retrying = false,
   onRetry,
   burnout,
@@ -117,6 +124,9 @@ export default function HomePresenter({
     <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
   ) : null;
 
+  // 헤더 집계는 **확정된 기간의 값일 때만** 말한다. 로딩 중 `blocksByDate` 에는 직전 기간의
+  // 키가 남아 있어(주간 → 월간 전환 등) 그 7일만 합산한 「이번 달 학습 블록 N개」가 뜬다 —
+  // 아직 확정되지 않은 부분 합계를 현재 기간의 값처럼 말하는 것이다.
   const headerProps = (() => {
     if (view === 'day') {
       // QA #2 — 제목은 "X월 Y일 Z요일"만('오늘의 학습' 제거), D-day 뱃지는 상단 배너와 중복이라 미노출.
@@ -125,7 +135,7 @@ export default function HomePresenter({
         description: (
           <>
             {examNameEl}
-            {daySummary.total > 0 && (
+            {!loading && daySummary.total > 0 && (
               <>
                 <span className="mx-1">·</span>
                 {daySummary.done}/{daySummary.total} 블록 완료
@@ -144,7 +154,7 @@ export default function HomePresenter({
         description: (
           <>
             {examNameEl}
-            {weekMeta.totalHours > 0 && (
+            {!loading && weekMeta.totalHours > 0 && (
               <>
                 <span className="mx-1">·</span>
                 이번 주 계획 <span className="font-mono text-pullim-slate-700 font-bold">{weekMeta.totalHours}h</span>
@@ -164,7 +174,7 @@ export default function HomePresenter({
       description: (
         <>
           {examNameEl}
-          {monthMeta.totalBlocks > 0 && (
+          {!loading && monthMeta.totalBlocks > 0 && (
             <>
               <span className="mx-1">·</span>
               이번 달 학습 블록 <span className="font-mono font-bold">{monthMeta.totalBlocks}개</span>
@@ -180,7 +190,7 @@ export default function HomePresenter({
 
   return (
     <>
-      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} loadError={loadError} summaryError={heroSummaryError} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
+      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} loadError={loadError} loading={loading} summaryError={heroSummaryError} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
       <CalendarShell
         view={view}
         onChangeView={onChangeView}
@@ -201,7 +211,14 @@ export default function HomePresenter({
         {loadError || blocksError ? (
           // 실패를 빈 달력으로 그리지 않는다 — 둘은 화면상 구분되지 않고, 사용자는 계획이
           // 지워졌다고 읽는다. 목록 실패면 기간 실패도 따라오므로 원인이 앞선 쪽을 말한다.
+          //
+          // ⚠️ **로딩보다 먼저 본다.** 재시도 중에는 `loading` 과 실패 플래그가 함께 서 있는데,
+          // 로딩을 먼저 보면 스켈레톤이 실패 카드를 덮어 원인도 [다시 불러오는 중…]도 사라진다
+          // — 「재조회 중에도 실패 화면을 유지한다」는 계약이 깨진다.
           <HomeLoadFailure scope={loadError ? 'planner' : 'blocks'} retrying={retrying} onRetry={onRetry} />
+        ) : loading ? (
+          // 모르는 동안 「계획이 없어요」라고 말하지 않는다 — 빈 상태는 확정 진술이다.
+          <CalendarLoading />
         ) : (
           <>
             {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} onNavigate={onNavigate} />}
