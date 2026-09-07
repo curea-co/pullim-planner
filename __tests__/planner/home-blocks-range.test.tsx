@@ -326,7 +326,7 @@ describe('로딩이 빈 상태로 위장되지 않는다', () => {
   it('뷰를 바꾸면 새 창을 읽을 때까지 다시 loading 이다 — 옛 창 데이터로 빈 상태를 말하지 않게', async () => {
     const { result, rerender } = renderHook(
       ({ v }: { v: 'week' | 'month' }) => useHomeBlocks(true, v, 0),
-      { initialProps: { v: 'week' as const } },
+      { initialProps: { v: 'week' as 'week' | 'month' } },
     );
     await waitFor(() => expect(result.current.loading).toBe(false));
 
