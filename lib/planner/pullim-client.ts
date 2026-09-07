@@ -79,7 +79,9 @@ function on401<A extends unknown[], R>(
  *
  * 자체 BE planner 클라(`./client.ts` 의 레거시 구현, Bearer + 엔벨로프)를 대체한다. 인증은 쿠키
  * SSO(브라우저 자동 첨부)라 토큰을 클라가 들지 않고, 상태변경은 CSRF double-submit
- * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 401 에서 세션 만료를 통지한다.
+ * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 **세션 만료가 확정된**
+ * 401(`ApiError.sessionExpired`)에서 전역 만료를 통지한다 — 재발급 성공 후 재시도까지 하고도
+ * 401 인 요청은 통지하지 않고 **그 요청만 실패**한다(위 `on401` 주석).
  */
 export const pullimPlannerClient: PullimPlannerClient &
   PullimBlockCompletionClient &
