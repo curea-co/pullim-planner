@@ -1233,6 +1233,9 @@ type ConfirmProps = {
   onActivate?: (form: PlannerForm, summary?: ActivateSummary) => void;
   /** 실 루틴(컨테이너 주입) — 미주입 시 mock. 미리보기의 루틴 반영에 사용. */
   routines?: Routine[];
+  /** 루틴 목록 조회가 **성공**했는가 — 「루틴 0개」와 「못 받음」을 가른다(요약 집계용). */
+  routinesLoaded?: boolean;
+
   /**
    * 서버 dry-run 미리보기 로더(컨테이너 주입 — pullim-api #476). 성공 시 휴리스틱 대신
    * 실제 bake 규칙 결과를 표시한다. 미주입(bypass)·실패 시 휴리스틱 폴백.
@@ -1259,7 +1262,8 @@ export type ActivateSummary = {
 };
 
 export function PStep4Confirm({
-  form, setForm, scope, mode = 'create', onActivate, routines, onServerPreview, onUpdateRoutine,
+  form, setForm, scope, mode = 'create', onActivate, routines, routinesLoaded,
+  onServerPreview, onUpdateRoutine,
 }: ConfirmProps) {
   const router = useRouter();
   const [previewIdx, setPreviewIdx] = useState(0);
@@ -1273,9 +1277,13 @@ export function PStep4Confirm({
   // 요약에 셀 루틴 수 — 미리보기·충돌 배너와 **같은 집합**을 센다. 삭제된 루틴의 id 가
   // 프리필로 살아 돌아오는 경로가 있어(수정 화면의 appliedRoutineIds 는 블록에서 역산),
   // 그냥 세면 미리보기엔 없는 루틴이 요약에만 잡혀 숫자가 어긋난다.
-  // 목록이 비었을 땐 거르지 않는다 — 조회 실패와 "루틴 0개"를 여기선 구분할 수 없어,
-  // 잘못 걸러 '없음' 이라고 잘라 말하는 쪽이 더 나쁘다.
-  const selectedRoutineCount = routines && routines.length > 0
+  //
+  // 기준은 `routines` 의 길이가 아니라 **`routinesLoaded`** 다. 둘을 헷갈리면 루틴을 전부
+  // 지운 사용자(로드 성공 · 빈 배열)에서 어긋난다 — 그 경우 미리보기(`generatePreview`)는
+  // 루틴 블록을 하나도 그리지 않는데 요약만 "N개 선택"으로 남는다(Codex).
+  // 조회 **실패**일 때만 보수적으로 원래 수를 보여 준다 — 모르면서 '없음' 이라고 잘라
+  // 말하지 않기 위해.
+  const selectedRoutineCount = routinesLoaded && routines
     ? form.routineIds.filter((id) => routines.some((r) => r.id === id)).length
     : form.routineIds.length;
 

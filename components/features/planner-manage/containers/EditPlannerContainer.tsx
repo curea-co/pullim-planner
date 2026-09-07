@@ -242,6 +242,7 @@ function EditPlannerForm({
       onJump={formState.jumpTo}
       onSave={handleSave}
       routines={routines}
+      routinesLoaded={routinesLoaded}
       onServerPreview={handleServerPreview}
       onUpdateRoutine={handleUpdateRoutine}
     />

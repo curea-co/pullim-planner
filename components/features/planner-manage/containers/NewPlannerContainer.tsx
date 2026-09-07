@@ -268,6 +268,7 @@ export default function NewPlannerContainer() {
       onJump={formState.jumpTo}
       onActivate={handleActivate}
       routines={routines}
+      routinesLoaded={routinesLoaded}
       onServerPreview={handleServerPreview}
       onUpdateRoutine={handleUpdateRoutine}
     />

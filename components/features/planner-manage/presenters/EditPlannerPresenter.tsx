@@ -31,6 +31,8 @@ interface EditPlannerPresenterProps {
   onJump: (n: number) => void;
   onSave: (submitted: PlannerForm) => void;
   routines?: Routine[];
+  /** 루틴 목록 조회가 **성공**했는가 — 「루틴 0개」와 「못 받음」을 가른다(요약 집계용). */
+  routinesLoaded?: boolean;
   onServerPreview?: () => Promise<PreviewDay[] | null>;
   onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;
 }
@@ -42,7 +44,7 @@ export default function EditPlannerPresenter({
   currentStep, canPrev, canNext, blockedReason, maxReachable,
   onPrev, onNext, onJump,
   onSave,
-  routines, onServerPreview, onUpdateRoutine,
+  routines, routinesLoaded, onServerPreview, onUpdateRoutine,
 }: EditPlannerPresenterProps) {
   if (!planner) {
     return (
@@ -125,6 +127,7 @@ export default function EditPlannerPresenter({
             // 고칠 때 안 보이면 유실된 것과 다름없다.
             initialExpert={hasCustomBasics(form)}
             routines={routines}
+            routinesLoaded={routinesLoaded}
             onServerPreview={onServerPreview}
             onUpdateRoutine={onUpdateRoutine}
           />
