@@ -124,6 +124,13 @@ export interface PullimPlannerWrite {
  */
 export interface PullimBlock {
   id: string;
+  /**
+   * 블록 날짜(KST `YYYY-MM-DD`).
+   *
+   * 하루 조회에서는 요청한 `date` 와 같아 중복이지만, **기간 조회에서는 이것이 없으면 응답을
+   * 날짜별로 묶을 수 없다**(BE `BlockResponseDto.date`, pullim-api #630).
+   */
+  date: string;
   /** HH:MM. */
   start: string;
   end: string;
@@ -322,6 +329,20 @@ export interface PullimPlannerClient {
    * (`BlocksQueryDto @IsOptional` + 핸들러 `query.date ?? todayKstIsoDate()`).
    */
   blocks(plannerId: string, date?: string): Promise<PullimBlock[]>;
+  /**
+   * **기간** 시간표 블록. `GET /planner/planners/:id/blocks?from=&to=`(양끝 포함, 최대 62일).
+   *
+   * 하루씩 N 번 부르던 것을 한 번으로 줄인다 — 월간 뷰가 한 화면에 37개를 동시에 쏘던 자리다
+   * (pullim-api #630). 응답은 평평한 배열이고 각 항목이 `date` 를 실으므로 호출부가 묶는다.
+   *
+   * 무효 창(형식·달력에 없는 날·from>to·62일 초과)은 **400** 이다 — 단, BE 가 소유권 게이트
+   * 뒤에서 판정하므로 남의 플래너면 404/403 이 먼저 온다.
+   */
+  blocksRange(
+    plannerId: string,
+    from: string,
+    to: string,
+  ): Promise<PullimBlock[]>;
   /** 번아웃 안전도 on-read 집계(QA #48). `GET /planner/planners/:id/burnout`. */
   burnout(plannerId: string): Promise<PullimBurnoutResponse>;
   /** 오늘 컨디션(미기록 level null). `GET /planner/me/condition`. */
@@ -454,6 +475,14 @@ export function createPullimPlannerClient(
         config,
         `/planner/planners/${plannerId}/blocks`,
         date ? { query: { date } } : undefined,
+      );
+    },
+
+    blocksRange(plannerId, from, to) {
+      return cookieRequest<PullimBlock[]>(
+        config,
+        `/planner/planners/${plannerId}/blocks`,
+        { query: { from, to } },
       );
     },
 
