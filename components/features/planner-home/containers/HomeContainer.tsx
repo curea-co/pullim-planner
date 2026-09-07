@@ -22,7 +22,6 @@ import { pushQuery, replaceQuery } from '@/lib/planner/query-nav';
 import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
 import { useHomeBlocks } from '../hooks/use-home-blocks';
-import { useKstToday } from '../hooks/use-kst-today';
 import HomePresenter from '../presenters/HomePresenter';
 import { WelcomeModal } from '../components/welcome-modal';
 
@@ -170,10 +169,11 @@ export default function HomeContainer() {
   }, [realActiveId, burnoutTick, view, offset]);
 
   // 오늘 컨디션(저장+표기용, QA 결정 08-04) — 실모드는 서버 복원·저장, bypass 는 로컬 데모(3).
-  // KST 오늘은 `useKstToday` 가 1분 간격으로 재계산해 자정 전환을 감지한다. 날짜가 바뀌면
-  // 파생이 자동으로 '선택 전'이 되고, 날짜 키 effect 가 오늘 값을 재조회한다.
-  // (같은 틱을 `useHomeBlocks` 도 쓴다 — 종전엔 여기만 돌고 블록 쪽은 마운트 1회였다.)
-  const kstToday = useKstToday();
+  // KST 오늘은 `useHomeBlocks` 가 이미 1분 간격으로 재계산해 내보낸다(`useKstToday`). 여기서
+  // 다시 부르면 **타이머가 두 개** 생기고, 자정 부근에 컨디션 날짜와 블록 기준일이 서로 다른
+  // 렌더에 갱신된다 — 하나를 나눠 쓰는 게 아니라 각자 도는 것이다. 그래서 훅 반환값을 쓴다.
+  // 날짜가 바뀌면 파생이 자동으로 '선택 전'이 되고, 날짜 키 effect 가 오늘 값을 재조회한다.
+  const kstToday = real.todayIso;
   const [conditionState, setConditionState] = useState<
     { date: string; level: ConditionLevel } | null
   >(DEV_AUTH_BYPASS ? { date: 'local', level: 3 } : null);
