@@ -109,9 +109,12 @@ export default function NewPlannerContainer() {
       // 폴백(휴리스틱)으로 떨어지는 건 그대로 두되 **왜** 떨어졌는지는 남긴다 — 지금까지는
       // 네트워크 장애·서버 거부가 화면에서 똑같은 노란 배너 하나였다.
       console.error('[planner] 서버 미리보기 실패 — 휴리스틱으로 대체', e);
-      // 400 은 사용자가 손댈 수 있는 거부(서버가 문구를 준다). 미리보기는 폼이 바뀔 때마다
-      // 재요청되므로 고정 id 로 겹쳐 띄운다 — 타이핑 중 토스트가 쌓이지 않게.
-      if (e instanceof ApiError && e.statusCode === 400) {
+      // 400 을 띄우는 조건이 **`routinesLoaded` 다.** 목록을 못 받았을 때는 위에서 일부러
+      // 거르지 않고 보내므로(데이터 손실 방지), 그때 돌아온 400 은 사용자가 고칠 수 있는
+      // 입력 오류가 아니라 **조회 실패의 2차 증상**이다. 그걸 "적용할 수 없는 루틴" 으로
+      // 띄우면 목록이 로드되면 저장될 상황인데도 저장이 막힌 줄 알게 된다(Codex).
+      // 미리보기는 폼이 바뀔 때마다 재요청되므로 고정 id 로 겹쳐 띄운다 — 타이핑 중 쌓이지 않게.
+      if (routinesLoaded && e instanceof ApiError && e.statusCode === 400) {
         toast.error(e.message, { id: 'planner-preview-rejected' });
       }
       return null;

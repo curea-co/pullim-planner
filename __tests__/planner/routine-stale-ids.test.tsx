@@ -12,6 +12,8 @@
 import { Suspense } from 'react';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 
+import { ApiError } from '@/lib/api-client';
+
 const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), prefetch: jest.fn(), back: jest.fn() }),
@@ -50,16 +52,26 @@ jest.mock('@/lib/planner/pullim-client', () => ({
 // 위저드 본체는 관심사가 아니다 — 저장 콜백만 노출한다.
 jest.mock('@/components/features/planner-manage/presenters/EditPlannerPresenter', () => ({
   __esModule: true,
-  default: (props: { form: unknown; onSave: (form: unknown) => void }) => (
-    <button type="button" onClick={() => props.onSave(props.form)}>
-      저장(테스트)
-    </button>
+  default: (props: {
+    form: unknown;
+    onSave: (form: unknown) => void;
+    onServerPreview?: () => Promise<unknown>;
+  }) => (
+    <>
+      <button type="button" onClick={() => props.onSave(props.form)}>
+        저장(테스트)
+      </button>
+      <button type="button" onClick={() => void props.onServerPreview?.()}>
+        미리보기(테스트)
+      </button>
+    </>
   ),
 }));
 
 import EditPlannerContainer from '@/components/features/planner-manage/containers/EditPlannerContainer';
 
 const SAVE = '저장(테스트)';
+const PREVIEW = '미리보기(테스트)';
 
 /** 프리필의 출처 — 살아 있는 r1 과, 루틴 행이 지워진 dead 가 함께 실려 온다. */
 const plannerFixture = {
@@ -91,6 +103,17 @@ function sentRoutineIds(): string[] | undefined {
     | { routineApplications?: { routineId: string }[] }
     | undefined;
   return body?.routineApplications?.map((a) => a.routineId);
+}
+
+async function renderContainer() {
+  await act(async () => {
+    render(
+      <Suspense fallback={null}>
+        <EditPlannerContainer params={Promise.resolve({ id: 'p1' })} />
+      </Suspense>,
+    );
+  });
+  await waitFor(() => expect(screen.getByText(SAVE)).toBeInTheDocument());
 }
 
 async function renderAndSave() {
@@ -131,5 +154,44 @@ describe('수정 저장 — 죽은 루틴 id', () => {
     mockRoutines.mockResolvedValue([]);
     await renderAndSave();
     expect(sentRoutineIds()).toEqual([]);
+  });
+});
+
+/**
+ * 미리보기 400 을 사용자에게 띄울지는 **루틴 목록을 받았는지**에 달려 있다.
+ *
+ * 못 받았을 때는 일부러 거르지 않고 보내므로(위 데이터 손실 방지), 그때의 400 은 사용자가
+ * 고칠 수 있는 입력 오류가 아니라 조회 실패의 2차 증상이다. 그걸 "적용할 수 없는 루틴" 으로
+ * 띄우면 목록만 로드되면 저장될 상황인데도 저장이 막힌 줄 알게 된다.
+ */
+describe('미리보기 400 표면화', () => {
+  const rejected = () =>
+    Promise.reject(
+      new ApiError({
+        code: 'COMMON_BAD_REQUEST',
+        message: '적용할 수 없는 루틴이 포함되어 있습니다.',
+        statusCode: 400,
+      }),
+    );
+
+  it('목록을 받은 뒤의 400 은 알린다 — 진짜 서버 거부다', async () => {
+    mockRoutines.mockResolvedValue([liveRoutine]);
+    mockPreview.mockImplementation(rejected);
+    await renderContainer();
+    fireEvent.click(screen.getByText(PREVIEW));
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalled());
+    expect(mockToast.error).toHaveBeenCalledWith(
+      '적용할 수 없는 루틴이 포함되어 있습니다.',
+      expect.objectContaining({ id: expect.any(String) }),
+    );
+  });
+
+  it('목록을 못 받았을 때의 400 은 조용히 폴백한다 — 조회 실패의 2차 증상이다', async () => {
+    mockRoutines.mockRejectedValue(new Error('network'));
+    mockPreview.mockImplementation(rejected);
+    await renderContainer();
+    fireEvent.click(screen.getByText(PREVIEW));
+    await waitFor(() => expect(mockPreview).toHaveBeenCalled());
+    expect(mockToast.error).not.toHaveBeenCalled();
   });
 });
