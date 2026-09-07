@@ -29,6 +29,8 @@ interface HomePresenterProps {
   loadError?: boolean;
   /** 현재 기간의 블록 조회 실패 — 달력 본문만 못 그린다(히어로·헤더는 유효). */
   blocksError?: boolean;
+  /** 히어로의 오늘·이번 주 요약을 만들 데이터가 없다 — 숨기는 대신 못 불러왔다고 말한다. */
+  heroSummaryError?: boolean;
   /** 실패 화면의 [다시 시도]. */
   onRetry?: () => void;
   /** 번아웃 스냅샷 — Container가 해석(실모드: 이번 주 완료 기록 계산 / bypass: mock). null=데이터 없음 */
@@ -71,6 +73,7 @@ export default function HomePresenter({
   hasActivePlanner = true,
   loadError = false,
   blocksError = false,
+  heroSummaryError = false,
   onRetry,
   burnout,
   condition,
@@ -174,7 +177,7 @@ export default function HomePresenter({
 
   return (
     <>
-      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} loadError={loadError} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
+      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} loadError={loadError} summaryError={heroSummaryError} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
       <CalendarShell
         view={view}
         onChangeView={onChangeView}

@@ -291,6 +291,8 @@ export default function HomeContainer() {
   let burnout: BurnoutSnapshot | null;
   // QA #7 — 활성 계획표 유무. 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요"를 보여준다.
   let hasActivePlanner: boolean;
+  // 히어로 요약을 만들 데이터가 없다 — 수치를 0 으로 접어 숨기면 "계획 없음"으로 위장된다.
+  let heroSummaryError = false;
 
   if (DEV_AUTH_BYPASS) {
     const active = getActivePlanner();
@@ -353,6 +355,8 @@ export default function HomeContainer() {
     // 그건 빈 값보다 나쁘다 — 틀린 값을 자신 있게 보여준다.
     const heroCovered =
       !heroBlocksError || (!blocksError && heroWeekDates.every((d) => d in blocksByDate));
+    // 활성 시간표가 없으면 요약이 없는 게 정상이다 — 그때까지 실패로 말하면 안 된다.
+    heroSummaryError = Boolean(active) && !heroCovered;
     heroDaySummary = heroCovered
       ? plannerProgress(heroMerged[todayIso] ?? [])
       : { done: 0, total: 0 };
@@ -390,6 +394,7 @@ export default function HomeContainer() {
         // 실패는 "계획 없음"이 아니다 — bypass(mock)에는 실패면이 없으므로 false 로 고정한다.
         loadError={!DEV_AUTH_BYPASS && real.status === 'error'}
         blocksError={!DEV_AUTH_BYPASS && real.blocksError}
+        heroSummaryError={!DEV_AUTH_BYPASS && heroSummaryError}
         onRetry={real.retry}
         burnout={burnout}
         condition={condition}

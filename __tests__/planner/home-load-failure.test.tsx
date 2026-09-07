@@ -60,6 +60,29 @@ describe('홈 조회 실패 표시', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  it('실패 전에 읽어 둔 시간표가 남아 있어도 실패가 우선이다 — 옛 D-day 를 현재값처럼 보이지 않게', () => {
+    // 재시도 중 목록 조회가 다시 실패한 상황: active 는 이전 값이 남아 hasActivePlanner=true 다.
+    render(<HomePresenter {...base} examName="9월 모평" dday={12} hasActivePlanner loadError blocksError />);
+
+    expect(screen.queryByText('D-12')).toBeNull();
+    expect(screen.getByText('학습 현황을 불러오지 못했어요')).toBeInTheDocument();
+  });
+
+  it('히어로 요약만 못 만들면 숨기지 않고 못 불러왔다고 말한다', () => {
+    // 이 PR 이 닫으려는 위장 그 자체 — 0 으로 접으면 "계획 없음"과 구분되지 않는다.
+    render(<HomePresenter {...base} examName="9월 모평" dday={12} heroSummaryError />);
+
+    expect(screen.getByText('D-12')).toBeInTheDocument();
+    expect(screen.getByText('오늘·이번 주 요약을 불러오지 못했어요.')).toBeInTheDocument();
+  });
+
+  it('목록 자체가 실패하면 요약 실패 문구는 겹쳐 쓰지 않는다', () => {
+    render(<HomePresenter {...base} loadError heroSummaryError />);
+
+    expect(screen.queryByText('오늘·이번 주 요약을 불러오지 못했어요.')).toBeNull();
+    expect(screen.getByText('학습 현황을 불러오지 못했어요')).toBeInTheDocument();
+  });
+
   it('실패가 없으면 실패 카드도 없다', () => {
     render(<HomePresenter {...base} examName="9월 모평" dday={12} />);
 
