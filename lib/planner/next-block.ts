@@ -52,13 +52,22 @@ export function pickNextBlock(
 }
 
 /**
- * 지금(Asia/Seoul, 고정 UTC+9 · DST 없음)의 `HH:MM`.
+ * 지금(Asia/Seoul, 고정 UTC+9 · DST 없음)의 날짜와 시각.
  *
- * 블록의 `start`/`end` 가 `HH:MM` 문자열이라 같은 형식으로 맞춘다 — 사전순 비교가 곧 시각
- * 비교가 된다(둘 다 24시간 zero-padded).
+ * **둘을 한 번에 낸다.** 날짜와 시각을 따로 부르면 그 사이에 자정을 넘길 수 있고, 그러면
+ * 어제 날짜에 오늘 시각이 붙는다 — 하루에 한 번 나는, 재현하기 어려운 어긋남이다.
+ *
+ * 시각은 블록의 `start`/`end` 와 같은 `HH:MM` 형식이라 사전순 비교가 곧 시각 비교가 된다
+ * (둘 다 24시간 zero-padded).
  */
+export function nowKst(at: number = Date.now()): { date: string; hhmm: string } {
+  const iso = new Date(at + 9 * 60 * 60 * 1000).toISOString();
+  return { date: iso.slice(0, 10), hhmm: iso.slice(11, 16) };
+}
+
+/** 지금(KST)의 `HH:MM` — `nowKst().hhmm` 의 축약. */
 export function nowHhMmKst(at: number = Date.now()): string {
-  return new Date(at + 9 * 60 * 60 * 1000).toISOString().slice(11, 16);
+  return nowKst(at).hhmm;
 }
 
 /**

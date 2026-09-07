@@ -6,7 +6,7 @@
  * 게다가 `'doing'` 은 pullim-api 가 세우지 않는 상태라 첫 `find` 는 실데이터에서 항상 빈손이고,
  * 실질적으로 「그날 첫 미완료 블록」 하나로 굳어 있었다.
  */
-import { msToNextMinute, nowHhMmKst, pickNextBlock } from '@/lib/planner/next-block';
+import { msToNextMinute, nowHhMmKst, nowKst, pickNextBlock } from '@/lib/planner/next-block';
 import type { TimeBlock } from '@/lib/mock';
 
 const b = (id: string, start: string, end: string, status: TimeBlock['status'] = 'todo') =>
@@ -114,5 +114,35 @@ describe('분 경계 정렬', () => {
       expect(wait).toBeLessThanOrEqual(60_000);
       expect((ms + wait) % 60_000).toBe(0); // 반드시 경계에 떨어진다
     }
+  });
+});
+
+/**
+ * 자정 경계 — 날짜와 시각은 **한 번에** 읽어야 한다.
+ *
+ * 따로 부르면 그 사이에 자정을 넘길 수 있고, 그러면 어제 날짜에 오늘 시각이 붙는다.
+ * 하루에 한 번 나는, 재현하기 어려운 어긋남이다. 그리고 자정을 넘긴 화면의 블록은 어제
+ * 것이므로 day-view 는 그때 카드를 감춘다(`dateRolled`).
+ */
+describe('nowKst — 날짜와 시각을 한 덩이로', () => {
+  it('KST 자정 직전·직후에 날짜가 함께 넘어간다', () => {
+    // 2026-09-07T14:59:00Z = KST 23:59 (같은 날)
+    expect(nowKst(Date.parse('2026-09-07T14:59:00Z'))).toEqual({ date: '2026-09-07', hhmm: '23:59' });
+    // 2026-09-07T15:00:00Z = KST 익일 00:00 — 날짜도 함께 넘어간다
+    expect(nowKst(Date.parse('2026-09-07T15:00:00Z'))).toEqual({ date: '2026-09-08', hhmm: '00:00' });
+  });
+
+  it('nowHhMmKst 는 nowKst 의 시각과 항상 같다 — 두 경로가 갈리지 않게', () => {
+    for (const t of ['2026-09-07T14:59:59Z', '2026-09-07T15:00:00Z', '2026-01-01T00:00:00Z']) {
+      expect(nowHhMmKst(Date.parse(t))).toBe(nowKst(Date.parse(t)).hhmm);
+    }
+  });
+
+  it('자정을 넘기면 「다음 블록」 후보가 전날 첫 블록으로 되돌아간다 — 그래서 카드를 감춘다', () => {
+    const day = [b('아침', '09:00', '09:50'), b('저녁', '21:00', '21:50')];
+    // 23:50 — 하루가 끝나 후보 없음
+    expect(pickNextBlock(day, nowKst(Date.parse('2026-09-07T14:50:00Z')).hhmm)).toBeUndefined();
+    // 00:10 — 시각만 보면 전날 09:00 블록이 다시 「다음」이 된다. 데이터는 어제 것인데도.
+    expect(pickNextBlock(day, nowKst(Date.parse('2026-09-07T15:10:00Z')).hhmm)?.id).toBe('아침');
   });
 });
