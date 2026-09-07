@@ -1,10 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import { monthView, type MonthDay } from '@/lib/mock';
 import { cn } from '@/lib/utils';
+import { pushQuery } from '@/lib/planner/query-nav';
 
 const weekHeader = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -26,7 +26,6 @@ export function MonthHeatmap({
   /** 실데이터 월 라벨("7월"). 미주입=데모 라벨. */
   monthLabel?: string;
 } = {}) {
-  const router = useRouter();
   const isReal = daysProp !== undefined;
   const month = daysProp ?? monthView;
   // 그리드 시작 — 첫 날의 weekday로 빈 셀 padding
@@ -39,7 +38,7 @@ export function MonthHeatmap({
     if (isReal) {
       const o = d.dayOffset ?? 0;
       const q = o !== 0 ? `?view=day&d=${o}` : '?view=day';
-      router.push(`/planner${q}`);
+      pushQuery(`/planner${q}`);
       return;
     }
     // mock 데모 — 데이터 단위가 오늘 1일치만 있어, 미래는 예정 toast·나머지는 오늘 day view.
@@ -49,7 +48,7 @@ export function MonthHeatmap({
       });
       return;
     }
-    router.push('/planner?view=day');
+    pushQuery('/planner?view=day');
   }
 
   return (

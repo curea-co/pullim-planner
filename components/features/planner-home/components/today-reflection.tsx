@@ -53,7 +53,7 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
   }
 
   function handleTomorrow() {
-    router.push('/planner/calendar?view=month');
+    router.push('/planner?view=month');
   }
 
   return (

@@ -18,7 +18,7 @@ export function TodayTimeline() {
   const router = useRouter();
 
   function openDay() {
-    router.push('/planner/calendar?view=day');
+    router.push('/planner?view=day');
   }
 
   return (
