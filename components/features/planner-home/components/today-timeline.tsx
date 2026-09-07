@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import {
   todayBlocks, blockTypeMeta, subjectLabels, getBlockColor, type TimeBlock,
@@ -14,11 +13,25 @@ import { cn } from '@/lib/utils';
  *
  * 칩 클릭 — 일간 캘린더로 이동 (해당 시각으로 스크롤은 향후 작업).
  */
-export function TodayTimeline() {
-  const router = useRouter();
-
+export function TodayTimeline({
+  onNavigate,
+}: {
+  /**
+   * 칩 클릭 이동 — **방법은 컨테이너가 정한다.**
+   *
+   * 같은 pathname 안(쿼리만 변경)에서는 History API 여야 하고(F-01 —
+   * `lib/planner/query-nav` 주석), 다른 경로에서 쓰인다면 진짜 라우트 이동이어야 한다.
+   * 그 판단은 라우트를 아는 컨테이너의 몫이고, feature `components/` 는 라우팅 훅을
+   * 직접 쓰지 않는다(AGENTS.md §5). 자매 위젯(`MonthHeatmap`·`WeekGrid`·`TodayReflection`)과
+   * 같은 계약이다.
+   *
+   * ⚠️ 이 컴포넌트는 **현재 리포 어디서도 렌더되지 않는다.** 그래도 계약을 맞춰 두는 것은,
+   * 처음 쓰는 사람이 위 함정을 그대로 물려받지 않게 하기 위해서다.
+   */
+  onNavigate: (url: string) => void;
+}) {
   function openDay() {
-    router.push('/planner?view=day');
+    onNavigate('/planner?view=day');
   }
 
   return (
