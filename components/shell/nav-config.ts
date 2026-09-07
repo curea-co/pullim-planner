@@ -33,6 +33,14 @@ export type NavSubItem = {
   badge?: number | string;
   description?: string;
   locked?: boolean;
+  /**
+   * 이 항목은 **정확히 그 경로일 때만** 활성이다 — 하위 경로를 자기 것으로 삼지 않는다.
+   *
+   * `/planner`(홈)처럼 **섹션 루트가 아니라 잎**인 항목에 쓴다. 접두사로 매치시키면 형제
+   * 섹션이 없는 하위 경로가 전부 홈으로 끌려온다 — 알림(`/planner/notifications`)에서
+   * 사이드바가 「홈」을 현재 페이지로 표시하던 것이 그 결과다 (QA F-09).
+   */
+  exact?: boolean;
 };
 
 export type NavGroup = {
@@ -46,7 +54,9 @@ export type Role = 'student';
 
 /** 풀림 플래너 섹션 — 다중 시간표 IA */
 export const plannerSection: NavSubItem[] = [
-  { href: '/planner',            label: '홈',          icon: Home,     description: '활성 플래너 — 일·주·월 시간표' },
+  // `exact` — 홈은 잎이다. `/planner/notifications` 처럼 전용 항목이 없는 하위 경로를
+  // 홈이 가져가면 「현재 페이지」를 틀리게 말한다 (F-09).
+  { href: '/planner',            label: '홈',          icon: Home,     exact: true, description: '활성 플래너 — 일·주·월 시간표' },
   { href: '/planner/manage',     label: '시간표 관리', icon: Wrench,   description: '내 시간표 N개 — 새로 만들기·수정·삭제' },
   // 루틴은 pullim-api 영속(R3b 전환 완료) — prod 게이트(ROUTINE_ENABLED) off면 잠금 표시가 아니라 항목 자체를 제외(라우트 redirect와 일관)
   ...(ROUTINE_ENABLED
@@ -89,7 +99,9 @@ export const studentBottomTabs = [
   ...(ROUTINE_ENABLED
     ? [{ href: '/planner/routine', label: '루틴', icon: Repeat2, matchPrefix: ['/planner/routine'] } as const]
     : []),
-  { href: '/planner',        label: '홈',      icon: Home,     matchPrefix: ['/', '/planner'] },
+  // 하단탭 홈도 같다 — `matchPrefix` 대신 정확 일치 목록을 쓴다. `'/'` 를 접두사로 두면
+  // 앱의 **모든** 경로가 홈 탭에 걸린다(가장 짧아 지긴 하지만, 전용 탭이 없는 경로에서 이긴다).
+  { href: '/planner',        label: '홈',      icon: Home,     matchExact: ['/', '/planner'] },
   ...(REPORTS_ENABLED
     ? [{ href: '/planner/reports', label: '리포트', icon: FileText, matchPrefix: ['/planner/reports'] } as const]
     : []),

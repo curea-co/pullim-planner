@@ -5,7 +5,17 @@ import { Popover } from '@base-ui/react/popover';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+/**
+ * **월요일 시작** — 이 앱의 다른 달력이 전부 그렇다(`lib/planner/home-data` 의
+ * `WEEKDAY_LABELS`, `month-heatmap` 의 `weekHeader`). 여기만 일요일 시작이면 같은 화면에서
+ * 두 달력의 열이 하루씩 어긋나 보인다 (QA F-10).
+ */
+const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'] as const;
+
+/** `Date.getDay()`(일=0)를 월요일 시작 인덱스(월=0)로 옮긴다. */
+function mondayFirstIndex(jsDay: number): number {
+  return (jsDay + 6) % 7;
+}
 
 type Props = {
   /** offset 0 기준일 (planBaseDate, "YYYY-MM-DD") */
@@ -46,7 +56,8 @@ export function DateJumpPopover({ baseISO, currentOffset, onPick, children }: Pr
   }
 
   const { y, m } = viewYM;
-  const firstDow = new Date(y, m, 1).getDay();
+  // 첫 날 앞의 빈 칸 수 — 월요일 시작 기준이라 `getDay()` 를 그대로 쓰면 하루씩 밀린다.
+  const firstDow = mondayFirstIndex(new Date(y, m, 1).getDay());
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const cells: (number | null)[] = [
     ...Array<null>(firstDow).fill(null),
