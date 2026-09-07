@@ -88,6 +88,7 @@ export const pullimPlannerClient: PullimPlannerClient &
   PullimRoutineClient = {
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
+  blocksRange: on401(rawPullimPlannerClient.blocksRange),
   burnout: on401(rawPullimPlannerClient.burnout),
   condition: on401(rawPullimPlannerClient.condition),
   saveCondition: on401(rawPullimPlannerClient.saveCondition),
