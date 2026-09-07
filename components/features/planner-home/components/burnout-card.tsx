@@ -4,10 +4,20 @@ import { Heart, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import type { BurnoutFactor, BurnoutSnapshot } from '@/lib/mock';
 import { cn } from '@/lib/utils';
 
+/**
+ * 추세 라벨 — **방향만 말한다.**
+ *
+ * 이 카드에는 축이 둘이다: 점수(**수준** — 안전·주의·위험)와 trend(**방향**). 종전에는 두 축이
+ * 낱말을 나눠 써서 한 화면에 「안전도 42 · 위험」과 「안정」이 나란히 떴다(QA F-07). 「주의」는
+ * 아예 양쪽에 있어 점수 50~69 를 뜻하기도, 「떨어지는 중」을 뜻하기도 했다.
+ *
+ * 방향 축의 낱말에서 수준을 읽히는 것(안정·주의)을 걷어내 겹침을 없앤다. 색은 그대로 둔다 —
+ * 색은 「지금 좋냐」가 아니라 「어느 쪽으로 가고 있냐」의 신호다.
+ */
 const trendIcon = {
   rising:  { Icon: TrendingUp,   color: 'text-pullim-success', label: '회복 중' },
-  stable:  { Icon: Minus,        color: 'text-pullim-slate-500', label: '안정' },
-  falling: { Icon: TrendingDown, color: 'text-pullim-warn', label: '주의' },
+  stable:  { Icon: Minus,        color: 'text-pullim-slate-500', label: '유지 중' },
+  falling: { Icon: TrendingDown, color: 'text-pullim-warn', label: '나빠지는 중' },
 } as const;
 
 const factorStatusColor = {
@@ -87,8 +97,10 @@ export function BurnoutCard({ burnout }: { burnout: BurnoutSnapshot | null }) {
           <div className="text-pullim-slate-900 mt-0.5 text-base font-bold">
             {tone === 'good' ? '컨디션 좋아요' : tone === 'warn' ? '컨디션 살펴볼게요' : '오늘은 쉬어가요'}
           </div>
+          {/* 어느 축의 말인지 보이게 — 아이콘만으로는 「수준」으로 읽힐 수 있다 */}
           <div className={cn('mt-1 inline-flex items-center gap-1 text-xs font-semibold', color)}>
-            <Icon className="h-3 w-3" />
+            <Icon className="h-3 w-3" aria-hidden />
+            <span className="text-pullim-slate-500 font-normal">최근 추세</span>
             {label}
           </div>
         </div>
