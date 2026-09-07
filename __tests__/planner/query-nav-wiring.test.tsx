@@ -41,15 +41,19 @@ jest.mock('@/lib/planner/query-nav', () => ({
   replaceQuery: (...a: unknown[]) => mockReplaceQuery(...a),
 }));
 
-// HomeContainer 가 무는 실 API 클라이언트 — 배선만 보므로 전부 빈 응답으로 세운다.
+/**
+ * HomeContainer 가 무는 실 API 클라이언트 — 배선만 보므로 **비어 있지만 계약에 맞는** 응답을
+ * 준다. `null` 로 뭉개면 컨테이너가 `res.level`·`res.available` 을 읽다 던지고, 그 예외를
+ * `.catch(() => {})` 가 삼켜서 **테스트는 통과하는데 실제로는 실패 경로만 타게 된다**(Codex #247).
+ */
 jest.mock('@/lib/planner/pullim-client', () => ({
   pullimPlannerClient: {
     list: () => Promise.resolve([]),
     blocksRange: () => Promise.resolve([]),
-    burnout: () => Promise.resolve(null),
-    condition: () => Promise.resolve(null),
-    saveCondition: () => Promise.resolve(null),
-    completeBlock: () => Promise.resolve(null),
+    burnout: () => Promise.resolve({ available: false }),
+    condition: () => Promise.resolve({ date: '2026-09-07', level: null }),
+    saveCondition: () => Promise.resolve({ date: '2026-09-07', level: 3 }),
+    completeBlock: () => Promise.resolve(undefined),
   },
   pullimToPlanner: (p: unknown) => p,
 }));
