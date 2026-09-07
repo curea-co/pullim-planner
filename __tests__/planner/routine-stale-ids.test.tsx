@@ -155,6 +155,30 @@ describe('수정 저장 — 죽은 루틴 id', () => {
     await renderAndSave();
     expect(sentRoutineIds()).toEqual([]);
   });
+
+  it('조회가 아직 안 끝났으면 기다린 뒤 거른다 — 느린 네트워크의 첫 저장', async () => {
+    // 응답을 손으로 푼다 — "로딩 중"과 "실패"가 갈리는 지점이다.
+    let resolveRoutines: (v: unknown[]) => void = () => {};
+    mockRoutines.mockReturnValue(new Promise((r) => { resolveRoutines = r; }));
+
+    await act(async () => {
+      render(
+        <Suspense fallback={null}>
+          <EditPlannerContainer params={Promise.resolve({ id: 'p1' })} />
+        </Suspense>,
+      );
+    });
+    await waitFor(() => expect(screen.getByText(SAVE)).toBeInTheDocument());
+
+    // 목록이 오기 **전에** 저장한다
+    fireEvent.click(screen.getByText(SAVE));
+    expect(mockUpdate).not.toHaveBeenCalled();
+
+    await act(async () => { resolveRoutines([liveRoutine]); });
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
+    // 기다렸으므로 죽은 id 가 걸러져 있다 — 기다리지 않으면 ['r1','dead'] 가 나간다
+    expect(sentRoutineIds()).toEqual(['r1']);
+  });
 });
 
 /**
