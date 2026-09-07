@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Clock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  getBlocksForDayOffset, currentPersona, getDday, nextActiveBlock,
+  getBlocksForDayOffset, currentPersona, getDday,
   blockTypeMeta,
   hasQAccess, getBlockColor,
   type BurnoutSnapshot, type ConditionLevel, type BlockType, type TimeBlock,
@@ -16,6 +16,7 @@ import { ConditionBurnoutPanel } from '@/components/features/planner-home/compon
 import { BlockCard } from '@/components/features/planner-home/components/block-card';
 import { BlockCompleteDialog } from '@/components/features/planner-home/components/block-complete-dialog';
 import { NextBlockHero } from '@/components/features/planner-home/components/next-block-hero';
+import { msToNextMinute, nowKst, pickNextBlock } from '@/lib/planner/next-block';
 import { PeriodEmptyState } from '@/components/features/planner-home/components/period-empty-state';
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 import { REFLECTION_ENABLED } from '@/lib/flags';
@@ -56,7 +57,52 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
   const dday = ddayProp ?? getDday(currentPersona);
   const ddayLabel = dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY' : `D+${Math.abs(dday)}`;
   const blocks = blocksProp ?? getBlocksForDayOffset(dayOffset);
-  const next = nextActiveBlock(blocks);
+  // 「다음 블록」은 시계를 봐야 한다 — 안 보면 밤 10시에도 아침 9시 블록이 떠 있다.
+  //
+  // ⚠️ **초기값을 `nowHhMmKst()` 로 두면 안 된다.** `/planner` 는 정적 프리렌더라(build 출력 ○)
+  //    그 값이 **빌드 시각**으로 HTML 에 박히고, 하이드레이션 때 클라이언트 시각과 어긋난다.
+  //    null 로 시작해 「시각 미상」(= 시계를 보지 않는 경로)으로 렌더하고, 마운트 후 채운다.
+  //    1분마다 다시 읽는 이유는 카드가 저절로 다음 블록으로 넘어가야 「다음」이 유지되기 때문.
+  // `openedOn` 은 **이 화면이 열린 날짜**(KST)다. 시각과 한 덩이로 들고 다니는 이유는 둘이
+  // 따로 놀면 안 되기 때문 — ref 로 두면 갱신돼도 렌더가 다시 돌지 않는다.
+  const [clock, setClock] = useState<{ openedOn: string; date: string; hhmm: string } | null>(null);
+  useEffect(() => {
+    // 서버(정적)와 첫 페인트를 '시각 미상'으로 맞춘 뒤 마운트 직후 1회 채우는, 의도된 setState.
+    // 시각은 클라이언트에만 있는 값이라 이 순서가 아니면 하이드레이션이 어긋난다(룰을 끄는 이유).
+    const first = nowKst();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setClock({ openedOn: first.date, ...first });
+    const tick = () => setClock((c) => (c ? { openedOn: c.openedOn, ...nowKst() } : c));
+    // ⚠️ **분 경계에 맞춘다.** 마운트 시각 기준으로 60초씩 돌면 12:59:59 에 연 화면은 다음 갱신이
+    //    13:00:59 다 — 13:00 에 시작한 블록이 있어도 59초 동안 이전 블록을 「다음」이라 부른다.
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const timeout = setTimeout(() => {
+      tick();
+      interval = setInterval(tick, 60_000);
+    }, msToNextMinute());
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
+  }, []);
+
+  // ⚠️ **자정을 넘기면 이 화면의 블록은 어제 것이다.** 시각만 갱신하면 `hhmm` 은 00:00 으로
+  //    돌아가는데 `blocks` 는 마운트 당시 기준일 그대로라, 밤새 열어 둔 탭이 **전날 09:00 블록을
+  //    다시 「다음 블록」으로** 집는다. 데이터를 다시 읽는 것은 이 컴포넌트의 일이 아니므로
+  //    (`useHomeBlocks` 소관 — 별건), 여기서는 **거짓말을 하지 않는 쪽**을 택한다: 카드를 감춘다.
+  const dateRolled = clock !== null && clock.date !== clock.openedOn;
+
+  // 오늘이 아닌 날짜에는 시계를 들이대지 않는다 — 「지금」이 그 날짜 위에 없다.
+  // 지난 날짜에는 「다음」이라는 말 자체가 성립하지 않아 카드를 띄우지 않는다.
+  const nowHhMm = clock?.hhmm ?? null;
+  const next =
+    dayOffset < 0 || dateRolled
+      ? undefined
+      : pickNextBlock(blocks, dayOffset === 0 ? nowHhMm : null);
+  const ongoing =
+    next !== undefined && nowHhMm !== null && dayOffset === 0
+      ? next.start <= nowHhMm && nowHhMm < next.end
+      : false;
   const qAccess = hasQAccess();
   // 실데이터 주입 우선(홈 꾸미기 반영) — 미주입(dev bypass)이면 mock 폴백.
   const { layoutId, paletteId } = customization ?? getActiveCustomization();
@@ -128,6 +174,7 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
             {next && (
               <NextBlockHero
                 next={next}
+                ongoing={ongoing}
                 qAccess={qAccess}
                 onNoAccess={notifyQNoAccess}
               />

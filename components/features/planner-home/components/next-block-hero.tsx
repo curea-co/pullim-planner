@@ -26,6 +26,11 @@ const TYPE_STRIPE: Record<BlockType, string> = {
 
 interface NextBlockHeroProps {
   next: TimeBlock;
+  /**
+   * 지금이 이 블록 구간 안인가(`start ≤ 지금 < end`). 그러면 「다음」이 아니라 **진행 중**이고,
+   * 「{start} 에 시작」도 이미 지난 이야기다 — 남은 시각(끝)을 말해야 맞다.
+   */
+  ongoing?: boolean;
   /** 풀림 Q 진입 가능 여부(Q_LINK_ENABLED 게이트 포함) — 불가 시 CTA가 준비 중 안내 토스트로 */
   qAccess: boolean;
   onNoAccess: () => void;
@@ -35,7 +40,7 @@ interface NextBlockHeroProps {
  * "다음 블록" 히어로 — 홈 day-view 일과 시계 바로 아래.
  * 평면 카드 → 좌측 타입색 4px stripe + 블루 그라데이션 surface + 시작 시각 강조 + 강조 CTA.
  */
-export function NextBlockHero({ next, qAccess, onNoAccess }: NextBlockHeroProps) {
+export function NextBlockHero({ next, ongoing = false, qAccess, onNoAccess }: NextBlockHeroProps) {
   const Icon = blockTypeMeta[next.type].Icon;
 
   const ctaCls =
@@ -58,12 +63,15 @@ export function NextBlockHero({ next, qAccess, onNoAccess }: NextBlockHeroProps)
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-pullim-blue-700 text-xs font-bold tracking-wider uppercase">
-              다음 블록
+              {ongoing ? '진행 중' : '다음 블록'}
             </div>
             <div className="text-pullim-slate-900 truncate text-sm font-bold">{next.title}</div>
             <div className="text-pullim-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1 text-xs">
-              <span className="text-pullim-blue-700 font-mono text-sm font-bold">{next.start}</span>
-              <span>에 시작</span>
+              {/* 진행 중이면 시작 시각은 이미 지난 이야기다 — 남은 쪽(끝)을 말한다 */}
+              <span className="text-pullim-blue-700 font-mono text-sm font-bold">
+                {ongoing ? next.end : next.start}
+              </span>
+              <span>{ongoing ? '에 끝나요' : '에 시작'}</span>
               {next.subject !== 'rest' && (
                 <>
                   <span className="mx-0.5">·</span>
