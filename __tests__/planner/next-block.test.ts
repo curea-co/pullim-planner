@@ -6,7 +6,7 @@
  * 게다가 `'doing'` 은 pullim-api 가 세우지 않는 상태라 첫 `find` 는 실데이터에서 항상 빈손이고,
  * 실질적으로 「그날 첫 미완료 블록」 하나로 굳어 있었다.
  */
-import { nowHhMmKst, pickNextBlock } from '@/lib/planner/next-block';
+import { msToNextMinute, nowHhMmKst, pickNextBlock } from '@/lib/planner/next-block';
 import type { TimeBlock } from '@/lib/mock';
 
 const b = (id: string, start: string, end: string, status: TimeBlock['status'] = 'todo') =>
@@ -78,5 +78,41 @@ describe('nowHhMmKst', () => {
   it('형식이 HH:MM 이라 문자열 비교가 곧 시각 비교다', () => {
     expect(nowHhMmKst(Date.parse('2026-09-07T00:30:00Z')) < '13:00').toBe(true);
     expect(nowHhMmKst(Date.parse('2026-09-07T13:30:00Z')) > '13:00').toBe(true);
+  });
+});
+
+/**
+ * 갱신이 **분 경계**에 맞아야 한다.
+ *
+ * 마운트 시각 기준으로 60초씩 돌면 12:59:59 에 연 화면은 다음 갱신이 13:00:59 다 —
+ * 13:00 에 시작한 블록이 있어도 **59초 동안** 이전 블록을 「다음」이라 부른다.
+ */
+describe('분 경계 정렬', () => {
+  it('첫 갱신이 경계에 정확히 닿는다 — 늦지도 이르지도 않게', () => {
+    // day-view 가 실제로 부르는 함수다(재구현이 아니다).
+    const t1 = Date.parse('2026-09-07T12:59:59.000Z'); // KST 21:59:59
+    expect(msToNextMinute(t1)).toBe(1_000);
+    expect(nowHhMmKst(t1)).toBe('21:59');
+    expect(nowHhMmKst(t1 + msToNextMinute(t1))).toBe('22:00'); // 경계 그 순간
+
+    const t2 = Date.parse('2026-09-07T12:00:00.000Z');
+    expect(msToNextMinute(t2)).toBe(60_000); // 정확히 경계면 다음 경계까지 한 칸
+    expect(nowHhMmKst(t2 + msToNextMinute(t2))).toBe('21:01');
+  });
+
+  it('종전 방식(마운트 기준 60초)이면 경계를 최대 59초 놓친다 — 이 결함', () => {
+    const t = Date.parse('2026-09-07T12:59:59.000Z');
+    expect(nowHhMmKst(t + 60_000)).toBe('22:00'); // 값 자체는 맞지만
+    // 늦는 양이 문제다 — 경계까지 1초인데 60초를 기다린다(59초 동안 옛 블록).
+    expect(60_000 - msToNextMinute(t)).toBe(59_000);
+  });
+
+  it('어느 시각에 열어도 다음 경계까지의 대기는 (0, 60000] 이다', () => {
+    for (const ms of [0, 1, 999, 1_000, 30_000, 59_999]) {
+      const wait = msToNextMinute(Date.parse('2026-09-07T12:00:00.000Z') + ms);
+      expect(wait).toBeGreaterThan(0);
+      expect(wait).toBeLessThanOrEqual(60_000);
+      expect((ms + wait) % 60_000).toBe(0); // 반드시 경계에 떨어진다
+    }
   });
 });

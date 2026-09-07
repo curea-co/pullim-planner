@@ -60,3 +60,16 @@ export function pickNextBlock(
 export function nowHhMmKst(at: number = Date.now()): string {
   return new Date(at + 9 * 60 * 60 * 1000).toISOString().slice(11, 16);
 }
+
+/**
+ * 다음 **분 경계**까지 남은 ms.
+ *
+ * 시계 갱신을 마운트 시각 기준 `setInterval(60_000)` 으로 돌리면 경계와 어긋난다 —
+ * 12:59:59 에 연 화면은 다음 갱신이 13:00:59 라, 13:00 에 시작한 블록이 있어도 **59초 동안**
+ * 이전 블록을 「다음」이라 부른다. 첫 갱신만 이만큼 미룬 뒤 1분 interval 로 넘긴다.
+ *
+ * KST 는 UTC+9(정시 오프셋)이라 분 경계가 UTC 와 같다 — epoch 나머지를 그대로 쓸 수 있다.
+ */
+export function msToNextMinute(at: number = Date.now()): number {
+  return 60_000 - (at % 60_000);
+}

@@ -16,7 +16,7 @@ import { ConditionBurnoutPanel } from '@/components/features/planner-home/compon
 import { BlockCard } from '@/components/features/planner-home/components/block-card';
 import { BlockCompleteDialog } from '@/components/features/planner-home/components/block-complete-dialog';
 import { NextBlockHero } from '@/components/features/planner-home/components/next-block-hero';
-import { nowHhMmKst, pickNextBlock } from '@/lib/planner/next-block';
+import { msToNextMinute, nowHhMmKst, pickNextBlock } from '@/lib/planner/next-block';
 import { PeriodEmptyState } from '@/components/features/planner-home/components/period-empty-state';
 import { TodayReflection } from '@/components/features/planner-home/components/today-reflection';
 import { REFLECTION_ENABLED } from '@/lib/flags';
@@ -69,8 +69,17 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
     // 시각은 클라이언트에만 있는 값이라 이 순서가 아니면 하이드레이션이 어긋난다(룰을 끄는 이유).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setNowHhMm(nowHhMmKst());
-    const id = setInterval(() => setNowHhMm(nowHhMmKst()), 60_000);
-    return () => clearInterval(id);
+    // ⚠️ **분 경계에 맞춘다.** 마운트 시각 기준으로 60초씩 돌면 12:59:59 에 연 화면은 다음 갱신이
+    //    13:00:59 다 — 13:00 에 시작한 블록이 있어도 59초 동안 이전 블록을 「다음」이라 부른다.
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const timeout = setTimeout(() => {
+      setNowHhMm(nowHhMmKst());
+      interval = setInterval(() => setNowHhMm(nowHhMmKst()), 60_000);
+    }, msToNextMinute());
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
   }, []);
   // 오늘이 아닌 날짜에는 시계를 들이대지 않는다 — 「지금」이 그 날짜 위에 없다.
   // 지난 날짜에는 「다음」이라는 말 자체가 성립하지 않아 카드를 띄우지 않는다.
