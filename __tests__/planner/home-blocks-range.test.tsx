@@ -153,6 +153,24 @@ describe('조회 실패가 "계획 없음"으로 위장되지 않는다', () => 
     expect(mockList).toHaveBeenCalledTimes(2);
   });
 
+  it('활성 시간표가 없어지면 실패 플래그도 함께 내려간다 — 진짜 빈 상태를 실패로 그리지 않게', async () => {
+    // 실패 상태를 만든 뒤, 재시도 사이에 시간표가 비활성화·삭제된 상황.
+    mockBlocksRange.mockRejectedValue(new Error('network'));
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+    await waitFor(() => expect(result.current.blocksError).toBe(true));
+
+    mockList.mockResolvedValue([{ id: 'p1', active: false }]);
+    act(() => result.current.retry());
+
+    await waitFor(() => expect(result.current.active).toBeNull());
+    // 블록 effect 는 activeRaw=null 에서 조기 반환한다 — 플래그를 내릴 기회가 없으므로
+    // 파생으로 막는다. 남은 블록도 함께 비워야 남의 시간표 블록이 보이지 않는다.
+    expect(result.current.blocksError).toBe(false);
+    expect(result.current.heroBlocksError).toBe(false);
+    expect(Object.keys(result.current.blocksByDate)).toEqual([]);
+    expect(Object.keys(result.current.heroBlocksByDate)).toEqual([]);
+  });
+
   it('refetch() 는 목록을 다시 읽지 않는다 — 쓰기 1회당 요청이 늘지 않게', async () => {
     const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
     await waitFor(() => expect(result.current.status).toBe('ready'));

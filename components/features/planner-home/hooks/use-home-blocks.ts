@@ -37,6 +37,9 @@ export interface HomeBlocksData {
   retry: () => void;
 }
 
+/** 활성 시간표가 없을 때의 블록 맵 — 렌더마다 새 객체를 만들지 않도록 모듈 상수로 둔다. */
+const NO_BLOCKS: Record<string, TimeBlock[]> = Object.freeze({});
+
 /** 요청한 날짜 전부를 키로 갖는 빈 맵 — 조회 실패 시의 형태. */
 function emptyByDate(dates: readonly string[]): Record<string, TimeBlock[]> {
   return Object.fromEntries(dates.map((d) => [d, [] as TimeBlock[]]));
@@ -107,6 +110,8 @@ export function useHomeBlocks(
   const refetch = useCallback(() => setRefreshTick((t) => t + 1), []);
   const retry = useCallback(() => {
     setStatus('loading');
+    setBlocksError(false);
+    setHeroBlocksError(false);
     setRetryTick((t) => t + 1);
   }, []);
 
@@ -185,13 +190,20 @@ export function useHomeBlocks(
     };
   }, [enabled, activeRaw, todayIso, refreshTick, retryTick]);
 
+  // 활성 시간표가 없으면 조회할 것이 없다 — **이전 플래너에서 남은 것을 그대로 들고 있으면
+  // 안 된다.** 블록 effect 는 `!activeRaw` 에서 조기 반환하므로 스스로 플래그를 못 내린다.
+  // 실패 상태로 시간표가 비활성화·삭제되면 「진짜 빈 상태」가 실패 화면으로 보이고, 남은
+  // `blocksByDate` 는 남의 블록이 된다. 상태를 하나 더 두는 대신 여기서 파생한다 — 저장하지
+  // 않으면 어긋날 수 없다.
+  const hasActive = activeRaw !== null;
+
   return {
     status: enabled ? status : 'ready',
     active: activeRaw ? pullimToPlanner(activeRaw) : null,
-    blocksByDate,
-    blocksError,
-    heroBlocksByDate,
-    heroBlocksError,
+    blocksByDate: hasActive ? blocksByDate : NO_BLOCKS,
+    blocksError: hasActive && blocksError,
+    heroBlocksByDate: hasActive ? heroBlocksByDate : NO_BLOCKS,
+    heroBlocksError: hasActive && heroBlocksError,
     todayIso,
     refetch,
     retry,
