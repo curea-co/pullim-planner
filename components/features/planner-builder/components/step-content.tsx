@@ -1233,6 +1233,9 @@ type ConfirmProps = {
   onActivate?: (form: PlannerForm, summary?: ActivateSummary) => void;
   /** 실 루틴(컨테이너 주입) — 미주입 시 mock. 미리보기의 루틴 반영에 사용. */
   routines?: Routine[];
+  /** 루틴 목록 조회가 **성공**했는가 — 「루틴 0개」와 「못 받음」을 가른다(요약 집계용). */
+  routinesLoaded?: boolean;
+
   /**
    * 서버 dry-run 미리보기 로더(컨테이너 주입 — pullim-api #476). 성공 시 휴리스틱 대신
    * 실제 bake 규칙 결과를 표시한다. 미주입(bypass)·실패 시 휴리스틱 폴백.
@@ -1259,7 +1262,8 @@ export type ActivateSummary = {
 };
 
 export function PStep4Confirm({
-  form, setForm, scope, mode = 'create', onActivate, routines, onServerPreview, onUpdateRoutine,
+  form, setForm, scope, mode = 'create', onActivate, routines, routinesLoaded,
+  onServerPreview, onUpdateRoutine,
 }: ConfirmProps) {
   const router = useRouter();
   const [previewIdx, setPreviewIdx] = useState(0);
@@ -1269,6 +1273,19 @@ export function PStep4Confirm({
   // 오늘(KST)을 deps에 포함 — 자정 넘겨 열어둔 화면에서도 미리보기가 다음 렌더에 새 날짜로 갱신(Codex).
   const todayIso = todayIsoKst();
   const localPreviews = useMemo(() => generatePreview(form, todayIso, routines), [form, todayIso, routines]);
+
+  // 요약에 셀 루틴 수 — 미리보기·충돌 배너와 **같은 집합**을 센다. 삭제된 루틴의 id 가
+  // 프리필로 살아 돌아오는 경로가 있어(수정 화면의 appliedRoutineIds 는 블록에서 역산),
+  // 그냥 세면 미리보기엔 없는 루틴이 요약에만 잡혀 숫자가 어긋난다.
+  //
+  // 기준은 `routines` 의 길이가 아니라 **`routinesLoaded`** 다. 둘을 헷갈리면 루틴을 전부
+  // 지운 사용자(로드 성공 · 빈 배열)에서 어긋난다 — 그 경우 미리보기(`generatePreview`)는
+  // 루틴 블록을 하나도 그리지 않는데 요약만 "N개 선택"으로 남는다(Codex).
+  // 조회 **실패**일 때만 보수적으로 원래 수를 보여 준다 — 모르면서 '없음' 이라고 잘라
+  // 말하지 않기 위해.
+  const selectedRoutineCount = routinesLoaded && routines
+    ? form.routineIds.filter((id) => routines.some((r) => r.id === id)).length
+    : form.routineIds.length;
 
   // 루틴 목록의 '개정 키' — 서버 dry-run 요청 본문은 루틴 **id 만** 싣고 시각은 서버가 DB 에서
   // 읽는다. 그래서 충돌 배너의 '시간 안쪽으로 옮기기'(`PATCH /planner/routines/:id`)로 원본
@@ -1385,7 +1402,7 @@ export function PStep4Confirm({
           <li>· 블록 패턴: {blockPatternMeta[form.blockPattern].label} <span className="text-pullim-slate-500">({blockPatternMeta[form.blockPattern].spec})</span></li>
           {/* 루틴 게이트 off면 요약에서도 숨긴다 — 고를 수 없는 항목을 '없음'으로 보여주지 않는다 */}
           {ROUTINE_ENABLED && (
-            <li>· 선택한 루틴: {form.routineIds.length > 0 ? <strong className="text-white font-mono">{form.routineIds.length}개</strong> : <span className="text-pullim-slate-400">없음</span>}</li>
+            <li>· 선택한 루틴: {selectedRoutineCount > 0 ? <strong className="text-white font-mono">{selectedRoutineCount}개</strong> : <span className="text-pullim-slate-400">없음</span>}</li>
           )}
           {WEAKNESS_ENABLED && (
             <li>· 약점 자동 반영: {form.weaknessAutoReflect ? 'ON (시간표 반영 준비 중)' : 'OFF'}</li>

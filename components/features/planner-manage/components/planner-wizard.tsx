@@ -48,6 +48,8 @@ interface PlannerWizardProps {
   initialExpert?: boolean;
   /** 실 루틴(컨테이너 fetch) — 4단계 조정·미리보기에 사용. 미주입 시 mock. */
   routines?: Routine[];
+  /** 루틴 목록 조회가 **성공**했는가 — 「루틴 0개」와 「못 받음」을 가른다(요약 집계용). */
+  routinesLoaded?: boolean;
   /** 4단계 서버 dry-run 미리보기 로더(컨테이너 주입) — 미주입 시 휴리스틱. */
   onServerPreview?: () => Promise<PreviewDay[] | null>;
   /** 루틴 원본 시각 수정 — 4단계 충돌 배너의 '옮기기' 조치용. */
@@ -61,7 +63,7 @@ export function PlannerWizard({
   onPrev, onNext, onJump,
   mode, onActivate,
   initialExpert,
-  routines, onServerPreview, onUpdateRoutine,
+  routines, routinesLoaded, onServerPreview, onUpdateRoutine,
 }: PlannerWizardProps) {
   const stepInfo = plannerStepConfig[currentStep - 1];
   const StepIcon = stepInfo.icon;
@@ -112,6 +114,7 @@ export function PlannerWizard({
               mode={mode}
               onActivate={onActivate}
               routines={routines}
+              routinesLoaded={routinesLoaded}
               onServerPreview={onServerPreview}
               onUpdateRoutine={onUpdateRoutine}
             />

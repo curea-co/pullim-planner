@@ -23,6 +23,8 @@ interface NewPlannerPresenterProps {
   onJump: (n: number) => void;
   onActivate: (submitted: PlannerForm, summary?: ActivateSummary) => void;
   routines?: Routine[];
+  /** 루틴 목록 조회가 **성공**했는가 — 「루틴 0개」와 「못 받음」을 가른다(요약 집계용). */
+  routinesLoaded?: boolean;
   onServerPreview?: () => Promise<PreviewDay[] | null>;
   onUpdateRoutine?: (routineId: string, patch: { startTime: string; endTime: string }) => Promise<void>;
 }
@@ -33,7 +35,7 @@ export default function NewPlannerPresenter({
   currentStep, canPrev, canNext, blockedReason, maxReachable,
   onPrev, onNext, onJump,
   onActivate,
-  routines, onServerPreview, onUpdateRoutine,
+  routines, routinesLoaded, onServerPreview, onUpdateRoutine,
 }: NewPlannerPresenterProps) {
   return (
     // 위저드는 대시보드가 아니라 한 줄 폼이다 — 셸의 1180px 를 그대로 쓰면 한 단어짜리
@@ -60,6 +62,7 @@ export default function NewPlannerPresenter({
         mode="create"
         onActivate={onActivate}
         routines={routines}
+        routinesLoaded={routinesLoaded}
         onServerPreview={onServerPreview}
         onUpdateRoutine={onUpdateRoutine}
       />
