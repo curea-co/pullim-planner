@@ -128,8 +128,32 @@ function heatColor(count: number, isFuture: boolean): string {
 
 function DayCell({ day, onSelect }: { day: MonthDay; onSelect: () => void }) {
   const bg = heatColor(day.blockCount, !!day.isFuture);
-  // 흰 텍스트는 heat-4 이상에서만 안전 (heat-3 #5A8BFF는 흰글자 대비 3.9:1로 부족)
+  // 흰 텍스트는 heat-4 이상에서만 안전 (heat-3 #5A8BFF는 흰글자 대비 3.2:1로 부족)
   const isDarkBg = day.blockCount >= 8;
+  /**
+   * **잉크는 「미래냐」가 아니라 「무엇 위에 얹히냐」가 정한다.**
+   *
+   * 종전에는 「미래 = 옅게(`slate-500`)」였는데, 미래여도 블록이 있으면 과거와 같은 강도로
+   * 칠해진다(`heatColor` 는 미래를 따로 낮추지 않는다). 그 위의 `slate-500` 은 heat-3 에서
+   * **1.60:1** — AA 4.5:1 의 3분의 1이다. 「오늘」 강조(`blue-700`)와 블록 수(`slate-700`)도
+   * 같은 자리에서 각각 **2.15:1 · 3.26:1** 로 무너져 있었다.
+   *
+   * 라이트 실측(canvas 로 칠해 sRGB 픽셀을 읽은 값):
+   *
+   * | 잉크 \ 바탕 | heat-0 | heat-1 | heat-2 | heat-3 | heat-4 | heat-5 | 안 칠함(흰 카드) |
+   * |---|---|---|---|---|---|---|---|
+   * | `slate-900` | 15.91 | 13.94 | 10.13 | **5.54** | 2.82 | 1.13 | 17.69 |
+   * | `white`     |  1.11 |  1.27 |  1.75 | 3.20 | **6.27** | **15.64** | 1.00 |
+   * | `blue-700`  | **6.19** | **5.42** | 3.94 | 2.15 | 1.10 | 2.27 | **6.88** |
+   * | `slate-500` |  4.61 |  4.04 |  2.93 | 1.60 | 1.22 | 3.05 | **5.12** |
+   *
+   * 그래서 규칙은 바탕 기준이다 — 옅은 잉크는 **칠하지 않은 셀**에만, 「오늘」 파랑은
+   * **heat-0/1 이하**에만. 미래의 「아직 안 왔다」는 칠하지 않음 + 점선 테두리가 이미
+   * 말하고 있으니 잉크로 두 번 말할 이유도 없다.
+   */
+  const unpainted = !!day.isFuture && day.blockCount === 0;
+  /** 「오늘」 파랑이 4.5:1 을 넘는 바탕 — heat-0(0개)·heat-1(1~3개)과 칠하지 않은 셀. */
+  const accentSafe = unpainted || day.blockCount <= 3;
   const completed = day.completionPct === 100;
   const milestoneLabel = day.examMilestone?.label;
   const tooltip = milestoneLabel
@@ -158,8 +182,9 @@ function DayCell({ day, onSelect }: { day: MonthDay; onSelect: () => void }) {
         <span
           className={cn(
             'font-mono text-xs font-bold',
-            isDarkBg ? 'text-white' : day.isFuture ? 'text-pullim-slate-500' : 'text-pullim-slate-900',
-            day.isToday && !isDarkBg && 'text-pullim-blue-700',
+            isDarkBg ? 'text-white' : unpainted ? 'text-pullim-slate-500' : 'text-pullim-slate-900',
+            // 오늘은 링(`ring-2`)이 이미 표시한다 — 파랑이 안 되는 바탕에서는 잉크를 포기한다.
+            day.isToday && accentSafe && 'text-pullim-blue-700',
           )}
         >
           {day.date}
@@ -168,7 +193,8 @@ function DayCell({ day, onSelect }: { day: MonthDay; onSelect: () => void }) {
           <span
             className={cn(
               'text-[length:var(--text-2xs)] font-mono mt-0.5 font-semibold',
-              isDarkBg ? 'text-white/95' : 'text-pullim-slate-700',
+              // 블록 수도 같은 바탕 위다 — slate-700 은 heat-3 에서 3.26:1 이라 못 쓴다.
+              isDarkBg ? 'text-white/95' : 'text-pullim-slate-900',
             )}
           >
             {day.blockCount}개
