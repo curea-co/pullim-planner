@@ -164,11 +164,37 @@ describe('조회 실패가 "계획 없음"으로 위장되지 않는다', () => 
     act(() => result.current.retry());
 
     expect(result.current.blocksError).toBe(true);   // 실패 화면이 남아 있다
-    await waitFor(() => expect(result.current.retrying).toBe(false)); // 목록은 먼저 끝난다
-    expect(result.current.blocksError).toBe(true);   // 블록 응답 전이므로 여전히 실패
-
     await act(async () => { release([]); });
     await waitFor(() => expect(result.current.blocksError).toBe(false)); // 성공 콜백에서만 내린다
+  });
+
+  it('retrying 은 기간 조회가 끝날 때까지 유지된다 — 목록만 보면 버튼이 일찍 살아나 재조회가 겹친다', async () => {
+    mockBlocksRange.mockRejectedValue(new Error('network'));
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+    await waitFor(() => expect(result.current.blocksError).toBe(true));
+    await waitFor(() => expect(result.current.retrying).toBe(false));
+
+    // 목록은 즉시 성공, 기간 응답만 붙잡아 둔다 — 종전이면 여기서 retrying 이 false 로 떨어졌다.
+    let release: (v: unknown[]) => void = () => {};
+    mockBlocksRange.mockReturnValue(new Promise((res) => { release = res; }));
+    act(() => result.current.retry());
+
+    await waitFor(() => expect(result.current.status).toBe('ready')); // 목록은 먼저 끝난다
+    expect(result.current.retrying).toBe(true);                       // 그래도 아직 도는 중
+
+    await act(async () => { release([]); });
+    await waitFor(() => expect(result.current.retrying).toBe(false));
+  });
+
+  it('활성 시간표가 없으면 retrying 이 매달리지 않는다 — 기간 effect 가 아예 안 돈다', async () => {
+    mockList.mockResolvedValue([{ id: 'p1', active: false }]);
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.retrying).toBe(false);
+
+    act(() => result.current.retry());
+    await waitFor(() => expect(result.current.retrying).toBe(false));
   });
 
   it('활성 시간표가 없어지면 실패 플래그도 함께 내려간다 — 진짜 빈 상태를 실패로 그리지 않게', async () => {
@@ -231,5 +257,36 @@ describe('응답 date 가 계약에서 어긋나도 조용히 사라지지 않�
     await waitFor(() => expect(spy).toHaveBeenCalled());
     const msg = spy.mock.calls.map((c) => String(c[0])).join('\n');
     expect(msg).toContain('1/1건 버림');
+  });
+
+  it('전부 탈락하면 200 이어도 실패다 — 빈 달력은 「계획 없음」과 구분되지 않는다', async () => {
+    // BE 가 date 형식을 다시 깨뜨린 상황. HTTP 는 성공했지만 화면에 남는 건 빈 달력이다.
+    mockBlocksRange.mockResolvedValue([block('b1', '1999-01-01'), block('b2', '1999-01-02')]);
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+
+    await waitFor(() => expect(result.current.blocksError).toBe(true));
+    expect(result.current.heroBlocksError).toBe(true);
+  });
+
+  it('일부만 탈락하면 실패로 올리지 않는다 — 남은 데이터는 정상이고 건수는 콘솔에 남는다', async () => {
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+    await waitFor(() => expect(mockBlocksRange).toHaveBeenCalled());
+    const [, from] = mockBlocksRange.mock.calls[0] as [string, string, string];
+
+    mockBlocksRange.mockResolvedValue([block('ok', from), block('밖', '1999-01-01')]);
+    const { result: r2 } = renderHook(() => useHomeBlocks(true, 'week', 0));
+
+    await waitFor(() => expect(r2.current.blocksByDate[from]?.length).toBe(1));
+    expect(r2.current.blocksError).toBe(false);
+    expect(spy.mock.calls.map((c) => String(c[0])).join('\n')).toContain('1/2건 버림');
+    expect(result.current).toBeDefined();
+  });
+
+  it('빈 응답은 실패가 아니다 — 진짜로 계획이 없는 기간', async () => {
+    mockBlocksRange.mockResolvedValue([]);
+    const { result } = renderHook(() => useHomeBlocks(true, 'week', 0));
+
+    await waitFor(() => expect(Object.keys(result.current.blocksByDate).length).toBe(7));
+    expect(result.current.blocksError).toBe(false);
   });
 });

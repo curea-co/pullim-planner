@@ -36,6 +36,9 @@ export interface HomeBlocksData {
   /**
    * 재조회가 진행 중인가 — 실패 화면이 "누르긴 눌렸다"를 보여주기 위한 것이다. 실패 플래그를
    * 미리 내려서 화면을 치우는 대신, 실패 화면을 **유지한 채** 진행 중임을 알린다.
+   *
+   * 목록만이 아니라 **기간·히어로 조회가 모두 끝날 때까지** true 다. 목록이 먼저 끝났다고
+   * 버튼을 되살리면, 정작 다시 그릴 데이터가 오는 중인데 사용자가 또 눌러 재조회가 겹친다.
    */
   retrying: boolean;
   /** 사용자 재시도 — 목록까지 포함해 전부 다시 읽는다(실패 화면의 [다시 시도]). */
@@ -62,17 +65,28 @@ function emptyByDate(dates: readonly string[]): Record<string, TimeBlock[]> {
  * 어긋나도 — 예컨대 BE 가 `TO_CHAR` 를 잃고 ISO datetime 을 돌려주면 — **전부** 어느 키에도
  * 안 맞아 조용히 사라진다. 화면은 "계획 없음"과 똑같이 보인다(pullim-api #629 가 정확히 그 회귀였다).
  * 그래서 앞 10 자로 정규화하고, 그래도 창 밖인 것은 **세어서 콘솔에 남긴다** — 소리 없이 버리지 않는다.
+ *
+ * 그리고 **하나도 못 꽂았는데 응답이 비어 있지 않았다면 그건 실패다.** HTTP 는 200 이었지만
+ * 화면에 남는 것은 빈 달력이고, 그 화면은 「계획 없음」과 구분되지 않는다 — 이 훅이 막으려는
+ * 위장 그대로다. 그래서 `total > 0 && placed === 0` 을 호출부에 돌려주고 `blocksError` 를 세운다.
+ * 일부만 탈락한 경우는 실패로 올리지 않는다: 남은 데이터는 정상이고, 창 밖 블록 한 건 때문에
+ * 멀쩡한 달력을 실패 화면으로 덮는 쪽이 더 나쁘다(건수는 콘솔에 남는다).
  */
 function groupByDate(
   blocks: readonly PullimBlock[],
   dates: readonly string[],
-): Record<string, TimeBlock[]> {
+): { byDate: Record<string, TimeBlock[]>; allDropped: boolean } {
   const byDate = emptyByDate(dates);
   const dropped: string[] = [];
+  let placed = 0;
   for (const raw of blocks) {
     const key = String(raw.date ?? '').slice(0, 10);
-    if (byDate[key]) byDate[key].push(pullimToTimeBlock(raw));
-    else dropped.push(String(raw.date));
+    if (byDate[key]) {
+      byDate[key].push(pullimToTimeBlock(raw));
+      placed += 1;
+    } else {
+      dropped.push(String(raw.date));
+    }
   }
   if (dropped.length > 0) {
     console.error(
@@ -81,7 +95,7 @@ function groupByDate(
       dropped.slice(0, 3),
     );
   }
-  return byDate;
+  return { byDate, allDropped: blocks.length > 0 && placed === 0 };
 }
 
 /**
@@ -112,6 +126,11 @@ export function useHomeBlocks(
   // 사용자 재시도 — 목록 effect까지 다시 돈다. refreshTick 과 분리한 이유는, 완료 기록 저장마다
   // 목록을 다시 읽을 이유가 없기 때문이다(쓰기 1회당 불필요한 요청 1개가 는다).
   const [retryTick, setRetryTick] = useState(0);
+  // 각 기간 effect 가 **어느 retryTick 에서** 응답을 끝냈는지. 지금 tick 과 다르면 아직 도는 중이다.
+  // 불리언 두 개 대신 tick 을 적는 이유: 요청 시작 시점에 setState 를 하지 않아도 되고
+  // (effect 본문 setState 를 피한다), 재시도가 겹쳐도 마지막 tick 기준으로 자연히 정리된다.
+  const [blocksSettledAt, setBlocksSettledAt] = useState(0);
+  const [heroSettledAt, setHeroSettledAt] = useState(0);
   const refetch = useCallback(() => setRefreshTick((t) => t + 1), []);
   // ⚠️ **여기서 실패 플래그를 미리 내리지 않는다.** 내리면 클릭한 순간 실패 카드가 사라지고,
   // 응답이 올 때까지 (아직 빈) `blocksByDate` 가 "계획 없음"으로 렌더된다 — 이 훅이 막으려는
@@ -156,8 +175,11 @@ export function useHomeBlocks(
       .blocksRange(activeRaw.id, dates[0], dates[dates.length - 1])
       .then((bs) => {
         if (!alive) return;
-        setBlocksByDate(groupByDate(bs, dates));
-        setBlocksError(false);
+        const { byDate, allDropped } = groupByDate(bs, dates);
+        setBlocksByDate(byDate);
+        // 200 이어도 쓸 수 있는 게 하나도 없으면 실패다 — 빈 달력은 「계획 없음」과 같아 보인다.
+        setBlocksError(allDropped);
+        setBlocksSettledAt(retryTick);
       })
       // 기간 조회는 전부 아니면 전무다 — 하루씩 부르던 시절의 "그 날짜만 빈 배열" 부분 실패가
       // 사라진다. 형태는 유지하되 **실패했다는 사실을 남긴다** — 안 그러면 빈 달력과 구분이 안 된다.
@@ -166,6 +188,7 @@ export function useHomeBlocks(
         console.error(`[home] 기간 블록 조회 실패 (${dates[0]}~${dates[dates.length - 1]})`, error);
         setBlocksByDate(emptyByDate(dates));
         setBlocksError(true);
+        setBlocksSettledAt(retryTick);
       });
     return () => {
       alive = false;
@@ -182,14 +205,17 @@ export function useHomeBlocks(
       .blocksRange(activeRaw.id, dates[0], dates[dates.length - 1])
       .then((bs) => {
         if (!alive) return;
-        setHeroBlocksByDate(groupByDate(bs, dates));
-        setHeroBlocksError(false);
+        const { byDate, allDropped } = groupByDate(bs, dates);
+        setHeroBlocksByDate(byDate);
+        setHeroBlocksError(allDropped);
+        setHeroSettledAt(retryTick);
       })
       .catch((error) => {
         if (!alive) return;
         console.error(`[home] 히어로 주간 블록 조회 실패 (${dates[0]}~${dates[dates.length - 1]})`, error);
         setHeroBlocksByDate(emptyByDate(dates));
         setHeroBlocksError(true);
+        setHeroSettledAt(retryTick);
       });
     return () => {
       alive = false;
@@ -211,10 +237,13 @@ export function useHomeBlocks(
     heroBlocksByDate: hasActive ? heroBlocksByDate : NO_BLOCKS,
     heroBlocksError: hasActive && heroBlocksError,
     todayIso,
-    // 목록 재조회가 도는 동안 true — `retry()` 가 status 를 'loading' 으로 되돌리고,
-    // 목록 effect 가 'ready'/'error' 로 끝낸다. 첫 로드에도 true 지만 그때는 실패 화면 자체가
-    // 없어서 보이지 않는다.
-    retrying: enabled && status === 'loading',
+    // 목록 + 기간 + 히어로가 **전부** 끝날 때까지 true. `retry()` 는 status 를 'loading' 으로
+    // 되돌리고, 각 기간 effect 는 응답을 끝낸 retryTick 을 적는다 — 지금 tick 과 다르면 도는 중이다.
+    // 활성 시간표가 없으면 기간 effect 는 조기 반환하므로 애초에 도는 것이 없다(무한 대기 방지).
+    retrying:
+      enabled &&
+      (status === 'loading' ||
+        (hasActive && (blocksSettledAt !== retryTick || heroSettledAt !== retryTick))),
     refetch,
     retry,
   };
