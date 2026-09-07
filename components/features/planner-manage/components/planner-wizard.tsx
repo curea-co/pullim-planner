@@ -167,10 +167,19 @@ export function PlannerWizard({
               type="button"
               onClick={onNext}
               className={cn(
-                'inline-flex shrink-0 items-center gap-1 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-pullim-sm transition-colors',
+                'inline-flex shrink-0 items-center gap-1 rounded-xl px-4 py-2 text-sm font-bold shadow-pullim-sm transition-colors',
+                // 막힌 상태에서도 **누를 수 있는 버튼**이다 — 누르면 막힌 이유를 toast 로 알린다
+                // (use-planner-form). 그런데 종전 `bg-pullim-slate-300 text-white` 는 대비가
+                // 1.48:1 이라(#ffffff on #d4d4d8, 실측) 글자가 사실상 안 보였다. WCAG AA 4.5:1 의
+                // 3분의 1이다. disabled 도 아니어서 대비 예외에도 해당하지 않는다.
+                //
+                // 색을 새로 고르지 않고 PUDS 의 secondary 액션 쌍을 그대로 쓴다 —
+                // `components/ui/button.tsx` 의 `variant: secondary` 와 같은 조합
+                // (`--color-action-secondary` / `--color-action-secondary-fg`, 6.33:1 실측).
+                // 「주 액션인데 아직 준비가 안 됨」에 맞는 자리이고, 명암 축도 토큰이 따라간다.
                 blockedReason
-                  ? 'bg-pullim-slate-300 hover:bg-pullim-slate-400'
-                  : 'bg-pullim-blue-600 hover:bg-pullim-blue-700',
+                  ? 'bg-secondary text-secondary-foreground hover:brightness-95'
+                  : 'bg-pullim-blue-600 text-white hover:bg-pullim-blue-700',
               )}
             >
               다음
