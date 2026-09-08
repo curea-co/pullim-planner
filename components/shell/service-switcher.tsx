@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useAuth } from '@/lib/auth/auth-context';
 import {
   PULLIM_SERVICES,
   CURRENT_SERVICE,
@@ -39,6 +40,12 @@ function ServiceItemBody({ service }: { service: PullimService }) {
  * 현재 서비스(플래너)를 트리거에 표시, 메뉴에서 다른 풀림 서비스로 이동.
  */
 export function ServiceSwitcher() {
+  // `accountEmail` 은 중앙 계정(`GET /me`)에서 오고 planner 권한·프로필과 무관하다.
+  // `status === 'authenticated'` 를 함께 요구하지 않는 이유: 그러면 planner 엔타이틀먼트가 없는
+  // (403) 또는 온보딩 전(404) curea 계정에서 스튜디오가 영구히 숨는다 — 정작 스튜디오만 쓰는
+  // 사람이 못 본다. 값이 있다는 것 자체가 **중앙 세션이 유효하다**는 뜻이다(Codex #257).
+  const { accountEmail } = useAuth();
+  const showStudio = /^[^@\s]+@curea\.co$/i.test(accountEmail ?? '');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -78,29 +85,36 @@ export function ServiceSwitcher() {
 
       <div className="switcher-menu" role="menu">
         <div className="sm-head">서비스 전환</div>
-        {PULLIM_SERVICES.map((s) =>
+        {PULLIM_SERVICES.map((s) => {
+          if (s.key === 'studio' && !showStudio) return null;
           // 준비 중 서비스는 진입 차단(레포 정책) — 링크가 아닌 비활성 항목으로 렌더.
-          s.soon ? (
-            <div
-              key={s.key}
-              role="menuitem"
-              aria-disabled
-              className="sm-item is-soon"
-            >
-              <ServiceItemBody service={s} />
-            </div>
-          ) : (
-            <a
-              key={s.key}
-              href={s.href}
-              role="menuitem"
-              className={`sm-item${s.current ? ' is-current' : ''}`}
-              aria-current={s.current ? 'page' : undefined}
-            >
+          if (s.soon) {
+            return (
+              <div key={s.key} role="menuitem" aria-disabled className="sm-item is-soon">
+                <ServiceItemBody service={s} />
+              </div>
+            );
+          }
+          // 현재 서비스(플래너)도 링크가 아니다 — 지금 보고 있는 화면으로 다시 보내는 링크라
+          // 누르면 편집 중이던 화면 상태만 잃는다. '현재 위치'만 표시한다(정본 Q 와 동일).
+          if (s.current) {
+            return (
+              <div
+                key={s.key}
+                role="menuitem"
+                aria-current="page"
+                className="sm-item is-current"
+              >
+                <ServiceItemBody service={s} />
+              </div>
+            );
+          }
+          return (
+            <a key={s.key} href={s.href} role="menuitem" className="sm-item">
               <ServiceItemBody service={s} />
             </a>
-          ),
-        )}
+          );
+        })}
       </div>
     </div>
   );

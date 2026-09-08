@@ -13,6 +13,8 @@ interface MonthViewProps {
   days?: MonthDay[];
   /** 실데이터 월 라벨("7월"). */
   monthLabel?: string;
+  /** 재사용 위젯(히트맵·회고)의 이동 — 같은 경로면 History API, 다른 경로면 router. 컨테이너가 정한다. */
+  onNavigate: (url: string) => void;
 }
 
 /**
@@ -21,7 +23,7 @@ interface MonthViewProps {
  * 실데이터 모드에선 mock MonthlyProgressCard(목표·정답률·약점·streak) 대신 우측에
  * MonthPlanSummary(계획 블록·예정일·시험 마일스톤, 블록 파생값만)를 둔다(B4b ①-1단계).
  */
-export function MonthView({ monthOffset = 0, onReset, days, monthLabel }: MonthViewProps) {
+export function MonthView({ monthOffset = 0, onReset, days, monthLabel, onNavigate }: MonthViewProps) {
   const isReal = days !== undefined;
   // 실데이터: 그 달에 블록이 하나도 없으면 빈 상태. mock 데모: 기준 월 외 빈 상태.
   if (isReal ? days.every(d => d.blockCount === 0) : monthOffset !== 0) {
@@ -37,7 +39,7 @@ export function MonthView({ monthOffset = 0, onReset, days, monthLabel }: MonthV
 
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[420px_1fr]">
-      <MonthHeatmap days={days} monthLabel={monthLabel} />
+      <MonthHeatmap days={days} monthLabel={monthLabel} onNavigate={onNavigate} />
       {isReal ? <MonthPlanSummary days={days} /> : <MonthlyProgressCard />}
     </div>
   );

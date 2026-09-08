@@ -223,6 +223,19 @@ export const DecorateSection = forwardRef<DecorateSectionHandle, Props>(
                   weekLayoutId={draftWeekLayout}
                   paletteId={draftPalette}
                   compact
+                  // 여기는 **데모 데이터로 모양만 보는 미리보기**다(아래 안내 문구 참조).
+                  // 셀을 눌러 홈으로 튀면 편집 중인 꾸미기 선택이 그대로 버려진다 —
+                  // 이동시키지 않는다. (종전에는 router.push 로 홈 일간 뷰까지 나갔다)
+                  //
+                  // 다만 **아무 일도 안 일어나게 두면 안 된다.** 위젯은 오늘 열만 `onNavigate` 로
+                  // 보내고 나머지 요일은 스스로 toast 를 띄운다(week-grid `openDay`). 여기서
+                  // no-op 을 주면 **오늘 열만 눌러도 반응이 없는** 화면이 된다 — 다른 열은
+                  // 반응하니 사용자는 고장으로 읽는다. 이동 대신 왜 안 가는지를 말한다.
+                  onNavigate={() =>
+                    toast.info('미리보기예요', {
+                      description: '꾸미기를 저장하면 홈에서 실제 시간표로 볼 수 있어요.',
+                    })
+                  }
                 />
               )}
               <p className="text-pullim-slate-500 mt-2 text-[length:var(--text-xs)]">

@@ -84,8 +84,13 @@ const STATUS_TO_CODE: Record<number, string> = {
   422: "COMMON_VALIDATION_FAILED",
 };
 
-/** pullim-api 에러 본문을 ApiError 의 `{ code, message, statusCode }` 로 정규화. */
-function toApiError(body: unknown, status: number): ApiError {
+/**
+ * pullim-api 에러 본문을 ApiError 의 `{ code, message, statusCode }` 로 정규화.
+ *
+ * `sessionExpired` 는 **재발급이 만료를 확정했을 때만** 넘긴다 — 401 전부가 아니다.
+ * 근거는 `ApiErrorPayload.sessionExpired` 주석.
+ */
+function toApiError(body: unknown, status: number, sessionExpired = false): ApiError {
   const e = (body ?? {}) as PullimApiErrorBody;
   // ValidationPipe 는 message 를 배열로 내려준다(자체 BE 필터의 validation 판별과 동일).
   const isValidation = Array.isArray(e.message);
@@ -102,7 +107,12 @@ function toApiError(body: unknown, status: number): ApiError {
     (isValidation
       ? "COMMON_VALIDATION_FAILED"
       : (STATUS_TO_CODE[status] ?? "COMMON_UNKNOWN_ERROR"));
-  return new ApiError({ code, message, statusCode: e.statusCode ?? status });
+  return new ApiError({
+    code,
+    message,
+    statusCode: e.statusCode ?? status,
+    sessionExpired,
+  });
 }
 
 /**
@@ -179,20 +189,25 @@ export async function cookieRequest<T>(
       // reject(비-만료 인프라 장애 — 네트워크·5xx)는 삼키지 않고 그대로 전파해 상위가
       // 세션 만료로 오인하지 않게 한다. false(만료 확정)만 원 401 로 접는다.
       const refreshed = await config.refreshSession();
-      if (refreshed) {
-        // refresh 가 CSRF 쿠키를 회전시켰으므로 브라우저에선 쿠키에서 새 토큰을 재회수한다.
-        // 쿠키를 읽을 수 없는 환경(SSR/테스트 — document 부재)은 기존 명시 토큰을 유지 —
-        // 무효라면 403 이 나고 상위 mutate 의 CSRF 재부트스트랩 재시도가 처리한다.
-        const rotatedToken = config.csrfCookieName
-          ? readCsrfCookie(config.csrfCookieName)
-          : null;
-        return cookieRequest<T>(config, path, {
-          ...opts,
-          csrfToken: rotatedToken ?? opts.csrfToken,
-          skipRefreshRetry: true,
-        });
+      if (!refreshed) {
+        // 재발급이 **만료를 확정**했다(refresh 자체가 401). 이 401 만 "세션이 죽었다"는 뜻이다 —
+        // 소비자(`on401`)가 이 표시를 보고 전역 로그아웃을 건다.
+        throw toApiError(payload, response.status, true);
       }
+      // refresh 뒤 runtime CSRF cache 경계를 맞추기 위해 브라우저 쿠키 값을 다시 회수한다.
+      // 쿠키를 읽을 수 없는 환경(SSR/테스트 — document 부재)은 기존 명시 토큰을 유지 —
+      // 무효라면 403 이 나고 상위 mutate 의 CSRF 재부트스트랩 재시도가 처리한다.
+      const rotatedToken = config.csrfCookieName
+        ? readCsrfCookie(config.csrfCookieName)
+        : null;
+      return cookieRequest<T>(config, path, {
+        ...opts,
+        csrfToken: rotatedToken ?? opts.csrfToken,
+        skipRefreshRetry: true,
+      });
     }
+    // 여기 오는 401 은 **재시도까지 하고도 실패한 그 요청의 문제**다(재발급은 성공했다).
+    // 세션 만료로 단정하지 않는다 — 수십 개 동시 요청 중 하나의 일과성 실패일 수 있다.
     throw toApiError(payload, response.status);
   }
 

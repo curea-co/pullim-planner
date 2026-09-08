@@ -124,6 +124,13 @@ export interface PullimPlannerWrite {
  */
 export interface PullimBlock {
   id: string;
+  /**
+   * 블록 날짜(KST `YYYY-MM-DD`).
+   *
+   * 하루 조회에서는 요청한 `date` 와 같아 중복이지만, **기간 조회에서는 이것이 없으면 응답을
+   * 날짜별로 묶을 수 없다**(BE `BlockResponseDto.date`, pullim-api #630).
+   */
+  date: string;
   /** HH:MM. */
   start: string;
   end: string;
@@ -322,6 +329,20 @@ export interface PullimPlannerClient {
    * (`BlocksQueryDto @IsOptional` + 핸들러 `query.date ?? todayKstIsoDate()`).
    */
   blocks(plannerId: string, date?: string): Promise<PullimBlock[]>;
+  /**
+   * **기간** 시간표 블록. `GET /planner/planners/:id/blocks?from=&to=`(양끝 포함, 최대 62일).
+   *
+   * 하루씩 N 번 부르던 것을 한 번으로 줄인다 — 월간 뷰가 한 화면에 37개를 동시에 쏘던 자리다
+   * (pullim-api #630). 응답은 평평한 배열이고 각 항목이 `date` 를 실으므로 호출부가 묶는다.
+   *
+   * 무효 창(형식·달력에 없는 날·from>to·62일 초과)은 **400** 이다 — 단, BE 가 소유권 게이트
+   * 뒤에서 판정하므로 남의 플래너면 404/403 이 먼저 온다.
+   */
+  blocksRange(
+    plannerId: string,
+    from: string,
+    to: string,
+  ): Promise<PullimBlock[]>;
   /** 번아웃 안전도 on-read 집계(QA #48). `GET /planner/planners/:id/burnout`. */
   burnout(plannerId: string): Promise<PullimBurnoutResponse>;
   /** 오늘 컨디션(미기록 level null). `GET /planner/me/condition`. */
@@ -374,16 +395,12 @@ export interface PullimBlockCompletionClient {
 }
 
 
-/**
- * CSRF 거부(토큰 회전·만료) 판정 — 403 **전체가 아니라 CSRF 마커**로 좁힌다(pullim-session 과 동일).
- * pullim-api 의 CSRF 거부는 메시지가 `CSRF:` 로 시작한다. 인가/잠금 등 비-CSRF 403 을 회전으로
- * 오인해 mutation 을 중복 발사하지 않도록 한정한다.
- */
+/** CUR-5 typed 계약에서 복구 가능한 유일한 403. Origin·권한 거부는 절대 재시도하지 않는다. */
 function isCsrfRejection(error: unknown): boolean {
   return (
     error instanceof ApiError &&
     error.statusCode === 403 &&
-    /^csrf/i.test(error.message)
+    error.code === "CSRF_TOKEN_MISMATCH"
   );
 }
 
@@ -419,7 +436,7 @@ export function createPullimPlannerClient(
     return csrfInFlight;
   }
 
-  /** 상태변경 요청. CSRF 토큰 동봉 → 회전·만료로 1회 거부되면 캐시 무효화 후 재부트스트랩·1회 재시도. */
+  /** 상태변경 요청. typed mismatch로 1회 거부되면 캐시 무효화 후 재부트스트랩·1회 재시도. */
   async function mutate<T>(
     path: string,
     method: "POST" | "PUT" | "PATCH" | "DELETE",
@@ -454,6 +471,14 @@ export function createPullimPlannerClient(
         config,
         `/planner/planners/${plannerId}/blocks`,
         date ? { query: { date } } : undefined,
+      );
+    },
+
+    blocksRange(plannerId, from, to) {
+      return cookieRequest<PullimBlock[]>(
+        config,
+        `/planner/planners/${plannerId}/blocks`,
+        { query: { from, to } },
       );
     },
 

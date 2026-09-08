@@ -137,6 +137,22 @@
 
 ### 3.4 사이즈 가이드 (태블릿 우선 · 3-Bracket 반응형)
 
+> ⚠️ **2026-09-04 — 아래 3-bracket 은 본문 레이아웃에만 유효하다. 셸(topbar·레일·탭바)은
+> 이 문서가 정본이 아니다 (PR #236).** 셸 정본은 pullim-web `/os`
+> (`pullim-web/src/styles/os-tokens.css`) 이고, 셸은 **921px 한 지점**으로만 갈린다 —
+> ~920px 레일 숨김 + 탭바, 921px~ 레일 248px.
+>
+> 이 문서의 셸 수치는 **이 PR 이전부터 이미 코드와 달랐다**(내가 벌린 격차가 아니다):
+>
+> | 이 문서 | 현행 코드 | 언제부터 |
+> |---|---|---|
+> | `header.height.desktop` 56px · mobile 52px | `--topbar-h` **60px** 전 구간 | 2026-06-29 OS topbar 벤더링 |
+> | `sidebar.width.full` 240px | **248px** | 2026-07-06 셸 리프레시 |
+> | `sidebar.width.compact` 64px (Cozy 768~1023) | 없음 — 921px 까지 레일 숨김 | 2026-09-04 (PR #236) |
+>
+> 대체 관계의 전체 표는 `proc/spec/2026-07-06_shell-home-puds-refresh.md` 머리 참조.
+> 패딩·열 수 등 **본문 쪽 bracket 규정은 그대로 유효**하다.
+
 학생 주 디바이스가 **태블릿 (가로/세로)**이므로 break point를 다음 3개 bracket으로 정의한다 (자세한 룰은 §14).
 
 | 용도 | Compact <768px (모바일) | Cozy 768~1023px (태블릿 portrait) | Comfortable ≥1024px (태블릿 landscape, 데스크탑) | Tailwind |

@@ -17,6 +17,8 @@ interface WeekViewProps {
   days?: WeekDay[];
   /** 실 active 플래너의 꾸미기 — 미주입(dev bypass)이면 mock 폴백. */
   customization?: Customization;
+  /** 셀 클릭 이동 — 홈은 같은 경로라 History API. 컨테이너가 정한다. */
+  onNavigate: (url: string) => void;
 }
 
 /**
@@ -28,7 +30,7 @@ interface WeekViewProps {
  * 실데이터 모드(days 주입)에선 mock WeeklyChart·WeeklyGoalsCard(목표시간·정답률·약점 — 블록 외
  * mock) 대신 우측에 WeekPlanSummary(계획 시간·예정일·타입 구성, 블록 파생값만)를 둔다(B4b ①-1단계).
  */
-export function WeekView({ weekOffset = 0, onReset, days, customization }: WeekViewProps) {
+export function WeekView({ weekOffset = 0, onReset, days, customization, onNavigate }: WeekViewProps) {
   const { weekLayoutId, paletteId } = customization ?? getActiveCustomization();
   const isBarWeek = weekLayoutId === 'bar_week';
   const isReal = days !== undefined;
@@ -48,7 +50,7 @@ export function WeekView({ weekOffset = 0, onReset, days, customization }: WeekV
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[420px_1fr]">
       <div className="space-y-4">
-        <ActiveWeekLayout weekLayoutId={weekLayoutId} paletteId={paletteId} days={days} />
+        <ActiveWeekLayout weekLayoutId={weekLayoutId} paletteId={paletteId} days={days} onNavigate={onNavigate} />
         {!isBarWeek && !isReal && <WeeklyChart />}
       </div>
       {isReal ? <WeekPlanSummary days={days} /> : <WeeklyGoalsCard />}

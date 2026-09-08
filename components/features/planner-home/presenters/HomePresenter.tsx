@@ -14,6 +14,8 @@ import {
   formatMonthNavLabel, formatMonthTitle, formatMonthShort,
 } from '@/lib/planner/day-nav';
 import { HomeHero } from '../components/home-hero';
+import { HomeLoadFailure } from '../components/load-failure';
+import { CalendarLoading } from '../components/calendar-loading';
 
 interface HomePresenterProps {
   view: CalendarView;
@@ -21,6 +23,24 @@ interface HomePresenterProps {
   dday: number;
   /** 활성 계획표 유무 — 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요" 표시 (QA #7) */
   hasActivePlanner?: boolean;
+  /**
+   * 시간표 목록 조회 실패 — `hasActivePlanner=false` 와 **다른 상태**다. 전자는 "만든 적이 없다",
+   * 이쪽은 "있는지조차 모른다". 같이 그리면 사용자가 자기 시간표가 사라졌다고 읽는다.
+   */
+  loadError?: boolean;
+  /** 현재 기간의 블록 조회 실패 — 달력 본문만 못 그린다(히어로·헤더는 유효). */
+  blocksError?: boolean;
+  /** 히어로의 오늘·이번 주 요약을 만들 데이터가 없다 — 숨기는 대신 못 불러왔다고 말한다. */
+  heroSummaryError?: boolean;
+  /**
+   * 아직 모르는 상태 — 목록이나 이 기간의 블록이 오는 중.
+   * 실패와 같은 이유로 따로 받는다: 모르는 것을 「없다」고 확정해 말하지 않기 위해서다.
+   */
+  loading?: boolean;
+  /** 재조회 진행 중 — 실패 화면을 유지한 채 진행 중임만 알린다. */
+  retrying?: boolean;
+  /** 실패 화면의 [다시 시도]. */
+  onRetry?: () => void;
   /** 번아웃 스냅샷 — Container가 해석(실모드: 이번 주 완료 기록 계산 / bypass: mock). null=데이터 없음 */
   burnout: BurnoutSnapshot | null;
   /** 오늘 컨디션(실 저장) — null=미기록('선택 전'). */
@@ -44,6 +64,8 @@ interface HomePresenterProps {
   dayBlocks?: TimeBlock[];
   /** 블록 완료 기록 실 저장(#416) — 미주입(dev bypass)이면 완료 다이얼로그가 데모(toast)로 동작. */
   onCompleteSubmit?: (blockId: string, input: { accuracy?: number; emotion?: number; notes?: string }) => Promise<boolean>;
+  /** 재사용 위젯(히트맵·회고)의 이동 — 홈은 같은 경로라 History API. 컨테이너가 정한다. */
+  onNavigate: (url: string) => void;
   /** 실 active 플래너 꾸미기 — 홈 뷰 layout·palette 반영(미주입 시 mock 폴백). */
   customization?: Customization;
   weekDays?: WeekDay[];
@@ -57,6 +79,12 @@ export default function HomePresenter({
   examName,
   dday,
   hasActivePlanner = true,
+  loadError = false,
+  blocksError = false,
+  heroSummaryError = false,
+  loading = false,
+  retrying = false,
+  onRetry,
   burnout,
   condition,
   onConditionChange,
@@ -77,6 +105,7 @@ export default function HomePresenter({
   weekDays,
   monthDays,
   monthLabel,
+  onNavigate,
 }: HomePresenterProps) {
   // QA #7 — 활성 계획표가 없으면 "다른 시간표로 전환" 대신 "시간표 관리" CTA.
   // active=null은 "시간표 미생성"과 "있지만 비활성"을 구분하지 못하므로(useHomeBlocks 계약),
@@ -95,6 +124,9 @@ export default function HomePresenter({
     <strong className="text-pullim-blue-700 inline-block max-w-[12ch] truncate align-bottom">{examName}</strong>
   ) : null;
 
+  // 헤더 집계는 **확정된 기간의 값일 때만** 말한다. 로딩 중 `blocksByDate` 에는 직전 기간의
+  // 키가 남아 있어(주간 → 월간 전환 등) 그 7일만 합산한 「이번 달 학습 블록 N개」가 뜬다 —
+  // 아직 확정되지 않은 부분 합계를 현재 기간의 값처럼 말하는 것이다.
   const headerProps = (() => {
     if (view === 'day') {
       // QA #2 — 제목은 "X월 Y일 Z요일"만('오늘의 학습' 제거), D-day 뱃지는 상단 배너와 중복이라 미노출.
@@ -103,7 +135,7 @@ export default function HomePresenter({
         description: (
           <>
             {examNameEl}
-            {daySummary.total > 0 && (
+            {!loading && daySummary.total > 0 && (
               <>
                 <span className="mx-1">·</span>
                 {daySummary.done}/{daySummary.total} 블록 완료
@@ -122,7 +154,7 @@ export default function HomePresenter({
         description: (
           <>
             {examNameEl}
-            {weekMeta.totalHours > 0 && (
+            {!loading && weekMeta.totalHours > 0 && (
               <>
                 <span className="mx-1">·</span>
                 이번 주 계획 <span className="font-mono text-pullim-slate-700 font-bold">{weekMeta.totalHours}h</span>
@@ -142,7 +174,7 @@ export default function HomePresenter({
       description: (
         <>
           {examNameEl}
-          {monthMeta.totalBlocks > 0 && (
+          {!loading && monthMeta.totalBlocks > 0 && (
             <>
               <span className="mx-1">·</span>
               이번 달 학습 블록 <span className="font-mono font-bold">{monthMeta.totalBlocks}개</span>
@@ -158,7 +190,7 @@ export default function HomePresenter({
 
   return (
     <>
-      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
+      <HomeHero examName={examName} dday={dday} hasActivePlanner={hasActivePlanner} loadError={loadError} loading={loading} summaryError={heroSummaryError} daySummary={heroDaySummary} weekMeta={heroWeekMeta} />
       <CalendarShell
         view={view}
         onChangeView={onChangeView}
@@ -176,9 +208,26 @@ export default function HomePresenter({
         }
         action={switchAction}
       >
-        {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} />}
-        {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} />}
-        {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} />}
+        {loadError || blocksError ? (
+          // 실패를 빈 달력으로 그리지 않는다 — 둘은 화면상 구분되지 않고, 사용자는 계획이
+          // 지워졌다고 읽는다. 목록 실패면 기간 실패도 따라오므로 원인이 앞선 쪽을 말한다.
+          //
+          // ⚠️ **로딩보다 먼저 본다.** 재시도 중에는 `loading` 과 실패 플래그가 함께 서 있는데,
+          // 로딩을 먼저 보면 스켈레톤이 실패 카드를 덮어 원인도 [다시 불러오는 중…]도 사라진다
+          // — 「재조회 중에도 실패 화면을 유지한다」는 계약이 깨진다.
+          <HomeLoadFailure scope={loadError ? 'planner' : 'blocks'} retrying={retrying} onRetry={onRetry} />
+        ) : loading ? (
+          // 모르는 동안 「계획이 없어요」라고 말하지 않는다 — 빈 상태는 확정 진술이다.
+          // 자정에도 일간 rangeKey가 바뀌어 이 분기로 들어온다. DayView를 언마운트해야
+          // 새 날짜 응답 후 열린 날짜(openedOn)가 초기화되어 다음 블록 카드가 다시 표시된다.
+          <CalendarLoading />
+        ) : (
+          <>
+            {view === 'day' && <DayView dayOffset={offset} onResetToday={onReset} blocks={dayBlocks} dday={dayBlocks ? dday : undefined} onCompleteSubmit={onCompleteSubmit} customization={customization} burnout={burnout} condition={condition} onConditionChange={onConditionChange} onNavigate={onNavigate} />}
+            {view === 'week' && <WeekView weekOffset={offset} onReset={onReset} days={weekDays} customization={customization} onNavigate={onNavigate} />}
+            {view === 'month' && <MonthView monthOffset={offset} onReset={onReset} days={monthDays} monthLabel={monthLabel} onNavigate={onNavigate} />}
+          </>
+        )}
       </CalendarShell>
     </>
   );

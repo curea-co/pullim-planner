@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { weekView, blockTypeMeta, getBlockColor, type BlockType, type PaletteId, type WeekDay } from '@/lib/mock';
 import { getActiveCustomization } from '@/lib/hooks/use-planner-customization';
@@ -15,14 +14,15 @@ type WeekGridProps = {
   compact?: boolean;
   /** 실데이터(B4) 주간 집계 — 미주입이면 mock 데모(weekView) 폴백. */
   days?: WeekDay[];
+  /** 셀 클릭 이동 — 같은 경로면 History API, 다른 경로면 router. **컨테이너가 정한다.** */
+  onNavigate: (url: string) => void;
 };
 
 /**
  * 주간 그리드 — 7열 × 블록 타입 행. 각 셀: 블록 수 + 색상 강도(분 단위).
  * 핸드오프 4.4 (주간 뷰 단순화 버전).
  */
-export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps = {}) {
-  const router = useRouter();
+export function WeekGrid({ paletteId, compact, days: daysProp, onNavigate }: WeekGridProps) {
   const isReal = daysProp !== undefined;
   const week = daysProp ?? weekView;
   const activePalette = paletteId ?? getActiveCustomization().paletteId;
@@ -34,12 +34,12 @@ export function WeekGrid({ paletteId, compact, days: daysProp }: WeekGridProps =
     if (isReal) {
       const o = day.dayOffset ?? 0;
       const q = o !== 0 ? `?view=day&d=${o}` : '?view=day';
-      router.push(`/planner${q}`);
+      onNavigate(`/planner${q}`);
       return;
     }
     // mock 데모 — 일간 뷰에 오늘만 데이터가 있어 오늘은 이동, 다른 요일은 요약 toast.
     if (day.isToday) {
-      router.push('/planner?view=day');
+      onNavigate('/planner?view=day');
       return;
     }
     toast.info(`📅 ${day.day}요일 (${day.date}일)`, {

@@ -12,6 +12,7 @@ import { createPlanner, activatePlanner } from '@/lib/mock/planner';
 import { getRoutines, type Routine } from '@/lib/mock';
 import { plannerClient, toWriteInput } from '@/lib/planner/client';
 import { mapServerPreview, type PreviewDay } from '@/lib/planner/preview-map';
+import { toRoutineApplications } from '@/lib/planner/routine-selection';
 import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { pullimPlannerClient, pullimToRoutine } from '@/lib/planner/pullim-client';
 import type { ActivateSummary } from '@/components/features/planner-builder/components/step-content';
@@ -41,13 +42,37 @@ export default function NewPlannerContainer() {
 
   // STEP5·미리보기용 루틴 — bypass는 mock(초기값), 배포는 실 API로 교체(dev QA #4: 실 루틴 노출).
   const [routines, setRoutines] = useState<Routine[]>(() => (DEV_AUTH_BYPASS ? getRoutines() : []));
+  // 목록을 **받았는가** — 요약의 "선택한 루틴 N개" 집계에만 쓴다(확인 단계로 내려간다).
+  // 「루틴 0개」와 「못 받음」을 가르되, **「조회 중」은 못 가른다**(둘 다 false). 그래서
+  // 서버로 나가는 전송은 이 state 가 아니라 아래 `knownRoutines()` 를 본다 — 거기선 기다린다.
+  const [routinesLoaded, setRoutinesLoaded] = useState(DEV_AUTH_BYPASS);
+  /**
+   * 진행 중인 루틴 조회 — 저장·미리보기가 **응답을 기다린 뒤** 거르게 한다.
+   *
+   * `routinesLoaded` 는 「조회 중」과 「실패」를 구분하지 못한다(둘 다 false). 그 상태로
+   * 전송을 결정하면, 느린 네트워크에서 응답 전에 저장한 사용자는 죽은 id 를 그대로 보내고
+   * 400 을 받는다 — 이 PR 이 고치려는 바로 그 증상이 첫 저장에 재현된다(Codex).
+   *
+   * 그래서 전송 경로는 state 가 아니라 이 promise 를 본다. 성공하면 목록을, 실패하면
+   * `null`(= 모른다 → 거르지 않는다)을 준다.
+   */
+  const routinesReq = useRef<Promise<Routine[] | null> | null>(null);
+  /** 조회가 끝날 때까지 기다린 뒤의 목록. `null` 이면 「못 받았다」 — 거르지 않는다. */
+  const knownRoutines = useCallback(
+    (): Promise<Routine[] | null> => routinesReq.current ?? Promise.resolve(null),
+    [],
+  );
   useEffect(() => {
     if (DEV_AUTH_BYPASS) return;
     let alive = true;
-    pullimPlannerClient
+    routinesReq.current = pullimPlannerClient
       .routines()
-      .then((list) => { if (alive) setRoutines(list.map(pullimToRoutine)); })
-      .catch(() => { if (alive) setRoutines([]); });
+      .then((list) => {
+        const mapped = list.map(pullimToRoutine);
+        if (alive) { setRoutines(mapped); setRoutinesLoaded(true); }
+        return mapped;
+      })
+      .catch(() => { if (alive) { setRoutines([]); setRoutinesLoaded(false); } return null; });
     return () => { alive = false; };
   }, []);
 
@@ -87,13 +112,12 @@ export default function NewPlannerContainer() {
   const form = formState.form;
   const handleServerPreview = useCallback(async (): Promise<PreviewDay[] | null> => {
     if (DEV_AUTH_BYPASS) return null;
+    // 조회가 끝날 때까지 기다린다 — 응답 전에 보내면 죽은 id 를 거르지 못한다.
+    const known = await knownRoutines();
     try {
       const res = await plannerClient.preview({
         ...toWriteInput(formToPlannerPatch(form)),
-        routineApplications: form.routineIds.map((routineId) => ({
-          routineId,
-          endRange: 'exam' as const,
-        })),
+        routineApplications: toRoutineApplications(form.routineIds, known),
       });
       return mapServerPreview(
         res.blocks,
@@ -101,10 +125,21 @@ export default function NewPlannerContainer() {
         form.examStartDate ?? null,
         form.examEndDate ?? null,
       );
-    } catch {
+    } catch (e) {
+      // 폴백(휴리스틱)으로 떨어지는 건 그대로 두되 **왜** 떨어졌는지는 남긴다 — 지금까지는
+      // 네트워크 장애·서버 거부가 화면에서 똑같은 노란 배너 하나였다.
+      console.error('[planner] 서버 미리보기 실패 — 휴리스틱으로 대체', e);
+      // 400 을 띄우는 조건이 **`known !== null`** 이다. 목록을 못 받았을 때는 위에서 일부러
+      // 거르지 않고 보내므로(데이터 손실 방지), 그때 돌아온 400 은 사용자가 고칠 수 있는
+      // 입력 오류가 아니라 **조회 실패의 2차 증상**이다. 그걸 "적용할 수 없는 루틴" 으로
+      // 띄우면 목록이 로드되면 저장될 상황인데도 저장이 막힌 줄 알게 된다(Codex).
+      // 미리보기는 폼이 바뀔 때마다 재요청되므로 고정 id 로 겹쳐 띄운다 — 타이핑 중 쌓이지 않게.
+      if (known !== null && e instanceof ApiError && e.statusCode === 400) {
+        toast.error(e.message, { id: 'planner-preview-rejected' });
+      }
       return null;
     }
-  }, [form]);
+  }, [form, knownRoutines]);
 
   /** 활성화 직후 보여줄 리캡 — 폼과 미리보기 집계에서만 만든다(추가 fetch 없음). */
   function buildDoneSummary(submitted: PlannerForm, summary?: ActivateSummary): WizardDoneSummary {
@@ -196,10 +231,8 @@ export default function NewPlannerContainer() {
       planner = await plannerClient.create({
         ...toWriteInput(formToPlannerPatch(submitted)),
         // 5단계 선택 루틴을 bake 입력으로 — 미리보기(dry-run)와 동일 매핑(정합).
-        routineApplications: submitted.routineIds.map((routineId) => ({
-          routineId,
-          endRange: 'exam' as const,
-        })),
+        // 조회 완료를 기다린 뒤 거른다(미리보기와 같은 계약).
+        routineApplications: toRoutineApplications(submitted.routineIds, await knownRoutines()),
       });
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : '시간표 생성 실패');
@@ -256,6 +289,7 @@ export default function NewPlannerContainer() {
       onJump={formState.jumpTo}
       onActivate={handleActivate}
       routines={routines}
+      routinesLoaded={routinesLoaded}
       onServerPreview={handleServerPreview}
       onUpdateRoutine={handleUpdateRoutine}
     />

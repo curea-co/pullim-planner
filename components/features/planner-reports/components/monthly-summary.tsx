@@ -12,7 +12,12 @@ import { MonthHeatmap } from '@/components/features/planner-home/components/mont
 import { cn } from '@/lib/utils';
 
 /** 월간 회고 본문 — KPI 3 + 히트맵 + 약점 단원 + 다가오는 마일스톤 */
-export function MonthlySummary() {
+export function MonthlySummary({
+  onNavigate,
+}: {
+  /** 재사용 위젯(히트맵·회고)의 이동 — 같은 경로면 History API, 다른 경로면 router. 컨테이너가 정한다. */
+  onNavigate: (url: string) => void;
+}) {
   const totalBlocks = monthView.reduce((s, d) => s + d.blockCount, 0);
   const completedDays = monthView.filter(d => !d.isFuture && d.completionPct === 100).length;
   const pastDays = monthView.filter(d => !d.isFuture && !d.isToday).length;
@@ -57,7 +62,7 @@ export function MonthlySummary() {
         />
       </section>
 
-      <MonthHeatmap />
+      <MonthHeatmap onNavigate={onNavigate} />
 
       {/* 학습 시간 요약 + 마일스톤 — 2열 */}
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">

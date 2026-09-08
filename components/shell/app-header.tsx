@@ -18,9 +18,38 @@ import { osHomeUrl } from './pullim-services';
  * pullim-web `os.pullim.local:3001` 헤더 구조: mast(로고) · 서비스 전환 스위처 · 검색 · 알림 · 사용자.
  * 스타일은 `.os-root` 스코프 CSS(플래너 PUDS 테마와 분리).
  */
-export function AppHeader() {
+type AppHeaderProps = {
+  /** 레일 접힘 상태 — 미주입이면 토글을 렌더하지 않는다(셸 밖에서 쓰는 경우). */
+  railCollapsed?: boolean;
+  onToggleRail?: () => void;
+};
+
+export function AppHeader({ railCollapsed, onToggleRail }: AppHeaderProps = {}) {
   return (
     <header className="os-root topbar">
+      {/* 레일 접기 — 정본은 topbar 의 첫 자식이다(os `OsShell.tsx`: RailCollapseToggle → mast).
+          아이콘도 정본과 같은 패널 글리프. 920px 이하는 CSS 가 감춘다.
+
+          ⚠️ 정본은 `aria-pressed={collapsed}` 를 쓰지만 여기서는 **따르지 않는다.**
+          이 버튼은 on/off 토글이 아니라 영역을 여닫는 disclosure 다 — 보조기기에는
+          `aria-expanded` 로 알려야 맞고, 이 리포의 셸 spec 도 그렇게 요구한다.
+          `aria-controls` 로 대상 레일을 가리켜 관계까지 준다(Codex #236). */}
+      {onToggleRail && (
+        <button
+          type="button"
+          className="rail-collapse-btn"
+          aria-expanded={!railCollapsed}
+          aria-controls="app-rail"
+          aria-label={railCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          title={railCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          onClick={onToggleRail}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M9 4v16" />
+          </svg>
+        </button>
+      )}
       {/* 모바일 햄버거 drawer 제거(2026-07-10) — OS 정합: OS는 md 미만에서 하단 탭바만 쓰고
           햄버거를 두지 않는다. 플래너도 동일하게 탭바(+프로필 메뉴)로 일원화. */}
       <Link href="/" className="mast" aria-label="풀림 플래너 홈">

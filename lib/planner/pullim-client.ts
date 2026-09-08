@@ -37,9 +37,22 @@ const rawPullimPlannerClient = createPullimPlannerClient({
 });
 
 /**
- * 401(쿠키 세션 만료·무효) 시 전역 세션 만료를 통지하도록 클라 메서드를 감싼다 — 흡수 §10.
- * 자체 BE 클라의 onSessionExpired(전역 전파)를 데이터 호출에서도 복원한다. auth-context 가
- * `onPullimSessionExpired` 로 구독해 상태를 unauthenticated 로 내린다.
+ * **세션 만료가 확정된** 401 에서만 전역 만료를 통지하도록 클라 메서드를 감싼다 — 흡수 §10.
+ * auth-context 가 `onPullimSessionExpired` 로 구독해 상태를 unauthenticated 로 내리고,
+ * `RequireAuth` 가 중앙 로그인으로 **하드 리다이렉트**한다(상태 변경이 아니다).
+ *
+ * ## 왜 401 전부가 아닌가
+ *
+ * 통지 한 번의 대가가 **앱 전체 이탈**이다. 그런데 401 은 한 개씩 오지 않는다 — 월간 뷰는
+ * 하루당 한 번씩 수십 개를 동시에 쏘고(`use-home-blocks`), 그 훅은 날짜별 실패를 빈 배열로
+ * 삼켜 "그날은 계획 없음"으로 그린다. 그래서 **그중 하나만 일과성 401 을 받아도 화면은
+ * 조용한 채 앱이 로그인으로 튕긴다.** 사용자에겐 원인이 전혀 안 보인다. (QA 2026-09-04 N-02)
+ *
+ * 만료인지 아닌지는 `cookie-http` 가 이미 판정한다: 401 → 재발급 → 재시도. 재발급이 만료를
+ * 확정(false)한 401 에만 `sessionExpired` 가 붙는다. 재발급은 성공했는데 재시도가 또 401 이면
+ * 그건 **그 요청의 문제**이지 세션이 죽은 게 아니다 — 그 요청만 실패시킨다.
+ *
+ * 즉 판정을 여기서 다시 하지 않고, 이미 내려진 판정을 그대로 따른다.
  */
 function on401<A extends unknown[], R>(
   fn: (...args: A) => Promise<R>,
@@ -49,7 +62,12 @@ function on401<A extends unknown[], R>(
       return await fn(...args);
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 401) {
-        notifyPullimSessionExpired();
+        if (error.sessionExpired) {
+          notifyPullimSessionExpired();
+        } else {
+          // 삼켜지는 경로(훅의 날짜별 catch)라 화면에 안 남는다 — 진단은 콘솔에 남긴다.
+          console.error('[planner] 401 — 재발급 후 재시도도 실패(세션 만료는 아님)', error);
+        }
       }
       throw error;
     }
@@ -61,13 +79,16 @@ function on401<A extends unknown[], R>(
  *
  * 자체 BE planner 클라(`./client.ts` 의 레거시 구현, Bearer + 엔벨로프)를 대체한다. 인증은 쿠키
  * SSO(브라우저 자동 첨부)라 토큰을 클라가 들지 않고, 상태변경은 CSRF double-submit
- * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 401 에서 세션 만료를 통지한다.
+ * (`csrfCookieName` 자동 동봉 + 회전 시 재부트스트랩). 모든 메서드는 **세션 만료가 확정된**
+ * 401(`ApiError.sessionExpired`)에서 전역 만료를 통지한다 — 재발급 성공 후 재시도까지 하고도
+ * 401 인 요청은 통지하지 않고 **그 요청만 실패**한다(위 `on401` 주석).
  */
 export const pullimPlannerClient: PullimPlannerClient &
   PullimBlockCompletionClient &
   PullimRoutineClient = {
   list: on401(rawPullimPlannerClient.list),
   blocks: on401(rawPullimPlannerClient.blocks),
+  blocksRange: on401(rawPullimPlannerClient.blocksRange),
   burnout: on401(rawPullimPlannerClient.burnout),
   condition: on401(rawPullimPlannerClient.condition),
   saveCondition: on401(rawPullimPlannerClient.saveCondition),
