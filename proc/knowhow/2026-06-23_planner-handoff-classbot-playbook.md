@@ -3,7 +3,7 @@
 **작성:** 2026-06-23 · **대상:** 풀림 플래너를 작업하는 담당자
 **목적:** 클래스봇에서 **검증된** (1) 디자인 시스템 적용, (2) 작업 방식(프로세스), (3) 디자인 리파인먼트 패턴을 플래너에서 **같은 맥락**으로 이어가기 위한 실무 가이드.
 
-> 핵심 한 줄: **토큰은 단일 소스로 한 번만 바꾸고, 작업은 `spec → plan → 서브에이전트 실행 → 리뷰 게이트`로, PR은 `feature → dev → main`으로 작게 쪼개 올린다.**
+> 핵심 한 줄: **토큰은 단일 소스로 한 번만 바꾸고, 작업은 `spec → plan → 서브에이전트 실행 → 리뷰 게이트`로, 개발 PR은 `feature → dev`로 작게 쪼개고 검증된 dev 변경은 `dev → main` 통합 승격으로 올릴 수 있다.**
 
 > ⚠️ **경로 표기 주의** — 이 문서는 **클래스봇 레포(별 저장소)에서의 작업을 핸드오프**한 것이다.
 > 본문의 `apps/classbot/**`, `proc/spec/2026-06-22_pullim-ds-revamp-design.md`,
@@ -74,9 +74,12 @@ palette.ts (JS 값)  →  globals.css @theme inline (CSS 변수: --color-pullim-
 - `dev` = preview(외부 차단), `main` = prod 배포 소스. 변경은 dev에서 검증 후 prod 승격.
 
 ### 2.2 PR 단위 (최상위 규칙)
+
+플래너의 개발 PR·통합 승격 적용 범위는 [루트 CLAUDE.md의 최상위 규칙](../../CLAUDE.md)을 따른다(2026-09-08 오너 결정). 아래 분리 원칙은 **기능 개발 PR(feature → dev)** 에 적용한다. **dev에서 관심사별 CI·리뷰를 통과해 머지한 변경의 통합 승격(head=dev, base=main)은 허용**하며, 승격의 코드·보안 검토 및 CI·리뷰 게이트는 유지한다.
+
 - **FE 변경과 BE 변경을 한 PR에 섞지 않는다.** 공유 타입/패키지는 그걸 쓰는 PR보다 **먼저** 별도 PR.
-- **한 PR = 한 계층/한 단위.** diff가 작아야 코드 리뷰(코덱스)가 수렴한다. 크게 섞으면 리뷰가 매 라운드 새 지적을 내며 무한 반복.
-- 큰 기능은 **phased stacked PR**로: 파운데이션 → 면별. 각 PR이 단독으로 동작/검증 가능해야.
+- **개발 PR 하나 = 한 계층/한 단위.** diff가 작아야 코드 리뷰(코덱스)가 수렴한다. 크게 섞으면 리뷰가 매 라운드 새 지적을 내며 무한 반복.
+- 큰 기능의 개발은 **phased stacked PR**로: 파운데이션 → 면별. 각 PR이 단독으로 동작/검증 가능해야.
 
 ### 2.3 풀사이클 (신규 기능)
 스킬을 그대로 사용(클래스봇 dual-mode가 이 흐름):
@@ -128,7 +131,7 @@ palette.ts (JS 값)  →  globals.css @theme inline (CSS 변수: --color-pullim-
 - [ ] design-gates(hex/word-break) + 타입스케일 + focus/44px + color-palette e2e를 플래너 라우트 기준으로 세팅/확인
 - [ ] 첫 작업을 **파운데이션 PR(토큰)** 로 잡고 `feature → dev` PR, 검증 게이트 통과 후 승격
 - [ ] 신규 기능은 `brainstorming → spec → writing-plans → subagent-driven` 풀사이클
-- [ ] PR은 FE/BE 분리 + 작게. 각 PR 단독 동작·검증
+- [ ] 개발 PR은 FE/BE 분리 + 작게. 각 PR 단독 동작·검증. dev → main 통합 승격 범위는 §2.2 참조
 
 ---
 
