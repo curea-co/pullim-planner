@@ -78,29 +78,35 @@ export function ServiceSwitcher() {
 
       <div className="switcher-menu" role="menu">
         <div className="sm-head">서비스 전환</div>
-        {PULLIM_SERVICES.map((s) =>
+        {PULLIM_SERVICES.map((s) => {
           // 준비 중 서비스는 진입 차단(레포 정책) — 링크가 아닌 비활성 항목으로 렌더.
-          s.soon ? (
-            <div
-              key={s.key}
-              role="menuitem"
-              aria-disabled
-              className="sm-item is-soon"
-            >
-              <ServiceItemBody service={s} />
-            </div>
-          ) : (
-            <a
-              key={s.key}
-              href={s.href}
-              role="menuitem"
-              className={`sm-item${s.current ? ' is-current' : ''}`}
-              aria-current={s.current ? 'page' : undefined}
-            >
+          if (s.soon) {
+            return (
+              <div key={s.key} role="menuitem" aria-disabled className="sm-item is-soon">
+                <ServiceItemBody service={s} />
+              </div>
+            );
+          }
+          // 현재 서비스(플래너)도 링크가 아니다 — 지금 보고 있는 화면으로 다시 보내는 링크라
+          // 누르면 편집 중이던 화면 상태만 잃는다. '현재 위치'만 표시한다(정본 Q 와 동일).
+          if (s.current) {
+            return (
+              <div
+                key={s.key}
+                role="menuitem"
+                aria-current="page"
+                className="sm-item is-current"
+              >
+                <ServiceItemBody service={s} />
+              </div>
+            );
+          }
+          return (
+            <a key={s.key} href={s.href} role="menuitem" className="sm-item">
               <ServiceItemBody service={s} />
             </a>
-          ),
-        )}
+          );
+        })}
       </div>
     </div>
   );
