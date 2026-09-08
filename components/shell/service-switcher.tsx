@@ -40,8 +40,12 @@ function ServiceItemBody({ service }: { service: PullimService }) {
  * 현재 서비스(플래너)를 트리거에 표시, 메뉴에서 다른 풀림 서비스로 이동.
  */
 export function ServiceSwitcher() {
-  const { status, user } = useAuth();
-  const showStudio = status === 'authenticated' && /^[^@\s]+@curea\.co$/i.test(user?.email ?? '');
+  // `accountEmail` 은 중앙 계정(`GET /me`)에서 오고 planner 권한·프로필과 무관하다.
+  // `status === 'authenticated'` 를 함께 요구하지 않는 이유: 그러면 planner 엔타이틀먼트가 없는
+  // (403) 또는 온보딩 전(404) curea 계정에서 스튜디오가 영구히 숨는다 — 정작 스튜디오만 쓰는
+  // 사람이 못 본다. 값이 있다는 것 자체가 **중앙 세션이 유효하다**는 뜻이다(Codex #257).
+  const { accountEmail } = useAuth();
+  const showStudio = /^[^@\s]+@curea\.co$/i.test(accountEmail ?? '');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

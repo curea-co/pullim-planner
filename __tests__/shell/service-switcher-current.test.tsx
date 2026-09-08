@@ -8,8 +8,10 @@ import { render, screen } from '@testing-library/react';
 import { ServiceSwitcher } from '@/components/shell/service-switcher';
 import { PULLIM_SERVICES } from '@/components/shell/pullim-services';
 
+// 스튜디오 항목이 계정 게이트 뒤에 있으므로(#257) curea 계정으로 고정한다 — 그래야 아래
+// 「항목 수 = 카탈로그 길이」가 게이트와 무관하게 카탈로그만 검사한다.
 jest.mock('@/lib/auth/auth-context', () => ({
-  useAuth: () => ({ status: 'authenticated', user: { email: 'staff@curea.co' } }),
+  useAuth: () => ({ accountEmail: 'staff@curea.co' }),
 }));
 
 describe('서비스 스위처 — 현재 서비스', () => {
