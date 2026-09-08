@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pullim Arcade">
+  <title>풀림 아케이드</title>
+  <rect x="4" y="4" width="92" height="92" rx="18" fill="#0362DA"/>
+  <!-- joystick base -->
+  <rect x="24" y="62" width="34" height="9" rx="4.5" fill="#FFFFFF"/>
+  <!-- joystick stick -->
+  <rect x="37" y="40" width="8" height="24" fill="#FFFFFF"/>
+  <!-- joystick ball (lemon accent) -->
+  <circle cx="41" cy="36" r="9" fill="#E6FF4C"/>
+  <!-- two action buttons -->
+  <circle cx="66" cy="40" r="6" fill="#FFFFFF"/>
+  <circle cx="70" cy="58" r="6" fill="#FFFFFF"/>
+</svg>
