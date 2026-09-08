@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>풀림 플래너 QA 수정 계획 — 2026-09-04</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --card:#ffffff; --ink:#16181d; --ink-2:#4a4f5a; --ink-3:#767c88;
+    --line:#e2e5ec; --line-2:#eef0f5;
+    --accent:#2a5bd7; --accent-bg:#eaf0ff;
+    --blocker:#b3132a; --blocker-bg:#fdeaed;
+    --major:#b45309; --major-bg:#fdf1e0;
+    --minor:#1f6f8b; --minor-bg:#e7f3f7;
+    --info:#5b6270; --info-bg:#eef0f4;
+    --ok:#1a7f47; --ok-bg:#e7f5ed;
+    --be:#7c3aed; --be-bg:#f2ecff;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#12141a; --card:#191c23; --ink:#e9ebf0; --ink-2:#b6bcc8; --ink-3:#878e9c;
+      --line:#2b2f3a; --line-2:#23262f;
+      --accent:#8fb0ff; --accent-bg:#1c2540;
+      --blocker:#ff8a9b; --blocker-bg:#3a1720;
+      --major:#f0b45f; --major-bg:#372613;
+      --minor:#7fc9de; --minor-bg:#132a32;
+      --info:#a4abb8; --info-bg:#22252d;
+      --ok:#79d5a2; --ok-bg:#13301f;
+      --be:#c4a8ff; --be-bg:#2a1f43;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+    font-size:15px; line-height:1.65; -webkit-text-size-adjust:100%; word-break:keep-all;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 18px 80px}
+  header.top{
+    background:linear-gradient(135deg,#1b3fa0,#2f6ae0); color:#fff;
+    border-radius:16px; padding:26px 24px; margin-bottom:22px;
+  }
+  header.top h1{margin:0 0 8px; font-size:23px; letter-spacing:-.4px}
+  header.top p{margin:0; opacity:.92; font-size:14px}
+  header.top .meta{
+    margin-top:16px; display:grid; grid-template-columns:max-content 1fr; gap:4px 16px;
+    font-size:13px; opacity:.95;
+  }
+  header.top .meta b{font-weight:600}
+  section{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:20px 22px; margin-bottom:20px;
+  }
+  h2{
+    margin:0 0 14px; font-size:18px; letter-spacing:-.3px;
+    border-bottom:2px solid var(--line-2); padding-bottom:9px;
+  }
+  h3{margin:22px 0 8px; font-size:15px; letter-spacing:-.2px}
+  p{margin:0 0 11px}
+  .lead{color:var(--ink-2)}
+  code{font-family:var(--mono); font-size:12.6px; background:var(--line-2); padding:1px 5px; border-radius:4px}
+  .badges{display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 4px}
+  .badge{
+    display:inline-flex; align-items:baseline; gap:7px; border-radius:999px;
+    padding:5px 14px; font-size:13px; font-weight:600;
+  }
+  .badge b{font-size:15px}
+  .b-blocker{background:var(--blocker-bg); color:var(--blocker)}
+  .b-major{background:var(--major-bg); color:var(--major)}
+  .b-minor{background:var(--minor-bg); color:var(--minor)}
+  .b-info{background:var(--info-bg); color:var(--info)}
+  .b-be{background:var(--be-bg); color:var(--be)}
+  .b-ok{background:var(--ok-bg); color:var(--ok)}
+  .finding{
+    border:1px solid var(--line); border-left-width:5px; border-radius:11px;
+    padding:16px 18px; margin:16px 0; background:var(--card);
+  }
+  .blocker{border-left-color:var(--blocker)}
+  .major{border-left-color:var(--major)}
+  .minor{border-left-color:var(--minor)}
+  .info{border-left-color:var(--info)}
+  .finding h3{margin:0 0 10px; font-size:15.5px; line-height:1.45}
+  .pill{
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.04em;
+    padding:2px 8px; border-radius:5px; margin-right:8px; vertical-align:2px;
+  }
+  .p-blocker{background:var(--blocker-bg); color:var(--blocker)}
+  .p-major{background:var(--major-bg); color:var(--major)}
+  .p-minor{background:var(--minor-bg); color:var(--minor)}
+  .p-info{background:var(--info-bg); color:var(--info)}
+  .p-be{background:var(--be-bg); color:var(--be)}
+  .p-ok{background:var(--ok-bg); color:var(--ok)}
+  .kv{display:grid; grid-template-columns:max-content 1fr; gap:5px 14px; font-size:13.7px; margin:10px 0}
+  .kv dt{color:var(--ink-3); font-weight:600; white-space:nowrap}
+  .kv dd{margin:0; color:var(--ink-2)}
+  .kv dd b{color:var(--ink)}
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; margin:12px 0}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:13.5px}
+  th,td{padding:10px 13px; text-align:left; border-bottom:1px solid var(--line-2); vertical-align:top}
+  thead th{background:var(--line-2); font-size:12.5px; color:var(--ink-2); font-weight:600; white-space:nowrap}
+  tbody tr:last-child td,tbody tr:last-child th{border-bottom:none}
+  tbody th{font-weight:600; white-space:nowrap}
+  td{color:var(--ink-2)}
+  td.n{color:var(--ink); font-weight:600}
+  .bad{color:var(--blocker); font-weight:600}
+  .good{color:var(--ok); font-weight:600}
+  .note{
+    background:var(--accent-bg); border-radius:10px; padding:13px 16px; margin:14px 0;
+    font-size:13.8px; color:var(--ink-2);
+  }
+  .note b{color:var(--ink)}
+  .warn{background:var(--major-bg)}
+  ul{margin:8px 0 12px; padding-left:20px}
+  li{margin:5px 0; color:var(--ink-2)}
+  li b{color:var(--ink)}
+  ol.steps{margin:8px 0 12px; padding-left:22px}
+  ol.steps li{margin:9px 0}
+  .unverified{
+    display:inline-block; font-size:11px; font-weight:700; padding:1px 7px;
+    border-radius:4px; background:var(--major-bg); color:var(--major); margin-left:6px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>풀림 플래너 — QA 수정 계획</h1>
+  <p>2026-09-04 브라우저 QA 보고서(<code style="background:rgba(255,255,255,.16);color:#fff">planner.html</code>) 18건에 대한 원인 규명과 수정 방안</p>
+  <div class="meta">
+    <b>대상 보고서</b><span>QA/20260904/planner.html — Blocker 1 · Major 4 · Minor 8 · Info 5 · 건강도 60/100</span>
+    <b>조사 방법</b><span>코드 정독 + 로컬 재현. 제품 코드 <b>미변경</b> (읽기 전용 조사)</span>
+    <b>작성</b><span>2026-09-04 · 4개 영역 병렬 조사(라우팅 / 데이터 정확성 / 표시·접근성 / 동작·성능)</span>
+    <b>갱신</b><span>2026-09-07 — pullim-api 소스 조사로 <b>F-02 원인 확정</b>, preview 400(N-01) · blocks 401(N-02) 신규 추가</span>
+    <b>수정·검증</b><span>2026-09-07 — <b>F-01 · F-02 · N-01 · N-02 네 건 해소</b>.
+    FE PR #237·#239·#240·#242·#244·#245 · BE pullim-api PR #629·#630. 전부 dev 머지·배포 완료이고
+    <b>배포본에서 브라우저 실측까지 마쳤다</b>(N-01 실제 재현 · N-02 401 인위 주입 · 팬아웃 37→2).
+    아래 각 항목의 「해소」 블록 참조</span>
+  </div>
+</header>
+
+<section>
+  <h2>요약</h2>
+  <p class="lead">
+    18건 중 <b>16건의 근본 원인을 코드에서 확정</b>했고, 2건은 조치가 필요 없다고 판정했다.
+    수정의 대부분은 <b>이 리포 안에서 끝난다</b> — 새 인프라도, 라이브러리 추가도 필요 없다.
+  </p>
+
+  <div class="badges">
+    <span class="badge b-blocker"><b>1</b> Blocker</span>
+    <span class="badge b-major"><b>4</b> Major</span>
+    <span class="badge b-minor"><b>8</b> Minor</span>
+    <span class="badge b-info"><b>5</b> Info</span>
+    <span class="badge b-be"><b>2</b> BE 선행</span>
+    <span class="badge b-ok"><b>2</b> 조치 불요</span>
+    <span class="badge b-major"><b>+4</b> 신규 N-01~N-04</span>
+    <span class="badge b-ok"><b>4</b> 해소·검증 완료</span>
+  </div>
+
+  <h3>세 가지가 이번 조사의 결론이다</h3>
+
+  <p><b>① 유일한 Blocker(F-01)는 우리 코드 버그가 아니다.</b>
+  Next.js 16 이 하드 로드 하이드레이션 때 <b>쿼리가 붙은 URL 을 쿼리 없는 라우트 캐시 키에 박아 넣어</b>,
+  이후 같은 pathname 으로 가는 모든 내비게이션이 처음 URL 로 고정되는 프레임워크 동작이다.
+  <code>HomeContainer</code> 의 URL 생성 로직은 정상이다. 그럼에도 <b>수정 비용은 낮다</b> —
+  쿼리 전용 이동을 네이티브 History API 로 바꾸면 되고, <b>그 패턴이 이미 이 리포에 있다</b>
+  (<code>NewPlannerContainer.tsx:142-160</code>).</p>
+
+  <p><b>② 결함 셋이 같은 모양이다 — "BE 는 준비됐는데 FE 표면만 없다".</b>
+  완료 취소(<code>uncompleteBlock</code>)와 아카이브 복원(<code>unarchive</code>)은 API 클라이언트와
+  401 래퍼까지 갖춰져 있는데 <b>UI 호출부가 0건</b>이다. 붙이기만 하면 된다.</p>
+
+  <p><b>③ 진짜로 이 리포 밖인 것은 F-02 하나뿐이고, 원인이 확정됐다.</b>
+  <b>bake 순서는 맞다</b> — 루틴을 먼저 굽고 생성 블록에서 뺀다. 문제는 <code>excludeOverlapping</code> 이
+  <b>아무것도 제외하지 못한다</b>는 것이다: raw 쿼리(<code>.getRawMany()</code>)가 <code>date</code> 를
+  <b>JS <code>Date</code> 객체</b>로 돌려주는데 Map 조회는 문자열로 해서 항상 미스가 난다.
+  <b>쿼리 한 줄</b>(<code>TO_CHAR</code>)로 낫고 <b>FE 변경은 불필요</b>하다 — 초판의 "FE 완화" 계획은 폐기.</p>
+
+  <div class="note">
+    <b>조사 중 QA 가 지적하지 않은 결함 4건을 추가로 찾았다.</b>
+    같은 뿌리에서 나온 것들이라 함께 고치는 편이 싸다 — 아래 「QA 가 놓친 것」 절 참조.
+  </div>
+</section>
+
+<section>
+  <h2>먼저 정해야 할 것 — 결정 8건</h2>
+  <p class="lead">아래가 정해지기 전에는 해당 항목의 구현을 시작할 수 없거나, 시작해도 다시 뒤집힐 수 있다.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>#</th><th>무엇을 정하나</th><th>선택지</th><th>막히는 항목</th></tr></thead>
+      <tbody>
+        <tr><td class="n">D1</td><td>F-01 수정 방식</td>
+          <td><b>A. 네이티브 History API</b>(권장 — 검증 완료·리포 선례 있음) / B. 서버에서 <code>searchParams</code> 소비(<code>/planner</code> 가 정적 → 동적으로 바뀌고 전환마다 서버 왕복)</td>
+          <td class="n">F-01</td></tr>
+        <tr><td class="n">D2</td><td>월간 셀에서 <b>미래 날짜를 무엇으로 구분</b>할지</td>
+          <td>지금은 <b>색 흐림</b>으로 구분해 대비가 깨졌다. 이미 있는 <b>점선 테두리</b>만으로 대체할지 디자인 확인 필요</td>
+          <td class="n">F-04</td></tr>
+        <tr><td class="n">D3</td><td>완료 취소를 <b>어디에 둘지</b></td>
+          <td>A. 완료 토스트의 실행취소 / B. 완료 카드의 되돌리기 버튼 / <b>A+B 병행</b>(권장). C(모달 재진입)는 QA #12 결정과 역행 — 비권장</td>
+          <td class="n">F-05</td></tr>
+        <tr><td class="n">D4</td><td>시간표 카드의 <b>"주간 학습"이 무엇을 뜻할지</b></td>
+          <td>49h = <b>가용 창 폭</b>, 45h = <b>실제 블록 합</b>. 둘 다 틀린 값이 아니라 의미가 다르다 — 어느 쪽을 카드에 둘지</td>
+          <td class="n">F-06</td></tr>
+        <tr><td class="n">D5</td><td>번아웃 <b>추세 라벨 카피</b></td>
+          <td><code>falling</code> 의 '주의' 가 점수 등급 '주의' 와 문자열 충돌. '하락' 류로 바꿀지</td>
+          <td class="n">F-07</td></tr>
+        <tr><td class="n">D6</td><td><b>알림을 IA 에 정식 추가</b>할지</td>
+          <td>추가하면 사이드바 활성 오표시와 브레드크럼 부재가 함께 풀린다. 안 하면 제외 목록 방식</td>
+          <td class="n">F-09 · F-13</td></tr>
+        <tr><td class="n">D7</td><td>알림 빈 상태에 <b>CTA 를 둘지</b>, 둔다면 어디로</td>
+          <td>다른 화면의 빈 상태는 전부 CTA 를 갖는다. 알림은 보낼 곳이 마땅치 않다</td>
+          <td class="n">F-13</td></tr>
+        <tr><td class="n">D8</td><td>폰트 <b>2.0MB</b> 를 어떻게 줄일지</td>
+          <td>A. 같은 CDN 의 <b>dynamic-subset</b> URL 로 교체(한 줄, 수백 KB 급) / B. self-host(2MB 를 리포에 커밋) / C. npm — <b>C 는 <code>package.json</code> 수정이라 별건 승인 필요</b></td>
+          <td class="n">I-02</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>실행 순서 — PR 묶음</h2>
+  <p class="lead">
+    <code>CLAUDE.md</code> 최상위 규칙이 <b>"한 PR = 한 관심사"</b> 다 — diff 가 Codex Review 의 수렴 범위를
+    넘으면 COMMENTED 가 누적돼 머지가 끝나지 않는다. 아래는 그 규칙에 맞춰 쪼갠 묶음이다.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>순서</th><th>PR 관심사</th><th>담는 것</th><th>선행</th><th>규모</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td><b>캘린더 내비게이션 복구</b></td><td>F-01 (+ 같은 뿌리인 <code>calendar/page.tsx</code> 의 <code>?view=</code> 유실)</td><td>D1</td><td>helper 1 + 호출부 6~7</td></tr>
+        <tr><td class="n">2</td><td><b>로딩과 빈 상태를 구분</b></td><td>F-03</td><td>없음</td><td>5~6 파일</td></tr>
+        <tr><td class="n">3</td><td><b>되돌릴 수 없는 조작에 되돌리기</b></td><td>F-05 + I-05 (같은 패턴 — BE 완비·FE 표면 누락)</td><td>D3</td><td>5~6 파일</td></tr>
+        <tr><td class="n">4</td><td><b>번아웃 카드가 같은 점수에 두 말을 하지 않게</b></td><td>F-07</td><td>D5</td><td>1~2 파일</td></tr>
+        <tr><td class="n">5</td><td><b>현재 위치 표시를 실제 경로와 맞춤</b></td><td>F-09</td><td>없음</td><td>1~2 파일</td></tr>
+        <tr><td class="n">6</td><td><b>날짜 계산·주 시작 요일 통일</b></td><td>F-10</td><td>D6</td><td>1~2 파일</td></tr>
+        <tr><td class="n">7</td><td><b>지난 시험 시간표의 안내 문구</b></td><td>F-11</td><td>없음</td><td>1~2 파일</td></tr>
+        <tr><td class="n">8</td><td><b>월간 캘린더 가독성</b></td><td>F-04 (+ 오늘 셀·다크 회귀)</td><td>D2</td><td>2 파일</td></tr>
+        <tr><td class="n">9</td><td><b>동작하지 않는 검색 표면</b></td><td>F-08</td><td>D4</td><td>1~2 파일</td></tr>
+        <tr><td class="n">10</td><td><b>접근성 이름 한국어화</b> (공유 프리미티브 — 다이얼로그·토스트)</td><td>F-12</td><td>없음</td><td>2~3 파일</td></tr>
+        <tr><td class="n">11</td><td><b>알림 빈 상태 문구·시각 처리</b></td><td>F-13</td><td>D7</td><td>1 파일</td></tr>
+        <tr><td class="n">12</td><td><b>주간 학습 시간 표기를 실제 생성 계획과 맞춤</b></td><td>F-06</td><td>없음</td><td>1~2 파일</td></tr>
+        <tr><td class="n">13</td><td><b>로드 비용</b></td><td>I-02 (+ FE 로 가능한 I-01 완화)</td><td>D8</td><td>1~2 파일</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <b>1번을 먼저 하는 이유</b>는 심각도만이 아니다. F-01 은 <b>다른 결함의 관측을 방해한다</b> —
+    뷰 전환이 죽어 있으면 월/주 뷰에서 재현해야 하는 F-03·F-04 를 확인하기 어렵다.
+  </div>
+</section>
+
+<section>
+  <h2>수정 계획 — 결함 13건</h2>
+
+  <div class="finding blocker">
+    <h3><span class="pill p-ok">해소</span><span class="pill p-blocker">BLOCKER</span>F-01 · 쿼리스트링 URL 로 직접 진입하면 캘린더 뷰 전환·기간 이동이 전부 무반응</h3>
+    <div class="note" style="margin-top:0">
+      <b>2026-09-07 해소 — PR #237 (dev 머지).</b> 쿼리 전용 이동을 네이티브 History API 로 바꿨다
+      (<code>lib/planner/query-nav.ts</code>). 「같은 화면의 상태 변경」은 <code>replaceQuery</code>,
+      「파고드는 딥링크」는 <code>pushQuery</code> 로 갈랐다.
+      <br><br>
+      <b>배포본(dev)에서 브라우저 검증 완료</b> — <code>?view=month</code> 하드 로드 후:
+      일간·주간·월간 전환 전부 동작, 기간 이동 <code>›</code> → 2026년 10월(88블록·시험일 표시),
+      월간 셀 딥링크 → 10월 5일 일간 뷰, <b>뒤로가기 → 10월 월간으로 정확히 복귀</b>.
+      <code>?view=month&amp;d=3</code> 직접 진입도 2026.12 로 열린다.
+      <br><br>
+      <b>리뷰에서 세 번 더 나왔다</b> — 재사용 위젯(<code>MonthHeatmap</code>·<code>WeekGrid</code>·
+      <code>TodayReflection</code>·<code>TodayTimeline</code>)이 전부 다른 feature 에서도 렌더되는데,
+      History API 는 URL 만 바꾸므로 <b>다른 경로에서 쓰면 화면이 안 바뀐다</b>. 네 위젯 모두
+      <code>onNavigate</code> <b>필수 프롭</b>으로 바꿔 컨테이너가 수단을 정하게 했다 —
+      옵셔널 기본값을 두면 「한쪽에 맞춘 값이 다른 쪽에서 조용히 깨지는」 함정이 남는다.
+    </div>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <b>우리 코드 버그가 아니다 — Next.js 16 라우트 캐시의 canonicalUrl 오염이다.</b>
+        하드 로드 하이드레이션 때 <code>create-initial-router-state.js:31,52</code> 가
+        키는 <code>/planner</code>(쿼리 없음), 값의 canonicalUrl 은 <code>/planner?view=month</code>(쿼리 포함)로 캐시에 넣는다.
+        <code>/planner</code> 는 서버에서 <code>searchParams</code> 를 안 읽는 <b>정적 페이지</b>라
+        <code>segment-cache/cache.js:693,715</code> 가 <code>renderedSearch=''</code> 로 접어
+        <b>모든 쿼리 변형의 캐시 히트</b>가 된다. 이후 <code>navigation.js:156</code> 의
+        <code>canonicalUrl = route.canonicalUrl + url.hash</code> 때문에 모든 내비게이션이
+        <b>처음 박힌 URL 로 커밋</b>된다. <code>HomeContainer.tsx:74-89</code> 의 <code>buildUrl</code> 은 정상이다.
+      </dd>
+      <dt>재현</dt><dd>
+        <b>로컬 재현 성공</b>(추정 아님). 원본 트리를 건드리지 않고 스크래치패드 복사본으로 프로덕션 빌드 후 실측.
+        <code>?view=month</code> + [일간] → <code>replace:/planner?view=month</code> 로 고정, h1 불변.
+        <code>?foo=1</code> + [월간] → <code>?foo=1</code> 고정.
+        <code>/planner/week</code>(정적 HTML 안의 클라이언트 redirect) 진입은 정상 — <b>QA 의 A/B 관측과 완전 일치</b>.
+      </dd>
+      <dt>수정 방안</dt><dd>
+        <b>A (권장, 검증 완료)</b> — 같은 pathname 의 <b>쿼리 전용 이동</b>을 <code>router.replace/push</code> 대신
+        네이티브 <code>history.replaceState/pushState</code> 로. Next 16 공식 지원이며 <code>useSearchParams</code> 와 동기화된다
+        (<code>next/dist/docs/01-app/01-getting-started/04-linking-and-navigating.md:341</code>).
+        <b>리포에 선례가 이미 있다</b> — <code>NewPlannerContainer.tsx:142-160</code>.
+        실측에서 replace·push 모두 URL·렌더 갱신, 뒤로가기 정상.<br>
+        <b>B</b> — <code>app/(student)/planner/page.tsx</code> 가 서버에서 <code>searchParams</code> 를 소비.
+        해결되지만 <code>/planner</code> 가 <b>정적 → 동적</b>이 되고 뷰 전환마다 서버 왕복이 생긴다.<br>
+        C — Next 패치 업그레이드. <span class="unverified">미확인</span> <code>package.json</code> 수정 금지 영역이라 별건.
+      </dd>
+      <dt>범위</dt><dd>A 기준 공유 helper 1개(<code>lib/planner/</code>) + 호출부 6곳 —
+        <code>HomeContainer.tsx:86,115</code> · <code>week-grid.tsx:37,42</code> · <code>month-heatmap.tsx:42,52</code>.
+        같은 결함 클래스라 <code>ReportsContainer.tsx:27</code> 도 포함 권장(prod 는 게이트 off)</dd>
+      <dt>위험</dt><dd>낮음. 히스토리 엔트리 의미(replace/push)를 1:1 로 맞추면 뒤로가기 동작 동일(실측).
+        단 <code>__NA</code>/<code>_N</code> 제거를 빠뜨리면 라우터 동기화가 끊긴다 — 선례 주석에 이유가 적혀 있다</dd>
+      <dt>난이도</dt><dd>낮음~중간 — 원인이 확정됐고 패턴·검증 경로가 리포에 있다</dd>
+      <dt>선행</dt><dd><b>D1</b>(A/B 택일)만. BE 무관</dd>
+    </dl>
+  </div>
+
+  <div class="finding major">
+    <h3><span class="pill p-ok">해소</span><span class="pill p-major">MAJOR</span>F-02 · 루틴 블록과 자동 생성 블록이 매 평일 같은 시간대에 이중 배치</h3>
+    <div class="note" style="margin-top:0">
+      <b class="good">2026-09-07 해소 — pullim-api #629 (dev 머지·배포).</b> 「BE 선행」이었으나 BE 리포 접근이
+      열려 직접 고쳤다.
+      <br><br>
+      <b>원인은 제보대로였고, 실측으로 확증했다.</b> 실 Postgres 에 붙여 확인한 값 —
+      <code>date</code> 컬럼은 <code>typeof: object</code> · <code>instanceof Date: true</code> 이고
+      <code>TO_CHAR</code> 로는 문자열이다. <code>getRawMany()</code> 가 엔티티 하이드레이션을 건너뛰어
+      드라이버 값이 그대로 나오기 때문이다. 그래서 호출부의 <code>byDate.get(block.date)</code> 가
+      <b>항상 미스</b>가 되고, 미스는 <code>return true</code>(겹침 없음)로 접혀
+      <b>overlap 제외가 전면 무력화</b>된다.
+      <br><br>
+      <code>select</code> 한 줄(<code>TO_CHAR(b.date,'YYYY-MM-DD')</code>)로 고쳤다.
+      <b>기존 테스트가 못 잡은 이유가 새 테스트의 이유다</b> — 실 드라이버가 개입하는 자리가 없었다
+      (e2e fake 는 진짜 <code>string</code> 을 돌려주고, 순수함수 스펙은 문자열 입력만 쓴다).
+      testcontainers 통합 스펙을 새로 뒀고, 수정을 되돌리면 3건 중 2건이 깨지는 것을 확인했다.
+    </div>
+    <div class="note warn" style="margin-top:0">
+      <b>2026-09-07 갱신 — 원인 확정.</b> 초판은 "bake 순서를 확인해야 한다"로 남겨 뒀으나,
+      pullim-api 소스를 읽어 <b>순서는 맞고 겹침 제거가 무음으로 죽는 것</b>임을 밝혔다.
+      <b>겹침이 아니라 날짜 타입 불일치</b>가 원인이다.
+    </div>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <b>호출 순서는 맞게 짜여 있다</b> — 루틴을 먼저 굽고 생성 블록에서 뺀다
+        (<code>planner.service.ts:166-173</code>). 문제는 <code>excludeOverlapping</code> 이
+        <b>아무것도 제외하지 못한다</b>는 것이다.<br><br>
+        <code>excludeOverlapping</code>(<code>generate-schedule.ts:124-141</code>)은
+        <code>Map</code> 을 <code>occupied[].date</code> 로 키잉하고 <code>block.date</code>(문자열)로 조회한다.
+        그런데 <code>findTimeBlockSlotsFrom</code>(<code>planner.repository.ts:270-289</code>)은
+        <code>.getRawMany()</code> 라 엔티티 하이드레이션을 거치지 않고,
+        pg 가 <code>date</code>(OID 1082)를 <b>JS <code>Date</code> 객체</b>로 파싱한다.
+        <span class="mono">time</span>(OID 1083)은 문자열로 와서 무해한데 <b>날짜만 객체</b>다.<br><br>
+        → <code>Date</code> 객체를 키로 넣고 문자열로 조회하니 <b>항상 <code>undefined</code></b> →
+        <code>if (!slots) return true</code> → <b>전량 통과</b>. 겹침 제거가 무음으로 죽는다.
+      </dd>
+    </dl>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>경로</th><th>occupied 출처</th><th>결과</th></tr></thead>
+        <tbody>
+          <tr><th>create (<code>:166-173</code>)</th><td><code>bakeRoutines</code> 반환 in-memory (date=문자열)</td><td class="good">정상 제외</td></tr>
+          <tr><th>preview (<code>:648-662</code>)</th><td>in-memory <code>routineBlocks</code> (date=문자열)</td><td class="good">정상 제외</td></tr>
+          <tr><th><b>update 재생성</b> (<code>:425-430</code>)</th><td><code>findTimeBlockSlotsFrom</code> <b>raw</b></td><td class="bad">제외 0</td></tr>
+          <tr><th><b>activate 백필</b> (<code>:486-491</code>)</th><td>〃</td><td class="bad">제외 0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin:10px 0"><b>"FE 미리보기는 깨끗한데 저장 결과는 겹친다"가 정확히 이 갈림이다.</b>
+    위저드가 create 후 PATCH 를 한 번이라도 보내면 <code>routineChanged=true</code> →
+    <code>deleteRegenerableBlocksFrom</code> → <b>겹침 무시 재생성</b>으로 매 평일 루틴 시간대에 generated 가 다시 깔린다.</p>
+    <dl class="kv">
+      <dt>수정 방안</dt><dd>
+        <b>(a) 근본 — <code>planner.repository.ts:280</code></b>:
+        <code>'b.date AS "date"'</code> → <code>TO_CHAR(b.date,'YYYY-MM-DD') AS "date"</code>.
+        <b>이거 하나로 update·activate 양쪽이 동시에 낫는다.</b> 반환 타입이 이미
+        <code>{date: string}</code> 로 선언돼 있어 <b>타입·호출부 변경 0</b>.<br>
+        <b>(b) 방어 — <code>generate-schedule.ts:127-133</code></b>:
+        진입부에서 <code>String(slot.date).slice(0,10)</code> 로 정규화. 순수함수라 테스트가 쉽고
+        앞으로 다른 호출자가 raw 값을 넘겨도 무음 실패하지 않는다. (a) 와 <b>병행 권장</b>.<br>
+        <b>(c) 문서 정합 — <code>planner-write.dto.ts:241</code></b>:
+        "create 경로에서만 bake 된다(update 는 무시)" 는 <b>거짓</b>이다.
+        <code>updatePlanner</code> 가 <code>routineApplications</code> 를 선언적 diff 로 처리한다. 주석만 수정.
+      </dd>
+      <dt>왜 (a) 인가</dt><dd>
+        쿼리 1줄이고 다른 쿼리·엔티티 하이드레이션에 영향이 0이다. 무엇보다
+        <b>JS <code>Date</code> 를 아예 만들지 않아</b> 아래 타임존 함정을 회피한다.
+        <b><code>setTypeParser</code> 전역 등록은 반대</b> — OID 1082 파서를 갈면 planner 밖
+        (reader·billing·studio) 전체의 엔티티 하이드레이션과 기존 raw 소비자가 함께 바뀐다.
+        결함 하나에 비해 폭발 반경이 지나치다.
+      </dd>
+      <dt>⚠️ 함정</dt><dd>
+        <b><code>toIsoDate</code>(<code>friendship.repository.ts:251-255</code>)를 복사해 쓰지 마라.</b>
+        <code>value.toISOString().slice(0,10)</code> 인데 pg 는 date 를 <b>로컬 자정</b> <code>Date</code> 로 준다.
+        실측: <code>Mon Sep 07 2026 00:00:00 GMT+0900</code> → <code>2026-09-06</code> — <b>하루 밀린다</b>.
+        <code>Dockerfile</code>·<code>docker-compose.yml</code> 에 <code>TZ</code> 고정이 없어
+        컨테이너(UTC)에선 안 밀리고 <b>KST 개발 머신에선 밀린다</b>.
+      </dd>
+      <dt>회귀 테스트</dt><dd>
+        <b>fake 를 고치는 것은 반대.</b> e2e fake repo 가 문자열 date 를 돌려줘서 못 잡았는데,
+        fake 를 <code>Date</code> 반환으로 맞추면 (a) 수정 후엔 <b>그 fake 가 또 틀린다</b>.
+        fake 는 실제를 영원히 뒤쫓는 위치라 드라이버 동작이 갈리는 결함을 구조적으로 못 잡는다.<br>
+        <b>선례가 이미 있다</b> — <code>test/planner-blocks-repository.integration-spec.ts</code> 가
+        testcontainers 실 Postgres 로 raw 별칭 추출을 고정하고, 그 머리말이 이 갭을 명시한다.
+        <b>제안</b>: 옆에 <code>planner-overlap.integration-spec.ts</code> 1건 —
+        <code>source='routine'</code> 블록을 심고 <code>typeof row.date === 'string'</code> 을 단언한 뒤
+        그 결과를 <code>excludeOverlapping</code> 에 먹여 같은 시간대 generated 가 <b>0건</b>임을 확인.
+        보조로 <code>generate-schedule.spec.ts</code> 에 <code>Date</code> 객체 케이스 1건.
+      </dd>
+      <dt>범위</dt><dd><b>BE 전량.</b> 쿼리 1줄 + 방어 1곳 + 주석 1곳 + 테스트 2건. FE 변경 <b>불필요</b></dd>
+      <dt>위험</dt><dd>낮음 — (a) 는 반환 타입 선언과 일치시키는 수정이라 호출부가 이미 문자열을 기대하고 있다</dd>
+      <dt>난이도</dt><dd>낮음 — 원인·수정 지점·검증 방법이 모두 확정됐다</dd>
+      <dt>선행</dt><dd><b>pullim-api 티켓.</b> 이 리포에서는 할 것이 없다</dd>
+    </dl>
+  </div>
+
+  <div class="finding major">
+    <h3><span class="pill p-ok">해소</span><span class="pill p-major">MAJOR</span>N-01 · <code>POST /planner/planners/preview</code> 400 — 그리고 그것을 삼키는 FE</h3>
+    <div class="note" style="margin-top:0">
+      <b>2026-09-07 해소 — PR #239 (dev 머지).</b>
+      <br><br>
+      <b>심각도 정정 — MAJOR 가 아니라 Blocker 였다.</b> 아래 본문은 "사용자가 400 을 모른 채 저장한다"고
+      적었으나 <b>저장 경로는 400 을 삼키지 않는다</b>(<code>toast.error</code>). 실제 증상은
+      <b>「그 시간표를 영영 수정할 수 없다」</b> 다 — 저장이 400 으로 막히는데 죽은 루틴 id 를 지울 UI 가
+      없기 때문이다(선택 화면은 살아 있는 루틴만 렌더한다). 이름 한 글자도 못 바꾼다.
+      <br><br>
+      <b>고친 것</b> — <code>lib/planner/routine-selection.ts</code> 의
+      <code>toRoutineApplications(ids, known)</code> 를 서버로 나가는 4곳이 공유한다. 미리보기 400 은
+      <code>console.error</code> + 토스트로 표면화(고정 id 로 겹쳐 띄워 타이핑 중 쌓이지 않게).
+      4단계 요약의 "선택한 루틴 N개" 도 미리보기·충돌 배너와 같은 집합을 세게 했다.
+      <br><br>
+      <b>가장 중요한 설계 — <code>known === null</code>(「모른다」)을 따로 둔다.</b> 두 방향의 대가가
+      비대칭이다: 안 걸러서 죽은 id 가 나가면 400(저장 실패 — 되돌릴 수 있다), 잘못 걸러서 살아 있는
+      id 가 빠지면 BE 가 <b>「전부 해제」</b>로 읽어 블록을 지운다(되돌릴 수 없다). 그래서 루틴 조회가
+      실패했을 때는 거르지 않는다.
+      <br><br>
+      <b>리뷰가 두 겹을 더 찾았다</b> — ① 루틴을 <b>전부 지운</b> 사용자는 「조회 성공 · 빈 배열」이라
+      길이로 판정하면 어긋난다 → <code>routinesLoaded</code> 를 확인 단계까지 전달. ②
+      <code>routinesLoaded</code> 는 <b>「조회 중」과 「실패」를 구분하지 못한다</b> → 느린 네트워크에서
+      응답 전에 저장하면 같은 400 이 재현된다. 전송 경로가 state 대신
+      <b>진행 중인 요청 promise</b> 를 기다리도록 바꿨다.
+    </div>
+    <div class="note" style="margin-top:12px">
+      <b>실제 재현으로 검증 완료 (dev 배포본, 2026-09-07).</b>
+      루틴 생성 → "테스트" 시간표에 적용 → <b>루틴 삭제</b> → 다시 열기, 로 죽은 id 상태를 실제로 만들었다.
+      <div class="tablewrap"><table>
+        <tr><th>요청</th><th>본문</th><th>결과</th></tr>
+        <tr><td>미리보기 <code>POST</code></td><td><code>routineApplications: []</code></td><td>서버 미리보기 <b class="good">성공</b> · 400 없음 · 폴백 없음 · 토스트 없음</td></tr>
+        <tr><td>저장 <code>PATCH</code></td><td><code>routineApplications: []</code></td><td><b class="good">✓ 변경 사항 저장 완료</b></td></tr>
+      </table></div>
+      요약도 "선택한 루틴: <b>없음</b>" 으로 정확히 표시됐다.
+      <b>수정 전이라면 죽은 id 가 그대로 나가 400 → 영구 잠김이었을 자리다.</b>
+    </div>
+    <div class="note" style="margin-top:0">
+      <b>QA 보고서에 없던 신규 항목</b>(2026-09-07, 다른 작업자 제보).
+      F-02 와 같은 "루틴" 맥락이라 묶여 보이지만 <b>코드 경로가 다르다</b> —
+      F-02 는 겹침 제거의 date 타입 버그, 이쪽은 루틴 <b>존재·소유권</b> 판정이다.
+      접점은 "둘 다 <code>bakeRoutines</code> 를 지난다"뿐이다.
+    </div>
+    <dl class="kv">
+      <dt>증상</dt><dd><code>"적용할 수 없는 루틴이 포함되어 있습니다."</code> (400)</dd>
+      <dt>발화 조건</dt><dd>
+        <b>정확히 두 경우뿐이다.</b> create(<code>planner.service.ts:210-215</code>)와
+        preview(<code>:624-629</code>)가 <b>완전히 동형</b>인 조건을 쓴다 —
+        <code>!routine || routine.userId !== userId</code>.
+        <ol style="margin:8px 0 0 0">
+          <li><b>그 id 의 루틴 행이 DB 에 없다</b> — <code>RoutineEntity</code> 에 soft-delete 컬럼이 없고
+              삭제가 하드 삭제라 <b>삭제된 루틴 = 미존재 = 400</b></li>
+          <li><b>남의 루틴이다</b> (<code>routine.userId !== user.sub</code>)</li>
+        </ol>
+      </dd>
+      <dt>400 이 <b>아닌</b> 것</dt><dd>
+        <b><code>enabled=false</code> 는 400 을 내지 않는다 — 조용히 skip 된다</b>(<code>:217</code>·<code>:631</code>).
+        증상은 "미리보기에서 그 루틴만 안 보임"이다.
+        subject 불일치·개수 상한·시험일 관계·요일/시간 형식은 <b>검증 자체가 없다</b>.
+        uuid 형식이 틀리면 <b>다른 문구</b>가 나온다(<code>planner-write.dto.ts:97</code>) —
+        보고된 메시지가 떴다는 것은 <b>형식은 맞고 행이 없거나 남의 것</b>이라는 뜻이다.
+      </dd>
+      <dt>가장 유력한 시나리오</dt><dd>
+        <b>stale routineId</b> — 사용자가 루틴을 지웠는데 시간표에 남은 id 를 계속 보낸다.
+        FE 는 <code>routineApplications</code> 를 <b>무조건</b> 실어 보내고(<code>NewPlannerContainer.tsx:91-97</code>),
+        전송 전 <code>GET /planner/routines</code> 목록과 <b>교차 검증하지 않는다</b>.
+      </dd>
+      <dt>더 나쁜 것 — FE 가 400 을 삼킨다</dt><dd>
+        두 컨테이너 모두 <code>catch { return null }</code>(<code>NewPlannerContainer.tsx:105</code>·
+        <code>EditPlannerContainer.tsx:167</code>) → 위저드가 <code>.catch(() =&gt; {})</code>(<code>step-content.tsx:1301</code>).
+        <b>토스트도 콘솔 로그도 없고 위저드도 멈추지 않는다.</b>
+        서버 미리보기 자리에 <b>휴리스틱 로컬 폴백</b>이 조용히 들어간다
+        (<code>previews = serverDays ?? localPreviews</code>, <code>:1311</code>).
+        <b>사용자는 400 을 전혀 모른 채, BE 가 실제로 구울 것과 다른 미리보기를 보고 저장한다.</b>
+      </dd>
+      <dt>게이트 우회</dt><dd>
+        <code>plannerToForm</code>(<code>builder-types.ts:152</code>)이 <code>routineIds</code> 를
+        <b><code>ROUTINE_ENABLED</code> 와 무관하게</b> 프리필한다. 플래그가 꺼져 있으면 선택 UI 가 안 떠서
+        사용자는 그 id 들을 <b>보지도 지우지도 못하는데</b> preview·PATCH 에는 그대로 실려 나간다.
+      </dd>
+      <dt>수정 방안</dt><dd>
+        <b>FE ①</b> 전송 전 <code>routineIds</code> 를 <code>GET /planner/routines</code> 응답과 교차 검증해
+        모르는 id 를 떨군다(400 응답에 어느 id 인지 안 오므로 FE 가 걸러야 한다).<br>
+        <b>FE ②</b> 400 을 삼키지 말고 표면화 — 최소한 <code>console.error</code>, 가능하면 토스트.
+        폴백을 쓴다면 "추정 미리보기"임을 화면에 밝힌다.<br>
+        <b>FE ③</b> 어댑터 <code>pullimToRoutine</code>(<code>pullim-client.ts:129-141</code>)이 버리는
+        <code>enabled</code> 를 살려 "일시중지됨" 표시. 400 원인은 아니지만 <b>루틴이 조용히 사라지는</b> 별개 혼란을 없앤다.<br>
+        <b>BE</b> 400 응답에 <b>어느 routineId 가 문제인지</b> 담는다(현재 <code>code</code>·<code>details</code> 둘 다 없다).
+      </dd>
+      <dt>범위</dt><dd>FE 4~5파일 + BE 응답 1곳</dd>
+      <dt>위험</dt><dd>낮음. ①은 방어적 필터라 정상 흐름을 바꾸지 않는다</dd>
+      <dt>난이도</dt><dd>낮음</dd>
+      <dt>선행</dt><dd>없음. <b>단 ②의 사용자 노출 문구는 결정 필요</b></dd>
+    </dl>
+  </div>
+
+  <div class="finding major">
+    <h3><span class="pill p-ok">해소</span><span class="pill p-major">MAJOR</span>N-02 · <code>GET /planner/planners/{id}/blocks</code> 401 — 그리고 일시 401 한 건이 앱을 로그아웃시키는 구조</h3>
+    <div class="note" style="margin-top:0">
+      <b class="good">2026-09-07 해소 — FE #240 · #242 · #244 + FE #245 + BE pullim-api #630. 전부 머지·배포 완료.</b>
+      <br><br>
+      <b>로그로 원인이 확정됐고, 그 과정에서 결론이 뒤집혔다</b> — 아래 「확증 완료」 참조.
+      제보된 401 은 REUSE 가 아니라 <b>팬아웃 뭉치 401</b> 이었다.
+      <br><br>
+      <b>① PR #240 — 재발급 창.</b> 재발급 직후 1초 안의 재발급 요청은 다시 하지 않고 재시도만 한다.
+      <b>다만 근거를 정정했다</b>: 조사 초안은 2차 재발급이 「이미 쓴 토큰을 재제출해 거부된다」고 봤는데
+      <b>단일 탭에서는 그런 일이 없다</b> — 재발급 #1 의 <code>Set-Cookie</code> 가 이미 적용돼 2차는
+      회전된 <b>새</b> 토큰으로 성공한다. 실제로 없앤 것은 <b>불필요한 토큰 회전</b>이고, REUSE 로
+      거부되는 건 <b>탭이 둘일 때</b>다(잠금은 모듈 클로저라 탭마다, 쿠키는 하나).
+      <b>그래서 #240 은 제보된 401 을 고치지 않는다.</b>
+      <br><br>
+      <b>② PR #242 — 로그아웃 폭발 반경. 제보 증상에 가장 잘 맞는 경로다.</b>
+      <code>on401</code> 이 <b>401 이면 무조건</b> 전역 만료를 통지했다. 통지 한 번의 대가는
+      <code>window.location.assign</code> 으로 중앙 로그인 <b>하드 리다이렉트</b>다. 그런데 월간 뷰는
+      하루당 한 번씩 <b>37개</b>를 동시에 쏘고 훅은 날짜별 실패를 빈 배열로 삼킨다 —
+      <b>그중 하나만 일과성 401 을 받아도 화면은 조용한 채 앱이 튕겼다.</b>
+      <br><br>
+      만료인지 아닌지는 <code>cookie-http</code> 가 이미 판정한다(401 → 재발급 → 재시도). 그 판정을
+      <code>ApiError.sessionExpired</code> 로 싣고 <code>on401</code> 이 그대로 따르게 했다 —
+      <b>판정을 두 번 하지 않는다.</b> 재발급이 만료를 확정한 401 만 로그아웃, 재시도까지 하고도 401 이면
+      <b>그 요청만 실패</b>시키고 <code>console.error</code> 로 남긴다.
+    </div>
+    <div class="note" style="margin-top:12px">
+      <b>브라우저 검증 (dev 배포본 <code>ebe91ac</code>, 2026-09-07) — 401 을 인위적으로 주입했다.</b>
+      37개 중 <b>9/15 하루치만</b> 401 을 반환하도록 가로챘다(재시도까지 계속 401 = 「재발급은 됐는데
+      그 요청만 실패」).
+      <div class="tablewrap"><table>
+        <tr><th>확인 항목</th><th>결과</th></tr>
+        <tr><td>401 주입 횟수</td><td>2회 (원 요청 + 재발급 후 재시도) — 의도한 시나리오</td></tr>
+        <tr><td>로그아웃 리다이렉트</td><td><b class="good">발생하지 않음</b> — <code>/planner?view=month</code> 유지</td></tr>
+        <tr><td>화면</td><td>월간 정상 렌더. <b>9/15 셀만 비고</b> 나머지(7·8·9·10·11·14·16·17·18)는 전부 정상</td></tr>
+        <tr><td>진단 로그</td><td><code>[planner] 401 — 재발급 후 재시도도 실패(세션 만료는 아님) … at async Promise.all (index 14)</code></td></tr>
+      </table></div>
+      <b>수정 전이라면 이 401 하나가 앱을 중앙 로그인으로 튕겨냈다.</b>
+      <br><br>
+      ⚠️ <b>「진짜 만료 시 로그아웃은 여전히 된다」는 방향은 단위 테스트로만 덮었다</b>
+      (<code>session-expired-401</code> · <code>on401-notify-gate</code> 각각 회귀 포착 확인).
+      브라우저로 확인하려면 실 세션을 끊어야 해서 하지 않았다.
+    </div>
+    <div class="note warn" style="margin-top:12px">
+      <b>남은 것 — 근본은 안 고쳐졌다.</b>
+      ① <b>기간 조회 API</b>(하루 37회 → 1회, I-01 과 같은 뿌리) — pullim-api 선행. 이게 되면 레이스 창
+      자체가 사라진다. ② <b>교차 탭 재발급 잠금 공유</b> — REUSE 의 진짜 원인이고 미해결.
+      ③ <b>확증</b> — BE <code>/auth/refresh</code> 로그에 <code>REUSE_OUTSIDE_GRACE</code> 가 실제로
+      찍히는지. 안 찍히면 제보된 401 의 원인은 다른 데 있다(지금 닫은 폭발 반경과는 별개로).
+    </div>
+    <div class="note warn" style="margin-top:0">
+      <b>신규 항목</b>(2026-09-07 제보). <b>구조적 위험은 코드로 확인됐으나, 보고된 401 이 실제로
+      그 경로에서 났는지는 미확인이다.</b> 아래 「확인된 것 / 미확인」을 구분해 읽을 것.
+    </div>
+    <dl class="kv">
+      <dt>먼저 — 소유권·존재 문제가 아니다</dt><dd>
+        <code>blocks.service.ts</code> 는 미존재를 <b>404</b>(<code>PLANNER_NOT_FOUND</code>),
+        타인 소유를 <b>403</b>(<code>PLANNER_FORBIDDEN</code>)으로 낸다
+        (<code>planner-errors.ts:11,13</code>).
+        <b>401 은 그 판정에 도달하기 전에 가드에서 끊긴 것</b>이라, 보고된 플래너 id 가
+        남의 것이거나 삭제된 것이라는 뜻이 <b>아니다</b>. 순수 토큰 문제다.
+      </dd>
+      <dt>문자열 출처</dt><dd>
+        <code>VerificationErrors.UNAUTHORIZED = '인증에 실패했습니다.'</code>
+        (<code>pullim-api/src/common/verify/errors/verification.errors.ts:11</code>).
+        실질적으로 던지는 곳은 <code>token-verification.service.ts:204</code> <code>reject()</code> 하나이고
+        <b>사유 12종</b>(만료·서명 불일치·kid 미등록·deny 목록 등)이 전부 거기로 수렴한다.
+        <b>응답은 generic 이라 사유가 안 실린다</b> — 서버 로그 <code>'검증 거부'</code> 에만 남는다.
+        <b>원인 확정에는 그 로그가 필요하다.</b>
+      </dd>
+      <dt>가드 체인</dt><dd>
+        <code>blocks.controller.ts:36,52</code> 의 <code>JwtVerifyGuard</code> +
+        <code>EntitlementGuard('planner',{action:'read'})</code> 는
+        <code>/planner/me</code>·<code>/planner/planners</code> 와 <b>완전히 동일</b>하다.
+        <code>blocks</code> 만 특별한 점은 없다.
+      </dd>
+      <dt>확인된 구조적 위험</dt><dd>
+        <ol style="margin:6px 0 0 0">
+          <li><b>월간 뷰가 38개를 동시 발사한다</b> — <code>use-home-blocks.ts:75-92</code>(≤31일)
+              + <code>:98-113</code>(히어로 이번 주 7일). I-01(N+1)과 같은 코드다.</li>
+          <li><b>재발급 잠금이 즉시 풀린다</b> — <code>pullim-session.ts:174-195</code> 의
+              <code>refreshInFlight</code> 가 <code>.finally()</code> 로 곧바로 <code>null</code> 이 된다.
+              첫 재발급 직후 늦게 401 된 요청이 <b>2차 재발급</b>을 트리거하면 이미 회전된 토큰을
+              재제출하게 되고, 그 재발급이 401 로 실패하면 원 401 이 전파된다.</li>
+          <li><b>살아남은 401 은 앱 전체를 로그아웃시킨다</b> — <code>pullim-client.ts:44-57</code> 의
+              <code>on401</code> 이 <code>notifyPullimSessionExpired()</code> 를 부르고
+              <code>auth-context.tsx:172-178</code> 이 <code>status='unauthenticated'</code> 로 내린다.
+              <code>use-home-blocks</code> 는 그 뒤 에러를 삼켜 그 날짜만 빈 블록으로 그리므로
+              <b>화면에 원인이 보이지 않는다</b>.</li>
+        </ol>
+      </dd>
+      <dt>정정 — "첫 401 이 로그아웃시킨다"는 사실이 아니다</dt><dd>
+        조사 초안은 <code>on401</code> 이 재시도 실패와 첫 401 을 구분하지 않는다고 봤으나,
+        코드 확인 결과 <b>틀렸다</b>. <code>cookie-http.ts:174-192</code> 가 401 을 받으면
+        재발급 후 <code>skipRefreshRetry: true</code> 로 <b>내부에서 1회 재시도</b>하므로,
+        <code>on401</code> 은 <b>재시도까지 통과한 401 만</b> 본다.
+        즉 로그아웃은 <b>재발급 자체가 실패했을 때만</b> 일어난다.
+      </dd>
+      <dt>확증 완료</dt><dd>
+        <b>2026-09-07 — BE 리포·CloudWatch 접근이 열려 로그를 직접 봤다. 결론이 뒤집혔다:
+        제보된 401 은 REUSE 가 아니다.</b>
+        <div class="tablewrap"><table>
+          <tr><th>확인한 것</th><th>결과</th></tr>
+          <tr><td><code>reuse-outside-grace</code> (dev 30일)</td><td><b>2건</b> — 같은 기기 1 · 다른 바인딩 1. <b>QA 당일(09-04)엔 0건</b></td></tr>
+          <tr><td>QA 당일 401 148건의 사유</td><td><code>no_token</code> 82 · <code>token_expired</code> 62 · <code>ent_epoch_mismatch</code> 4 — <b>reuse 0</b></td></tr>
+          <tr><td>뭉침</td><td>06:38:58 에 <b>9ms 안 15건</b>, 07:29:18 에 또 15건 — <b>팬아웃 서명</b></td></tr>
+          <tr><td>중복 쿠키 여부</td><td><b>0행</b> — fail-closed 아님. <code>no_token</code> 은 <b>정상 만료</b>다(access 쿠키가 <code>Max-Age=15분</code> 이라 브라우저가 스스로 지운다)</td></tr>
+          <tr><td><code>token_expired</code> 의 폭</td><td>p50=p95=max=<b>0초</b> — 시계 오차도 만료 토큰 재사용도 아니다. <b>만료 경계에 정확히 걸린 요청</b></td></tr>
+          <tr><td>주기성</td><td>간격 중앙값 <b>900.018초</b>(±0.05) = <code>ACCESS_TTL</code> 15분과 일치</td></tr>
+        </table></div>
+        <b>서사</b> — 토큰이 15분에 만료돼 브라우저가 쿠키를 지운다 → 월간 뷰가 37개를 동시에 쏘니
+        <b>뭉치가 한꺼번에 401</b> → 재발급은 <b>정상 동작</b>(reuse 0 이 방증) → 그런데 그중 하나만
+        재시도까지 실패하면 앱 전체가 로그아웃됐다. <b class="good">세션은 한 번도 안 깨졌다.</b>
+        <br><br>
+        따라서 <b>#242(폭발 반경)가 제보 증상의 수정</b>이고, #240·#244 는 옳은 수정이지만 이 증상의
+        원인은 아니었다.
+      </dd>
+      <dt>수정 방안</dt><dd>
+        <b class="good">2026-09-07 — 전부 머지·배포 완료. 근본·증상·경합이 모두 닫혔다.</b><br><br>
+        <b>① 근본 — 팬아웃 제거 (BE #630 + FE #245).</b> BE 에 기간 조회
+        (<code>?from=&amp;to=</code>, 양끝 포함 62일 상한)를 넣고 훅을 교체했다.
+        하루 조회는 <code>from === to</code> 의 특수 경우로 흡수해 저장소·서비스가 경로를 하나만 갖고,
+        인덱스 <code>(planner_id, date)</code> 그대로라 마이그레이션이 없다.
+        <b>창 검증은 소유권 게이트 뒤</b>다 — 앞에 두면 무자격 호출자가 404 대신 창 오류를 받아 존재가
+        열거된다(리포트 창 #628 과 같은 결론).
+        <b>dev 실측: 37개 → 2개</b>(월간 1 + 히어로 1), 다음 달 이동은 1개. 화면·집계는 종전과 동일.<br><br>
+        <b>② 증상 — 폭발 반경 (FE #242).</b> 만료가 확정된 401 에만 전역 통지한다
+        (<code>ApiError.sessionExpired</code> — 판정은 <code>cookie-http</code> 가 이미 하므로 두 번 하지 않는다).
+        <b>브라우저 실측</b>: 37개 중 하나에 401 을 인위 주입하니 <b>로그아웃 없이 그 날짜만 비었다</b>.<br><br>
+        <b>③ 경합 — 회전 낭비(FE #240) · 교차 탭(FE #244).</b> 재발급 직후 1초 창은 재시도만 하고,
+        Web Locks + <code>localStorage</code> 공유 시각으로 오리진 전체를 직렬화한다. 둘 다 옳은 수정이지만
+        <b>제보 증상의 원인은 아니었다</b>(위 확증 참조).<br><br>
+        <b>진단 개선(미실시·선택)</b> — <code>reject()</code> 로그에 요청 경로를 실으면 사유 판별이 쉬워진다.
+        이번엔 뭉침 패턴(같은 초 15건)으로 특정할 수 있어 없이도 규명됐다.
+      </dd>
+      <dt>범위</dt><dd>근본안은 BE 범위 API + FE 훅. 완화안만이면 FE 1파일</dd>
+      <dt>위험</dt><dd>낮음 — 완화안은 잠금 해제를 늦추는 것뿐. 근본안은 I-01 과 함께 처리</dd>
+      <dt>난이도</dt><dd>완화 낮음 · 근본 중간(BE 선행)</dd>
+      <dt>선행</dt><dd><b>서버 로그 확인이 먼저다.</b> 원인이 이 레이스가 아니면 수정 대상이 달라진다</dd>
+    </dl>
+  </div>
+
+  <div class="finding major">
+  <div class="finding minor">
+    <h3><span class="pill p-be">BE 선행</span><span class="pill p-minor">MINOR</span>N-03 · BE 가 FE 가 모르는 <code>block.engines[]</code> 값 <code>dday_overlay</code> 를 보낸다</h3>
+    <div class="note" style="margin-top:0">
+      <b>2026-09-07 브라우저 검증 중 발견 (dev 배포본 콘솔).</b>
+    </div>
+    <div class="kv">
+      <b>증상</b><span><code>[planner] pullim-api 가 모르는 block.engines[] 값을 보냈다: dday_overlay</code> — 월간 뷰 로드마다 반복</span>
+      <b>원인</b><span>FE 가 아는 교육 엔진은 <b>6종</b>(<code>spaced_repetition</code>·<code>interleaving</code>·<code>cognitive_load</code>·<code>pomodoro</code>·<code>active_recall</code>·<code>deliberate_practice</code>, <code>lib/mock/planner.ts</code>). BE 가 7번째를 보낸다 — <b>계약 어긋남</b></span>
+      <b>영향</b><span><b>페이지는 죽지 않는다</b> — 경계 정규화(PR #233)가 모르는 값을 버리고 경고만 남긴다. 다만 <b>그 블록의 교육 태그가 조용히 사라진다</b></span>
+      <b>수정 방안</b><span><b>사람이 정할 일이다.</b> ① <code>dday_overlay</code> 가 정식 엔진이면 FE 타입·<code>pedagogyEngineMeta</code> 에 추가 ② 아니면 BE 가 안 보내야 한다. <b>어느 쪽인지 모르는 채 FE 에 추가하면 안 된다</b></span>
+      <b>참고</b><span>이 항목이 <b>경계 정규화가 실제로 일하고 있다는 증거</b>이기도 하다 — 그 수정 전이었다면 이 값 하나에 페이지가 통째로 죽었다</span>
+    </div>
+  </div>
+
+  <div class="finding minor">
+    <h3><span class="pill p-minor">MINOR</span>N-04 · 루틴 삭제 확인창이 「이미 적용된 시간표」를 언급하지 않는다</h3>
+    <div class="note" style="margin-top:0">
+      <b>2026-09-07 N-01 재현 중 발견.</b>
+    </div>
+    <div class="kv">
+      <b>증상</b><span>확인창이 <i>"이 루틴이 라이브러리에서 삭제돼요 / <b>새 시간표 만들기에서</b> 더 이상 고를 수 없어요"</i> 라고만 한다 — <b>이미 적용된 시간표가 어떻게 되는지는 말하지 않는다</b></span>
+      <b>왜 문제였나</b><span>N-01 수정 전에는 바로 그 시간표가 <b>영구히 수정 불가</b>가 됐다. 확인창은 그 결과를 전혀 예고하지 않았다</span>
+      <b>지금</b><span>N-01 이 고쳐져 잠기지는 않는다. 다만 <b>적용돼 있던 블록은 해제된다</b>(다음 저장 시) — 그것도 안 알려 준다</span>
+      <b>수정 방안</b><span>적용 중인 시간표 수를 확인창에 표시. BE 가 그 수를 주지 않으면 <code>GET /planner/planners</code> 의 <code>appliedRoutineIds</code> 로 FE 가 셀 수 있다</span>
+      <b>범위</b><span>FE 1~2파일 (<code>routine-delete-confirm-dialog</code>)</span>
+    </div>
+  </div>
+
+    <h3><span class="pill p-major">MAJOR</span>F-03 · 월간·주간 뷰가 로딩 중 "계획이 없어요" 빈 상태와 잘못된 합계를 확정적으로 표시</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <b>로딩 플래그가 있는데 안 쓴다.</b> <code>use-home-blocks.ts:64-66</code> 이 플래너 <b>목록</b> 조회만으로
+        <code>status='ready'</code> 를 세우고, 블록은 별도 effect(<code>:76-96</code>)에서 뒤늦게 채운다.
+        <code>HomeContainer.tsx</code> 는 <code>status</code> 를 <b>꺼내지도 않는다</b> →
+        <code>month-view.tsx:29</code> 의 <code>days.every(d =&gt; d.blockCount === 0)</code> 와
+        <code>week-view.tsx:37</code> 이 로딩 중 빈 배열을 "없음"으로 확정한다.<br>
+        <b>부수 원인</b>: <code>blocksByDate</code> 가 view·offset 변경 시 초기화되지 않아
+        10월로 넘어가면 9월 키만 남아 전부 미스(→ empty), 첫 진입 땐 이전 주 데이터가 섞여 부분값이 뜬다.
+      </dd>
+      <dt>수정 방안</dt><dd>
+        <code>useHomeBlocks</code> 에 <code>blocksStatus</code>('loading'|'ready') 추가 —
+        기간 effect 시작 시 loading, <code>Promise.all</code> 완료 시 ready, <b>의존성 변경 시 <code>blocksByDate</code> 를 비운다</b>.
+        Container 가 Presenter 로 넘기고 각 뷰가 로딩이면 스켈레톤(<code>components/ui/skeleton.tsx</code>).
+        헤더 집계(<code>weekMeta</code>·<code>monthMeta</code>)도 로딩 중엔 수치 대신 스켈레톤.
+      </dd>
+      <dt>범위</dt><dd>5~6파일(훅·Container·Presenter·3뷰). 공유 훅 건드림</dd>
+      <dt>위험</dt><dd>낮음 — 상태 추가</dd>
+      <dt>난이도</dt><dd>중간</dd>
+      <dt>선행</dt><dd>없음 (I-01 기간 API 는 별건 최적화)</dd>
+    </dl>
+  </div>
+
+  <div class="finding major">
+    <h3><span class="pill p-major">MAJOR</span>F-04 · 월간 캘린더 미래 날짜 숫자의 대비비가 1.60:1</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <code>month-heatmap.tsx:153</code> 미래 셀 <code>text-pullim-slate-500</code>,
+        <code>:164</code> 블록 개수 <code>text-pullim-slate-700</code>.
+        배경은 <code>heatColor()</code>(<code>:118-125</code>)가 <code>globals.css:159-163</code> 의 <b>고정 hex</b> heat 램프를 준다.
+      </dd>
+    </dl>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>배경</th><th>slate-500 (미래)</th><th>slate-700 (개수)</th><th>slate-900</th><th>white</th></tr></thead>
+        <tbody>
+          <tr><th>heat-1 <code>#D9E5FB</code></th><td class="bad">4.03 ✗</td><td class="good">8.25 ✓</td><td>13.89</td><td>1.27</td></tr>
+          <tr><th>heat-2 <code>#A9C4FF</code></th><td class="bad">2.93 ✗</td><td class="good">5.99 ✓</td><td>10.09</td><td>1.75</td></tr>
+          <tr><th>heat-3 <code>#5A8BFF</code></th><td class="bad">1.60 ✗</td><td class="bad">3.27 ✗</td><td class="good">5.51 ✓</td><td class="bad">3.20 ✗</td></tr>
+          <tr><th>heat-4 <code>#2854D8</code></th><td>—</td><td>—</td><td>2.81</td><td class="good">6.27 ✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <dl class="kv">
+      <dt>수정 방안</dt><dd>
+        배경이 스킴 불변이므로 <b>잉크도 스킴 불변</b>이어야 한다.
+        <code>app/globals.css</code>(서비스 소유층 — 재설치가 안 덮는다)에
+        <code>--color-pullim-heat-ink</code> / <code>--color-pullim-heat-ink-on-dark</code> 추가 →
+        heat-1~3 은 ink, heat-4~5 는 on-dark, heat-0/transparent 만 기존 <code>slate-900</code> 유지.
+        <b>미래 구분은 이미 있는 점선 테두리가 담당</b>하고 색 흐림은 제거.
+        오늘 셀은 <code>blue-700</code> 대신 링(<code>ring-pullim-blue-500</code>, <code>:145</code> 에 이미 있음)만으로.
+      </dd>
+      <dt>범위</dt><dd>2파일(<code>month-heatmap.tsx</code> + <code>globals.css</code> 토큰 2줄). 공유 레이어는 토큰 <b>추가</b>만</dd>
+      <dt>위험</dt><dd>낮음. 다만 "미래가 덜 눈에 띄어야 한다"는 원래 의도(파일 상단 2026-07-05 검수 이력)와 상충 — <b>디자인 확인 필요</b></dd>
+      <dt>난이도</dt><dd>중간 — 계산은 끝났고 다크 회귀 확인이 남는다</dd>
+      <dt>선행</dt><dd><b>D2</b></dd>
+    </dl>
+  </div>
+
+  <div class="finding major">
+    <h3><span class="pill p-major">MAJOR</span>F-05 · 블록 완료를 취소할 UI 가 없다</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <b>BE·클라이언트는 준비돼 있다</b> — <code>lib/api-client/pullim-planner.ts:372,488</code>
+        (<code>DELETE …/completion</code>, 멱등 204), 401 래퍼 <code>pullim-client.ts:75</code>.
+        <b>UI 호출부만 0건</b>이다. 완료 표면은 <code>HomeContainer.tsx:249</code> <code>handleCompleteBlock</code> 하나뿐이고 취소 짝이 없다.
+        <code>block-card.tsx</code> 가 완료 체크를 <code>!isBreak &amp;&amp; !isDone</code> 으로 가려
+        done 카드에 조작 요소가 0개가 된다 — QA 실측과 일치.
+        왕복은 성립한다: <code>home-data.ts:135</code> 가 <code>status: b.completed ? 'done' : …</code> 라 DELETE 후 재조회하면 되돌아온다.
+      </dd>
+      <dt>수정 방안</dt><dd>
+        <b>A. 완료 토스트의 실행취소</b> — sonner 의 <code>action</code>. 오조작 직후 3초가 실제 위험 구간이고 진입 비용 0.
+        단 토스트가 사라지면 끝, 모바일에서 놓치기 쉽다.<br>
+        <b>B. 완료 카드의 되돌리기 버튼</b> — <code>isDone &amp;&amp; onUncomplete</code> 일 때 완료 체크 자리에 <code>RotateCcw</code>.
+        <b>QA 가 지적한 "영구히 남는다"를 실제로 푸는 건 이쪽뿐.</b> 단 compact 행 밀도 증가.<br>
+        C. 모달 재진입 — 클릭 2회 + <b>QA #12 의 CTA 축소 결정과 역행</b>. 비권장.<br>
+        <b>→ A+B 병행 권장.</b>
+      </dd>
+      <dt>범위</dt><dd>4~5파일(Container·Presenter·day-view·block-card, A 만 하면 block-complete-dialog). 공유 레이어 미접촉</dd>
+      <dt>위험</dt><dd>낮음. dev bypass 는 <code>onCompleteSubmit</code> 처럼 미주입으로 두면 mock 동작 유지.
+        <b>취소 후 <code>realRefetch()</code> + <code>setBurnoutTick</code> 을 완료와 동일하게 태워야</b> 진행률·안전도가 되돌아온다 — 빠뜨리면 화면만 어긋난다</dd>
+      <dt>난이도</dt><dd>낮음 — 기존 완료 경로 미러링</dd>
+      <dt>선행</dt><dd><b>D3</b>. BE 완비</dd>
+    </dl>
+  </div>
+
+  <div class="finding minor">
+    <h3><span class="pill p-minor">MINOR</span>F-06 · "주간 학습 49h" 가 실제 생성 계획 45h 와 불일치</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <b>라벨 의미가 다르다.</b> <code>planner-card.tsx:53-55</code> — <code>weekdayHours.end - start</code> × 5 + <code>weekendHours</code> × 2
+        = <b>가용 창 폭</b>(5×5 + 12×2 = 49). 주간 뷰의 <code>weekMeta</code> 는 실블록 <code>expectedMinutes</code> 합(45h).
+        주말이 갈리는 건 12h 창에 50/10 패턴이 들어가 12블록×50분 = 10h 이기 때문.
+        <b>맞는 값이 따로 없다</b> — 49h 는 가용 시간, 45h 는 실제 블록(F-02 루틴 겹침 50분×5 포함이라 이것도 과대).
+      </dd>
+      <dt>수정 방안</dt><dd>최소 수정은 <b>라벨 통일</b> — <code>planner-card.tsx:156</code> 을 위저드와 같은 "주간 학습 가능"으로.
+        정확도까지 맞추려면 창 폭 대신 <code>floor(창분/사이클) × 집중분</code></dd>
+      <dt>범위</dt><dd>라벨안이면 1파일 1줄</dd>
+      <dt>위험</dt><dd>낮음</dd>
+      <dt>난이도</dt><dd>낮음</dd>
+      <dt>선행</dt><dd><b>D4</b></dd>
+    </dl>
+  </div>
+
+  <div class="finding minor">
+    <h3><span class="pill p-minor">MINOR</span>F-07 · 번아웃 카드가 같은 점수에 "위험"과 "안정"을 동시에 표시</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <b>임계값 중복이 아니라 축이 둘이다.</b> 칩 = <code>condition-burnout-panel.tsx:36-37</code> <b>점수 등급</b>(70/50 → 안전/주의/위험).
+        카드 = <code>burnout-card.tsx:8-11</code> <b>추세</b> 라벨(회복 중/안정/주의), <code>burnout.ts:85-98</code> 에서 최근3일 vs 이전 완료율 ±10%p.
+        맥락 라벨이 없어 같은 층위로 읽힌다.<br>
+        <b>부수 결함 둘</b>: (a) <code>falling</code> 의 '주의' 가 등급 '주의' 와 <b>문자열 충돌</b>,
+        (b) 톤 임계값이 <code>burnout-card.tsx:56</code>·<code>condition-burnout-panel.tsx:36</code> 에 <b>복제</b>돼 있다(현재 값은 동일 — 드리프트 위험).
+      </dd>
+      <dt>수정 방안</dt><dd><code>burnout-card.tsx:103</code> 에 <code>추세 · {label}</code> 로 맥락 접두,
+        <code>falling</code> 라벨을 '하락' 류로. 임계값은 <code>burnout.ts</code> 에 <code>burnoutTone(score)</code> 하나로 뽑아 두 곳이 import</dd>
+      <dt>범위</dt><dd>3파일. <code>lib/planner/</code> 공유</dd>
+      <dt>위험</dt><dd>낮음</dd>
+      <dt>난이도</dt><dd>낮음</dd>
+      <dt>선행</dt><dd><b>D5</b></dd>
+    </dl>
+  </div>
+
+  <div class="finding minor">
+    <h3><span class="pill p-minor">MINOR</span>F-08 · 헤더 검색 버튼이 무동작인데 ⌘K 를 광고한다</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd><code>app-header.tsx:69</code> — <code>onClick</code> 없음, <code>title="검색 (⌘ K)"</code>.
+        리포 전체에 <code>metaKey</code>/<code>cmdk</code> 핸들러 <b>0건</b>이라 단축키는 아예 존재하지 않는다</dd>
+      <dt>수정 방안</dt><dd>
+        <b>(a) 버튼 제거를 권한다.</b> 선례가 <b>같은 파일 3줄 아래</b>에 있다 —
+        <code>app-header.tsx:71-72</code> "항상 켜져 있던 unread 점 배지 제거 — 인프라 미구현이라 실제 unread 없음".
+        같은 결정이 <code>Q_LINK</code> off 시 CTA 미노출, QA #11 케밥 제거, QA #12 CTA 축소로 반복됐다.
+        (b) 툴팁 문구만 제거는 <b>무동작 버튼을 남겨</b> 선례에 어긋난다. (c) 검색 구현은 별 트랙
+      </dd>
+      <dt>범위</dt><dd>1파일 3줄 + <code>Search</code> import 제거</dd>
+      <dt>위험</dt><dd>낮음. OS 정본 헤더 구조와 갈리므로 주석 한 줄 필요</dd>
+      <dt>난이도</dt><dd>낮음</dd>
+      <dt>선행</dt><dd>없음</dd>
+    </dl>
+  </div>
+
+  <div class="finding minor">
+    <h3><span class="pill p-minor">MINOR</span>F-09 · 알림 페이지에서 사이드바 "홈" 이 현재 페이지로 표시</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <code>app-sidebar.tsx:87</code> — <code>pathname.startsWith(item.href + '/')</code>.
+        <code>/planner/notifications</code> 가 <code>/planner/</code> 로 시작해 홈이 매치되고 <code>:110</code> <code>aria-current="page"</code> 가 붙는다.
+        <b>브레드크럼이 빈 것도 같은 뿌리</b> — <code>nav-config.ts:146-159</code> 에서 domainItem 라벨이 root 와 같아 push 되지 않고
+        children 매치도 없어 <code>trail.length===1</code> → <code>breadcrumb.tsx:16</code> 이 <code>null</code>
+      </dd>
+      <dt>수정 방안</dt><dd>
+        <code>bottom-nav.tsx:17</code> 의 <b>기존 선례</b>를 따른다 — 거긴 <code>MENU_ROUTES</code> 목록으로 같은 오탐을 이미 막았다(주석 진단도 동일).
+        같은 제외 목록을 <code>findActiveHref</code> 에 적용하되 두 곳에 복제하지 말고 <code>nav-config.ts</code> 로 올려 공유.
+        <b>단 목록을 그대로 공유하면 안 된다</b> — 사이드바엔 매뉴얼 항목이 있다. 사이드바용/탭용 분리 또는 "nav 에 없는 라우트" 판정으로 일반화.
+        <b>대안(권장)</b>: 알림을 IA 에 정식 추가하면 브레드크럼까지 함께 풀린다
+      </dd>
+      <dt>범위</dt><dd>2파일(<code>nav-config.ts</code>·<code>app-sidebar.tsx</code>). 셸 공유 레이어</dd>
+      <dt>위험</dt><dd><b>중간</b> — <code>/planner/{day,week,month,calendar,builder}</code> thin 라우트는 현재 이 prefix 매칭 덕에 홈이 켜진다.
+        제외 목록 방식이면 영향 없지만 <b>"exact match 만" 식으로 일반화하면 그 화면들의 활성 표시가 죽는다</b></dd>
+      <dt>난이도</dt><dd>낮음</dd>
+      <dt>선행</dt><dd><b>D6</b></dd>
+    </dl>
+  </div>
+
+  <div class="finding minor">
+    <h3><span class="pill p-minor">MINOR</span>F-10 · 날짜 점프 달력만 일요일 시작</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <code>date-jump-popover.tsx:8</code> <code>WEEKDAYS = ['일',…,'토']</code> + <code>:49</code> <code>firstDow = getDay()</code> 를 그대로 패딩 수로 사용.
+        <b>정본은 월요일 시작</b> — <code>month-heatmap.tsx:9</code>, <code>home-data.ts:13</code>, <code>mock/routine.ts:17</code>,
+        <code>mock/planner.ts:732</code> 전부 월요일 시작이고 <code>day-nav.ts:60</code> 이 <code>(getDay()+6)%7</code> 로 주 시작을 월요일로 잡는다.
+        <b>팝오버 한 곳만 예외.</b>
+      </dd>
+      <dt>수정 방안</dt><dd><code>WEEKDAYS</code> 를 월요일 시작으로, 패딩을 <code>(firstDow + 6) % 7</code> 로.
+        <b>주의</b>: <code>day-nav.ts:11</code>·<code>preview-map.ts:29</code>·<code>step-content.tsx:1032</code> 의 <code>WEEKDAYS</code> 는
+        <code>getDay()</code> <b>인덱싱용</b>이라 일요일 시작이 맞다 — 건드리지 말 것</dd>
+      <dt>범위</dt><dd>1파일 2줄</dd>
+      <dt>위험</dt><dd>낮음. <code>pick()</code> 은 <code>dayDiff</code> 기반이라 패딩과 무관</dd>
+      <dt>난이도</dt><dd>낮음</dd>
+      <dt>선행</dt><dd>없음</dd>
+    </dl>
+  </div>
+
+  <div class="finding minor">
+    <h3><span class="pill p-minor">MINOR</span>F-11 · 시험이 지난 시간표에 "블록은 곧 채워질 거예요" 오안내</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd><code>day-view.tsx:72-80</code> 의 <code>if (dayOffset === 0)</code> 분기에 D-day 부호가 없다.
+        <b>같은 컴포넌트가 <code>dday</code> 를 이미 받는다</b>(<code>day-view.tsx:55</code>, Presenter <code>:179</code> 에서 주입) — 데이터는 손 안에 있는데 쓰지 않는다</dd>
+      <dt>수정 방안</dt><dd><code>getDDayTier(dday) === 'past'</code>(<code>d-day-tier.ts:13</code>)면 "시험이 끝난 시간표예요" + 새 시간표 CTA.
+        <code>PeriodEmptyState</code> 는 <code>subMessage</code>·<code>onReset</code>·<code>resetLabel</code> prop 이 이미 있어 프리미티브 변경 불필요</dd>
+      <dt>범위</dt><dd>1파일</dd>
+      <dt>위험</dt><dd>낮음</dd>
+      <dt>난이도</dt><dd>낮음</dd>
+      <dt>선행</dt><dd>문구 확정만</dd>
+    </dl>
+  </div>
+
+  <div class="finding minor">
+    <h3><span class="pill p-minor">MINOR</span>F-12 · 다이얼로그 닫기·토스트의 접근성 이름이 영문</h3>
+    <dl class="kv">
+      <dt>레인 판정</dt><dd>
+        <code>dialog.tsx</code> → <b>레인 ②</b>(로컬 base-ui 11종에 <code>dialog</code> 포함). "PUDS 프리미티브로 <b>교체</b> 금지"이고 <b>수정 자체는 자유</b>.
+        <code>sonner.tsx</code> → <b>레인 ③</b>(서비스 고유에 명시). 자유.
+        <b>둘 다 레인 ① 아님</b> → 수정 금지 해당 없음, 우회 prop 불필요
+      </dd>
+      <dt>원인</dt><dd>
+        <code>dialog.tsx:82</code> <code>&lt;span class="sr-only"&gt;Close&lt;/span&gt;</code> ·
+        <code>dialog.tsx:144</code> 가시 버튼 텍스트 <code>Close</code> ·
+        <code>sheet.tsx:75</code> 동일 <code>sr-only Close</code> <b>(QA 미지적)</b> ·
+        토스트 <code>aria-label="Notifications alt+T"</code> 는 sonner 기본값(<code>index.mjs:920,1082</code>) ·
+        <code>layout.tsx:88</code> 이 <code>closeButton</code> 을 켜 <code>'Close toast'</code> 도 노출 <b>(QA 미지적)</b>
+      </dd>
+      <dt>수정 방안</dt><dd>세 문자열을 '닫기' 로.
+        <code>sonner.tsx</code> 의 <code>&lt;Sonner&gt;</code> 에 <code>containerAriaLabel="알림"</code> + <code>toastOptions.closeButtonAriaLabel="알림 닫기"</code> 를
+        <b><code>{...props}</code> 앞에</b> 두어 호출부 override 유지.
+        결과는 <code>"알림 alt+T"</code> — 뒤는 라이브러리가 붙이는 키 이름이라 그대로가 맞다</dd>
+      <dt>범위</dt><dd>3파일. 전 화면 공유 프리미티브</dd>
+      <dt>위험</dt><dd>낮음. <span class="unverified">미확인</span> <code>sr-only "Close"</code> 를 잡는 테스트가 있으면 깨진다 — <code>bun run test</code> 확인 필요</dd>
+      <dt>난이도</dt><dd>낮음 — 문자열 4곳 + prop 2개</dd>
+      <dt>선행</dt><dd>없음</dd>
+    </dl>
+  </div>
+
+  <div class="finding minor">
+    <h3><span class="pill p-minor">MINOR</span>F-13 · 알림 빈 상태 문구 중복 + 시각 처리 불일치</h3>
+    <dl class="kv">
+      <dt>원인</dt><dd>
+        <b>버그가 아니라 잘못 고른 해법이다.</b> <code>NotificationsPresenter.tsx:35</code> 헤더 <code>description</code> 이 '아직 받은 알림이 없어요',
+        <code>:38</code> 본문이 '알림이 없어요' — <b>중복은 제목이 아니라 부제↔본문 사이</b>다.
+        <code>:34</code> 주석대로 <b>의도된 동기화</b>였다(원래 부제 '모두 읽었어요' 가 빈 상태와 상충해 같은 문구로 맞춤).<br>
+        <b>시각 차이</b>: <code>period-empty-state.tsx</code> 는 <code>border-dashed</code> 카드 + 아이콘 + 굵은 제목 + 보조문구 + CTA.
+        <code>planner-manage/components/empty-state.tsx</code> 도 같은 계열.
+        알림은 <code>:38</code> <code>&lt;div class="py-16 text-center text-xs text-muted-foreground"&gt;</code> —
+        <b>테두리·아이콘·위계·CTA 전부 없는 회색 한 줄</b>
+      </dd>
+      <dt>수정 방안</dt><dd>
+        <code>isEmpty</code> 일 때 <code>PageHeader</code> 의 <code>description</code> 을 <b>생략</b> → 중복 제거.
+        본문은 <code>PeriodEmptyState</code> 로 교체(cross-feature import 는 정책상 허용 — 소유권 명확·사이클 없음).
+        단 아이콘이 <code>CalendarX2</code> 고정이라 <code>icon</code> prop 추가와 CTA 링크 optional 화가 필요.<br>
+        <b>대안</b>: 같은 마크업 규격으로 <code>planner-notifications/components/</code> 에 전용 빈 상태(공유 위젯 시그니처 미변경)
+      </dd>
+      <dt>범위</dt><dd>2파일 또는 전용 컴포넌트 1파일 추가</dd>
+      <dt>위험</dt><dd>낮음. 공유 위젯을 고칠 경우 기본값을 두면 일/주/월 뷰 호출부 무변경</dd>
+      <dt>난이도</dt><dd>낮음</dd>
+      <dt>선행</dt><dd><b>D6 · D7</b></dd>
+    </dl>
+  </div>
+</section>
+
+<section>
+  <h2>QA 가 놓친 것 — 조사 중 추가로 찾은 5건</h2>
+  <p class="lead">전부 위 결함과 <b>같은 뿌리</b>라 함께 고치는 편이 싸다. 별도 티켓으로 흩뿌리지 않는 것을 권한다.
+  <b>아래 5행이 추적 단위다</b> — 3·4행은 둘 다 F-12(접근성 이름)지만 파일도 출처도 달라 따로 센다.
+  <b>5행(<code>calendar/page.tsx</code> 딥링크)은 2026-09-07 PR #237 에서 해소</b>됐다.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>무엇</th><th>어디</th><th>같은 뿌리</th></tr></thead>
+      <tbody>
+        <tr><td class="n">월간 <b>오늘 셀</b>의 <code>blue-700</code> 이 heat-3 위에서 <b>2.15:1</b></td><td><code>month-heatmap.tsx:155</code></td><td>F-04 와 동일 — 고정 heat 램프 위의 잉크</td></tr>
+        <tr><td class="n">heat 램프가 고정 hex 라 <b>다크에서 <code>slate-900</code> 이 <code>#FAFAFA</code> 로 뒤집혀 heat-1 위 1.27:1</b> <span class="unverified">미검증</span></td><td><code>globals.css:159-163</code></td><td>F-04 — 과거·오늘 셀도 다크에선 이미 깨져 있다</td></tr>
+        <tr><td class="n"><code>sheet.tsx</code> 의 <code>sr-only "Close"</code></td><td><code>sheet.tsx:75</code></td><td>F-12 와 동일 문자열, 같은 레인 ②</td></tr>
+        <tr><td class="n">토스트 닫기 버튼 <code>'Close toast'</code></td><td>sonner 기본값 + <code>layout.tsx:88</code> 이 켬</td><td>F-12</td></tr>
+        <tr><td class="n"><code>calendar/page.tsx</code> 가 <code>?view=</code> 를 버려 딥링크가 항상 일간으로 떨어짐</td><td><code>calendar/page.tsx:10</code> ← <code>today-timeline.tsx:21</code>·<code>today-reflection.tsx:56</code></td><td>F-01 과 별개 결함이나 같은 PR 이 자연스럽다</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Info 5건 — 판정</h2>
+
+  <div class="finding info">
+    <h3><span class="pill p-be">BE 선행</span><span class="pill p-info">I-01</span>월간 뷰 진입마다 30~31회 블록 조회 (N+1)</h3>
+    <p><code>use-home-blocks.ts:78-96</code> 이 <code>monthDatesFor</code>(30~31일)를 <code>Promise.all</code> 로 개별 조회한다.
+    <code>blocks(plannerId, date?)</code> 가 유일한 조회 API 이고 <b>범위 파라미터가 없다</b> → 근본 해소는 <b>BE 에 범위 조회 추가</b>.
+    FE 만으로 줄일 여지: ① 히어로 주간 7건(<code>:98-113</code>)이 표시 월과 겹치면 중복 — 날짜 키 dedup 으로 최대 7건 절감
+    ② <code>blocksByDate</code> 를 offset 이동 간 캐시(현재 매번 전량 재조회).</p>
+  </div>
+
+  <div class="finding info">
+    <h3><span class="pill p-info">I-02</span>Pretendard 가변 폰트 2.0MB 를 외부 CDN 에서 로드</h3>
+    <p><code>app/globals.css:2</code> 의 jsdelivr <code>@import</code>.
+    <b>최소 비용안</b>: 같은 CDN 의 <b>dynamic-subset</b> CSS 로 URL 교체 — <code>unicode-range</code> 로 쪼개져 실제 쓰는 청크만 받는다(수백 KB 급).
+    대가는 요청 수 증가와 여전한 서드파티 의존.
+    완전 self-host 는 woff2 를 <code>public/fonts/</code> 에 두고 <code>@font-face</code> 자작(리포에 2MB 커밋) 또는 <code>pretendard</code> npm —
+    <b>후자는 <code>package.json</code> 수정이라 별건 승인 필요.</b></p>
+  </div>
+
+  <div class="finding info">
+    <h3><span class="pill p-info">I-03</span>활성 시간표 전환 직후 <code>GET /planner/me</code> 401 1회 <span class="badge b-ok" style="font-size:11px;padding:2px 9px">조치 불요</span></h3>
+    <p><code>cookie-http.ts:171-192</code> 가 401 시 <code>refreshSession()</code> 후 <b>1회 자동 재시도</b>한다.
+    access 토큰 TTL 경계에 걸린 첫 요청이 401 → refresh → 재시도 200 이면 <b>콘솔에만 401 이 남고 화면은 정상</b> —
+    QA 관측(에러 미노출·재현 불가)과 정확히 맞는다. activate 와는 무관한 타이밍 우연일 가능성이 높다. <b>관측만.</b></p>
+  </div>
+
+  <div class="finding info">
+    <h3><span class="pill p-info">I-04</span>온보딩 recharts 경고 <span class="badge b-ok" style="font-size:11px;padding:2px 9px">조치 불요</span></h3>
+    <p><code>accuracy-trend-chart.tsx:33</code> 의 <code>ResponsiveContainer width/height="100%"</code> 가 <code>div.h-32</code> 안에 있고
+    온보딩이 이를 <code>MockBrowser</code> 로 감싼다. 첫 측정 시점에 부모 폭이 0 → recharts 가 -1 로 경고.
+    <b>무해.</b> 굳이 없애려면 <code>debounce</code> 또는 고정 높이 + <code>minHeight</code>.</p>
+  </div>
+
+  <div class="finding info">
+    <h3><span class="pill p-info">I-05</span>아카이브한 시간표를 되돌릴 경로가 없다 — <b>F-05 와 같은 결함</b></h3>
+    <p><code>unarchive</code> 는 <code>pullim-planner.ts:346,523</code> + 래퍼 <code>pullim-client.ts:82</code> 까지 있고 <b>UI 호출부 0건</b>.
+    <code>planner-card.tsx:114,134</code> 가 활성화·아카이브 둘 다 <code>disabled={isActive || isArchived}</code> 라
+    아카이브 후엔 수정·꾸미기·복제·삭제만 남는다.
+    수정은 메뉴에 "보관 해제" 1개 + Container 핸들러 1개 — <b>F-05 와 같은 모양(BE 완비·FE 표면 누락)이라 함께 처리하면 싸다.</b></p>
+  </div>
+</section>
+
+<section>
+  <h2>확인이 남은 것</h2>
+  <p class="lead">아래는 이번 조사에서 <b>확정하지 못한</b> 것들이다. 사실로 취급하지 말 것.</p>
+  <ul>
+    <li><b>F-04 다크 회귀</b> — heat 램프가 고정 hex 라 다크에서 과거·오늘 셀도 깨져 있을 것으로 보이나 <b>실 렌더 미검증</b></li>
+    <li><b>F-12 테스트 영향</b> — <code>sr-only "Close"</code> 를 문자열로 잡는 테스트가 있는지 <code>bun run test</code> 로 확인 필요</li>
+    <li><b>I-03</b> — 코드 근거가 있는 <b>가설</b>이다. 재현되지 않았다</li>
+    <li><b>F-01 방안 C</b>(Next 패치 업그레이드) — 해당 버그가 상류에서 고쳐졌는지 확인하지 않았다</li>
+  </ul>
+</section>
+
+</div>
+</body>
+</html>
