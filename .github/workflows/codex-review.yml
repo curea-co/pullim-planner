@@ -241,6 +241,12 @@ jobs:
       # pullim-classbot 에서 backport: sandbox=workspace-write + safety_strategy 기본값.
       # 입출력이 전부 .codex-runtime/ 안이라 워크스페이스 밖으로 나갈 이유가 없어졌고,
       # self-hosted 러너에서 외부 파일 시스템 접근을 여는 -c safety_strategy=unsafe 를 뺀다.
+      # 모델 승인 이력: gpt-5.6-terra는 별도 CI PR #238(dev, 2026-09-07)과
+      # #241(main, 같은 날)에서 사용자 승인 후 머지됐다. 기능 변경과 분리된 작업이다.
+      # https://github.com/curea-co/pullim-planner/pull/238
+      # https://github.com/curea-co/pullim-planner/pull/241
+      # 승격 PR #258(dev → main)은 개별 PR로 검토·머지한 변경의 누적 diff다.
+      # 2026-09-08 사용자가 이 지적 위치에 승인 근거 주석 추가를 명시 요청했다.
       - name: Codex Review
         id: codex
         run: |
