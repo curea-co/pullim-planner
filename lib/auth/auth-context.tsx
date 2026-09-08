@@ -34,7 +34,7 @@ export type AuthStatus =
 export interface AuthContextValue {
   status: AuthStatus;
   /** pullim-api 세션 프로필(`GET /planner/me`). 흡수 전환 §10 — 자체 BE `AuthUser` 대체. */
-  user: PullimMeProfile | null;
+  user: (PullimMeProfile & { email?: string }) | null;
   /**
    * 헤더 프로필 드롭다운의 플랜 배지 라벨 — `'기본'`·`'유료'`, **조회 전·실패면 빈 문자열**
    * (배지 미표시). 서버 엔타이틀먼트 파생이라 OS 헤더와 같은 값이 나온다(QA #91).
@@ -99,7 +99,7 @@ const DEV_BYPASS_PROFILE: PullimMeProfile = {
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
-  const [user, setUser] = useState<PullimMeProfile | null>(null);
+  const [user, setUser] = useState<AuthContextValue['user']>(null);
   // 플랜 배지 flags — null = 조회 전/실패(배지 미표시), {} = 조회 성공·유료 없음('기본').
   const [entFlags, setEntFlags] = useState<EntitlementFlags | null>(null);
 
@@ -110,14 +110,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // - login 직후: fallback='authenticated' (쿠키 방금 발급 — 프로필만 best-effort)
   // 헤더 배지 실명(ADR-048) — owner-only `GET /me` 의 `name`(KCB 실명, 미보유 시 서버가
   // displayName 폴백)을 best-effort 로 얹는다. 실패(네트워크 등)는 무시 — projection
-  // 표시명으로 표시 연속성 유지. 로그아웃·프로필 교체 레이스는 prev/id 가드로 무해.
+  // 표시명으로 표시 연속성 유지. 계정 이메일도 같은 응답에서 보강해 서비스 노출에 사용한다.
+  // 로그아웃·프로필 교체 레이스는 prev/id 가드로 무해.
   // 세션 확정(resolveSession)과 온보딩 완료(completeOnboarding) 양 경로 모두에서 호출.
   const enrichRealName = useCallback((profileId: string) => {
     void pullimSession.accountMe().then(
       (account) => {
-        if (!account.name) return;
         setUser((prev) =>
-          prev && prev.id === profileId ? { ...prev, name: account.name } : prev,
+          prev && prev.id === profileId ? { ...prev, name: account.name || prev.name, email: account.email } : prev,
         );
       },
       () => {},

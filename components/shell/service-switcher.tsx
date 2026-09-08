@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useAuth } from '@/lib/auth/auth-context';
 import {
   PULLIM_SERVICES,
   CURRENT_SERVICE,
@@ -39,6 +40,8 @@ function ServiceItemBody({ service }: { service: PullimService }) {
  * 현재 서비스(플래너)를 트리거에 표시, 메뉴에서 다른 풀림 서비스로 이동.
  */
 export function ServiceSwitcher() {
+  const { status, user } = useAuth();
+  const showStudio = status === 'authenticated' && /^[^@\s]+@curea\.co$/i.test(user?.email ?? '');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -79,6 +82,7 @@ export function ServiceSwitcher() {
       <div className="switcher-menu" role="menu">
         <div className="sm-head">서비스 전환</div>
         {PULLIM_SERVICES.map((s) => {
+          if (s.key === 'studio' && !showStudio) return null;
           // 준비 중 서비스는 진입 차단(레포 정책) — 링크가 아닌 비활성 항목으로 렌더.
           if (s.soon) {
             return (

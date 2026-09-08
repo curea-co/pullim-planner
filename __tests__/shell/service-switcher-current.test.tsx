@@ -8,6 +8,10 @@ import { render, screen } from '@testing-library/react';
 import { ServiceSwitcher } from '@/components/shell/service-switcher';
 import { PULLIM_SERVICES } from '@/components/shell/pullim-services';
 
+jest.mock('@/lib/auth/auth-context', () => ({
+  useAuth: () => ({ status: 'authenticated', user: { email: 'staff@curea.co' } }),
+}));
+
 describe('서비스 스위처 — 현재 서비스', () => {
   it('현재 서비스는 링크가 아니고 aria-current="page" 를 갖는다', () => {
     render(<ServiceSwitcher />);
