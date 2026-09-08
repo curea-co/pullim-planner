@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -35,6 +36,17 @@ export interface AuthContextValue {
   status: AuthStatus;
   /** pullim-api 세션 프로필(`GET /planner/me`). 흡수 전환 §10 — 자체 BE `AuthUser` 대체. */
   user: PullimMeProfile | null;
+  /**
+   * **중앙 계정 이메일**(`GET /me`) — planner 엔타이틀먼트·학습 프로필과 **무관**하다.
+   *
+   * `user` 에 얹지 않는 이유: `/planner/me` 가 403(권한 없음)·404(온보딩 전)면 `user` 는 null 인데,
+   * **그 둘도 로그인은 된 상태**다(401 만 비로그인). 계정 식별을 `user` 에 매달면 정작 그
+   * 사용자들에게서 사라진다 — 서비스 노출 판정이 planner 권한에 끌려가면 안 된다.
+   *
+   * null = 비로그인이거나 아직 모른다. 값이 있으면 **중앙 세션이 유효하다**는 뜻이라,
+   * 소비자는 status 를 따로 보지 않아도 된다.
+   */
+  accountEmail: string | null;
   /**
    * 헤더 프로필 드롭다운의 플랜 배지 라벨 — `'기본'`·`'유료'`, **조회 전·실패면 빈 문자열**
    * (배지 미표시). 서버 엔타이틀먼트 파생이라 OS 헤더와 같은 값이 나온다(QA #91).
@@ -100,6 +112,8 @@ const DEV_BYPASS_PROFILE: PullimMeProfile = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<PullimMeProfile | null>(null);
+  // 중앙 계정 이메일 — 위 계약 참조. planner 프로필과 생애주기가 다르므로 별도 상태다.
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
   // 플랜 배지 flags — null = 조회 전/실패(배지 미표시), {} = 조회 성공·유료 없음('기본').
   const [entFlags, setEntFlags] = useState<EntitlementFlags | null>(null);
 
@@ -110,12 +124,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // - login 직후: fallback='authenticated' (쿠키 방금 발급 — 프로필만 best-effort)
   // 헤더 배지 실명(ADR-048) — owner-only `GET /me` 의 `name`(KCB 실명, 미보유 시 서버가
   // displayName 폴백)을 best-effort 로 얹는다. 실패(네트워크 등)는 무시 — projection
-  // 표시명으로 표시 연속성 유지. 로그아웃·프로필 교체 레이스는 prev/id 가드로 무해.
+  // 표시명으로 표시 연속성 유지. 계정 이메일도 같은 응답에서 보강해 서비스 노출에 사용한다.
+  // 로그아웃·프로필 교체 레이스는 prev/id 가드로 무해.
   // 세션 확정(resolveSession)과 온보딩 완료(completeOnboarding) 양 경로 모두에서 호출.
-  const enrichRealName = useCallback((profileId: string) => {
+  //
+  // ⚠️ **세대(gen) 가드가 필요하다.** 실명은 `prev.id === profileId` 로 늦은 응답을 막지만
+  // 이메일에는 그런 anchor 가 없다 — 만료·재로그인 뒤 도착한 응답이 새 상태를 덮을 수 있다.
+  const accountGen = useRef(0);
+  /** 중앙 계정 식별을 버린다 — 비로그인 확정·만료·로그아웃. 진행 중인 조회도 무효화한다. */
+  const clearAccount = useCallback(() => {
+    accountGen.current += 1;
+    setAccountEmail(null);
+  }, []);
+  /**
+   * `GET /me` 조회. `profileId` 가 있으면 실명까지 얹고, null 이면 **이메일만** 싣는다
+   * (403·404 — planner 프로필이 없는 로그인 사용자).
+   */
+  const loadAccount = useCallback((profileId: string | null) => {
+    const gen = accountGen.current;
     void pullimSession.accountMe().then(
       (account) => {
-        if (!account.name) return;
+        if (gen !== accountGen.current) return; // 만료·재로그인 뒤 도착 — 버린다
+        setAccountEmail(account.email || null);
+        if (!account.name || !profileId) return;
         setUser((prev) =>
           prev && prev.id === profileId ? { ...prev, name: account.name } : prev,
         );
@@ -131,19 +162,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (profile) => {
           setUser(profile);
           setStatus('authenticated');
-          enrichRealName(profile.id);
+          loadAccount(profile.id);
         },
         (error: unknown) => {
           setUser(null);
           if (error instanceof ApiError) {
             if (error.statusCode === 401) {
-              // 세션 없음·무효 → 비로그인 확정.
+              // 세션 없음·무효 → 비로그인 확정. 계정 식별도 함께 버린다.
               setStatus('unauthenticated');
+              clearAccount();
               return;
             }
             if (error.statusCode === 403) {
               // 로그인은 됐으나 planner 엔타이틀먼트 미보유 — /login 으로 보내지 않고 안내.
               setStatus('forbidden');
+              // **로그인은 된 상태다.** 중앙 계정 식별은 planner 권한과 무관하게 조회한다.
+              loadAccount(null);
               return;
             }
             if (error.statusCode === 404) {
@@ -152,13 +186,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // 빈 보호 라우트에 가두지 않음). ⚠️ 프로필 생성은 정상 endpoint 부재(pullim-api 갭,
               // dev 는 /planner/dev/seed-profile) — 온보딩 완료 배선은 BE endpoint 후속.
               setStatus('onboarding');
+              // 인증은 됐다(프로필만 없다) — 위 403 과 같은 이유로 계정 식별을 조회한다.
+              loadAccount(null);
               return;
             }
           }
+          // transport/5xx — 로그인 여부를 서버가 말해 주지 않았다. 모르는 것을 아는 척하지 않는다.
           setStatus(fallbackStatus);
+          clearAccount();
         },
       ),
-    [enrichRealName],
+    [loadAccount, clearAccount],
   );
 
   // 부트스트랩/재시도용 — 세션 확정 불가 시 'error'.
@@ -174,9 +212,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (DEV_AUTH_BYPASS) return;
       setUser(null);
       setStatus('unauthenticated');
+      clearAccount();
     });
     return unsubscribe;
-  }, []);
+  }, [clearAccount]);
 
   useEffect(() => {
     // 로컬 dev 게이트 우회 — 세션 복원 없이 바로 authenticated. (NEXT_PUBLIC_DEV_AUTH_BYPASS=1)
@@ -231,8 +270,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setUser(null);
       setStatus('unauthenticated');
+      clearAccount();
     }
-  }, []);
+  }, [clearAccount]);
 
   const completeOnboarding = useCallback(
     // 온보딩 입력으로 프로필 upsert(PATCH /planner/me) → 갱신 프로필로 authenticated 전환.
@@ -246,18 +286,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(profile);
         setStatus('authenticated');
         // 온보딩 완료 직후에도 실명 보강 — resolveSession 경로와 배지 일관(Codex #109).
-        enrichRealName(profile.id);
+        loadAccount(profile.id);
       } catch (error) {
         if (error instanceof ApiError && error.statusCode === 401) {
           // 세션 만료 — 재시도가 아니라 /login 으로 회복한다. 호출부가 재시도 UI 를 안 띄우게 swallow.
           setUser(null);
           setStatus('unauthenticated');
+          // 온보딩 화면에서 이미 `loadAccount()` 가 성공했거나 **아직 돌고 있을** 수 있다.
+          // 세대를 올려 늦게 도착하는 응답까지 무효화한다 — 안 그러면 이전 계정 기준으로
+          // 스튜디오가 잠깐 다시 뜬다(Codex #257). 비로그인 확정 경로는 전부 이 짝을 지킨다.
+          clearAccount();
           return;
         }
         throw error; // 일시 오류 — 호출부(OnboardingContainer)가 재시도 UI 를 보인다.
       }
     },
-    [enrichRealName],
+    [loadAccount, clearAccount],
   );
 
   // 'error' 상태에서 사용자가 재시도. 클릭 핸들러라 동기 setState 가 안전하다.
@@ -270,6 +314,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       user,
+      accountEmail,
       planLabel: osPlanLabel(entFlags),
       logout,
       completeOnboarding,
@@ -278,6 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       status,
       user,
+      accountEmail,
       entFlags,
       logout,
       completeOnboarding,
