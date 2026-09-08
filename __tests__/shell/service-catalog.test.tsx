@@ -57,6 +57,35 @@ describe('env 검증 — 스킴이 http/https 가 아니면 링크를 만들지 
   });
 });
 
+describe('호스트 허용 목록 — 오설정이 외부 도메인 링크가 되지 않는다', () => {
+  // 첫 라벨이 `os` 라 파생 규칙은 통과하지만, 나머지를 그대로 물려받으면
+  // `https://q.pullim.ai.evil.example` 가 만들어진다 (Codex #256).
+  it.each([
+    ['접미사 위조', 'https://os.pullim.ai.evil.example'],
+    ['도메인 위조', 'https://os.evil-pullim.ai'],
+    ['서비스 도메인 아님', 'https://os.example.com'],
+  ])('%s → OS 홈까지 전부 비활성', async (_label, value) => {
+    const { PULLIM_SERVICES, osHomeUrl } = await loadCatalog(value);
+    expect(osHomeUrl()).toBeUndefined();
+    for (const s of PULLIM_SERVICES) {
+      if (s.key === 'planner') continue;
+      expect(s.href).toBeUndefined();
+      expect(s.soon).toBe(true);
+    }
+  });
+
+  it('정상 도메인은 그대로 통과한다 — 검증이 과하지 않다', async () => {
+    const { PULLIM_SERVICES, osHomeUrl } = await loadCatalog('https://dev-os.pullim.ai');
+    expect(osHomeUrl()).toBe('https://dev-os.pullim.ai');
+    expect(PULLIM_SERVICES.find((s) => s.key === 'q')?.href).toBe('https://dev-q.pullim.ai');
+  });
+
+  it('로컬 호스트의 OS 홈은 살아 있다 — 형제 앱만 비활성', async () => {
+    const { osHomeUrl } = await loadCatalog('http://os.pullim.local:3001');
+    expect(osHomeUrl()).toBe('http://os.pullim.local:3001');
+  });
+});
+
 describe('env 접두 보존 — 비프로덕션이 프로덕션으로 새지 않는다', () => {
   it('dev-os → dev-<app>', async () => {
     const { PULLIM_SERVICES } = await loadCatalog('https://dev-os.pullim.ai');

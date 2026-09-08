@@ -5,8 +5,9 @@
  * 각 서비스는 OS 하위 경로가 아니라 **독립 서브도메인 앱**(q.pullim.ai·writing.pullim.ai 등)이다.
  * URL 은 정본과 동일하게 **OS 티어에서 파생**한다(2026-07-12 — 스위처가 `os.pullim.ai/q` 등
  * 존재하지 않는 OS 하위 경로로 보내던 오배선 수정):
- *   - 티어 앵커 = `NEXT_PUBLIC_PULLIM_OS_URL`. `new URL()` 로 검증해 **http/https origin 만**
- *     받는다(부적격·미설정 → 전 항목 비활성 + warn — 설정 오류를 prod 링크로 가리지 않는다).
+ *   - 티어 앵커 = `NEXT_PUBLIC_PULLIM_OS_URL`. `new URL()` 로 검증해 **http/https origin** 이고
+ *     **허용 호스트**(`*.pullim.ai` 또는 로컬)일 때만 받는다(부적격·미설정 → 전 항목 비활성
+ *     + warn — 설정 오류를 prod 링크로도, 외부 도메인 링크로도 가리지 않는다).
  *   - 파생: OS 홈 호스트 첫 라벨 `[<env>-]os` 의 **env 접두를 그대로 물려받아** 형제 서브도메인으로
  *     교체한다(`dev-os` → `dev-q`, `preview-os` → `preview-q`, `os` → `q`). protocol·port 보존.
  *   - **local → 형제 앱 비활성**(로컬 `*.pullim.local` 인증이 prod 와 공유되지 않아 이탈 방지)
@@ -15,7 +16,31 @@
 const RAW_OS_BASE = process.env.NEXT_PUBLIC_PULLIM_OS_URL;
 
 /**
+ * 형제 서비스가 놓일 수 있는 **유일한 도메인**. 파생 호스트가 이 접미사가 아니면 만들지 않는다.
+ * (SSO 쿠키가 `Domain=.pullim.ai` 라 이 밖의 호스트로는 세션이 따라가지도 않는다.)
+ */
+const SERVICE_DOMAIN = '.pullim.ai';
+
+/**
+ * OS 홈으로 허용되는 호스트 — 서비스 도메인이거나 로컬 개발 호스트뿐이다.
+ *
+ * ⚠️ **접미사를 보지 않으면 오설정이 외부 링크가 된다.** `https://os.pullim.ai.evil.example`
+ * 은 첫 라벨이 `os` 라 파생 규칙을 통과하고, 나머지(`.pullim.ai.evil.example`)를 그대로
+ * 물려받아 `https://q.pullim.ai.evil.example` 를 만든다(Codex #256). 종전 문자열 구현은
+ * `https://<app>.pullim.ai` 를 **하드코딩**해 이 성질을 우연히 갖고 있었고, 파생으로 바꾸면서
+ * 잃었다 — 명시 검증으로 되살린다.
+ *
+ * `endsWith` 라 `evil-pullim.ai`·`pullim.ai.evil.example` 은 걸러진다.
+ */
+function isAllowedHost(hostname: string): boolean {
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+  if (hostname === 'pullim.local' || hostname.endsWith('.pullim.local')) return true;
+  return hostname === 'pullim.ai' || hostname.endsWith(SERVICE_DOMAIN);
+}
+
+/**
  * env 값을 **`new URL()` 로 파싱해 http/https origin 만** 통과시킨다 (정본 `resolveOsHome()`).
+ * 여기에 더해 **호스트 허용 목록**까지 본다(`isAllowedHost` — 정본보다 엄격하다).
  *
  * 이 값은 `<a href>` 로 그대로 넘어간다. 종전에는 문자열 `includes()` 로 티어만 보고 원문을
  * 그대로 썼는데, 그러면 상대경로나 `javascript:` 스킴이 주입돼도 걸러지지 않는다 — 검증 없이
@@ -30,6 +55,7 @@ function resolveOsHome(): string | null {
   try {
     const u = new URL(RAW_OS_BASE);
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (!isAllowedHost(u.hostname)) return null;
     return u.origin;
   } catch {
     return null;
@@ -41,7 +67,7 @@ const OS_HOME = resolveOsHome();
 if (!OS_HOME && typeof window !== 'undefined') {
   console.warn(
     RAW_OS_BASE
-      ? `[pullim-services] NEXT_PUBLIC_PULLIM_OS_URL 이 http/https origin 이 아니다 — 비-플래너 서비스 전환 비활성.`
+      ? '[pullim-services] NEXT_PUBLIC_PULLIM_OS_URL 이 http/https origin 이 아니거나 허용 호스트(*.pullim.ai·로컬)가 아니다 — 비-플래너 서비스 전환 비활성.'
       : '[pullim-services] NEXT_PUBLIC_PULLIM_OS_URL 미설정 — 비-플래너 서비스 전환 비활성(환경별 설정 필요).',
   );
 }
@@ -84,6 +110,7 @@ function siblingAppUrl(app: string): string | undefined {
   if (dot < 0) return undefined; // 단일 라벨 호스트 — 형제 파생 불가
   const firstLabel = u.hostname.slice(0, dot);
   const rest = u.hostname.slice(dot); // '.pullim.ai' (선행 점 포함)
+  if (rest !== SERVICE_DOMAIN) return undefined; // 서비스 도메인이 아니다 — 파생하지 않는다
   const m = firstLabel.match(/^(.*-)?os$/);
   if (!m) return undefined; // `[<env>-]os` 형태가 아니다 — 어느 환경인지 알 수 없으므로 비활성
   u.hostname = `${m[1] ?? ''}${app}${rest}`;
