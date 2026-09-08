@@ -395,16 +395,12 @@ export interface PullimBlockCompletionClient {
 }
 
 
-/**
- * CSRF 거부(토큰 회전·만료) 판정 — 403 **전체가 아니라 CSRF 마커**로 좁힌다(pullim-session 과 동일).
- * pullim-api 의 CSRF 거부는 메시지가 `CSRF:` 로 시작한다. 인가/잠금 등 비-CSRF 403 을 회전으로
- * 오인해 mutation 을 중복 발사하지 않도록 한정한다.
- */
+/** CUR-5 typed 계약에서 복구 가능한 유일한 403. Origin·권한 거부는 절대 재시도하지 않는다. */
 function isCsrfRejection(error: unknown): boolean {
   return (
     error instanceof ApiError &&
     error.statusCode === 403 &&
-    /^csrf/i.test(error.message)
+    error.code === "CSRF_TOKEN_MISMATCH"
   );
 }
 
@@ -440,7 +436,7 @@ export function createPullimPlannerClient(
     return csrfInFlight;
   }
 
-  /** 상태변경 요청. CSRF 토큰 동봉 → 회전·만료로 1회 거부되면 캐시 무효화 후 재부트스트랩·1회 재시도. */
+  /** 상태변경 요청. typed mismatch로 1회 거부되면 캐시 무효화 후 재부트스트랩·1회 재시도. */
   async function mutate<T>(
     path: string,
     method: "POST" | "PUT" | "PATCH" | "DELETE",
