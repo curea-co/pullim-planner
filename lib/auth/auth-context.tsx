@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 헤더 배지 실명(ADR-048) — owner-only `GET /me` 의 `name`(KCB 실명, 미보유 시 서버가
   // displayName 폴백)을 best-effort 로 얹는다. 실패(네트워크 등)는 무시 — projection
   // 표시명으로 표시 연속성 유지. 계정 이메일도 같은 응답에서 보강해 서비스 노출에 사용한다.
-  // 로그아웃·프로필 교체 레이스는 prev/id 가드로 무해.
+  // 실명은 profile id, 계정 이메일은 세션 해석 세대로 늦은 응답을 차단한다.
   // 세션 확정(resolveSession)과 온보딩 완료(completeOnboarding) 양 경로 모두에서 호출.
   //
   // ⚠️ **세대(gen) 가드가 필요하다.** 실명은 `prev.id === profileId` 로 늦은 응답을 막지만
@@ -156,15 +156,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resolveSession = useCallback(
-    (fallbackStatus: AuthStatus) =>
+    (fallbackStatus: AuthStatus) => {
+      // 다른 탭의 계정 교체는 만료 이벤트 없이도 발생한다. 새 세션 해석이 이전 /me와
+      // 세션 응답을 함께 무효화하며, 성공·403·404 모두 이 세대에서만 계정을 확정한다.
+      const gen = ++accountGen.current;
       // pullim-api 세션 확인 = GET /planner/me (쿠키 인증).
-      pullimSession.session().then(
+      return pullimSession.session().then(
         (profile) => {
+          if (gen !== accountGen.current) return;
+          setAccountEmail(null);
           setUser(profile);
           setStatus('authenticated');
           loadAccount(profile.id);
         },
         (error: unknown) => {
+          if (gen !== accountGen.current) return;
+          setAccountEmail(null);
           setUser(null);
           if (error instanceof ApiError) {
             if (error.statusCode === 401) {
@@ -195,7 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setStatus(fallbackStatus);
           clearAccount();
         },
-      ),
+      );
+    },
     [loadAccount, clearAccount],
   );
 
