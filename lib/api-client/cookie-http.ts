@@ -194,7 +194,7 @@ export async function cookieRequest<T>(
         // 소비자(`on401`)가 이 표시를 보고 전역 로그아웃을 건다.
         throw toApiError(payload, response.status, true);
       }
-      // refresh 가 CSRF 쿠키를 회전시켰으므로 브라우저에선 쿠키에서 새 토큰을 재회수한다.
+      // refresh 뒤 runtime CSRF cache 경계를 맞추기 위해 브라우저 쿠키 값을 다시 회수한다.
       // 쿠키를 읽을 수 없는 환경(SSR/테스트 — document 부재)은 기존 명시 토큰을 유지 —
       // 무효라면 403 이 나고 상위 mutate 의 CSRF 재부트스트랩 재시도가 처리한다.
       const rotatedToken = config.csrfCookieName
