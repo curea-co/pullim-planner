@@ -314,9 +314,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 'error' 상태에서 사용자가 재시도. 클릭 핸들러라 동기 setState 가 안전하다.
   const retry = useCallback(() => {
+    // accountEmail 소비자는 status 없이도 중앙 세션으로 신뢰하므로 요청 대기 중에도 비운다.
+    clearAccount();
     setStatus('loading');
     void loadSession();
-  }, [loadSession]);
+  }, [loadSession, clearAccount]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

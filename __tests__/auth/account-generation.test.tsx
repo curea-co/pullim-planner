@@ -84,3 +84,15 @@ it('does not restore a pending session after a session-expired event', async () 
   expect(screen.getByTestId('identity')).toHaveTextContent('unauthenticated:-:-');
   expect(accountMe).not.toHaveBeenCalled();
 });
+
+it('clears the previous email while the replacement session is still pending', async () => {
+  session.mockResolvedValueOnce(profile('A'))
+    .mockReturnValueOnce(deferred<PullimMeProfile>().promise);
+  accountMe.mockResolvedValueOnce(account('a@example.com'));
+  await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
+  expect(screen.getByTestId('identity')).toHaveTextContent('a@example.com');
+
+  await act(async () => { screen.getByText('retry').click(); });
+
+  expect(screen.getByTestId('identity')).toHaveTextContent('loading:A:-');
+});
