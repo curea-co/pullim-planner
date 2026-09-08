@@ -1,12 +1,12 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { ApiError } from '@/lib/api-client';
-import { AuthProvider } from '@/lib/auth/auth-context';
+import { AuthProvider, useAuth } from '@/lib/auth/auth-context';
 import { ServiceSwitcher } from '@/components/shell/service-switcher';
 import { onPullimSessionExpired, pullimSession } from '@/lib/auth/pullim-session-client';
 
 jest.mock('@/lib/auth/pullim-session-client', () => ({
   pullimSession: {
-    session: jest.fn(), accountMe: jest.fn(), entitlements: jest.fn(),
+    session: jest.fn(), accountMe: jest.fn(), entitlements: jest.fn(), updateProfile: jest.fn(),
   },
   onPullimSessionExpired: jest.fn(() => () => {}),
 }));
@@ -104,6 +104,56 @@ describe('planner 권한 없이도 계정 게이트가 동작한다', () => {
     await act(async () => { render(<AuthProvider><ServiceSwitcher /></AuthProvider>); });
 
     expect(accountMe).not.toHaveBeenCalled();
+    expect(screen.queryByText('스튜디오')).not.toBeInTheDocument();
+  });
+});
+
+
+/**
+ * **비로그인 확정 경로는 전부 계정 식별을 함께 버려야 한다** (Codex #257).
+ *
+ * `completeOnboarding()` 의 401 도 그런 경로인데 `clearAccount()` 를 빠뜨리고 있었다. 온보딩
+ * 화면에서 `loadAccount()` 가 이미 성공했거나 **아직 돌고 있으면**, `PATCH /planner/me` 가
+ * 401 을 받아 `unauthenticated` 가 된 뒤에도 이전 계정 이메일이 남거나 늦게 다시 설정된다.
+ * 그 사이 스위처가 **이전 curea 계정 기준으로** 스튜디오를 노출한다.
+ */
+describe('온보딩 401 도 계정 식별을 버린다', () => {
+  const err401 = new ApiError({ code: 'auth', statusCode: 401, message: 'expired' });
+
+  /** 렌더 직후 온보딩 완료를 호출하는 하네스 — 컨텍스트 밖에서는 부를 수 없다. */
+  function Harness() {
+    const { completeOnboarding } = useAuth();
+    return (
+      <button type="button" onClick={() => void completeOnboarding().catch(() => {})}>
+        온보딩완료
+      </button>
+    );
+  }
+
+  beforeEach(() => {
+    // 온보딩 전(404) 진입 — 계정 조회는 되고 프로필만 없다.
+    session.mockRejectedValue(new ApiError({ code: 'planner', statusCode: 404, message: 'no profile' }));
+    jest.mocked(pullimSession.updateProfile).mockRejectedValue(err401);
+  });
+
+  it('이미 실린 이메일이 남지 않는다', async () => {
+    accountMe.mockResolvedValue({ email: 'staff@curea.co', name: '', displayName: '직원' });
+    render(<AuthProvider><ServiceSwitcher /><Harness /></AuthProvider>);
+    await waitFor(() => expect(screen.getByText('스튜디오')).toBeInTheDocument());
+
+    await act(async () => { screen.getByText('온보딩완료').click(); });
+
+    expect(screen.queryByText('스튜디오')).not.toBeInTheDocument();
+  });
+
+  it('진행 중이던 계정 조회가 늦게 도착해도 다시 뜨지 않는다 — 세대 가드', async () => {
+    let resolveAccount!: (d: { email: string; name: string; displayName: string }) => void;
+    accountMe.mockReturnValue(new Promise((resolve) => { resolveAccount = resolve; }));
+    await act(async () => { render(<AuthProvider><ServiceSwitcher /><Harness /></AuthProvider>); });
+
+    await act(async () => { screen.getByText('온보딩완료').click(); });
+    await act(async () => { resolveAccount({ email: 'staff@curea.co', name: '직원', displayName: '직원' }); });
+
     expect(screen.queryByText('스튜디오')).not.toBeInTheDocument();
   });
 });

@@ -292,6 +292,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // 세션 만료 — 재시도가 아니라 /login 으로 회복한다. 호출부가 재시도 UI 를 안 띄우게 swallow.
           setUser(null);
           setStatus('unauthenticated');
+          // 온보딩 화면에서 이미 `loadAccount()` 가 성공했거나 **아직 돌고 있을** 수 있다.
+          // 세대를 올려 늦게 도착하는 응답까지 무효화한다 — 안 그러면 이전 계정 기준으로
+          // 스튜디오가 잠깐 다시 뜬다(Codex #257). 비로그인 확정 경로는 전부 이 짝을 지킨다.
+          clearAccount();
           return;
         }
         throw error; // 일시 오류 — 호출부(OnboardingContainer)가 재시도 UI 를 보인다.
