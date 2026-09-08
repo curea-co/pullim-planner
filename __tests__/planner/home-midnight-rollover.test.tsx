@@ -81,3 +81,58 @@ describe('useHomeBlocks — 자정 전환', () => {
     expect(result.current.todayIso).toBe('2026-09-08');
   });
 });
+
+// 실제 조회 훅 → Presenter → DayView의 마운트 생애주기를 함께 검증한다.
+// 네트워크 응답만 보류해 자정 직후 이전 블록이 남아 있는 구간도 확인한다.
+import { render, screen } from '@testing-library/react';
+import HomePresenter from '@/components/features/planner-home/presenters/HomePresenter';
+import type { PullimBlock } from '@/lib/api-client';
+
+jest.mock('@/components/features/planner-home/components/next-block-hero', () => ({
+  NextBlockHero: ({ next }: { next: { title: string } }) => (
+    <div data-testid="next-block">{next.title}</div>
+  ),
+}));
+
+function MidnightHome() {
+  const real = useHomeBlocks(true, 'day', 0);
+  return (
+    <HomePresenter
+      view="day" examName="" dday={0} burnout={null} condition={null}
+      onConditionChange={() => {}} daySummary={{ done: 0, total: 1 }}
+      weekMeta={{ totalHours: 1, completedHours: 0 }} monthMeta={{ totalBlocks: 1 }}
+      heroDaySummary={{ done: 0, total: 1 }}
+      heroWeekMeta={{ totalHours: 1, completedHours: 0 }}
+      offset={0} onPrev={() => {}} onNext={() => {}} onReset={() => {}}
+      onJumpOffset={() => {}} onChangeView={() => {}} onNavigate={() => {}}
+      loading={real.loading} blocksError={real.blocksError}
+      dayBlocks={real.blocksByDate[real.todayIso] ?? []}
+    />
+  );
+}
+
+it('자정 재조회 중 이전 카드를 숨기고 새 응답 후 다음 블록을 다시 표시한다', async () => {
+  const block = (date: string): PullimBlock => ({
+    id: date, date, start: '09:00', end: '09:50', subject: 'math',
+    type: 'concept', title: `${date} 학습`, engines: [], progress: 0,
+    status: 'todo', expectedMinutes: 50, completed: false,
+  });
+  let resolveNext: ((blocks: PullimBlock[]) => void) | undefined;
+  mockBlocksRange.mockImplementation((_id: string, from: string, to: string) => {
+    if (from === '2026-09-08' && from === to) {
+      return new Promise<PullimBlock[]>((resolve) => { resolveNext = resolve; });
+    }
+    return Promise.resolve([block('2026-09-07')]);
+  });
+  render(<MidnightHome />);
+  await act(async () => { await Promise.resolve(); });
+  // 23:59에는 이미 끝난 오전 블록을 추천하지 않는다.
+  expect(screen.queryByTestId('next-block')).toBeNull();
+
+  await act(async () => { jest.advanceTimersByTime(60_000); });
+  expect(resolveNext).toBeDefined();
+  expect(screen.queryByTestId('next-block')).toBeNull();
+
+  await act(async () => { resolveNext?.([block('2026-09-08')]); });
+  expect(screen.getByTestId('next-block')).toHaveTextContent('2026-09-08 학습');
+});

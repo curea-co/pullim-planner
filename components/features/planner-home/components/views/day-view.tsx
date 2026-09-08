@@ -86,10 +86,11 @@ export function DayView({ dayOffset = 0, onResetToday, blocks: blocksProp, dday:
     };
   }, []);
 
-  // ⚠️ **자정을 넘기면 이 화면의 블록은 어제 것이다.** 시각만 갱신하면 `hhmm` 은 00:00 으로
-  //    돌아가는데 `blocks` 는 마운트 당시 기준일 그대로라, 밤새 열어 둔 탭이 **전날 09:00 블록을
-  //    다시 「다음 블록」으로** 집는다. 데이터를 다시 읽는 것은 이 컴포넌트의 일이 아니므로
-  //    (`useHomeBlocks` 소관 — 별건), 여기서는 **거짓말을 하지 않는 쪽**을 택한다: 카드를 감춘다.
+  // 자정 직후에는 이전 날짜의 블록을 다시 「다음」으로 표시하지 않는다.
+  // 실데이터 경로는 useHomeBlocks의 rangeKey가 바뀌면 loading=true가 되고,
+  // HomePresenter가 CalendarLoading으로 교체하며 DayView를 언마운트한다.
+  // 새 날짜 응답 후 다시 마운트되므로 openedOn도 새 날짜로 초기화되어 카드가 복구된다.
+  // 아래 가드는 그 교체 전 시계 틱과 자동 재조회가 없는 mock 경로를 보호한다.
   const dateRolled = clock !== null && clock.date !== clock.openedOn;
 
   // 오늘이 아닌 날짜에는 시계를 들이대지 않는다 — 「지금」이 그 날짜 위에 없다.

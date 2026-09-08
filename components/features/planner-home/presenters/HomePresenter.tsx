@@ -218,6 +218,8 @@ export default function HomePresenter({
           <HomeLoadFailure scope={loadError ? 'planner' : 'blocks'} retrying={retrying} onRetry={onRetry} />
         ) : loading ? (
           // 모르는 동안 「계획이 없어요」라고 말하지 않는다 — 빈 상태는 확정 진술이다.
+          // 자정에도 일간 rangeKey가 바뀌어 이 분기로 들어온다. DayView를 언마운트해야
+          // 새 날짜 응답 후 열린 날짜(openedOn)가 초기화되어 다음 블록 카드가 다시 표시된다.
           <CalendarLoading />
         ) : (
           <>
