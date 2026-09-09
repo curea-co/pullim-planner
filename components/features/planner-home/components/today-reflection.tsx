@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   ChevronDown, ChevronUp, BarChart3, Clock, Smile,
   Sparkles, AlertTriangle, CheckCircle2, ArrowRight, Flag,
@@ -31,8 +30,23 @@ const insightIcon: Record<ReflectionInsight['icon'], { Icon: LucideIcon; tone: s
  *
  * defaultOpen — reports day view 진입 시 펼친 상태로 시작 (true). 홈 day view는 미지정(기본 false, 학습 완료 시만 자동 펼침).
  */
-export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {}) {
-  const router = useRouter();
+export function TodayReflection({
+  defaultOpen,
+  onNavigate,
+}: {
+  /** 접힘 기본값 — 리포트에선 펼친 채로 연다. */
+  defaultOpen?: boolean;
+  /**
+   * 이 위젯이 계산한 목적지로 이동시킨다 — **방법은 컨테이너가 정한다.**
+   *
+   * 이 위젯은 `/planner` 일간 뷰와 `/planner/reports` 양쪽에 실린다. 같은 pathname 안
+   * (쿼리만 변경)에서는 History API 여야 하고(F-01 — `lib/planner/query-nav` 주석),
+   * 다른 경로에서는 진짜 라우트 이동이어야 한다. History API 는 URL 만 바꾸므로 리포트에서
+   * 그걸 쓰면 화면은 리포트에 남고 주소만 갈린다. 그 판단은 라우트를 아는 컨테이너의 몫이고,
+   * 재사용 위젯이 라우팅 훅으로 직접 하면 feature `components/` 계층 규칙도 깨진다(Codex).
+   */
+  onNavigate: (url: string) => void;
+}) {
   const m = dailyReflection();
   const insights = tomorrowDifferences();
 
@@ -53,7 +67,7 @@ export function TodayReflection({ defaultOpen }: { defaultOpen?: boolean } = {})
   }
 
   function handleTomorrow() {
-    router.push('/planner/calendar?view=month');
+    onNavigate('/planner?view=month');
   }
 
   return (

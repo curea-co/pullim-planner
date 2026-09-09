@@ -17,9 +17,11 @@ type Props = {
   compact?: boolean;
   /** 실데이터(B4) 주간 집계 — 미주입이면 각 레이아웃이 mock 폴백. */
   days?: WeekDay[];
+  /** 셀 클릭 이동 — 같은 경로면 History API, 다른 경로면 router. **컨테이너가 정한다.** */
+  onNavigate: (url: string) => void;
 };
 
-export function ActiveWeekLayout({ weekLayoutId, paletteId, compact, days }: Props) {
+export function ActiveWeekLayout({ weekLayoutId, paletteId, compact, days, onNavigate }: Props) {
   switch (weekLayoutId) {
     case 'school_grid':
       return <SchoolGridLayout paletteId={paletteId} compact={compact} days={days} />;
@@ -29,6 +31,6 @@ export function ActiveWeekLayout({ weekLayoutId, paletteId, compact, days }: Pro
       return <HeatmapLayout paletteId={paletteId} compact={compact} days={days} />;
     case 'matrix_by_type':
     default:
-      return <MatrixByTypeLayout paletteId={paletteId} compact={compact} days={days} />;
+      return <MatrixByTypeLayout paletteId={paletteId} compact={compact} days={days} onNavigate={onNavigate} />;
   }
 }

@@ -22,7 +22,20 @@ export function BottomNav() {
     let bestIdx = -1;
     let bestLen = -1;
     studentBottomTabs.forEach((tab, i) => {
-      tab.matchPrefix.forEach(p => {
+      // `matchExact` 는 그 경로 자체일 때만 — 홈처럼 **잎**인 탭이 하위 경로를 가져가지
+      // 않게 한다. `'/'` 를 접두사로 두면 전용 탭이 없는 경로가 전부 홈에 걸린다 (F-09).
+      const exact: readonly string[] = ('matchExact' in tab && tab.matchExact) || [];
+      const prefix: readonly string[] = ('matchPrefix' in tab && tab.matchPrefix) || [];
+      exact.forEach(p => {
+        if (pathname === p) {
+          const len = p === '/' ? 0 : p.length;
+          if (len > bestLen) {
+            bestLen = len;
+            bestIdx = i;
+          }
+        }
+      });
+      prefix.forEach(p => {
         if (pathname === p || pathname.startsWith(p + '/')) {
           const len = p === '/' ? 0 : p.length;
           if (len > bestLen) {
@@ -38,7 +51,12 @@ export function BottomNav() {
   return (
     <nav
       aria-label="학생 메인 네비게이션"
-      className="bg-background/95 sticky bottom-0 z-30 border-t backdrop-blur-md md:hidden"
+      className={cn(
+        // 정본 os-tokens.css `.tabbar` — fixed · 62px + safe-area · z-70 · blur.
+        // sticky 였을 때는 본문 스크롤 컨테이너에 묶여 높이·safe-area 보정이 없었다.
+        'bg-background/92 fixed right-0 bottom-0 left-0 z-[70] border-t backdrop-blur-md os:hidden',
+        'h-[calc(62px+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)]',
+      )}
     >
       <ul className="flex w-full">
         {studentBottomTabs.map((item, i) => {
@@ -56,7 +74,7 @@ export function BottomNav() {
                     : 'text-pullim-slate-500 hover:text-pullim-slate-800',
                 )}
               >
-                <Icon className={cn('h-5 w-5', active && 'stroke-[2.4]')} />
+                <Icon className={cn('h-[21px] w-[21px]', active && 'stroke-[2.4]')} />
                 <span className="truncate max-w-full">{item.label}</span>
               </Link>
             </li>

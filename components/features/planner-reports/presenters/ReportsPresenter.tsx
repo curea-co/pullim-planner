@@ -19,6 +19,8 @@ interface ReportsPresenterProps {
   onChangeView: (next: ReportsView) => void;
   onConsentOpenChange: (open: boolean) => void;
   onParentShareClick: () => void;
+  /** 재사용 위젯(히트맵·회고)의 이동 — 같은 경로면 History API, 다른 경로면 router. 컨테이너가 정한다. */
+  onNavigate: (url: string) => void;
 }
 
 const descriptionByView: Record<
@@ -38,6 +40,7 @@ export default function ReportsPresenter({
   onChangeView,
   onConsentOpenChange,
   onParentShareClick,
+  onNavigate,
 }: ReportsPresenterProps) {
   return (
     <>
@@ -60,11 +63,11 @@ export default function ReportsPresenter({
             mock 회고(dailyReflection())가 새는 것 방지(Codex #145). */}
         {view === 'day' && (
           REFLECTION_ENABLED
-            ? <TodayReflection defaultOpen />
+            ? <TodayReflection defaultOpen onNavigate={onNavigate} />
             : <div className="py-16 text-center text-xs text-muted-foreground">일간 회고는 곧 열려요</div>
         )}
         {view === 'week' && <WeeklySummary />}
-        {view === 'month' && <MonthlySummary />}
+        {view === 'month' && <MonthlySummary onNavigate={onNavigate} />}
       </ReportsShell>
 
       <ConsentDialog open={consentOpen} onOpenChange={onConsentOpenChange} />

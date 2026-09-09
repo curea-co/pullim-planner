@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import type { CalendarView } from '../components/calendar-shell';
 import {
   currentPersona, getDday, plannerProgress, getActivePlanner,
@@ -14,11 +14,11 @@ import {
 } from '@/lib/planner/home-data';
 import { computeBurnoutFromWeek } from '@/lib/planner/burnout';
 import type { BurnoutSnapshot, ConditionLevel } from '@/lib/mock';
-import { todayIsoKst } from '@/components/features/planner-builder/components/builder-types';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api-client';
 import { pullimPlannerClient } from '@/lib/planner/pullim-client';
 import { getCustomization, type Customization } from '@/lib/hooks/use-planner-customization';
+import { pushQuery, replaceQuery } from '@/lib/planner/query-nav';
 import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
 import { useHomeBlocks } from '../hooks/use-home-blocks';
@@ -41,7 +41,6 @@ const WELCOME_STORAGE_KEY = 'pullim:welcome-shown';
  * LNB "매뉴얼" 항목은 `?help=1`로 링크돼 클릭 시 모달을 재오픈한다.
  */
 export default function HomeContainer() {
-  const router = useRouter();
   const params = useSearchParams();
 
   const raw = params.get('view');
@@ -83,9 +82,11 @@ export default function HomeContainer() {
   const go = useCallback(
     (v: CalendarView, o: number) => {
       offsetRef.current = o;
-      router.replace(buildUrl(v, o), { scroll: false });
+      // 같은 pathname · 쿼리만 바뀌는 이동 — router 를 쓰면 하드 로드 시 라우트 캐시에 박힌
+      // canonicalUrl 때문에 전부 무반응이 된다(lib/planner/query-nav 주석 · QA F-01).
+      replaceQuery(buildUrl(v, o));
     },
-    [router, buildUrl],
+    [buildUrl],
   );
 
   const handlePrev = useCallback(() => go(view, offsetRef.current - 1), [go, view]);
@@ -112,9 +113,9 @@ export default function HomeContainer() {
       const next = new URLSearchParams(params);
       next.delete('help');
       const qs = next.toString();
-      router.replace(`/planner${qs ? `?${qs}` : ''}`, { scroll: false });
+      replaceQuery(`/planner${qs ? `?${qs}` : ''}`);
     }
-  }, [helpParam, params, router]);
+  }, [helpParam, params]);
 
   const onChangeView = useCallback(
     // 뷰 전환 시 offset 리셋 — go(_,0)이 ref·URL 모두 0으로(buildUrl이 d 생략=기준 기간).
@@ -168,19 +169,11 @@ export default function HomeContainer() {
   }, [realActiveId, burnoutTick, view, offset]);
 
   // 오늘 컨디션(저장+표기용, QA 결정 08-04) — 실모드는 서버 복원·저장, bypass 는 로컬 데모(3).
-  // KST 오늘을 1분 간격으로 재계산해 자정 전환을 실제로 감지한다(마운트 1회 계산이던
-  // useHomeBlocks.todayIso 로는 effect 가 재실행되지 않음 — Codex). 날짜가 바뀌면 파생이
-  // 자동으로 '선택 전'이 되고, 날짜 키 effect 가 오늘 값을 재조회한다.
-  const [kstToday, setKstToday] = useState(() => todayIsoKst());
-  useEffect(() => {
-    const id = setInterval(() => {
-      setKstToday((prev) => {
-        const now = todayIsoKst();
-        return now === prev ? prev : now;
-      });
-    }, 60_000);
-    return () => clearInterval(id);
-  }, []);
+  // KST 오늘은 `useHomeBlocks` 가 이미 1분 간격으로 재계산해 내보낸다(`useKstToday`). 여기서
+  // 다시 부르면 **타이머가 두 개** 생기고, 자정 부근에 컨디션 날짜와 블록 기준일이 서로 다른
+  // 렌더에 갱신된다 — 하나를 나눠 쓰는 게 아니라 각자 도는 것이다. 그래서 훅 반환값을 쓴다.
+  // 날짜가 바뀌면 파생이 자동으로 '선택 전'이 되고, 날짜 키 effect 가 오늘 값을 재조회한다.
+  const kstToday = real.todayIso;
   const [conditionState, setConditionState] = useState<
     { date: string; level: ConditionLevel } | null
   >(DEV_AUTH_BYPASS ? { date: 'local', level: 3 } : null);
@@ -289,6 +282,8 @@ export default function HomeContainer() {
   let burnout: BurnoutSnapshot | null;
   // QA #7 — 활성 계획표 유무. 없으면 히어로가 D-DAY 대신 "아직 시간표가 없어요"를 보여준다.
   let hasActivePlanner: boolean;
+  // 히어로 요약을 만들 데이터가 없다 — 수치를 0 으로 접어 숨기면 "계획 없음"으로 위장된다.
+  let heroSummaryError = false;
 
   if (DEV_AUTH_BYPASS) {
     const active = getActivePlanner();
@@ -302,7 +297,8 @@ export default function HomeContainer() {
     heroWeekMeta = getWeekMeta(0); // 이번 주
     burnout = todayBurnout;
   } else {
-    const { active, blocksByDate, heroBlocksByDate, todayIso } = real;
+    const { active, blocksByDate, blocksError, heroBlocksByDate, heroBlocksError, todayIso } =
+      real;
     customization = getCustomization(active);
     hasActivePlanner = Boolean(active);
     examName = active?.examLabel || active?.name || '';
@@ -337,34 +333,62 @@ export default function HomeContainer() {
     // 히어로 — 이번 주 7일 기준. 현재 뷰가 이미 조회한 날짜(blocksByDate)를 우선 재사용하고
     // 나머지만 heroBlocksByDate 로 채운다: 같은 날짜를 두 조회가 서로 다르게 성공/실패해도
     // 히어로와 헤더·본문이 어긋나지 않게 단일 소스(blocksByDate)를 우선한다(Codex #126 R3).
-    const heroMerged = { ...heroBlocksByDate, ...blocksByDate };
-    heroDaySummary = plannerProgress(heroMerged[todayIso] ?? []);
-    const heroWeekDays = buildWeekDays(
-      weekDatesFor(todayIso, 0),
-      heroMerged,
-      todayIso,
-    );
-    heroWeekMeta = {
-      totalHours: Math.round(heroWeekDays.reduce((s, d) => s + d.totalMinutes, 0) / 6) / 10,
-      completedHours:
-        Math.round(
-          heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
-        ) / 10,
-    };
+    //
+    // ⚠️ **실패한 쪽을 우선하면 안 된다.** 기간 조회는 실패해도 형태(빈 배열 키)를 유지하므로,
+    // 그대로 덮으면 성공한 히어로 데이터가 빈 배열로 **지워진다**. 하루씩 부르던 시절엔 실패가
+    // 하루짜리였지만 지금은 창 전체다 — 겹치는 날이 통째로 0 이 된다.
+    const heroWeekDates = weekDatesFor(todayIso, 0);
+    const heroMerged = blocksError
+      ? heroBlocksByDate
+      : { ...heroBlocksByDate, ...blocksByDate };
+    // 히어로 조회가 실패했어도 현재 뷰가 이번 주 7일을 **전부** 덮었으면 수치는 온전하다.
+    // 그 경우가 아니면(예: 일간 뷰 — 하루만 덮는다) 부분 데이터로 "이번 주 Nh"를 말하게 되고,
+    // 그건 빈 값보다 나쁘다 — 틀린 값을 자신 있게 보여준다.
+    const heroCovered =
+      !heroBlocksError || (!blocksError && heroWeekDates.every((d) => d in blocksByDate));
+    // 활성 시간표가 없으면 요약이 없는 게 정상이다 — 그때까지 실패로 말하면 안 된다.
+    heroSummaryError = Boolean(active) && !heroCovered;
+    heroDaySummary = heroCovered
+      ? plannerProgress(heroMerged[todayIso] ?? [])
+      : { done: 0, total: 0 };
+    const heroWeekDays = buildWeekDays(heroWeekDates, heroMerged, todayIso);
+    heroWeekMeta = heroCovered
+      ? {
+          totalHours: Math.round(heroWeekDays.reduce((s, d) => s + d.totalMinutes, 0) / 6) / 10,
+          completedHours:
+            Math.round(
+              heroWeekDays.reduce((s, d) => s + (d.totalMinutes * d.completionPct) / 100, 0) / 6,
+            ) / 10,
+        }
+      : { totalHours: 0, completedHours: 0 };
     // BE 집계 로드 완료 시 그 결과가 권위(available:false=보류 '–') — 미로드·실패만 FE 폴백.
+    // 폴백은 이번 주 블록을 세는 계산이라 **부분 데이터면 돌리지 않는다**: 조회 실패로 비어 보이는
+    // 주를 "쉬어야 한다"로 읽어 권고를 뒤집는다.
     burnout =
       serverBurnout && serverBurnout.plannerId === active?.id
         ? serverBurnout.snapshot
-        : computeBurnoutFromWeek(heroMerged, todayIso, weekDatesFor(todayIso, 0));
+        : heroCovered
+          ? computeBurnoutFromWeek(heroMerged, todayIso, heroWeekDates)
+          : null;
   }
 
   return (
     <>
       <HomePresenter
+      // 홈은 `/planner` — 위젯이 주는 목적지도 같은 pathname 이라 **쿼리만 바뀌는 이동**이다.
+      // 여기서 Next router 를 쓰면 쿼리를 달고 하드 로드한 뒤 전환이 무반응이 된다(F-01).
+      onNavigate={pushQuery}
         view={view}
         examName={examName}
         dday={dday}
         hasActivePlanner={hasActivePlanner}
+        // 실패는 "계획 없음"이 아니다 — bypass(mock)에는 실패면이 없으므로 false 로 고정한다.
+        loadError={!DEV_AUTH_BYPASS && real.status === 'error'}
+        blocksError={!DEV_AUTH_BYPASS && real.blocksError}
+        heroSummaryError={!DEV_AUTH_BYPASS && heroSummaryError}
+        loading={!DEV_AUTH_BYPASS && real.loading}
+        retrying={!DEV_AUTH_BYPASS && real.retrying}
+        onRetry={real.retry}
         burnout={burnout}
         condition={condition}
         onConditionChange={handleConditionChange}

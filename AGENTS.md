@@ -6,7 +6,7 @@ This version (Next.js 16) has breaking changes — APIs, conventions, and file s
 
 > AI 코드 리뷰 에이전트(Codex 등)가 PR을 리뷰할 때 참고하는 가이드라인.
 
-- PR 범위 판정은 [CLAUDE.md의 최상위 규칙](CLAUDE.md)을 따른다. 일반 PR(기능·수정·문서·운영)의 관심사 분리와 dev → main 통합 승격의 구분을 해당 규칙에서 확인한다.
+- PR 범위 판정은 [CLAUDE.md 의 최상위 규칙](CLAUDE.md)을 따른다. **모든 PR은 한 관심사**이며, dev → main 승격 PR 의 관심사가 무엇인지도 그 규칙이 정의한다.
 
 ## 앱 개요
 - 학생용 학습 플래너 — Next.js 16 App Router, 단일 앱 리포 (모노레포 아님). dev port 3006

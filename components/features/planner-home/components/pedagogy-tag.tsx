@@ -18,6 +18,11 @@ export function PedagogyTag({ engineId, size = 'sm' }: { engineId: PedagogyEngin
   const [open, setOpen] = useState(false);
   const meta = pedagogyEngineMeta[engineId];
 
+  // 실데이터 방어 — BE 계약상 engines 는 string[] 이라 FE 가 모르는 id 가 올 수 있다.
+  // 태그 하나를 접는 편이 낫다. 여기서 meta.label 을 그냥 읽으면 페이지가 통째로 죽는다
+  // (이 앱엔 error.tsx 가 없어 곧장 흰 화면이 된다).
+  if (!meta) return null;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <button

@@ -1,5 +1,24 @@
 # 플래너 셸·홈 PUDS 리프레시 — 설계(Design)
 
+> ⚠️ **2026-09-04 — 셸 레일·탭바 축은 이 문서가 더 이상 정본이 아니다 (PR #236).**
+> 이 문서의 참조 정본은 아래에 적힌 대로 **형제 앱 3종의 PUDS 셸 킷**이었고, 거기서 온 값이
+> `md` 64px 축약 · `lg` 접힘 68px · 레일 경계 28px 원형 셰브론 · bottom-nav 모바일 전용이다.
+> 사용자 지시(2026-09-04 — "pullim-os 에 맞게")로 **셸 정본이 pullim-web `/os` 로 바뀌었다**
+> (`pullim-web/src/styles/os-tokens.css`). 그 결과 아래 항목들은 **폐기**됐다:
+>
+> | 이 문서가 정한 것 | 현행 (PR #236) |
+> |---|---|
+> | `md` 64px 축약 레일 | 없음 — 920px 까지 248px 유지 |
+> | `lg` 접힘 68px 아이콘 레일 | 접으면 레일을 렌더하지 않음 (정본 `display:none`) |
+> | 레일 경계 28px 원형 셰브론 (`left-[248px]`↔`left-[68px]`) | topbar 첫 자식 34px 사각 버튼 (정본 `.rail-collapse-btn`) |
+> | md/lg 혼용 브레이크포인트 | **920px 한 지점** (`--breakpoint-os`) |
+> | bottom-nav 모바일 전용 · 비범위 | ~920px 에서 노출 · `fixed` 62px+safe-area |
+>
+> **살아 있는 것**: 사이드바 아이템 시각(`rounded-[11px]` · primary-50 틴트 · 3px 좌측 액센트 바),
+> `localStorage['puds-rail-collapsed']` 영속, 홈 히어로 3D, 그 밖의 홈 본문 규정.
+> 정본이 형제 앱(PUDS 셸 킷)과 OS 로 갈려 있다는 사실 자체는 남는다 — 다시 뒤집을 근거가
+> 생기면 이 표를 보고 되돌리면 된다.
+
 > 2026-07-06 · 상태: brainstorming 합의 → 구현계획 대기
 > repo: `pullim-planner` `apps/planner` (FE 단독 PR — FE/BE 분리 규칙 준수). 브랜치 base = `origin/dev` (배포 브랜치).
 > 참조 정본: 문제Q(`pullim-Q/apps/q`) · 입시코치(`pullim-admissions-coach/apps/web`) · 라이팅코치(`pullim-writing-coach`) — 세 앱 공통 PUDS 셸 킷.

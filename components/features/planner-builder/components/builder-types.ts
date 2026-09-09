@@ -204,7 +204,7 @@ const allSteps: readonly Omit<StepInfo, 'num'>[] = [
   { key: 'hours',    label: '하루', icon: Clock,    title: '하루에 얼마나 쓸 수 있어?',
     description: '이건 AI가 대신 정할 수 없어요. 학원·자습 일정은 본인만 아니까요. 여기서 정한 시간 안에서만 블록을 배치합니다.' },
   { key: 'subjects', label: '범위', icon: BookOpen, title: '뭘 공부해?',
-    description: '과목을 고르면 단원은 채워 드려요. 선택과목과 진도는 시스템이 알 수 없어서 물어봅니다 — 그 둘을 모르면 채워 넣은 범위가 통째로 틀립니다.' },
+    description: '과목을 고르면 단원을 채워드려요.' },
   { key: 'activate', label: '확인', icon: Sparkles, title: '이렇게 짰어요',
     description: '다음 7일 미리보기예요. 마음에 안 드는 건 아래에서 바로 바꿀 수 있어요.' },
 ];
