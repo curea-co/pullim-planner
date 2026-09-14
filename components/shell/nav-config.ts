@@ -66,7 +66,8 @@ export const plannerSection: NavSubItem[] = [
   ...(REPORTS_ENABLED
     ? [{ href: '/planner/reports', label: '성장 리포트', icon: FileText, description: '일·주·월 회고 + 부모 공유' } satisfies NavSubItem]
     : []),
-  // 매뉴얼은 홈 모달(?help=1) 대신 온보딩 랜딩으로 — 전용 페이지가 가이드 권위(?help=1 딥링크 자체는 유지)
+  // 매뉴얼은 온보딩 랜딩 — 전용 페이지가 가이드 권위. 구 홈 모달은 제거됐고, 남은 ?help=1 북마크는
+  // HomeContainer 가 이 경로로 redirect 해 살려 둔다(__tests__/planner/home-help-deeplink.test.tsx)
   { href: '/planner/onboarding', label: '매뉴얼',      icon: BookOpen, description: '5분 사용법 가이드 — 온보딩 랜딩 페이지' },
 ];
 

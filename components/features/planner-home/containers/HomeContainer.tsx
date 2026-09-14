@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { CalendarView } from '../components/calendar-shell';
 import {
   currentPersona, getDday, plannerProgress, getActivePlanner,
@@ -23,12 +23,10 @@ import { getWeekMeta } from '../components/views/week-view';
 import { getMonthMeta } from '../components/views/month-view';
 import { useHomeBlocks } from '../hooks/use-home-blocks';
 import HomePresenter from '../presenters/HomePresenter';
-import { WelcomeModal } from '../components/welcome-modal';
 
 const DEV_AUTH_BYPASS = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1';
 
 const VALID_VIEWS: CalendarView[] = ['day', 'week', 'month'];
-const WELCOME_STORAGE_KEY = 'pullim:welcome-shown';
 
 /**
  * 풀림 플래너 홈 Container — 활성 플래너 시간표 (일/주/월).
@@ -36,20 +34,15 @@ const WELCOME_STORAGE_KEY = 'pullim:welcome-shown';
  * 온보딩 라우팅은 서버 세션 상태가 권위다: `/planner/me` 404 → auth 'onboarding' 상태 →
  * `RequireAuth` 가 `/planner/onboarding` 으로 보낸다. 프로필이 있으면 'authenticated' 라 홈을
  * 그대로 보여준다. (이전의 localStorage 'pullim:visited' 첫 방문 게이팅은 제거됐다 — 흡수 §10.)
- *
- * WelcomeModal: 게이팅이 아닌 정보 제공 목적 — sessionStorage로 세션당 1회 자동 표시.
- * LNB "매뉴얼" 항목은 `?help=1`로 링크돼 클릭 시 모달을 재오픈한다.
  */
 export default function HomeContainer() {
   const params = useSearchParams();
+  const router = useRouter();
 
   const raw = params.get('view');
   const view: CalendarView = (VALID_VIEWS as string[]).includes(raw ?? '')
     ? (raw as CalendarView)
     : 'day';
-
-  const helpParam = params.get('help') === '1';
-  const [welcomeOpen, setWelcomeOpen] = useState(false);
 
   // 기간 이동 offset (0=기준 기간). 일/주/월 공용. URL 파라미터 `d`가 소스 —
   // 주간 그리드·월간 캘린더에서 특정 날짜 일간 뷰로 딥링크(?view=day&d=N)하려면 offset이
@@ -67,8 +60,8 @@ export default function HomeContainer() {
     offsetRef.current = offset;
   }, [offset]);
 
-  // view·offset을 URL로 직렬화 — 기존 search param(help 등)은 보존하고 view·d만 갱신한다
-  // (빈 params에서 시작하면 ?help=1 등이 뷰 전환·기간 이동 한 번에 사라짐, codex).
+  // view·offset을 URL로 직렬화 — 기존 search param 은 보존하고 view·d만 갱신한다
+  // (빈 params에서 시작하면 다른 파라미터가 뷰 전환·기간 이동 한 번에 사라짐, codex).
   // view=day·offset=0은 해당 파라미터 생략(정규 URL 유지).
   const buildUrl = useCallback((v: CalendarView, o: number) => {
     const sp = new URLSearchParams(params);
@@ -94,28 +87,12 @@ export default function HomeContainer() {
   const handleReset = useCallback(() => go(view, 0), [go, view]);
   const handleJump = useCallback((o: number) => go(view, o), [go, view]);
 
+  // `?help=1` 은 제거된 웰컴 모달을 열던 도움말 딥링크다. 북마크·외부 링크가 남아 있으므로
+  // 가이드 권위인 온보딩 랜딩으로 넘긴다 (nav-config 의 "?help=1 딥링크 자체는 유지" 주석과 정합).
+  // 다른 라우트로 가는 이동이라 query-nav 가 아니라 router 를 쓴다 (query-nav § 쓰는 자리).
   useEffect(() => {
-    // sessionStorage 는 클라이언트 전용 — 서버 렌더는 항상 닫힘(false)으로 hydration 일치시키고,
-    // 마운트 후 이 effect 에서만 연다. 첫 페인트 직후 1회 여는 의도된 setState 라 룰을 끈다.
-    const alreadyShown = sessionStorage.getItem(WELCOME_STORAGE_KEY) === '1';
-    if (helpParam || !alreadyShown) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setWelcomeOpen(true);
-    }
-  }, [helpParam]);
-
-  const handleCloseWelcome = useCallback(() => {
-    sessionStorage.setItem(WELCOME_STORAGE_KEY, '1');
-    setWelcomeOpen(false);
-    if (helpParam) {
-      // help 만 제거하고 나머지 search param(view 등)은 보존 — 도움말만 닫아도
-      // 보던 뷰(/planner?view=week)가 day 로 리셋되는 회귀 방지 (codex).
-      const next = new URLSearchParams(params);
-      next.delete('help');
-      const qs = next.toString();
-      replaceQuery(`/planner${qs ? `?${qs}` : ''}`);
-    }
-  }, [helpParam, params]);
+    if (params.get('help') === '1') router.replace('/planner/onboarding');
+  }, [params, router]);
 
   const onChangeView = useCallback(
     // 뷰 전환 시 offset 리셋 — go(_,0)이 ref·URL 모두 0으로(buildUrl이 d 생략=기준 기간).
@@ -373,44 +350,41 @@ export default function HomeContainer() {
   }
 
   return (
-    <>
-      <HomePresenter
+    <HomePresenter
       // 홈은 `/planner` — 위젯이 주는 목적지도 같은 pathname 이라 **쿼리만 바뀌는 이동**이다.
       // 여기서 Next router 를 쓰면 쿼리를 달고 하드 로드한 뒤 전환이 무반응이 된다(F-01).
       onNavigate={pushQuery}
-        view={view}
-        examName={examName}
-        dday={dday}
-        hasActivePlanner={hasActivePlanner}
-        // 실패는 "계획 없음"이 아니다 — bypass(mock)에는 실패면이 없으므로 false 로 고정한다.
-        loadError={!DEV_AUTH_BYPASS && real.status === 'error'}
-        blocksError={!DEV_AUTH_BYPASS && real.blocksError}
-        heroSummaryError={!DEV_AUTH_BYPASS && heroSummaryError}
-        loading={!DEV_AUTH_BYPASS && real.loading}
-        retrying={!DEV_AUTH_BYPASS && real.retrying}
-        onRetry={real.retry}
-        burnout={burnout}
-        condition={condition}
-        onConditionChange={handleConditionChange}
-        daySummary={daySummary}
-        weekMeta={weekMeta}
-        monthMeta={monthMeta}
-        heroDaySummary={heroDaySummary}
-        heroWeekMeta={heroWeekMeta}
-        offset={offset}
-        onPrev={handlePrev}
-        onNext={handleNext}
-        onReset={handleReset}
-        onJumpOffset={handleJump}
-        onChangeView={onChangeView}
-        dayBlocks={dayBlocks}
-        onCompleteSubmit={DEV_AUTH_BYPASS ? undefined : handleCompleteBlock}
-        customization={customization}
-        weekDays={weekDays}
-        monthDays={monthDays}
-        monthLabel={monthLabel}
-      />
-      <WelcomeModal open={welcomeOpen} onClose={handleCloseWelcome} />
-    </>
+      view={view}
+      examName={examName}
+      dday={dday}
+      hasActivePlanner={hasActivePlanner}
+      // 실패는 "계획 없음"이 아니다 — bypass(mock)에는 실패면이 없으므로 false 로 고정한다.
+      loadError={!DEV_AUTH_BYPASS && real.status === 'error'}
+      blocksError={!DEV_AUTH_BYPASS && real.blocksError}
+      heroSummaryError={!DEV_AUTH_BYPASS && heroSummaryError}
+      loading={!DEV_AUTH_BYPASS && real.loading}
+      retrying={!DEV_AUTH_BYPASS && real.retrying}
+      onRetry={real.retry}
+      burnout={burnout}
+      condition={condition}
+      onConditionChange={handleConditionChange}
+      daySummary={daySummary}
+      weekMeta={weekMeta}
+      monthMeta={monthMeta}
+      heroDaySummary={heroDaySummary}
+      heroWeekMeta={heroWeekMeta}
+      offset={offset}
+      onPrev={handlePrev}
+      onNext={handleNext}
+      onReset={handleReset}
+      onJumpOffset={handleJump}
+      onChangeView={onChangeView}
+      dayBlocks={dayBlocks}
+      onCompleteSubmit={DEV_AUTH_BYPASS ? undefined : handleCompleteBlock}
+      customization={customization}
+      weekDays={weekDays}
+      monthDays={monthDays}
+      monthLabel={monthLabel}
+    />
   );
 }
