@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { CalendarView } from '../components/calendar-shell';
 import {
   currentPersona, getDday, plannerProgress, getActivePlanner,
@@ -37,6 +37,7 @@ const VALID_VIEWS: CalendarView[] = ['day', 'week', 'month'];
  */
 export default function HomeContainer() {
   const params = useSearchParams();
+  const router = useRouter();
 
   const raw = params.get('view');
   const view: CalendarView = (VALID_VIEWS as string[]).includes(raw ?? '')
@@ -85,6 +86,13 @@ export default function HomeContainer() {
   const handleNext = useCallback(() => go(view, offsetRef.current + 1), [go, view]);
   const handleReset = useCallback(() => go(view, 0), [go, view]);
   const handleJump = useCallback((o: number) => go(view, o), [go, view]);
+
+  // `?help=1` 은 제거된 웰컴 모달을 열던 도움말 딥링크다. 북마크·외부 링크가 남아 있으므로
+  // 가이드 권위인 온보딩 랜딩으로 넘긴다 (nav-config 의 "?help=1 딥링크 자체는 유지" 주석과 정합).
+  // 다른 라우트로 가는 이동이라 query-nav 가 아니라 router 를 쓴다 (query-nav § 쓰는 자리).
+  useEffect(() => {
+    if (params.get('help') === '1') router.replace('/planner/onboarding');
+  }, [params, router]);
 
   const onChangeView = useCallback(
     // 뷰 전환 시 offset 리셋 — go(_,0)이 ref·URL 모두 0으로(buildUrl이 d 생략=기준 기간).
