@@ -43,12 +43,17 @@ beforeAll(() => {
       disconnect() {}
     };
   }
+  // jsdom 은 scrollIntoView 를 구현하지 않는다. 팔레트는 활성 항목을 보이도록 스크롤하므로
+  // 방향키 테스트에서 호출된다 — 동작이 아니라 부재가 문제라 no-op 으로 채운다.
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = function scrollIntoView() {};
+  }
 });
 
 // DialogTitle 도 sr-only 로 '메뉴 검색' 이라 라벨 텍스트만으로는 다이얼로그와 입력이 함께 잡힌다.
-// 입력 자체를 가리키도록 role 로 좁힌다.
-const findInput = () => screen.findByRole('textbox', { name: '메뉴 검색' });
-const queryInput = () => screen.queryByRole('textbox', { name: '메뉴 검색' });
+// 입력 자체를 가리키도록 role 로 좁힌다 — 입력은 combobox 다(textbox 아님, Codex #269 대응).
+const findInput = () => screen.findByRole('combobox', { name: '메뉴 검색' });
+const queryInput = () => screen.queryByRole('combobox', { name: '메뉴 검색' });
 
 describe('AppHeader 검색 (풀림 Q 정합)', () => {
   beforeEach(() => mockPush.mockClear());
@@ -122,6 +127,44 @@ describe('AppHeader 검색 (풀림 Q 정합)', () => {
     await waitFor(() => expect(queryInput()).not.toBeInTheDocument());
   });
 
+  it('결과 행에 포커스가 가도 Enter 가 두 경로로 이동하지 않는다 (Codex #269)', async () => {
+    // onKeyDown 이 DialogContent 에 달려 있으면 팝업 전체에서 버블링돼, 결과 행의 Enter 가
+    // 그 행 대신 activeIndex 항목으로 이동한다(행의 기본 click 까지 겹치면 이동이 두 번).
+    // 핸들러를 입력에만 달아 두면 행 위의 keydown 은 팔레트 로직에 닿지 않는다.
+    render(<AppHeader />);
+    fireEvent.click(screen.getByLabelText('검색'));
+    await findInput();
+
+    const options = screen.getAllByRole('option');
+    expect(options.length).toBeGreaterThan(1);
+    // 행은 탭 순서 밖 — 포커스는 입력에 머문다.
+    for (const o of options) expect(o).toHaveAttribute('tabindex', '-1');
+
+    fireEvent.keyDown(options[1], { key: 'Enter' });
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('선택 상태를 접근성 트리에 노출한다 — combobox + aria-activedescendant (Codex #269)', async () => {
+    // 방향키로 바뀌는 활성 항목이 배경색으로만 표현되면 스크린리더는 무엇이 열릴지 알 수 없다.
+    render(<AppHeader />);
+    fireEvent.click(screen.getByLabelText('검색'));
+    const input = await findInput();
+
+    const listbox = screen.getByRole('listbox');
+    expect(input).toHaveAttribute('role', 'combobox');
+    expect(input).toHaveAttribute('aria-controls', listbox.id);
+
+    const options = screen.getAllByRole('option');
+    expect(input).toHaveAttribute('aria-activedescendant', options[0].id);
+    expect(options[0]).toHaveAttribute('aria-selected', 'true');
+    expect(options[1]).toHaveAttribute('aria-selected', 'false');
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+
+    await waitFor(() => expect(input).toHaveAttribute('aria-activedescendant', options[1].id));
+    expect(screen.getAllByRole('option')[1]).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('일치하는 메뉴가 없으면 빈 결과 안내를 낸다', async () => {
     render(<AppHeader />);
     fireEvent.click(screen.getByLabelText('검색'));
@@ -130,6 +173,9 @@ describe('AppHeader 검색 (풀림 Q 정합)', () => {
     fireEvent.change(input, { target: { value: 'zzzzzz없는메뉴' } });
 
     expect(await screen.findByText('일치하는 메뉴가 없어요.')).toBeInTheDocument();
+    // option 이 없는 listbox 를 남기지 않는다(입력의 aria-controls 도 함께 떨어진다).
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(input).not.toHaveAttribute('aria-controls');
   });
 });
 

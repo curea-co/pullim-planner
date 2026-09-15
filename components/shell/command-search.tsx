@@ -4,7 +4,7 @@
 // 범위: 사이드바 메뉴(navSearchItems) 검색·이동만. (전역 콘텐츠 검색은 후속.)
 // Q 는 풀이 이탈 가드를 거쳐 이동하지만(confirmNavigate) 플래너엔 그 가드가 없어 router.push 로 간다.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search as SearchIcon, CornerDownLeft } from 'lucide-react';
 import {
@@ -54,6 +54,10 @@ export function CommandSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  // combobox ↔ listbox 연결용 id. 결과 행은 포커스를 받지 않고, 입력의 aria-activedescendant 가
+  // "지금 Enter 로 열릴 항목"을 보조기기에 알린다(Codex #269).
+  const listId = useId();
+  const optionId = (i: number) => `${listId}-opt-${i}`;
 
   const results = useMemo(() => {
     const trimmed = query.trim();
@@ -91,6 +95,10 @@ export function CommandSearch({
     router.push(item.href);
   };
 
+  // ⚠️ 이 핸들러는 **입력에만** 단다. DialogContent 에 달면 팝업 전체에서 버블링돼,
+  // 결과 행에 포커스가 간 상태의 Enter 가 그 행 대신 activeIndex 항목으로 이동해 버린다
+  // (행의 기본 click 까지 겹치면 서로 다른 두 경로로 이동). 결과 행은 tabIndex={-1} 이라
+  // Tab 으로 도달하지 않고, 이동은 항상 입력 → activeIndex 한 경로다(Codex #269).
   const onKeyDown = (e: React.KeyboardEvent) => {
     // 한글 IME 조합 중 키(Enter=글자 확정, 방향키=후보 이동)는 팔레트가 가로채지 않는다.
     if (e.nativeEvent.isComposing) return;
@@ -116,7 +124,6 @@ export function CommandSearch({
         initialFocus={inputRef}
         // 모바일: 상단 가까이 + 거의 풀폭(키보드 위로 보이도록). 데스크톱(sm+): 컴팩트 팔레트.
         className="top-[6vh] translate-y-0 sm:top-[12vh] sm:max-w-[560px]"
-        onKeyDown={onKeyDown}
       >
         <DialogTitle className="sr-only">메뉴 검색</DialogTitle>
         <DialogDescription className="sr-only">사이드바 메뉴를 검색해 이동합니다.</DialogDescription>
@@ -128,27 +135,44 @@ export function CommandSearch({
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={onKeyDown}
             placeholder="메뉴 검색…"
             aria-label="메뉴 검색"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={results.length > 0}
+            aria-controls={results.length ? listId : undefined}
+            aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
             // 모바일은 16px(text-base) — iOS Safari 는 16px 미만 입력에 포커스하면 화면을 자동 확대한다.
             className="text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] h-12 w-full bg-transparent text-base outline-none sm:text-sm"
           />
         </div>
 
-        {/* 결과 */}
-        <div ref={listRef} className="max-h-[70vh] min-h-0 flex-1 overflow-y-auto p-1.5 sm:max-h-[360px]">
-          {results.length === 0 ? (
-            <p className="text-[var(--text-tertiary)] px-3 py-8 text-center text-sm">
-              일치하는 메뉴가 없어요.
-            </p>
-          ) : (
-            results.map((item, i) => {
+        {/* 결과 — listbox 에는 option 만 담는다(빈 상태 문구는 바깥에). */}
+        {results.length === 0 ? (
+          <p className="text-[var(--text-tertiary)] px-3 py-8 text-center text-sm">
+            일치하는 메뉴가 없어요.
+          </p>
+        ) : (
+          <div
+            ref={listRef}
+            id={listId}
+            role="listbox"
+            aria-label="메뉴 검색 결과"
+            className="max-h-[70vh] min-h-0 flex-1 overflow-y-auto p-1.5 sm:max-h-[360px]"
+          >
+            {results.map((item, i) => {
               const Icon = item.icon;
               const isActive = i === activeIndex;
               return (
                 <button
                   key={item.href}
                   type="button"
+                  id={optionId(i)}
+                  role="option"
+                  aria-selected={isActive}
+                  // 탭 순서에서 뺀다 — 포커스는 입력에 머물고 선택은 aria-activedescendant 가 알린다.
+                  tabIndex={-1}
                   data-index={i}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => go(item)}
@@ -177,9 +201,9 @@ export function CommandSearch({
                   )}
                 </button>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
 
         {/* 힌트 */}
         <div className="text-[var(--text-tertiary)] border-border flex shrink-0 items-center gap-3 border-t px-4 py-2 text-[length:var(--text-xs)] font-medium">
