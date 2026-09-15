@@ -60,6 +60,10 @@ UI 소스는 세 갈래이고 **레인마다 규칙이 다르다.** 전체 판�
 | ② **로컬 base-ui 프리미티브** | `components/ui/{button,dialog,sheet,tabs,avatar,label,separator,scroll-area,dropdown-menu,tooltip,progress}.tsx` | ❌ **PUDS 프리미티브로 교체 금지** (수정 자체는 자유) |
 | ③ **서비스 고유** | `components/ui/{meta-row,sonner}.tsx` · `app/os-topbar.css` · `components/{shell,features,shared,brand}/*` | 자유 |
 
+> **오너 결정(2026-09-15)** — 레인 ① 에 `kbd` · `popover` 추가(둘 다 `@puds/*` 벤더링본, 핀 v0.5.1
+> 페이로드와 바이트 동일). 이 표는 수정 금지 영역이라 오너가 명시적으로 승인했다. 갱신할 때는
+> `CLAUDE.md` 의 판별기 `LANE1` 집합도 **함께** 고친다 — 한쪽만 고치면 오분류가 난다.
+
 - ✅ 허용 import: `@/components/ui/*` · `@/components/charts/*` · `@base-ui/react` · `@/lib/cn` · `@/lib/utils` · `lucide-react` · `sonner`
 - ❌ 금지 import: `@pullim/design-system/*`, `@pullim/ui`, `@radix-ui/*`, MUI / FontAwesome 등 미설치 패키지
   — `@radix-ui/*` 는 **이 리포에 설치돼 있지 않다**는 뜻이다(`package.json` 의 프리미티브 의존성은 `@base-ui/react` 하나, 소스 import 0건).

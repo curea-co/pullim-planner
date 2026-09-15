@@ -81,6 +81,13 @@ DS npm 패키지(`@pullim/design-system`·`@pullim/ui`)는 **미설치 — impor
 | **② 로컬 base-ui 프리미티브** | 상류 base-nova + PUDS 레시피 이식 하이브리드 | `components/ui/{button,dialog,sheet,tabs,avatar,label,separator,scroll-area,dropdown-menu,tooltip,progress}.tsx` | **PUDS 프리미티브로 교체 금지** (아래 이유) |
 | **③ 서비스 고유** | PUDS 에 없거나 API 가 다른 것 | `components/ui/{meta-row,sonner}.tsx` · `app/os-topbar.css` · `components/{shell,features,shared,brand}/*` | 자유롭게 수정 |
 
+> **오너 결정(2026-09-15)** — 레인 ① 에 `kbd` · `popover` 를 추가했다. 둘 다 `@puds/*` 벤더링본이고
+> (핀 v0.5.1 페이로드와 **바이트 동일** — `kbd` 1775 B · `popover` 17015 B), 헤더 ⌘K 팔레트와
+> 알림 패널이 쓴다. 이 표는 수정 금지 영역이라 오너가 선택지를 검토한 뒤 명시적으로 승인했다.
+>
+> ⚠️ **이 표와 아래 판별기의 `LANE1` 집합은 함께 움직여야 한다.** 한쪽만 고치면 판별기가
+> 레인 ① 을 `⛔ 덮어씀` 으로 **오분류**한다 — 실제로 `kbd` 에서 그 일이 났다.
+
 ### ① PUDS 원격 — 설치·재설치
 
 레지스트리 URL 은 **경로로 버전이 고정**돼 있다:
