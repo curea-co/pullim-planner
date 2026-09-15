@@ -46,6 +46,24 @@ describe('AppHeader 알림 벨 (풀림 Q 정합)', () => {
     expect(bell.closest('a')).toBeNull();
   });
 
+  it('키보드 사용자도 같은 경로로 연다 — 탭 순서 안의 버튼 + aria-expanded 가 상태를 말한다', async () => {
+    // 이 리포엔 user-event 가 설치돼 있지 않아(devDependencies 부재, 리포 전체 사용 0건)
+    // 기존 14개 테스트와 같이 fireEvent 를 쓴다. 대신 "실제 사용 경로"의 전제 —
+    // 트리거가 탭으로 닿는 진짜 버튼이고, 열림 상태가 보조기기에 전달되는지 — 를 직접 본다.
+    render(<AppHeader />);
+    const bell = screen.getByLabelText('알림');
+
+    // 탭 순서 밖이면 키보드로는 아예 도달할 수 없다.
+    expect(bell.tabIndex).toBeGreaterThanOrEqual(0);
+    // 브라우저에서 Enter/Space 는 버튼의 네이티브 click 으로 귀결된다 — 그 지점부터가 같은 경로다.
+    expect(bell).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(bell);
+
+    await screen.findByRole('dialog', { name: '알림' });
+    expect(bell).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('벨을 누르면 제자리에서 알림 패널이 열린다', async () => {
     render(<AppHeader />);
 
