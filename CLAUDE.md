@@ -77,9 +77,29 @@ DS npm 패키지(`@pullim/design-system`·`@pullim/ui`)는 **미설치 — impor
 
 | 레인 | 무엇 | 파일 | 규칙 |
 |---|---|---|---|
-| **① PUDS 원격** | 토큰·유틸·무의존 프리미티브·차트 | `app/tokens/*.css` · `lib/cn.ts` · `components/ui/{card,badge,input,skeleton,kbd}.tsx` · `components/charts/donut.tsx` | **로컬 수정 금지.** 고쳐야 하면 PUDS 저장소에 고치고 재설치 |
+| **① PUDS 원격** | 토큰·유틸·무의존 프리미티브·차트 | `app/tokens/*.css` · `lib/cn.ts` · `components/ui/{card,badge,input,skeleton,kbd,popover}.tsx` · `components/charts/donut.tsx` | **로컬 수정 금지.** 고쳐야 하면 PUDS 저장소에 고치고 재설치 |
 | **② 로컬 base-ui 프리미티브** | 상류 base-nova + PUDS 레시피 이식 하이브리드 | `components/ui/{button,dialog,sheet,tabs,avatar,label,separator,scroll-area,dropdown-menu,tooltip,progress}.tsx` | **PUDS 프리미티브로 교체 금지** (아래 이유) |
 | **③ 서비스 고유** | PUDS 에 없거나 API 가 다른 것 | `components/ui/{meta-row,sonner}.tsx` · `app/os-topbar.css` · `components/{shell,features,shared,brand}/*` | 자유롭게 수정 |
+
+> **오너 결정(2026-09-15)** — 레인 ① 에 `kbd` · `popover` 를 추가했다. 둘 다 `@puds/*` 벤더링본이고
+> (핀 v0.5.1 페이로드와 **바이트 동일** — `kbd` 1775 B · `popover` 17015 B), 헤더 ⌘K 팔레트와
+> 알림 패널이 쓴다. 이 표는 수정 금지 영역이라 오너가 선택지를 검토한 뒤 명시적으로 승인했다.
+>
+> ⚠️ **이 표와 아래 판별기의 `LANE1` 집합은 함께 움직여야 한다.** 한쪽만 고치면 판별기가
+> 레인 ① 을 `⛔ 덮어씀` 으로 **오분류**한다 — 실제로 `kbd` 에서 그 일이 났다.
+>
+> **레인 ① 로 넣기 전에 확인하는 것 — 재설치가 무해한가.** 레인 ① 은 「재설치가 덮어써도
+> 잃을 게 없다」는 뜻이므로, 표에 올리기 전에 `--overwrite` 재설치가 **무변경(no-op)** 인지
+> 본다. 로컬 델타가 하나라도 있으면 그 델타가 다음 재싱크에서 조용히 사라진다.
+>
+> ```bash
+> bunx shadcn@latest add @puds/<name> --overwrite && git diff --stat   # 비어야 한다
+> ```
+>
+> `kbd` · `popover` 실측(2026-09-15 · 핀 v0.5.1) — shadcn 이 `--overwrite` 에도
+> `Skipped: files might be identical` 로 답하고 `git diff` 가 비었다. 로컬 델타 0.
+> (`popover` 의 Anchor 컨텍스트·Portal/Positioner 분리는 **상류 PUDS 의 설계**다 —
+> 이 리포가 얹은 것이 아니다.)
 
 ### ① PUDS 원격 — 설치·재설치
 
@@ -126,10 +146,10 @@ https://pullim-design-system.vercel.app/v/<버전>/{name}.json
 > Radix → Base UI 로 엔진을 갈아엎은 릴리스인데도 그렇다 — 이 리포가 받아 가는 **파일 10개**가 전부
 > 엔진 비의존(토큰·`cn`·무의존 프리미티브·SVG 차트)이기 때문이다.
 
-> **그 뒤 `kbd` 가 하나 더 들어왔다** (2026-09-15 · 헤더 ⌘K 팔레트 · 핀 v0.5.1).
+> **그 뒤 `kbd` · `popover` 가 들어왔다** (2026-09-15 · 헤더 ⌘K 팔레트와 알림 패널 · 핀 v0.5.1).
 > 위 두 블록의 「아이템 7개 / 파일 10개」는 **측정 당시(2026-08-26 · 08-31) 수치라 그대로 둔다** —
 > 날짜가 박힌 관측값을 나중 사실로 덮어쓰면 그 대조가 무엇을 본 것인지 알 수 없게 된다.
-> 지금은 **아이템 8개 · 파일 11개**다. 현재 목록의 정본은 위 § 판별표 한 곳이고,
+> 지금은 **아이템 9개 · 파일 12개**다. 현재 목록의 정본은 위 § 판별표 한 곳이고,
 > 판별기의 `LANE1` 집합도 그것을 따라간다 — 둘이 어긋나면 판별기가 레인 ① 을
 > `⛔ 덮어씀` 으로 오분류한다.
 
@@ -301,7 +321,7 @@ ITEMS="scroll-area data-table"   # ← 판정할 아이템 이름. 공백으로 
 V=$(python3 -c "import json;print(json.load(open('components.json'))['registries']['@puds'].split('/v/')[1].split('/')[0])")
 curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | python3 -c '
 import json,sys,os,re,subprocess
-LANE1={"cn","theme-puds","card","badge","input","skeleton","kbd"}   # 판별표 레인① — 덮어써도 되는 것
+LANE1={"cn","theme-puds","card","badge","input","skeleton","kbd","popover"}   # 판별표 레인① — 덮어써도 되는 것
 # 레지스트리 target 과 이 리포의 실제 경로가 다른, **이미 아는** 자리. shadcn add 는 target 에
 # 새로 쓰므로 실제 파일을 갱신하는 대신 **사본이 하나 더 생긴다**(components/charts/README.md).
 # components.json 의 aliases 로는 계산되지 않는다 — ui 별칭이 @/components/ui 인데 실제 경로는
