@@ -15,7 +15,6 @@
 - **기능 개발 PR(feature → dev)은 한 PR = 한 관심사.** 독립적으로 구현·검증할 수 있는 변경은 작은 PR로 분리한다.
 - **승격 PR(head=dev, base=main)은 통합으로 올릴 수 있다.** dev에서 관심사별 PR로 나누어 CI·리뷰를 통과하고 머지한 변경들을 하나의 main 승격 PR에 함께 포함하는 것은 허용한다. 이 누적 diff의 관심사 수나 크기만을 이유로 기능별 재분리를 요구하지 않는다.
 - 승격 PR 본문에 포함된 개발 PR과 검증 근거를 기록한다. 통합 승격 허용은 새로운 기능을 dev 검증 없이 함께 끼워 넣거나 코드·보안 검토를 생략하는 근거가 아니다. 승격에서도 실제 코드 결함·보안·계약 정합성과 CI 결과를 검토한다.
-- **Codex Review 통과** — PR 머지 전 필수.
 - **오너 결정(2026-09-08)**: “dev에서 이미 관심사를 다르게 진행했고 메인에 올리는 PR은 통합으로 할수있다.” 적용 범위는 위 dev → main 승격이며, 일반 개발 PR의 관심사 분리 규칙은 유지한다.
 
 ## 디렉터리 구조 (src/ 없음 — 리포 루트 직속)
@@ -720,7 +719,7 @@ components/features/<도메인>/
 | `lib/hooks/` | 개발자 전용 |
 | `package.json` | 의존성 변경 |
 | `next.config.ts` · `tsconfig.json` | 설정 변경 |
-| `.github/workflows/**` | CI/Codex Review 자동화 |
+| `.github/workflows/**` | CI 자동화 |
 | 이 가이드 / AGENTS.md / README.md | 컨벤션 변경은 별도 작업으로 |
 
 ## 명령어
@@ -742,4 +741,3 @@ components/features/<도메인>/
 2. **`input/docs-archive/08_풀림_플래너_핸드오프.md`** — 권위 문서의 IA·용어와 코드가 어긋나지 않는지
 3. **`lib/mock/planner.ts`** — 시간표·블록·컨디션·번아웃 등 시그니처 데이터 구조 일관성 (pullim-api 계약과 정합)
 4. **커밋 전**: `bun run typecheck` · `bun run lint` · `bun run test` 통과
-5. **Codex Review 통과** — PR 머지 전 필수
