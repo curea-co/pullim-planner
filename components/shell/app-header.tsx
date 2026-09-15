@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth/auth-context';
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { CommandSearch } from './command-search';
+import { NotificationsMenu } from './notifications-menu';
 import { ServiceSwitcher } from './service-switcher';
 import { osHomeUrl } from './pullim-services';
 
@@ -95,11 +96,9 @@ export function AppHeader({ railCollapsed, onToggleRail }: AppHeaderProps = {}) 
         >
           <Search width={20} height={20} aria-hidden />
         </button>
-        {/* 항상 켜져 있던 unread 점 배지 제거 — 알림 발송 인프라 미구현(soft-open)이라 실제 unread 없음.
-            "안 읽은 알림 있음" 오해 방지. 실 알림 파이프라인 준비 시 unread 여부와 연동해 복원. */}
-        <Link href="/planner/notifications" className="icon-btn" aria-label="알림">
-          <Bell width={20} height={20} aria-hidden />
-        </Link>
+        {/* 벨은 페이지로 떠나지 않고 제자리에서 패널을 연다(풀림 Q 헤더 정합).
+            unread 점 배지는 미읽음이 있을 때만 — 발송 인프라 미구현이라 지금은 늘 0이다. */}
+        <NotificationsMenu />
         <AuthCluster />
       </div>
 

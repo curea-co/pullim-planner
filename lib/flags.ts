@@ -33,7 +33,8 @@ export const WEAKNESS_ENABLED = process.env.NEXT_PUBLIC_WEAKNESS_ENABLED === '1'
  * `parentDailyReport`)은 Planner 메타에 저장처가 없고, 앱이 닫혀도 울리는 실 알림은 웹푸시 발송
  * 인프라(서비스워커+구독 저장+스케줄러+VAPID)가 FE·BE 양쪽에 전무하다(2026-07-09 실사). off면
  * 위저드에서 리마인더 STEP을 제외하고 미리보기 요약의 알림 줄도 숨긴다(routine 게이트와 동일 패턴).
- * 헤더 벨(`/planner/notifications`)은 유지하되 실 알림 없으므로 빈 상태를 보인다.
+ * 헤더 벨은 드롭다운 패널(`components/shell/notifications-menu.tsx`)을 열고, 실 알림이 없으므로
+ * 빈 상태를 보인다. 전용 페이지 `/planner/notifications` 는 라우트로만 남는다(헤더 진입점 아님).
  * - 로컬/preview 확인용: `NEXT_PUBLIC_NOTIFICATIONS_ENABLED=1`
  * - dev·prod 기본: 미설정 → **차단**(safe-by-default). 웹푸시 파이프라인 준비 후 플래그로 오픈
  */
