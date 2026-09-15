@@ -56,7 +56,7 @@ UI 소스는 세 갈래이고 **레인마다 규칙이 다르다.** 전체 판�
 
 | 레인 | 파일 | 규칙 |
 |---|---|---|
-| ① **PUDS 원격 벤더링** | `app/tokens/*.css` · `lib/cn.ts` · `components/ui/{card,badge,input,skeleton}.tsx` · `components/charts/donut.tsx` | ❌ **로컬 수정 금지** — 직접 고치는 PR 은 반려. PUDS 저장소에서 고치고 재설치한다 |
+| ① **PUDS 원격 벤더링** | `app/tokens/*.css` · `lib/cn.ts` · `components/ui/{card,badge,input,skeleton,kbd}.tsx` · `components/charts/donut.tsx` | ❌ **로컬 수정 금지** — 직접 고치는 PR 은 반려. PUDS 저장소에서 고치고 재설치한다 |
 | ② **로컬 base-ui 프리미티브** | `components/ui/{button,dialog,sheet,tabs,avatar,label,separator,scroll-area,dropdown-menu,tooltip,progress}.tsx` | ❌ **PUDS 프리미티브로 교체 금지** (수정 자체는 자유) |
 | ③ **서비스 고유** | `components/ui/{meta-row,sonner}.tsx` · `app/os-topbar.css` · `components/{shell,features,shared,brand}/*` | 자유 |
 
