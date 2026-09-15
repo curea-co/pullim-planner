@@ -4,7 +4,7 @@ This version (Next.js 16) has breaking changes — APIs, conventions, and file s
 
 # AGENTS.md
 
-> AI 코드 리뷰 에이전트(Codex 등)가 PR을 리뷰할 때 참고하는 가이드라인.
+> 코드 리뷰 가이드라인 — PR 리뷰(사람·AI 에이전트)와 작성 시점 모두에 적용한다. (PR 자동 AI 리뷰 봇(Codex 워크플로)은 2026-09-15 폐지.)
 
 - PR 범위 판정은 [CLAUDE.md의 최상위 규칙](CLAUDE.md)을 따른다. 기능 개발 PR의 관심사 분리와 dev → main 통합 승격의 구분을 해당 규칙에서 확인한다.
 
