@@ -87,6 +87,19 @@ DS npm 패키지(`@pullim/design-system`·`@pullim/ui`)는 **미설치 — impor
 >
 > ⚠️ **이 표와 아래 판별기의 `LANE1` 집합은 함께 움직여야 한다.** 한쪽만 고치면 판별기가
 > 레인 ① 을 `⛔ 덮어씀` 으로 **오분류**한다 — 실제로 `kbd` 에서 그 일이 났다.
+>
+> **레인 ① 로 넣기 전에 확인하는 것 — 재설치가 무해한가.** 레인 ① 은 「재설치가 덮어써도
+> 잃을 게 없다」는 뜻이므로, 표에 올리기 전에 `--overwrite` 재설치가 **무변경(no-op)** 인지
+> 본다. 로컬 델타가 하나라도 있으면 그 델타가 다음 재싱크에서 조용히 사라진다.
+>
+> ```bash
+> bunx shadcn@latest add @puds/<name> --overwrite && git diff --stat   # 비어야 한다
+> ```
+>
+> `kbd` · `popover` 실측(2026-09-15 · 핀 v0.5.1) — shadcn 이 `--overwrite` 에도
+> `Skipped: files might be identical` 로 답하고 `git diff` 가 비었다. 로컬 델타 0.
+> (`popover` 의 Anchor 컨텍스트·Portal/Positioner 분리는 **상류 PUDS 의 설계**다 —
+> 이 리포가 얹은 것이 아니다.)
 
 ### ① PUDS 원격 — 설치·재설치
 
