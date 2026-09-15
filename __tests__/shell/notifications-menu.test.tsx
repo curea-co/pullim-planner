@@ -6,6 +6,7 @@
  *   - 벨이 링크가 아니라 패널 트리거다(라우팅하지 않는다)
  *   - 0건이면 패널 안에서 빈 상태를 안내한다
  *   - 미읽음이 없을 때 점 배지를 찍지 않는다
+ *   - 패널이 `role="menu"` 가 아니다 — 안에 menuitem 이 없는 메뉴를 만들지 않는다(Codex #270)
  */
 import '@testing-library/jest-dom';
 
@@ -50,9 +51,22 @@ describe('AppHeader 알림 벨 (풀림 Q 정합)', () => {
 
     fireEvent.click(screen.getByLabelText('알림'));
 
-    expect(await screen.findByText('알림')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '알림' })).toBeInTheDocument();
     expect(screen.getByText('받은 알림이 없어요')).toBeInTheDocument();
     expect(screen.getByText('중요한 소식이 생기면 여기로 알려드릴게요.')).toBeInTheDocument();
+  });
+
+  it('패널은 menu 가 아니라 이름 있는 dialog 다 (Codex #270)', async () => {
+    // DropdownMenuContent(base-ui Menu.Popup)는 컨테이너에 role="menu" 를 붙인다. 알림 피드의
+    // 내용물은 메뉴 항목이 아니라 읽을 거리라, 그 안엔 menuitem 이 하나도 생기지 않는다 —
+    // 스크린리더엔 "항목 없는 메뉴". Popover(role=dialog)로 바꾸고 제목으로 이름을 준다.
+    render(<AppHeader />);
+    fireEvent.click(screen.getByLabelText('알림'));
+
+    const panel = await screen.findByRole('dialog', { name: '알림' });
+    expect(panel).toBeInTheDocument();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('menuitem')).toHaveLength(0);
   });
 
   it('미읽음이 없으면 점 배지를 찍지 않는다 — 항상 켜진 배지는 오해를 만든다', () => {
