@@ -66,9 +66,51 @@ export const plannerSection: NavSubItem[] = [
   ...(REPORTS_ENABLED
     ? [{ href: '/planner/reports', label: '성장 리포트', icon: FileText, description: '일·주·월 회고 + 부모 공유' } satisfies NavSubItem]
     : []),
-  // 매뉴얼은 홈 모달(?help=1) 대신 온보딩 랜딩으로 — 전용 페이지가 가이드 권위(?help=1 딥링크 자체는 유지)
+  // 매뉴얼은 온보딩 랜딩 — 전용 페이지가 가이드 권위. 구 홈 모달은 제거됐고, 남은 ?help=1 북마크는
+  // HomeContainer 가 이 경로로 redirect 해 살려 둔다(__tests__/planner/home-help-deeplink.test.tsx)
   { href: '/planner/onboarding', label: '매뉴얼',      icon: BookOpen, description: '5분 사용법 가이드 — 온보딩 랜딩 페이지' },
 ];
+
+/** 헤더 검색용 평탄화 메뉴 항목 — 섹션 라벨을 곁들인다(잠금 항목은 인덱스 단계에서 제외). */
+export type NavSearchItem = {
+  href: string;
+  label: string;
+  /** 소속 섹션(부제/그룹 표시용) */
+  section: string;
+  icon: LucideIcon;
+  description?: string;
+};
+
+// 검색 노출 대상 — **현재 진입 가능한(출시된) 메뉴만**.
+// 플래그 off 항목(루틴·성장 리포트)은 `plannerSection` 이 배열을 만들 때 이미 빼므로 여기서 다시
+// 거를 필요가 없다. 검색이 기능 게이트를 우회하는 뒷문이 되지 않도록 **이 배열만** 소스로 쓴다
+// — 게이트로 막힌 라우트를 따로 더해서는 안 된다.
+const navSearchSources: { section: string; items: NavSubItem[] }[] = [
+  { section: '풀림 플래너', items: plannerSection },
+];
+
+/**
+ * 헤더 검색 인덱스 — 사이드바 메뉴를 href 로 dedup 한 평탄 목록.
+ * `locked`(출시 전 잠금) 항목은 제외한다 — 눌러도 못 가는 곳을 검색 결과로 내보이지 않는다.
+ */
+export const navSearchItems: NavSearchItem[] = (() => {
+  const seen = new Set<string>();
+  const out: NavSearchItem[] = [];
+  for (const { section, items } of navSearchSources) {
+    for (const it of items) {
+      if (seen.has(it.href) || it.locked) continue;
+      seen.add(it.href);
+      out.push({
+        href: it.href,
+        label: it.label,
+        section,
+        icon: it.icon ?? BookOpen,
+        description: it.description,
+      });
+    }
+  }
+  return out;
+})();
 
 /** 도메인 — 플래너 단일 */
 export const studentDomains: NavItem[] = [

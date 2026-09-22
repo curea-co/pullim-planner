@@ -1,3 +1,31 @@
+/* ──────────────────────────────────────────────────────────────────────────
+ * 캐스케이드 레이어 순서 — Tailwind(theme·base·components·utilities) 사이에
+ * PUDS 벤더 레이어(`puds`)를 끼워 넣는다. **이 선언은 @import 보다 먼저여야 한다** —
+ * 레이어 순서는 「이름이 처음 등장한 순서」로 굳고, `@import "tailwindcss"` 가
+ * 자기 순서(theme, base, components, utilities)를 먼저 박아 버리면 뒤에 더한 이름은
+ * 맨 뒤(= 가장 높은 우선순위)로 붙어 고치려는 문제를 그대로 재현한다.
+ * (CSS 는 @import 앞에 @layer 문(statement)을 두는 것을 명시적으로 허용한다.)
+ *
+ * ⛔ 왜 필요한가 — `app/tokens/_base.css`(PUDS 벤더링, 레인 ①)가 리셋만 `@layer base`
+ * 로 감싸고 **나머지 규칙은 레이어 밖에 둔다.** 레이어 밖 CSS 는 레이어 안 CSS 를
+ * **무조건** 이기므로, 그 규칙들이 Tailwind 유틸리티를 전부 무력화한다.
+ * 그 파일 자신이 481행에서 같은 위험을 경고하면서("Unlayered CSS beats ALL layered
+ * CSS ... This exact bug shipped") 정작 리셋 아래 규칙들은 감싸지 않았다.
+ *
+ * 실제 피해 — `:focus-visible { outline: 2px …; border-radius: 2px }` 가 전역에 걸려
+ *   ① 이 리포의 `outline-none`·`outline-hidden` **95곳이 전부 무시**됐고,
+ *   ② 포커스된 요소의 **라운드가 2px 로 강제**됐다(둥근 카드·버튼이 각져 보인다).
+ * 커맨드 팔레트 입력에 `outline-none` 을 줬는데도 파란 테두리가 남던 것이 이것이다.
+ *
+ * 벤더링본은 열지 않는다(레인 ① 로컬 수정 금지). 서비스 소유 층인 이 파일에서
+ * import 를 레이어에 담는 것으로 끝낸다 — 재설치가 덮지 않는 자리다.
+ *
+ * ⚠️ `pullim-os.css` · `pullim-jr.css` 는 **일부러 레이어 밖에 둔다.** 둘은 토큰 전용
+ * 파일이라 무력화할 규칙이 없고, 레이어에 담으면 이 파일의 unlayered `:root` 가
+ * 그쪽 `[data-theme][data-scheme="dark"]`(특정도 0,2,0)까지 이겨 버려 명암 축이 깨진다.
+ * ────────────────────────────────────────────────────────────────────────── */
+@layer theme, base, puds, components, utilities;
+
 /* Pretendard — 풀림 기본 본문 서체 (@import는 다른 모든 규칙보다 먼저) */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
 @import "tailwindcss";
@@ -18,7 +46,7 @@
  * 둘 다 import 하면 PUDS 의 `@utility animate-in`(puds-enter 키프레임)이 tw-animate-css 를 덮어
  * --tw-enter-* 를 읽지 못하게 되고, 현재 쓰이는 slide-in-from-{right,left,top,bottom}-2(16곳)의
  * 슬라이드가 죽는다. 근거·판별표: CLAUDE.md § UI 컴포넌트. */
-@import "./tokens/_base.css";
+@import "./tokens/_base.css" layer(puds);   /* 레이어 안으로 — 맨 위 @layer 문 참조 */
 @import "./tokens/pullim-os.css";
 @import "./tokens/pullim-jr.css";
 
