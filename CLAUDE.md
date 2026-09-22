@@ -10,12 +10,31 @@
 
 > ⚠️ **plan 문서 경로 표기 주의** — `proc/plan/*.md` 문서들은 모노레포 시절(`apps/planner/...`) 또는 그 이전(`src/...`) 기준으로 서술돼 있다. 실제 코드는 2026-07-31 평탄화로 리포 루트 직속(`app/`, `components/`, `lib/`)이다. plan 의 의도·완료기준만 참고하고 경로는 현재 트리 기준으로 해석할 것.
 
-## ⛔ 최상위 규칙 — 개발 PR 분리와 통합 승격 (MUST)
+## ⛔ 최상위 규칙 — PR은 한 관심사로 올린다 (MUST)
 
-- **기능 개발 PR(feature → dev)은 한 PR = 한 관심사.** 독립적으로 구현·검증할 수 있는 변경은 작은 PR로 분리한다.
-- **승격 PR(head=dev, base=main)은 통합으로 올릴 수 있다.** dev에서 관심사별 PR로 나누어 CI·리뷰를 통과하고 머지한 변경들을 하나의 main 승격 PR에 함께 포함하는 것은 허용한다. 이 누적 diff의 관심사 수나 크기만을 이유로 기능별 재분리를 요구하지 않는다.
-- 승격 PR 본문에 포함된 개발 PR과 검증 근거를 기록한다. 통합 승격 허용은 새로운 기능을 dev 검증 없이 함께 끼워 넣거나 코드·보안 검토를 생략하는 근거가 아니다. 승격에서도 실제 코드 결함·보안·계약 정합성과 CI 결과를 검토한다.
-- **오너 결정(2026-09-08)**: “dev에서 이미 관심사를 다르게 진행했고 메인에 올리는 PR은 통합으로 할수있다.” 적용 범위는 위 dev → main 승격이며, 일반 개발 PR의 관심사 분리 규칙은 유지한다.
+- **모든 PR은 한 PR = 한 관심사.** 종류·대상 브랜치와 무관하다 — 기능·버그 수정·문서·운영 변경 전부.
+  독립적으로 구현·검증할 수 있는 변경은 작은 PR로 분리한다. diff 가 **리뷰어가 한 번에
+  탐지·수렴할 수 있는 depth 를 초과**하면 리뷰가 수렴하지 않아 머지가 끝나지 않는다.
+- **승격 PR(head=dev, base=main)의 관심사는 「검증된 dev 상태를 main 에 반영한다」 하나다.**
+  담긴 개별 변경은 이미 각자의 개발 PR에서 관심사별로 분리돼 CI·리뷰를 통과하고 dev 에 머지된
+  것이고, 승격 PR 이 하는 일은 그 결과를 옮기는 **단일 행위**다. 그래서 누적 diff 의 관심사 수나
+  크기만을 이유로 기능별 재분리를 요구하지 않는다 — 위 규칙의 예외가 아니라 **적용**이다.
+  반대로 미검증 변경이나 별도 목적의 변경을 승격에 얹으면 그 순간 관심사가 둘이 되므로 허용하지 않는다.
+- **검증 근거를 추적할 수 있어야 한다.** 승격 PR 본문에 포함 개발 PR 목록, 각 PR의 검증된 head SHA 와
+  CI·리뷰 결과, 승격 대상 dev head SHA 를 기록한다. 개발 PR 의 검증만으로 통합 결과를 대신하지 않으며,
+  승격 최신 head 에서도 전체 CI·통합 회귀 검증을 통과해야 한다.
+- **승격도 검토 가능한 범위를 유지한다.** 포함 PR 과 누적 diff 를 대조해 실제 코드 결함·보안·계약
+  정합성과 변경 간 상호작용을 검토한다. 독립 검증 근거가 없거나, 통합 영향이 불명확하거나,
+  한 번의 리뷰에서 수렴할 수 없는 범위이면 근거를 보완하고 승격 범위를 줄이거나 단계별로 나눈다.
+- **오너 확인 이력** — 이 절은 § 수정 금지 영역의 컨벤션 문서다. 고칠 때는 **오너 확인 + 컨벤션 전용 PR**
+  두 조건을 함께 지키고, 확인 사실을 아래에 남긴다(리뷰는 PR 본문을 받지 않고 diff 만 본다 —
+  본문에만 적으면 근거가 리뷰에 도달하지 않는다).
+  - **2026-09-08** — “dev에서 이미 관심사를 다르게 진행했고 메인에 올리는 PR은 통합으로 할수있다.”
+    → 승격 PR 의 통합 허용. 적용 범위는 `head=dev, base=main` 승격뿐이다.
+  - **2026-09-09** — 위 문구가 규칙을 「기능 개발 PR」로 좁혀 비-기능 PR 의 분리 기준이 사라진 것을
+    되돌리고, 승격에 검증 근거·검토 가능 범위 조건을 명시하도록 확인.
+  - **2026-09-15** — PR 자동 AI 리뷰 봇(Codex 워크플로) 폐지(pullim-api#646 계획, 오너 승인)에 따라
+    이 절의 「Codex Review 통과」 전제 문구를 제거. 리뷰 기준 자체는 유지한다.
 
 ## 디렉터리 구조 (src/ 없음 — 리포 루트 직속)
 
@@ -76,29 +95,9 @@ DS npm 패키지(`@pullim/design-system`·`@pullim/ui`)는 **미설치 — impor
 
 | 레인 | 무엇 | 파일 | 규칙 |
 |---|---|---|---|
-| **① PUDS 원격** | 토큰·유틸·무의존 프리미티브·차트 | `app/tokens/*.css` · `lib/cn.ts` · `components/ui/{card,badge,input,skeleton,kbd,popover}.tsx` · `components/charts/donut.tsx` | **로컬 수정 금지.** 고쳐야 하면 PUDS 저장소에 고치고 재설치 |
+| **① PUDS 원격** | 토큰·유틸·무의존 프리미티브·차트 | `app/tokens/*.css` · `lib/cn.ts` · `components/ui/{card,badge,input,skeleton}.tsx` · `components/charts/donut.tsx` | **로컬 수정 금지.** 고쳐야 하면 PUDS 저장소에 고치고 재설치 |
 | **② 로컬 base-ui 프리미티브** | 상류 base-nova + PUDS 레시피 이식 하이브리드 | `components/ui/{button,dialog,sheet,tabs,avatar,label,separator,scroll-area,dropdown-menu,tooltip,progress}.tsx` | **PUDS 프리미티브로 교체 금지** (아래 이유) |
 | **③ 서비스 고유** | PUDS 에 없거나 API 가 다른 것 | `components/ui/{meta-row,sonner}.tsx` · `app/os-topbar.css` · `components/{shell,features,shared,brand}/*` | 자유롭게 수정 |
-
-> **오너 결정(2026-09-15)** — 레인 ① 에 `kbd` · `popover` 를 추가했다. 둘 다 `@puds/*` 벤더링본이고
-> (핀 v0.5.1 페이로드와 **바이트 동일** — `kbd` 1775 B · `popover` 17015 B), 헤더 ⌘K 팔레트와
-> 알림 패널이 쓴다. 이 표는 수정 금지 영역이라 오너가 선택지를 검토한 뒤 명시적으로 승인했다.
->
-> ⚠️ **이 표와 아래 판별기의 `LANE1` 집합은 함께 움직여야 한다.** 한쪽만 고치면 판별기가
-> 레인 ① 을 `⛔ 덮어씀` 으로 **오분류**한다 — 실제로 `kbd` 에서 그 일이 났다.
->
-> **레인 ① 로 넣기 전에 확인하는 것 — 재설치가 무해한가.** 레인 ① 은 「재설치가 덮어써도
-> 잃을 게 없다」는 뜻이므로, 표에 올리기 전에 `--overwrite` 재설치가 **무변경(no-op)** 인지
-> 본다. 로컬 델타가 하나라도 있으면 그 델타가 다음 재싱크에서 조용히 사라진다.
->
-> ```bash
-> bunx shadcn@latest add @puds/<name> --overwrite && git diff --stat   # 비어야 한다
-> ```
->
-> `kbd` · `popover` 실측(2026-09-15 · 핀 v0.5.1) — shadcn 이 `--overwrite` 에도
-> `Skipped: files might be identical` 로 답하고 `git diff` 가 비었다. 로컬 델타 0.
-> (`popover` 의 Anchor 컨텍스트·Portal/Positioner 분리는 **상류 PUDS 의 설계**다 —
-> 이 리포가 얹은 것이 아니다.)
 
 ### ① PUDS 원격 — 설치·재설치
 
@@ -144,13 +143,6 @@ https://pullim-design-system.vercel.app/v/<버전>/{name}.json
 > 그 하나가 **import 되지 않는** 파일이라 컴파일된 CSS 가 양쪽 동일 해시였다. v0.5.0 은 PUDS 가
 > Radix → Base UI 로 엔진을 갈아엎은 릴리스인데도 그렇다 — 이 리포가 받아 가는 **파일 10개**가 전부
 > 엔진 비의존(토큰·`cn`·무의존 프리미티브·SVG 차트)이기 때문이다.
-
-> **그 뒤 `kbd` · `popover` 가 들어왔다** (2026-09-15 · 헤더 ⌘K 팔레트와 알림 패널 · 핀 v0.5.1).
-> 위 두 블록의 「아이템 7개 / 파일 10개」는 **측정 당시(2026-08-26 · 08-31) 수치라 그대로 둔다** —
-> 날짜가 박힌 관측값을 나중 사실로 덮어쓰면 그 대조가 무엇을 본 것인지 알 수 없게 된다.
-> 지금은 **아이템 9개 · 파일 12개**다. 현재 목록의 정본은 위 § 판별표 한 곳이고,
-> 판별기의 `LANE1` 집합도 그것을 따라간다 — 둘이 어긋나면 판별기가 레인 ① 을
-> `⛔ 덮어씀` 으로 오분류한다.
 
 > ⚠️ **`/r/{name}.json` 을 서비스에서 직접 참조하지 마라.** 같은 호스트지만 `/r/` 은 **항상 main 최신**을
 > 가리킨다 — 설치 시점마다 소스가 갈리고, 재설치 한 번으로 다른 버전이 조용히 들어온다.
@@ -320,7 +312,7 @@ ITEMS="scroll-area data-table"   # ← 판정할 아이템 이름. 공백으로 
 V=$(python3 -c "import json;print(json.load(open('components.json'))['registries']['@puds'].split('/v/')[1].split('/')[0])")
 curl -s "https://pullim-design-system.vercel.app/v/$V/registry.json" | python3 -c '
 import json,sys,os,re,subprocess
-LANE1={"cn","theme-puds","card","badge","input","skeleton","kbd","popover"}   # 판별표 레인① — 덮어써도 되는 것
+LANE1={"cn","theme-puds","card","badge","input","skeleton"}   # 판별표 레인① — 덮어써도 되는 것
 # 레지스트리 target 과 이 리포의 실제 경로가 다른, **이미 아는** 자리. shadcn add 는 target 에
 # 새로 쓰므로 실제 파일을 갱신하는 대신 **사본이 하나 더 생긴다**(components/charts/README.md).
 # components.json 의 aliases 로는 계산되지 않는다 — ui 별칭이 @/components/ui 인데 실제 경로는
