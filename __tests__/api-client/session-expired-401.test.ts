@@ -36,7 +36,7 @@ const fetchImpl = (async (url: string) => {
   dataCalls += 1;
   // 1번째는 항상 401(액세스 만료). 2번째(재시도)는 시나리오에 따라.
   if (dataCalls === 1) return res(401, unauthorized);
-  return retryAlso401 ? res(401, unauthorized) : res(200, { id: 'u1' });
+  return retryAlso401 ? res(401, unauthorized) : res(200, { profile: { id: 'u1' } });
 }) as unknown as typeof fetch;
 
 function makeClient() {

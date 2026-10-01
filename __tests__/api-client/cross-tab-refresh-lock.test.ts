@@ -35,7 +35,7 @@ function fetchFor(tab: string) {
       return res(200, { id: 'u1' });
     }
     const status = queues[tab].shift() ?? 200;
-    return status === 200 ? res(200, { id: 'u1' }) : res(status, unauthorized);
+    return status === 200 ? res(200, { profile: { id: 'u1' } }) : res(status, unauthorized);
   }) as unknown as typeof fetch;
 }
 

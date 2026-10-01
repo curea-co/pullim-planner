@@ -38,7 +38,7 @@ const fetchImpl = (async (url: string) => {
   }
   const status = dataStatuses.shift() ?? 200;
   return status === 200
-    ? res(200, { id: 'u1' })
+    ? res(200, { profile: { id: 'u1' } })
     : res(status, { message: '인증에 실패했습니다.', statusCode: status });
 }) as unknown as typeof fetch;
 
