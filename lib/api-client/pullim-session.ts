@@ -126,8 +126,8 @@ export interface PullimSessionClient {
    * **배선은 소비자 몫**(planner FE 주입은 후속 PR).
    */
   refreshSession(): Promise<boolean>;
-  /** planner 세션 확인 — 200 프로필 / 401 미인증 / 403 엔타이틀먼트 미보유 / 404 온보딩 미완. */
-  session(): Promise<PullimMeProfile>;
+  /** planner 상태 확인 — 200 프로필 또는 null(온보딩 미완) / 401 미인증 / 403 권한 없음. */
+  session(): Promise<PullimMeProfile | null>;
   /**
    * auth 계정 me (`GET /me`) — owner-only KCB 실명(`name`, ADR-048) 포함. 헤더 배지 등
    * 본인 표시 용도. 401 미인증.
@@ -140,7 +140,7 @@ export interface PullimSessionClient {
   entitlements(): Promise<PullimEntitlements>;
   /**
    * 학습 프로필 멱등 upsert (`PATCH /planner/me`) — 온보딩 완료. CSRF 동봉 PATCH.
-   * 성공 시 갱신된 프로필(=`session()` shape). 이후 `session()` 200(404 limbo 해소).
+   * 성공 시 갱신된 프로필. 이후 `session()`은 같은 프로필을 반환한다.
    */
   updateProfile(input: PullimProfileUpsert): Promise<PullimMeProfile>;
 }
@@ -442,9 +442,26 @@ export function createPullimSessionClient(
 
     refreshSession: effectiveRefreshSession,
 
-    session() {
-      // GET — CSRF 면제. 쿠키(access)로 인증.
-      return cookieRequest<PullimMeProfile>(cfg, "/planner/me");
+    async session() {
+      // GET — CSRF 면제. null은 인증된 사용자의 미설정 상태이며 HTTP 오류와 구분한다.
+      const response = await cookieRequest<{ profile?: PullimMeProfile | null }>(
+        cfg,
+        "/planner/me/status",
+      );
+      if (
+        !response ||
+        (response.profile !== null &&
+          (typeof response.profile !== "object" ||
+            !response.profile ||
+            typeof response.profile.id !== "string"))
+      ) {
+        throw new ApiError({
+          code: "invalid_response",
+          message: "프로필 상태를 확인하지 못했습니다. 다시 시도해 주세요.",
+          statusCode: 200,
+        });
+      }
+      return response.profile;
     },
 
     accountMe() {

@@ -22,7 +22,7 @@ import { onPullimSessionExpired, pullimSession } from './pullim-session-client';
 export type AuthStatus =
   | 'loading'
   | 'authenticated'
-  /** 인증됐으나 planner 학습 프로필 미생성(온보딩 미완, /planner/me 404). `RequireAuth`가
+  /** 인증됐으나 planner 학습 프로필 미생성(온보딩 미완, 상태 조회의 profile:null). `RequireAuth`가
    * /planner/onboarding 으로 보낸다 — 보호 라우트(데이터 비어있음)에 가두지 않는다. */
   | 'onboarding'
   /** 인증은 됐으나 planner 엔타이틀먼트(`flags.planner`) 미보유(403). 비로그인이 아니므로 /login 으로
@@ -34,12 +34,12 @@ export type AuthStatus =
 
 export interface AuthContextValue {
   status: AuthStatus;
-  /** pullim-api 세션 프로필(`GET /planner/me`). 흡수 전환 §10 — 자체 BE `AuthUser` 대체. */
+  /** pullim-api 세션 프로필(`GET /planner/me/status`의 profile). 흡수 전환 §10 — 자체 BE `AuthUser` 대체. */
   user: PullimMeProfile | null;
   /**
    * **중앙 계정 이메일**(`GET /me`) — planner 엔타이틀먼트·학습 프로필과 **무관**하다.
    *
-   * `user` 에 얹지 않는 이유: `/planner/me` 가 403(권한 없음)·404(온보딩 전)면 `user` 는 null 인데,
+   * `user` 에 얹지 않는 이유: 상태 조회가 403(권한 없음) 또는 profile:null(온보딩 전)이면 `user` 는 null 인데,
    * **그 둘도 로그인은 된 상태**다(401 만 비로그인). 계정 식별을 `user` 에 매달면 정작 그
    * 사용자들에게서 사라진다 — 서비스 노출 판정이 planner 권한에 끌려가면 안 된다.
    *
@@ -102,12 +102,12 @@ const DEV_BYPASS_PROFILE: PullimMeProfile = {
 /**
  * 앱 전역 인증 상태 Provider (흡수 전환 §10 — pullim 쿠키 SSO).
  *
- * 마운트 시 쿠키 세션으로 `session()`(GET /planner/me)을 호출해 세션을 복원한다(새로고침 유지).
+ * 마운트 시 쿠키 세션으로 `session()`(GET /planner/me/status)을 호출해 세션을 복원한다(새로고침 유지).
  * 토큰은 HttpOnly 쿠키라 클라가 보관하지 않고 브라우저가 자동 첨부한다.
- * - 성공 → authenticated
- * - 401/403(세션 없음·무효 또는 엔타이틀먼트 미보유) → unauthenticated (`RequireAuth`가 /login)
- * - 404(인증됐으나 학습 프로필 미생성 = 온보딩 미완) → authenticated (온보딩 라우팅이 처리)
- * - transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI).
+ * - 프로필 객체 → authenticated, profile:null → onboarding
+ * - 401(세션 없음·무효) → unauthenticated (`RequireAuth`가 /login)
+ * - 403(엔타이틀먼트 미보유) → forbidden
+ * - 404/transport/5xx → 'error' (세션 판정 불가 — 로그인으로 쫓아내지 않고 재시도 UI).
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
@@ -117,8 +117,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 플랜 배지 flags — null = 조회 전/실패(배지 미표시), {} = 조회 성공·유료 없음('기본').
   const [entFlags, setEntFlags] = useState<EntitlementFlags | null>(null);
 
-  // session() 으로 세션을 확정하는 공유 코어. 성공→authenticated, 401/403(무효 확정)→unauthenticated,
-  // 404(온보딩 미완)→authenticated, 그 외(네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만
+  // session() 으로 세션을 확정하는 공유 코어. 프로필→authenticated, null→onboarding,
+  // 401→unauthenticated, 403→forbidden, 그 외(404/네트워크/5xx)→fallback. setState 는 .then 콜백(deferred)에만
   // 두어 마운트 effect 의 동기 setState 경고를 피한다.
   // - 부트스트랩/재시도: fallback='error' (세션 유효 미확인 — 로그인으로 안 쫓아내고 재시도 UI)
   // - login 직후: fallback='authenticated' (쿠키 방금 발급 — 프로필만 best-effort)
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
   /**
    * `GET /me` 조회. `profileId` 가 있으면 실명까지 얹고, null 이면 **이메일만** 싣는다
-   * (403·404 — planner 프로필이 없는 로그인 사용자).
+   * (권한 없음·온보딩 미완 — planner 프로필이 없는 로그인 사용자).
    */
   const loadAccount = useCallback((profileId: string | null) => {
     const gen = accountGen.current;
@@ -158,16 +158,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resolveSession = useCallback(
     (fallbackStatus: AuthStatus) => {
       // 다른 탭의 계정 교체는 만료 이벤트 없이도 발생한다. 새 세션 해석이 이전 /me와
-      // 세션 응답을 함께 무효화하며, 성공·403·404 모두 이 세대에서만 계정을 확정한다.
+      // 세션 응답을 함께 무효화하며, 프로필·null·403 모두 이 세대에서만 계정을 확정한다.
       const gen = ++accountGen.current;
-      // pullim-api 세션 확인 = GET /planner/me (쿠키 인증).
+      // pullim-api 세션 확인 = GET /planner/me/status (쿠키 인증).
       return pullimSession.session().then(
         (profile) => {
           if (gen !== accountGen.current) return;
           setAccountEmail(null);
           setUser(profile);
-          setStatus('authenticated');
-          loadAccount(profile.id);
+          setStatus(profile === null ? 'onboarding' : 'authenticated');
+          loadAccount(profile === null ? null : profile.id);
         },
         (error: unknown) => {
           if (gen !== accountGen.current) return;
@@ -184,16 +184,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // 로그인은 됐으나 planner 엔타이틀먼트 미보유 — /login 으로 보내지 않고 안내.
               setStatus('forbidden');
               // **로그인은 된 상태다.** 중앙 계정 식별은 planner 권한과 무관하게 조회한다.
-              loadAccount(null);
-              return;
-            }
-            if (error.statusCode === 404) {
-              // 인증은 됐으나 planner 학습 프로필(user_profile) 미생성 = 온보딩 미완. 비로그인이
-              // 아니므로 'onboarding' 으로 두고 RequireAuth 가 /planner/onboarding 으로 보낸다(데이터가
-              // 빈 보호 라우트에 가두지 않음). ⚠️ 프로필 생성은 정상 endpoint 부재(pullim-api 갭,
-              // dev 는 /planner/dev/seed-profile) — 온보딩 완료 배선은 BE endpoint 후속.
-              setStatus('onboarding');
-              // 인증은 됐다(프로필만 없다) — 위 403 과 같은 이유로 계정 식별을 조회한다.
               loadAccount(null);
               return;
             }
@@ -288,7 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 학년/계열 등 수집 폼은 후속(부분 upsert 라 이후 보강 가능).
     async (input: PullimProfileUpsert = {}) => {
       try {
-        // 프로필이 생기면 다음 session() 부터 /planner/me 가 200 → 서버상태 단독으로 'authenticated'.
+        // 프로필이 생기면 다음 session() 부터 상태 조회가 프로필 객체를 반환 → 서버상태 단독으로 'authenticated'.
         // (localStorage 방문 플래그로 보정하지 않는다 — 서버상태가 온보딩 완료의 단일 권위.)
         const profile = await pullimSession.updateProfile(input);
         setUser(profile);

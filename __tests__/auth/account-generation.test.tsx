@@ -35,12 +35,13 @@ beforeEach(() => {
   jest.mocked(pullimSession.entitlements).mockResolvedValue({ flags: {} });
 });
 
-it.each([200, 403, 404])('discards account A response after a replacement session returns %s', async (code) => {
+it.each([200, 403, null])('discards account A response after a replacement session returns %s', async (code) => {
   const oldAccount = deferred<Awaited<ReturnType<typeof accountMe>>>();
   session.mockResolvedValueOnce(profile('A'));
   accountMe.mockReturnValueOnce(oldAccount.promise).mockResolvedValueOnce(account('b@example.com'));
   await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
   if (code === 200) session.mockResolvedValueOnce(profile('B'));
+  else if (code === null) session.mockResolvedValueOnce(null);
   else session.mockRejectedValueOnce(new ApiError({ code: 'planner', statusCode: code, message: 'profile unavailable' }));
 
   await act(async () => { screen.getByText('retry').click(); });
@@ -62,7 +63,7 @@ it('clears an already displayed email before the new account lookup completes', 
 });
 
 it('ignores an older session result that finishes after a newer resolution', async () => {
-  const oldSession = deferred<PullimMeProfile>();
+  const oldSession = deferred<PullimMeProfile | null>();
   session.mockReturnValueOnce(oldSession.promise).mockResolvedValueOnce(profile('B'));
   accountMe.mockResolvedValue(account('b@example.com'));
   await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
@@ -75,7 +76,7 @@ it('ignores an older session result that finishes after a newer resolution', asy
 });
 
 it('does not restore a pending session after a session-expired event', async () => {
-  const oldSession = deferred<PullimMeProfile>();
+  const oldSession = deferred<PullimMeProfile | null>();
   session.mockReturnValueOnce(oldSession.promise);
   await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
   const expire = jest.mocked(onPullimSessionExpired).mock.calls.at(-1)![0];
@@ -95,4 +96,29 @@ it('clears the previous email while the replacement session is still pending', a
   await act(async () => { screen.getByText('retry').click(); });
 
   expect(screen.getByTestId('identity')).toHaveTextContent('loading:A:-');
+});
+
+it('treats only a successful null profile as onboarding', async () => {
+  session.mockResolvedValueOnce(null);
+  accountMe.mockResolvedValueOnce(account('new@example.com'));
+  await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
+  expect(screen.getByTestId('identity')).toHaveTextContent('onboarding:-:new@example.com');
+});
+
+it.each([[401, 'unauthenticated'], [403, 'forbidden'], [404, 'error'], [500, 'error']])('keeps HTTP %s separate from onboarding', async (code, status) => {
+  session.mockRejectedValueOnce(new ApiError({ code: 'planner', statusCode: Number(code), message: 'unavailable' }));
+  accountMe.mockResolvedValueOnce(account('current@example.com'));
+  await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
+  expect(screen.getByTestId('identity')).toHaveTextContent(`${status}:-:`);
+  if (code !== 403) expect(accountMe).not.toHaveBeenCalled();
+});
+
+it('ignores an older null result after a newer profile resolves', async () => {
+  const oldSession = deferred<PullimMeProfile | null>();
+  session.mockReturnValueOnce(oldSession.promise).mockResolvedValueOnce(profile('B'));
+  accountMe.mockResolvedValueOnce(account('b@example.com'));
+  await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
+  await act(async () => { screen.getByText('retry').click(); });
+  await act(async () => { oldSession.resolve(null); });
+  expect(screen.getByTestId('identity')).toHaveTextContent('authenticated:B:b@example.com');
 });
