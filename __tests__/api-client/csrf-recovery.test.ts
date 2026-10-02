@@ -1,3 +1,4 @@
+import { createPullimSessionClient } from '@/lib/api-client/pullim-session';
 import { ApiError, createPullimPlannerClient } from '@/lib/api-client';
 
 function response(status: number, body: unknown): Response {
@@ -55,4 +56,35 @@ describe('planner typed CSRF recovery', () => {
       ]);
     },
   );
+});
+
+
+describe('session typed CSRF recovery', () => {
+  beforeEach(() => localStorage.clear());
+
+  it.each(['CSRF_ORIGIN_REJECTED', 'FORBIDDEN'])('%s is not retried even with a CSRF message', async (code) => {
+    const calls: string[] = [];
+    const fetchImpl = jest.fn(async (url: string) => {
+      calls.push(url);
+      if (url.endsWith('/auth/csrf')) return response(200, { csrfToken: 'csrf' });
+      return response(403, { statusCode: 403, code, message: 'CSRF: Origin 검증 실패.' });
+    }) as unknown as typeof fetch;
+    const client = createPullimSessionClient({ baseUrl: 'https://api.test', fetchImpl });
+    await expect(client.refresh()).rejects.toMatchObject({ code, statusCode: 403 });
+    expect(calls).toEqual(['https://api.test/auth/csrf', 'https://api.test/auth/refresh']);
+  });
+
+  it('token mismatch retries exactly once independent of message', async () => {
+    let refreshes = 0;
+    let bootstraps = 0;
+    const fetchImpl = jest.fn(async (url: string) => {
+      if (url.endsWith('/auth/csrf')) { bootstraps++; return response(200, { csrfToken: 'csrf' }); }
+      refreshes++;
+      return refreshes === 1 ? response(403, { statusCode: 403, code: 'CSRF_TOKEN_MISMATCH', message: 'Forbidden' }) : response(200, { sub: 'member' });
+    }) as unknown as typeof fetch;
+    const client = createPullimSessionClient({ baseUrl: 'https://api.test', fetchImpl });
+    await expect(client.refresh()).resolves.toEqual({ sub: 'member' });
+    expect(refreshes).toBe(2);
+    expect(bootstraps).toBe(2);
+  });
 });

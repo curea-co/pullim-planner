@@ -1,3 +1,4 @@
+import { createPullimSessionClient } from '@/lib/api-client/pullim-session';
 import { act, render, screen } from '@testing-library/react';
 import { ApiError, type PullimMeProfile } from '@/lib/api-client';
 import { AuthProvider, useAuth } from '@/lib/auth/auth-context';
@@ -121,4 +122,32 @@ it('ignores an older null result after a newer profile resolves', async () => {
   await act(async () => { screen.getByText('retry').click(); });
   await act(async () => { oldSession.resolve(null); });
   expect(screen.getByTestId('identity')).toHaveTextContent('authenticated:B:b@example.com');
+});
+
+
+it.each(['CSRF_ORIGIN_REJECTED', 'CSRF_TOKEN_MISMATCH'])('does not treat refresh %s as missing entitlement or load account', async (code) => {
+  session.mockRejectedValueOnce(new ApiError({ code, statusCode: 403, message: 'Forbidden' }));
+  await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
+  expect(screen.getByTestId('identity')).toHaveTextContent('error:-:-');
+  expect(accountMe).not.toHaveBeenCalled();
+});
+
+
+it.each(['CSRF_ORIGIN_REJECTED', 'CSRF_TOKEN_MISMATCH'])('real session refresh %s does not start account lookup', async (code) => {
+  localStorage.clear();
+  const calls: string[] = [];
+  const fetchImpl = jest.fn(async (url: string) => {
+    calls.push(url);
+    const status = url.endsWith('/auth/csrf') ? 200 : url.endsWith('/auth/refresh') ? 403 : 401;
+    const body = status === 200 ? { csrfToken: 'synthetic-csrf' } : { statusCode: status, code, message: 'CSRF: rejected' };
+    return { ok: status === 200, status, text: async () => JSON.stringify(body) } as Response;
+  }) as unknown as typeof fetch;
+  const client = createPullimSessionClient({ baseUrl: 'https://api.test', fetchImpl });
+  session.mockImplementation(client.session);
+  accountMe.mockImplementation(client.accountMe);
+  await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
+  expect(screen.getByTestId('identity')).toHaveTextContent('error:-:-');
+  expect(accountMe).not.toHaveBeenCalled();
+  expect(calls.filter((url) => url.endsWith('/auth/refresh'))).toHaveLength(code === 'CSRF_TOKEN_MISMATCH' ? 2 : 1);
+  expect(calls.some((url) => url.endsWith('/me'))).toBe(false);
 });
