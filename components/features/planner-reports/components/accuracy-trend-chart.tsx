@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer,
+  CartesianGrid, Line, LineChart, ReferenceLine,
   Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { pullimBlue, pullimSlate } from '@/lib/tokens';
@@ -29,45 +29,43 @@ export function AccuracyTrendChart() {
       </div>
 
       <div className="h-32">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <LineChart data={trendData} margin={{ top: 8, right: 8, bottom: 0, left: -28 }}>
-            <CartesianGrid stroke={pullimSlate[100]} vertical={false} strokeDasharray="2 3" />
-            <XAxis
-              dataKey="day"
-              tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 10, fill: pullimSlate[600], fontWeight: 600 }}
-            />
-            <YAxis
-              domain={[50, 100]}
-              tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 10, fill: pullimSlate[500] }}
-              width={28}
-              tickFormatter={(v) => `${v}`}
-            />
-            <Tooltip
-              cursor={{ stroke: pullimBlue[200], strokeDasharray: '2 3' }}
-              contentStyle={{
-                fontSize: 11,
-                borderRadius: 8,
-                border: `1px solid ${pullimSlate[200]}`,
-                padding: '6px 10px',
-              }}
-              formatter={(v) => v == null ? ['—', '정답률'] : [`${v}%`, '정답률']}
-            />
-            <ReferenceLine y={goalLine} stroke={pullimSlate[300]} strokeDasharray="2 3" />
-            <Line
-              type="monotone"
-              dataKey="accuracy"
-              stroke={pullimBlue[600]}
-              strokeWidth={2.5}
-              dot={{ fill: pullimBlue[600], r: 3.5, strokeWidth: 0 }}
-              activeDot={{ r: 5 }}
-              connectNulls={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <LineChart responsive className="h-full w-full min-w-0" data={trendData} margin={{ top: 8, right: 8, bottom: 0, left: -28 }}>
+          <CartesianGrid stroke={pullimSlate[100]} vertical={false} strokeDasharray="2 3" />
+          <XAxis
+            dataKey="day"
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 10, fill: pullimSlate[600], fontWeight: 600 }}
+          />
+          <YAxis
+            domain={[50, 100]}
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 10, fill: pullimSlate[500] }}
+            width={28}
+            tickFormatter={(v) => `${v}`}
+          />
+          <Tooltip
+            cursor={{ stroke: pullimBlue[200], strokeDasharray: '2 3' }}
+            contentStyle={{
+              fontSize: 11,
+              borderRadius: 8,
+              border: `1px solid ${pullimSlate[200]}`,
+              padding: '6px 10px',
+            }}
+            formatter={(v) => v == null ? ['—', '정답률'] : [`${v}%`, '정답률']}
+          />
+          <ReferenceLine y={goalLine} stroke={pullimSlate[300]} strokeDasharray="2 3" />
+          <Line
+            type="monotone"
+            dataKey="accuracy"
+            stroke={pullimBlue[600]}
+            strokeWidth={2.5}
+            dot={{ fill: pullimBlue[600], r: 3.5, strokeWidth: 0 }}
+            activeDot={{ r: 5 }}
+            connectNulls={false}
+          />
+        </LineChart>
       </div>
     </section>
   );
