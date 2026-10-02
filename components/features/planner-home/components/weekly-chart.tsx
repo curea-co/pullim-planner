@@ -1,6 +1,6 @@
 'use client';
 
-import { Bar, BarChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts';
+import { Bar, BarChart, ReferenceLine, Tooltip, XAxis, YAxis, Cell } from 'recharts';
 import { weeklyStudyHours } from '@/lib/mock';
 import { pullimBlue, pullimSlate } from '@/lib/tokens';
 
@@ -27,41 +27,39 @@ export function WeeklyChart() {
       </div>
 
       <div className="h-32">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={weeklyStudyHours} margin={{ top: 4, right: 4, bottom: 0, left: -28 }}>
-            <XAxis
-              dataKey="day"
-              tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 10, fill: pullimSlate[600], fontWeight: 600 }}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 10, fill: pullimSlate[500] }}
-              width={26}
-            />
-            <Tooltip
-              cursor={{ fill: 'rgba(59,111,246,0.06)' }}
-              contentStyle={{
-                fontSize: 11,
-                borderRadius: 8,
-                border: `1px solid ${pullimSlate[200]}`,
-                padding: '6px 10px',
-              }}
-              formatter={(v) => [`${v}h`, '학습 시간']}
-            />
-            <ReferenceLine y={goal} stroke={pullimSlate[300]} strokeDasharray="2 3" />
-            <Bar dataKey="hours" radius={[4, 4, 0, 0]} barSize={18}>
-              {weeklyStudyHours.map((d, i) => (
-                <Cell
-                  key={i}
-                  fill={d.hours >= d.goal ? pullimBlue[500] : pullimBlue[200]}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <BarChart responsive className="h-full w-full min-w-0" data={weeklyStudyHours} margin={{ top: 4, right: 4, bottom: 0, left: -28 }}>
+          <XAxis
+            dataKey="day"
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 10, fill: pullimSlate[600], fontWeight: 600 }}
+          />
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 10, fill: pullimSlate[500] }}
+            width={26}
+          />
+          <Tooltip
+            cursor={{ fill: 'rgba(59,111,246,0.06)' }}
+            contentStyle={{
+              fontSize: 11,
+              borderRadius: 8,
+              border: `1px solid ${pullimSlate[200]}`,
+              padding: '6px 10px',
+            }}
+            formatter={(v) => [`${v}h`, '학습 시간']}
+          />
+          <ReferenceLine y={goal} stroke={pullimSlate[300]} strokeDasharray="2 3" />
+          <Bar dataKey="hours" radius={[4, 4, 0, 0]} barSize={18}>
+            {weeklyStudyHours.map((d, i) => (
+              <Cell
+                key={i}
+                fill={d.hours >= d.goal ? pullimBlue[500] : pullimBlue[200]}
+              />
+            ))}
+          </Bar>
+        </BarChart>
       </div>
     </section>
   );
