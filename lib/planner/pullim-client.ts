@@ -34,6 +34,7 @@ const rawPullimPlannerClient = createPullimPlannerClient({
   // planner/routine/studygram 데이터 요청도 access 만료 시 refresh → 1회 재시도한다.
   // 재발급 실패(만료 확정)면 원 401 → on401 래퍼가 세션 만료를 전파(기존 로그인 복구).
   refreshSession: pullimSession.refreshSession,
+  authGeneration: pullimSession.authGeneration,
 });
 
 /**

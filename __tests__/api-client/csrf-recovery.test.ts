@@ -88,3 +88,67 @@ describe('session typed CSRF recovery', () => {
     expect(bootstraps).toBe(2);
   });
 });
+
+it('401 후 CSRF 복구가 있어도 같은 mutation의 refresh 예산은 1회다', async () => {
+  let writes = 0;
+  const refreshSession = jest.fn(async () => true);
+  const fetchImpl = jest.fn(async (url: string) => {
+    if (url.endsWith('/auth/csrf')) return response(200, { csrfToken: 'synthetic' });
+    writes++;
+    const status = writes === 2 ? 403 : 401;
+    return response(status, { statusCode: status, code: writes === 2 ? 'CSRF_TOKEN_MISMATCH' : 'unauthorized' });
+  }) as unknown as typeof fetch;
+  const client = createPullimPlannerClient({ baseUrl: 'https://api.test', fetchImpl, refreshSession });
+  await expect(client.createRoutine({} as never)).rejects.toMatchObject({ statusCode: 401 });
+  expect(refreshSession).toHaveBeenCalledTimes(1);
+  expect(writes).toBe(3);
+});
+
+it('다른 계정으로 전환되면 refresh 대기 중이던 mutation을 재전송하지 않는다', async () => {
+  let generation = 0;
+  let release!: (ok: boolean) => void;
+  let started!: () => void;
+  const refreshing = new Promise<void>((resolve) => { started = resolve; });
+  const refreshSession = jest.fn(() => { started(); return new Promise<boolean>((resolve) => { release = resolve; }); });
+  let writes = 0;
+  const fetchImpl = jest.fn(async (url: string) => {
+    if (url.endsWith('/auth/csrf')) return response(200, { csrfToken: 'synthetic' });
+    writes++;
+    return response(401, { statusCode: 401 });
+  }) as unknown as typeof fetch;
+  const client = createPullimPlannerClient({ baseUrl: 'https://api.test', fetchImpl, refreshSession, authGeneration: () => generation });
+  const pending = client.createRoutine({} as never);
+  await refreshing;
+  generation++;
+  release(true);
+  await expect(pending).rejects.toMatchObject({ name: 'AuthContextChangedError' });
+  expect(writes).toBe(1);
+});
+
+it('다른 계정으로 전환되면 CSRF 대기 중이던 mutation도 최초 전송하지 않는다', async () => {
+  let generation = 0;
+  let release!: (value: Response) => void;
+  let writes = 0;
+  const fetchImpl = jest.fn(async (url: string) => {
+    if (url.endsWith('/auth/csrf')) return new Promise<Response>((resolve) => { release = resolve; });
+    writes++;
+    return response(201, {});
+  }) as unknown as typeof fetch;
+  const client = createPullimPlannerClient({ baseUrl: 'https://api.test', fetchImpl, authGeneration: () => generation });
+  const pending = client.createRoutine({} as never);
+  generation++;
+  release(response(200, { csrfToken: 'synthetic' }));
+  await expect(pending).rejects.toMatchObject({ name: 'AuthContextChangedError' });
+  expect(writes).toBe(0);
+});
+
+it('계정 변경 뒤 도착한 GET 응답은 이전 신원을 반환하지 않는다', async () => {
+  let generation = 0;
+  let release!: (value: Response) => void;
+  const fetchImpl = jest.fn(() => new Promise<Response>((resolve) => { release = resolve; })) as unknown as typeof fetch;
+  const { cookieRequest } = await import('@/lib/api-client/cookie-http');
+  const pending = cookieRequest({ baseUrl: 'https://api.test', fetchImpl, authGeneration: () => generation }, '/me');
+  generation++;
+  release(response(200, { sub: 'old-account' }));
+  await expect(pending).rejects.toMatchObject({ name: 'AuthContextChangedError' });
+});

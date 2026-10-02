@@ -89,18 +89,19 @@ describe('재발급 직후의 늦은 401', () => {
     expect(refreshCalls).toBe(2);
   });
 
-  it('재발급이 실패했으면 창을 열지 않는다 — 다른 탭이 회전시킨 경우의 복구 경로를 막지 않게', async () => {
+  it('실패 직후 재발급 폭주를 억제하고 cooldown 이후 복구한다', async () => {
     const client = makeClient();
     refreshOk = false;
     dataStatuses = [401];
-    // 재발급 401 → 만료 확정(false) → 원 401 전파
     await expect(client.session()).rejects.toBeInstanceOf(ApiError);
     expect(refreshCalls).toBe(1);
 
-    // 곧바로 다음 요청 — 실패한 재발급이 창을 열어 뒀다면 여기서 재발급을 건너뛴다.
-    // 다른 탭이 방금 회전시켜 우리 재발급만 401 이었던 경우, 쿠키는 이미 유효하므로
-    // 뒤따르는 요청이 스스로 재발급하면 복구된다. 실패를 굳히면 그 길이 막힌다.
     refreshOk = true;
+    dataStatuses = [401];
+    await expect(client.session()).rejects.toBeInstanceOf(ApiError);
+    expect(refreshCalls).toBe(1);
+
+    nowMs += 7_000;
     dataStatuses = [401, 200];
     await expect(client.session()).resolves.toEqual({ id: 'u1' });
     expect(refreshCalls).toBe(2);

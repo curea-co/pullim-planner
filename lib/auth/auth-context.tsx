@@ -176,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAccountEmail(null);
           setUser(null);
           if (error instanceof ApiError) {
-            if (error.statusCode === 401) {
+            if (error.statusCode === 401 && error.sessionExpired) {
               // 세션 없음·무효 → 비로그인 확정. 계정 식별도 함께 버린다.
               setStatus('unauthenticated');
               clearAccount();
@@ -288,7 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // 온보딩 완료 직후에도 실명 보강 — resolveSession 경로와 배지 일관(Codex #109).
         loadAccount(profile.id);
       } catch (error) {
-        if (error instanceof ApiError && error.statusCode === 401) {
+        if (error instanceof ApiError && error.statusCode === 401 && error.sessionExpired) {
           // 세션 만료 — 재시도가 아니라 /login 으로 회복한다. 호출부가 재시도 UI 를 안 띄우게 swallow.
           setUser(null);
           setStatus('unauthenticated');

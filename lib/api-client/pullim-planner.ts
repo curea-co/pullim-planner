@@ -1,5 +1,6 @@
+import { ApiError } from './errors';
 import { bootstrapCsrf, cookieRequest, type CookieHttpConfig } from "./cookie-http";
-import { isCsrfTokenMismatch } from './csrf-error';
+import { AuthContextChangedError, createAuthCore } from '../auth/auth-core';
 
 /**
  * pullim-api(흡수형 planner 서비스) 도메인 데이터 클라이언트 — cookie-http 위 래퍼. 흡수 전환 §10.
@@ -427,29 +428,34 @@ export function createPullimPlannerClient(
     return csrfInFlight;
   }
 
+  const core = createAuthCore({
+    scope: `${config.baseUrl}:member`,
+    getCsrf: async (force) => { if (force) csrfToken = null; return ensureCsrf(); },
+    refresh: async () => { throw new Error('Session refresh is owned by cookie-http'); },
+    describeError: (error) => error instanceof ApiError
+      ? { status: error.statusCode, code: error.code } : { status: 0 },
+  });
   /** 상태변경 요청. typed mismatch로 1회 거부되면 캐시 무효화 후 재부트스트랩·1회 재시도. */
   async function mutate<T>(
     path: string,
     method: "POST" | "PUT" | "PATCH" | "DELETE",
     body?: unknown,
   ): Promise<T> {
-    const token = await ensureCsrf();
-    try {
-      return await cookieRequest<T>(config, path, {
-        method,
-        body,
-        csrfToken: token,
-      });
-    } catch (error) {
-      if (!isCsrfTokenMismatch(error)) throw error;
-      csrfToken = null;
-      const fresh = await ensureCsrf();
-      return await cookieRequest<T>(config, path, {
-        method,
-        body,
-        csrfToken: fresh,
-      });
-    }
+    const generation = config.authGeneration?.();
+    let refreshed = false;
+    const operationConfig = {
+      ...config,
+      refreshSession: config.refreshSession ? async () => {
+        refreshed = true;
+        return config.refreshSession!();
+      } : undefined,
+    };
+    return core.execute((token) => {
+      if (generation !== config.authGeneration?.()) throw new AuthContextChangedError();
+      return cookieRequest<T>(operationConfig, path, {
+      method, body, csrfToken: token, skipRefreshRetry: refreshed,
+    });
+    }, { mutation: true, refresh: false });
   }
 
   return {
