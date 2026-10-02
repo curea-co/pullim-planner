@@ -1,5 +1,5 @@
 import { bootstrapCsrf, cookieRequest, type CookieHttpConfig } from "./cookie-http";
-import { ApiError } from "./errors";
+import { isCsrfTokenMismatch } from './csrf-error';
 
 /**
  * pullim-api(흡수형 planner 서비스) 도메인 데이터 클라이언트 — cookie-http 위 래퍼. 흡수 전환 §10.
@@ -395,15 +395,6 @@ export interface PullimBlockCompletionClient {
 }
 
 
-/** CUR-5 typed 계약에서 복구 가능한 유일한 403. Origin·권한 거부는 절대 재시도하지 않는다. */
-function isCsrfRejection(error: unknown): boolean {
-  return (
-    error instanceof ApiError &&
-    error.statusCode === 403 &&
-    error.code === "CSRF_TOKEN_MISMATCH"
-  );
-}
-
 /**
  * pullim-api planner 데이터 클라이언트 팩토리. 메서드는 `this` 에 의존하지 않아 구조분해 안전.
  *
@@ -450,7 +441,7 @@ export function createPullimPlannerClient(
         csrfToken: token,
       });
     } catch (error) {
-      if (!isCsrfRejection(error)) throw error;
+      if (!isCsrfTokenMismatch(error)) throw error;
       csrfToken = null;
       const fresh = await ensureCsrf();
       return await cookieRequest<T>(config, path, {

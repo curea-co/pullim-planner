@@ -1,5 +1,7 @@
 'use client';
 
+import { isCsrfFailure } from '@/lib/api-client/csrf-error';
+
 import {
   createContext,
   useCallback,
@@ -180,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               clearAccount();
               return;
             }
-            if (error.statusCode === 403) {
+            if (error.statusCode === 403 && !isCsrfFailure(error)) {
               // 로그인은 됐으나 planner 엔타이틀먼트 미보유 — /login 으로 보내지 않고 안내.
               setStatus('forbidden');
               // **로그인은 된 상태다.** 중앙 계정 식별은 planner 권한과 무관하게 조회한다.

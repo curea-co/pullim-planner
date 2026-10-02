@@ -1,3 +1,4 @@
+import { isCsrfTokenMismatch } from './csrf-error';
 import {
   bootstrapCsrf,
   cookieRequest,
@@ -143,22 +144,6 @@ export interface PullimSessionClient {
    * 성공 시 갱신된 프로필. 이후 `session()`은 같은 프로필을 반환한다.
    */
   updateProfile(input: PullimProfileUpsert): Promise<PullimMeProfile>;
-}
-
-/**
- * CSRF 거부(토큰 회전·만료) 판정 — 403 **전체가 아니라 CSRF 마커**로 좁힌다.
- *
- * pullim-api 의 CSRF 거부는 `ForbiddenException(CsrfErrors.*)` 로, 메시지가 `CSRF:` 로 시작한다
- * (`CSRF: Origin 검증 실패.`·`CSRF: double-submit 토큰 불일치.`). 자격증명 실패는 generic **401**
- * 이라 여기 안 걸리지만, 미래에 추가될 비-CSRF 403(인가·잠금 등)을 CSRF 회전으로 오인해
- * mutation 을 중복 발사하지 않도록 마커로 한정한다.
- */
-function isCsrfRejection(error: unknown): boolean {
-  return (
-    error instanceof ApiError &&
-    error.statusCode === 403 &&
-    /^csrf/i.test(error.message)
-  );
 }
 
 /**
@@ -380,7 +365,7 @@ export function createPullimSessionClient(
         skipRefreshRetry,
       });
     } catch (error) {
-      if (!isCsrfRejection(error)) throw error;
+      if (!isCsrfTokenMismatch(error)) throw error;
       // 캐시 토큰이 회전·만료됐을 수 있으므로 새로 받고 1회 재시도.
       csrfToken = null;
       const fresh = await ensureCsrf();
