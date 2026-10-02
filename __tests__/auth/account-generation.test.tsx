@@ -106,7 +106,7 @@ it('treats only a successful null profile as onboarding', async () => {
   expect(screen.getByTestId('identity')).toHaveTextContent('onboarding:-:new@example.com');
 });
 
-it.each([[401, 'unauthenticated'], [403, 'forbidden'], [404, 'error'], [500, 'error']])('keeps HTTP %s separate from onboarding', async (code, status) => {
+it.each([[401, 'error'], [403, 'forbidden'], [404, 'error'], [500, 'error']])('keeps HTTP %s separate from onboarding', async (code, status) => {
   session.mockRejectedValueOnce(new ApiError({ code: 'planner', statusCode: Number(code), message: 'unavailable' }));
   accountMe.mockResolvedValueOnce(account('current@example.com'));
   await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
@@ -150,4 +150,10 @@ it.each(['CSRF_ORIGIN_REJECTED', 'CSRF_TOKEN_MISMATCH'])('real session refresh %
   expect(accountMe).not.toHaveBeenCalled();
   expect(calls.filter((url) => url.endsWith('/auth/refresh'))).toHaveLength(code === 'CSRF_TOKEN_MISMATCH' ? 2 : 1);
   expect(calls.some((url) => url.endsWith('/me'))).toBe(false);
+});
+
+it('confirmed refresh expiration alone makes the session unauthenticated', async () => {
+  session.mockRejectedValueOnce(new ApiError({ code: 'unauthorized', statusCode: 401, message: 'expired', sessionExpired: true }));
+  await act(async () => { render(<AuthProvider><Probe /></AuthProvider>); });
+  expect(screen.getByTestId('identity')).toHaveTextContent('unauthenticated:-:');
 });

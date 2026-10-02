@@ -1,3 +1,4 @@
+import { AuthContextChangedError } from '../auth/auth-core';
 import { ApiError } from "./errors";
 import { buildUrl } from "./url";
 
@@ -41,6 +42,8 @@ export interface CookieHttpConfig {
    * `/auth/refresh` 호출 자체는 이 콜백이 없는 경로(`skipRefreshRetry`)로 보낼 것.
    */
   refreshSession?: () => Promise<boolean>;
+  /** Shared account generation; prevents replay after identity changes. */
+  authGeneration?: () => number;
 }
 
 export interface CookieRequestOptions {
@@ -128,6 +131,10 @@ export async function cookieRequest<T>(
   path: string,
   opts: CookieRequestOptions = {},
 ): Promise<T> {
+  const generation = config.authGeneration?.();
+  const assertCurrent = () => {
+    if (generation !== config.authGeneration?.()) throw new AuthContextChangedError();
+  };
   const fetchImpl = config.fetchImpl ?? fetch;
   const method = opts.method ?? "GET";
   const url = buildUrl(config.baseUrl, path, opts.query);
@@ -168,6 +175,7 @@ export async function cookieRequest<T>(
     });
   }
 
+  assertCurrent();
   let payload: unknown = undefined;
   if (text) {
     try {
@@ -189,6 +197,7 @@ export async function cookieRequest<T>(
       // reject(비-만료 인프라 장애 — 네트워크·5xx)는 삼키지 않고 그대로 전파해 상위가
       // 세션 만료로 오인하지 않게 한다. false(만료 확정)만 원 401 로 접는다.
       const refreshed = await config.refreshSession();
+      assertCurrent();
       if (!refreshed) {
         // 재발급이 **만료를 확정**했다(refresh 자체가 401). 이 401 만 "세션이 죽었다"는 뜻이다 —
         // 소비자(`on401`)가 이 표시를 보고 전역 로그아웃을 건다.
